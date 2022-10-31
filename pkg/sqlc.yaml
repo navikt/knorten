@@ -1,0 +1,11 @@
+version: 1
+packages:
+  - path: "database/gensql"
+    name: "gensql"
+    engine: "postgresql"
+    schema: "database/migrations"
+    queries: "database/queries"
+    emit_interface: true
+    emit_empty_slices: true
+    # Might want this for v1.11
+    # emit_result_struct_pointers: true

@@ -1,43 +1,85 @@
 package helm
 
 import (
+	"context"
 	"fmt"
 	"log"
 
 	"github.com/sirupsen/logrus"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
-	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/cli"
+	"helm.sh/helm/v3/pkg/release"
 )
 
+type HelmApplication interface {
+	Chart(ctx context.Context) (*chart.Chart, error)
+}
+
 type HelmClient struct {
-	settings *cli.EnvSettings
-	log      *logrus.Entry
+	log *logrus.Entry
 }
 
 func New(log *logrus.Entry) *HelmClient {
-	settings := cli.New()
-
 	return &HelmClient{
-		settings: settings,
-		log:      log,
+		log: log,
 	}
 }
 
-func getChart(chartName, version, repo string, actionConfig *action.Configuration, settings *cli.EnvSettings) (*chart.Chart, error) {
-	destDir := "/tmp"
-	pullClient := action.NewPullWithOpts(action.WithConfig(actionConfig))
-	pullClient.RepoURL = repo
-	pullClient.Settings = settings
-	pullClient.DestDir = destDir
-	pullClient.Version = version
-	_, err := pullClient.Run(chartName)
+func (h *HelmClient) InstallOrUpgrade(releaseName, namespace string, app HelmApplication) {
+	hChart, err := app.Chart(context.Background())
 	if err != nil {
-		log.Panicf("failed to pull chart: %v, error: %v", chartName, err)
+		h.log.WithError(err).Error("install or upgrading release %v", releaseName)
 	}
 
-	return loader.Load(fmt.Sprintf("%v/%v-%v.tgz", destDir, chartName, version))
-}
+	settings := cli.New()
+	settings.SetNamespace(namespace)
+	actionConfig := new(action.Configuration)
+	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "secret", log.Printf); err != nil {
+		log.Printf("%+v", err)
+		h.log.WithError(err).Error("install or upgrading release %v", releaseName)
+		return
+	}
 
-func (h *HelmClient) InstallOrUpgrade()
+	listClient := action.NewList(actionConfig)
+	listClient.Deployed = true
+	results, err := listClient.Run()
+	if err != nil {
+		h.log.WithError(err).Error("install or upgrading release %v", releaseName)
+		return
+	}
+
+	exists := false
+	for _, rel := range results {
+		if rel.Name == releaseName {
+			exists = true
+		}
+	}
+
+	var release *release.Release
+	if !exists {
+		fmt.Println("Installing release")
+		installClient := action.NewInstall(actionConfig)
+		installClient.Namespace = namespace
+		installClient.CreateNamespace = true
+		installClient.ReleaseName = releaseName
+
+		release, err = installClient.Run(hChart, hChart.Values)
+		if err != nil {
+			h.log.WithError(err).Error("install or upgrading release %v", releaseName)
+			return
+		}
+	} else {
+		fmt.Println("Upgrading existing release", releaseName)
+		upgradeClient := action.NewUpgrade(actionConfig)
+		upgradeClient.Namespace = namespace
+
+		release, err = upgradeClient.Run(releaseName, hChart, hChart.Values)
+		if err != nil {
+			h.log.WithError(err).Error("install or upgrading release %v", releaseName)
+			return
+		}
+	}
+
+	fmt.Println(release.Info)
+}

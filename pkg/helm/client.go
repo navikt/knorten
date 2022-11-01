@@ -29,7 +29,7 @@ func New(log *logrus.Entry) *Client {
 func (h *Client) InstallOrUpgrade(releaseName, namespace string, app HelmApplication) {
 	hChart, err := app.Chart(context.Background())
 	if err != nil {
-		h.log.WithError(err).Error("install or upgrading release %v", releaseName)
+		h.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
 	}
 
 	settings := cli.New()
@@ -37,7 +37,7 @@ func (h *Client) InstallOrUpgrade(releaseName, namespace string, app HelmApplica
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "secret", log.Printf); err != nil {
 		log.Printf("%+v", err)
-		h.log.WithError(err).Error("install or upgrading release %v", releaseName)
+		h.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
 		return
 	}
 
@@ -45,7 +45,7 @@ func (h *Client) InstallOrUpgrade(releaseName, namespace string, app HelmApplica
 	listClient.Deployed = true
 	results, err := listClient.Run()
 	if err != nil {
-		h.log.WithError(err).Error("install or upgrading release %v", releaseName)
+		h.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
 		return
 	}
 
@@ -66,7 +66,7 @@ func (h *Client) InstallOrUpgrade(releaseName, namespace string, app HelmApplica
 
 		release, err = installClient.Run(hChart, hChart.Values)
 		if err != nil {
-			h.log.WithError(err).Error("install or upgrading release %v", releaseName)
+			h.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
 			return
 		}
 	} else {
@@ -76,7 +76,7 @@ func (h *Client) InstallOrUpgrade(releaseName, namespace string, app HelmApplica
 
 		release, err = upgradeClient.Run(releaseName, hChart, hChart.Values)
 		if err != nil {
-			h.log.WithError(err).Error("install or upgrading release %v", releaseName)
+			h.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
 			return
 		}
 	}

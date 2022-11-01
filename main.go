@@ -10,7 +10,7 @@ import (
 func main() {
 	log := logrus.New()
 
-	_, err := database.New("postgres://postgres:postgres@localhost:5432/knorten?sslmode=disable", log.WithField("subsystem", "repo"))
+	repo, err := database.New("postgres://postgres:postgres@localhost:5432/knorten?sslmode=disable", log.WithField("subsystem", "repo"))
 	if err != nil {
 		log.WithError(err).Fatal("setting up database")
 	}
@@ -25,7 +25,7 @@ func main() {
 	//fmt.Println(chartVals)
 
 	// kApi := api.New(repo)
-	kApi := api.New()
+	kApi := api.New(repo)
 	err = kApi.Run()
 	if err != nil {
 		return

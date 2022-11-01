@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/nais/knorten/pkg/api"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/sirupsen/logrus"
 	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -24,5 +25,10 @@ func main() {
 	//fmt.Println(chartVals)
 
 	// kApi := api.New(repo)
+	kApi := api.New()
+	err = kApi.Run()
+	if err != nil {
+		return
+	}
 	// http.ListenAndServe(":8080", kApi.Router)
 }

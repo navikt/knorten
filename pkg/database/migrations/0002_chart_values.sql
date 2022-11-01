@@ -21,6 +21,6 @@ CREATE TABLE chart_team_values (
 );
 
 -- +goose Down
-DROP TYPE CHART_TYPE;
-DROP TABLE chart_global_values;
 DROP TABLE chart_team_values;
+DROP TABLE chart_global_values;
+DROP TYPE CHART_TYPE;

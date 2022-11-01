@@ -16,17 +16,17 @@ type HelmApplication interface {
 	Chart(ctx context.Context) (*chart.Chart, error)
 }
 
-type HelmClient struct {
+type Client struct {
 	log *logrus.Entry
 }
 
-func New(log *logrus.Entry) *HelmClient {
-	return &HelmClient{
+func New(log *logrus.Entry) *Client {
+	return &Client{
 		log: log,
 	}
 }
 
-func (h *HelmClient) InstallOrUpgrade(releaseName, namespace string, app HelmApplication) {
+func (h *Client) InstallOrUpgrade(releaseName, namespace string, app HelmApplication) {
 	hChart, err := app.Chart(context.Background())
 	if err != nil {
 		h.log.WithError(err).Error("install or upgrading release %v", releaseName)

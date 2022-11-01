@@ -1,0 +1,34 @@
+{{ define "team/index.tmpl" }}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/pure-min.css" integrity="sha384-X38yfunGUhNzHpBaEBsWLO+A0HDYOQi8ufWDkZ0k9e0eXz/tH3II7uKZ9msv++Ls" crossorigin="anonymous">
+</head>
+<body>
+	<h1>
+		Knorten says 'Hello {{ .team }}!'
+	</h1>
+	<table class="pure-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Make</th>
+                <th>Model</th>
+                <th>Year</th>
+            </tr>
+        </thead>
+        <tbody>
+	{{ range .charts }}
+        <tr class="pure-table-odd">
+            <td>{{ . }}</td>
+            <td>Honda</td>
+            <td>Accord</td>
+            <td>2008</td>
+        </tr>
+	{{end}}
+    </tbody>
+</table>
+</body>
+</html>
+{{ end }}

@@ -70,3 +70,11 @@ type ChartTeamValue struct {
 	ChartType ChartType
 	Team      string
 }
+
+type User struct {
+	ID        uuid.UUID
+	Created   sql.NullTime
+	Email     string
+	Team      string
+	ChartType ChartType
+}

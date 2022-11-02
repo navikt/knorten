@@ -13,6 +13,8 @@ type Querier interface {
 	GlobalValuesGet(ctx context.Context, chartType ChartType) ([]ChartGlobalValue, error)
 	TeamValueInsert(ctx context.Context, arg TeamValueInsertParams) error
 	TeamValuesGet(ctx context.Context, arg TeamValuesGetParams) ([]ChartTeamValue, error)
+	UserAppInsert(ctx context.Context, arg UserAppInsertParams) error
+	UserAppsGet(ctx context.Context, email string) ([]UserAppsGetRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

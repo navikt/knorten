@@ -9,12 +9,21 @@ import (
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/helm"
 	"net/http"
+	"strings"
 )
 
 type API struct {
 	router     *gin.Engine
 	helmClient helm.Client
 	repo       *database.Repo
+}
+
+type Service struct {
+	App            string
+	Ingress        string
+	Namespace      string
+	Secret         string
+	ServiceAccount string
 }
 
 func New(repo *database.Repo) *API {
@@ -33,11 +42,21 @@ func (a *API) Run() error {
 }
 
 type Jupyter struct {
-	Image   string   `chart:"singleuser.image.name"`
-	Sidecar string   `chart:""`
-	Users   []string `form:"users[]" binding:"required"`
-	CPU     int      `form:"cpu"`
-	Memory  string   `form:"memory"`
+	Namespace string   `form:"namespace"`
+	Users     []string `form:"users[]" binding:"required"`
+	CPU       int      `form:"cpu"`
+	Memory    string   `form:"memory"`
+}
+
+func CreateIngress(team string, chartType gensql.ChartType) string {
+	switch chartType {
+	case gensql.ChartTypeJupyterhub:
+		return fmt.Sprintf("https://%v.jupyter.knada.io", team)
+	case gensql.ChartTypeAirflow:
+		return fmt.Sprintf("https://%v.airflow.knada.io", team)
+	}
+
+	return ""
 }
 
 func (a *API) setupRouter() {
@@ -49,29 +68,54 @@ func (a *API) setupRouter() {
 		})
 	})
 
-	a.router.GET("/team/:team", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "team/index.tmpl", gin.H{
-			"team":   c.Param("team"),
-			"charts": []string{"Jupyter", "Airflow"},
+	a.router.GET("/user", func(c *gin.Context) {
+		get, err := a.repo.UserAppsGet(context.Background(), "kyrre.havik@nav.no")
+		if err != nil {
+			return
+		}
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		var services []Service
+		for _, row := range get {
+			services = append(services, Service{
+				App:            string(row.ChartType),
+				Ingress:        CreateIngress(row.Team, row.ChartType),
+				Namespace:      row.Team,
+				Secret:         fmt.Sprintf("https://console.cloud.google.com/security/secret-manager/secret/%v/versions?project=knada-gcp", row.Team),
+				ServiceAccount: fmt.Sprintf("%v@knada-gcp.iam.gserviceaccount.com", row.Team),
+			})
+		}
+		c.HTML(http.StatusOK, "user/index.tmpl", gin.H{
+			"user":   c.Param("logged in user"),
+			"charts": services,
 		})
 	})
 
-	a.router.GET("/team/:team/new/:chart", func(c *gin.Context) {
-		chart := c.Param("chart")
-		c.HTML(http.StatusOK, fmt.Sprintf("team/new_%v.tmpl", chart), gin.H{
-			"team": c.Param("team"),
+	a.router.GET("/chart/:chart/new", func(c *gin.Context) {
+		chart := strings.ToLower(c.Param("chart"))
+		c.HTML(http.StatusOK, fmt.Sprintf("charts/%v.tmpl", chart), gin.H{})
+	})
+
+	a.router.GET("/chart/:chart/:owner/edit", func(c *gin.Context) {
+		chart := strings.ToLower(c.Param("chart"))
+		owner := c.Param("owner")
+		c.HTML(http.StatusOK, fmt.Sprintf("charts/%v.tmpl", chart), gin.H{
+			"owner": owner,
 		})
 	})
 
-	a.router.POST("/team/:team/new/:chart", func(c *gin.Context) {
+	a.router.POST("/chart/:chart/new", func(c *gin.Context) {
 		var form Jupyter
 		c.ShouldBind(&form)
-		team := c.Param("team")
 		chart := c.Param("chart")
 
 		if err := c.ShouldBindWith(&form, binding.Query); err == nil {
-			err := a.repo.TeamChartValueInsert(context.Background(), "singleuser.image.name", form.Memory, team, gensql.ChartTypeJupyterhub)
+
+			err := a.repo.TeamChartValueInsert(context.Background(), "singleuser.image.name", form.Memory, form.Namespace, gensql.ChartTypeJupyterhub)
 			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 				return
 			}
 
@@ -80,23 +124,17 @@ func (a *API) setupRouter() {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 
-		//c.HTML(http.StatusOK, fmt.Sprintf("team/new_%v.tmpl", chart), gin.H{
-		//	"team":   c.Param("team"),
+		//c.HTML(http.StatusOK, fmt.Sprintf("user/new_%v.tmpl", chart), gin.H{
+		//	"user":   c.Param("user"),
 		//	"user":   form.Users,
 		//	"cpu":    form.CPU,
 		//	"memory": form.Memory,
 		//})
 	})
 
-	a.router.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
-
 	a.router.POST("/", func(c *gin.Context) {
-		releaseName := "team-nada-jupyterhub"
-		team := "team-nada"
+		releaseName := "user-nada-jupyterhub"
+		team := "user-nada"
 		jupyterhub := helm.NewJupyterhub("nada", "charts/jupyterhub/values.yaml", a.repo)
 		a.helmClient.InstallOrUpgrade(releaseName, team, jupyterhub)
 	})

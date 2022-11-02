@@ -1,0 +1,40 @@
+{{ define "user/index.tmpl" }}
+    {{ template "head" }}
+    <body>
+    <div class="pure-g">
+        <div class="pure-u-1-3"></div>
+        <div class="pure-u-1-3">
+            <h1>
+                Så mange apper du har, sier Knorten
+            </h1>
+            <table class="pure-table">
+                <thead>
+                <tr>
+                    <th>App</th>
+                    <th>Adresse</th>
+                    <th>Namespace</th>
+                    <th>Secret</th>
+                    <th>Service Account</th>
+                    <th>Rediger</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{ range .charts }}
+                    <tr>
+                        <td>{{ .App }}</td>
+                        <td><a href="{{ .Ingress }}">{{ .Ingress }}</a></td>
+                        <td>{{ .Namespace }}</td>
+                        <td><a href="{{ .Secret }}">Secret Manager</a></td>
+                        <td>{{ .ServiceAccount }}</td>
+                        <td><a href="chart/{{ .App }}/{{ .Namespace }}/edit">Rediger</a></td>
+                    </tr>
+                {{end}}
+                </tbody>
+            </table>
+            <a class="pure-button pure-button-primary" href="/chart/jupyterhub/new">Ny Jupyter</a>
+            <a class="pure-button pure-button-primary" href="/chart/airflow/new">Ny Airflow</a>
+        </div>
+    </div>
+    </body>
+    </html>
+{{ end }}

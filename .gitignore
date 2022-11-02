@@ -17,3 +17,4 @@
 # editors
 .idea
 .tool-versions
+*.json

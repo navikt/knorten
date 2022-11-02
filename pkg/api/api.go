@@ -7,15 +7,19 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/nais/knorten/pkg/api/chart"
+	"github.com/nais/knorten/pkg/auth"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/helm"
+	"github.com/sirupsen/logrus"
 )
 
 type API struct {
+	oauth2     *auth.Azure
 	router     *gin.Engine
 	helmClient helm.Client
 	repo       *database.Repo
+	log        *logrus.Entry
 }
 
 type Service struct {
@@ -26,19 +30,31 @@ type Service struct {
 	ServiceAccount string
 }
 
-func New(repo *database.Repo) *API {
+func New(repo *database.Repo, oauth2 *auth.Azure, log *logrus.Entry) *API {
 	api := API{
+		oauth2: oauth2,
 		router: gin.Default(),
 		repo:   repo,
+		log:    log,
 	}
 
 	api.router.Static("/assets", "./assets")
-	api.setupRouter()
+	api.setupUnauthenticatedRoutes()
+	api.router.Use(api.authMiddleware())
+	api.setupAuthenticatedRoutes()
+	// api.setupRouter()
 	return &api
 }
 
 func (a *API) Run() error {
 	return a.router.Run()
+}
+
+func (a *API) setupAuthenticatedRoutes() {
+	a.router.GET("/testy", func(c *gin.Context) {
+		fmt.Println("authenticated endpoint")
+		fmt.Println(c.Get("user"))
+	})
 }
 
 func CreateIngress(team string, chartType gensql.ChartType) string {

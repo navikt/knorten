@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -69,6 +70,15 @@ type ChartTeamValue struct {
 	Value     string
 	ChartType ChartType
 	Team      string
+}
+
+type Session struct {
+	Token       string
+	AccessToken string
+	Email       string
+	Name        string
+	Created     time.Time
+	Expires     time.Time
 }
 
 type User struct {

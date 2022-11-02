@@ -11,6 +11,9 @@ import (
 type Querier interface {
 	GlobalValueInsert(ctx context.Context, arg GlobalValueInsertParams) error
 	GlobalValuesGet(ctx context.Context, chartType ChartType) ([]ChartGlobalValue, error)
+	SessionCreate(ctx context.Context, arg SessionCreateParams) error
+	SessionDelete(ctx context.Context, token string) error
+	SessionGet(ctx context.Context, token string) (Session, error)
 	TeamValueInsert(ctx context.Context, arg TeamValueInsertParams) error
 	TeamValuesGet(ctx context.Context, arg TeamValuesGetParams) ([]ChartTeamValue, error)
 	UserAppInsert(ctx context.Context, arg UserAppInsertParams) error

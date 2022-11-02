@@ -1,15 +1,15 @@
 package api
 
 import (
-	"context"
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
+	"github.com/nais/knorten/pkg/api/chart"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/helm"
-	"net/http"
-	"strings"
 )
 
 type API struct {
@@ -41,13 +41,6 @@ func (a *API) Run() error {
 	return a.router.Run()
 }
 
-type Jupyter struct {
-	Namespace string   `form:"namespace"`
-	Users     []string `form:"users[]" binding:"required"`
-	CPU       int      `form:"cpu"`
-	Memory    string   `form:"memory"`
-}
-
 func CreateIngress(team string, chartType gensql.ChartType) string {
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
@@ -57,6 +50,17 @@ func CreateIngress(team string, chartType gensql.ChartType) string {
 	}
 
 	return ""
+}
+
+func getChartType(chartType string) gensql.ChartType {
+	switch chartType {
+	case string(gensql.ChartTypeJupyterhub):
+		return gensql.ChartTypeJupyterhub
+	case string(gensql.ChartTypeAirflow):
+		return gensql.ChartTypeAirflow
+	default:
+		return ""
+	}
 }
 
 func (a *API) setupRouter() {
@@ -69,7 +73,7 @@ func (a *API) setupRouter() {
 	})
 
 	a.router.GET("/user", func(c *gin.Context) {
-		get, err := a.repo.UserAppsGet(context.Background(), "kyrre.havik@nav.no")
+		get, err := a.repo.UserAppsGet(c, "kyrre.havik@nav.no")
 		if err != nil {
 			return
 		}
@@ -98,38 +102,25 @@ func (a *API) setupRouter() {
 		c.HTML(http.StatusOK, fmt.Sprintf("charts/%v.tmpl", chart), gin.H{})
 	})
 
+	a.router.POST("/chart/:chart/new", func(c *gin.Context) {
+		chartType := getChartType(c.Param("chart"))
+
+		switch chartType {
+		case gensql.ChartTypeJupyterhub:
+			err := chart.CreateJupyterhub(c, a.repo, chartType)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			}
+			c.Redirect(http.StatusSeeOther, "/user")
+		}
+	})
+
 	a.router.GET("/chart/:chart/:owner/edit", func(c *gin.Context) {
 		chart := strings.ToLower(c.Param("chart"))
 		owner := c.Param("owner")
 		c.HTML(http.StatusOK, fmt.Sprintf("charts/%v.tmpl", chart), gin.H{
 			"owner": owner,
 		})
-	})
-
-	a.router.POST("/chart/:chart/new", func(c *gin.Context) {
-		var form Jupyter
-		c.ShouldBind(&form)
-		chart := c.Param("chart")
-
-		if err := c.ShouldBindWith(&form, binding.Query); err == nil {
-
-			err := a.repo.TeamChartValueInsert(context.Background(), "singleuser.image.name", form.Memory, form.Namespace, gensql.ChartTypeJupyterhub)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-				return
-			}
-
-			c.JSON(http.StatusOK, gin.H{"form": form, "chart": chart})
-		} else {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-
-		//c.HTML(http.StatusOK, fmt.Sprintf("user/new_%v.tmpl", chart), gin.H{
-		//	"user":   c.Param("user"),
-		//	"user":   form.Users,
-		//	"cpu":    form.CPU,
-		//	"memory": form.Memory,
-		//})
 	})
 
 	a.router.POST("/", func(c *gin.Context) {

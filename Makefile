@@ -1,4 +1,4 @@
-.PHONY: local install-sqlc 
+.PHONY: local install-sqlc linux-build
 DATE = $(shell date "+%Y-%m-%d")
 LAST_COMMIT = $(shell git --no-pager log -1 --pretty=%h)
 VERSION ?= $(DATE)-$(LAST_COMMIT)
@@ -23,10 +23,14 @@ local:
 	  --hostname=localhost \
 	  --oauth2-client-id=$(AZURE_APP_CLIENT_ID) \
 	  --oauth2-client-secret=$(AZURE_APP_CLIENT_SECRET) \
-	  --oauth2-tenant-id=$(AZURE_APP_TENANT_ID)
+	  --oauth2-tenant-id=$(AZURE_APP_TENANT_ID) \
+	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten
 
 generate-sql:
 	cd pkg && $(GOBIN)/sqlc generate
 
 install-sqlc:
 	go install github.com/kyleconroy/sqlc/cmd/sqlc@$(SQLC_VERSION)
+
+linux-build:
+	go build -a -installsuffix cgo -o $(APP) .

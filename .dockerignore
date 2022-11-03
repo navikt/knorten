@@ -1,0 +1,7 @@
+*
+!main.go
+!pkg
+!assets
+!go.mod
+!go.sum
+!Makefile

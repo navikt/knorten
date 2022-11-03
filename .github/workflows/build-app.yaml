@@ -1,0 +1,44 @@
+name: Build and push knorten image
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  set-version:
+    name: Set version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.set-version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: set version
+        id: set-version
+        run: echo ::set-output name=version::"$(date '+%Y-%m-%d')-$(git --no-pager log -1 --pretty=%h)"
+
+  build-and-push:
+    name: Build and push
+    runs-on: ubuntu-20.04
+    needs: set-version
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up environment
+      run: |
+        version=${{ needs.set-version.outputs.version }}
+        prefix=ghcr.io/${{ github.repository }}
+        echo "image_version=$version" >> $GITHUB_ENV
+        echo "image_prefix=$prefix" >> $GITHUB_ENV
+        echo "IMAGE=$prefix:$version" >> $GITHUB_ENV
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b # Use commit-sha1 instead of tag for security concerns
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build and push Dockerimage
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        push: true
+        tags: ${{ env.image_prefix }}:latest, ${{ env.IMAGE }}

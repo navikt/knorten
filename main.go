@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 
 	"github.com/nais/knorten/pkg/api"
@@ -13,6 +14,8 @@ import (
 
 type Config struct {
 	auth.OauthConfig
+
+	DBConnString string
 }
 
 func main() {
@@ -23,9 +26,10 @@ func main() {
 	flag.StringVar(&cfg.ClientID, "oauth2-client-id", os.Getenv("AZURE_APP_CLIENT_ID"), "Client ID for azure app")
 	flag.StringVar(&cfg.ClientSecret, "oauth2-client-secret", os.Getenv("AZURE_APP_CLIENT_SECRET"), "Client secret for azure app")
 	flag.StringVar(&cfg.TenantID, "oauth2-tenant-id", os.Getenv("AZURE_APP_TENANT_ID"), "OAuth2 tenant ID")
+	flag.StringVar(&cfg.DBConnString, "db-conn-string", os.Getenv("DB_CONN_STRING"), "Database connection string")
 	flag.Parse()
 
-	repo, err := database.New("postgres://postgres:postgres@localhost:5432/knorten?sslmode=disable", log.WithField("subsystem", "repo"))
+	repo, err := database.New(fmt.Sprintf("%v?sslmode=disable", cfg.DBConnString), log.WithField("subsystem", "repo"))
 	if err != nil {
 		log.WithError(err).Fatal("setting up database")
 	}

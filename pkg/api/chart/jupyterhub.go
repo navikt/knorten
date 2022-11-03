@@ -43,11 +43,11 @@ func CreateJupyterhub(c *gin.Context, repo *database.Repo, chartType gensql.Char
 	if form.Memory == "" {
 		form.Memory = "1GB"
 	}
-	err = repo.TeamChartValueInsert(c, "singleuser.memory.limit", form.CPU, form.Namespace, chartType)
+	err = repo.TeamChartValueInsert(c, "singleuser.memory.limit", form.Memory, form.Namespace, chartType)
 	if err != nil {
 		return err
 	}
-	err = repo.TeamChartValueInsert(c, "singleuser.memory.guarantee", form.CPU, form.Namespace, chartType)
+	err = repo.TeamChartValueInsert(c, "singleuser.memory.guarantee", form.Memory, form.Namespace, chartType)
 	if err != nil {
 		return err
 	}

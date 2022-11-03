@@ -8,7 +8,7 @@ import (
 )
 
 type Jupyter struct {
-	Namespace string   `form:"namespace"`
+	Namespace string   `form:"namespace" binding:"required"`
 	Users     []string `form:"users[]" binding:"required"`
 	CPU       string   `form:"cpu"`
 	Memory    string   `form:"memory"`

@@ -28,8 +28,9 @@ const (
 
 func (a *API) setupUnauthenticatedRoutes() {
 	a.router.GET("/", func(c *gin.Context) {
-		fmt.Println("unauthenticated endpoint")
-		c.JSON(http.StatusOK, gin.H{"status": "OK"})
+		c.HTML(http.StatusOK, "index.tmpl", gin.H{
+			"title": "Knorten",
+		})
 	})
 
 	a.router.GET("/oauth2/login", func(c *gin.Context) {

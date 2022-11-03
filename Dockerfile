@@ -14,4 +14,5 @@ RUN make linux-build
 FROM alpine:3
 WORKDIR /app
 COPY --from=builder /src/knorten /app/knorten
+COPY --from=builder /src/assets /app/assets
 CMD ["/app/knorten"]

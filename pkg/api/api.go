@@ -2,6 +2,9 @@ package api
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/nais/knorten/pkg/api/chart"
 	"github.com/nais/knorten/pkg/auth"
@@ -9,8 +12,6 @@ import (
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/helm"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"strings"
 )
 
 type API struct {
@@ -101,7 +102,7 @@ func (a *API) setupAuthenticatedRoutes() {
 			err := chart.CreateJupyterhub(c, a.repo, chartType)
 			if err != nil {
 				fmt.Println(err)
-				//c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				// c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 				c.Redirect(http.StatusSeeOther, "/chart/jupyterhub/new")
 			}
 			c.Redirect(http.StatusSeeOther, "/user")
@@ -109,7 +110,7 @@ func (a *API) setupAuthenticatedRoutes() {
 			err := chart.CreateAirflow(c, a.repo, chartType)
 			if err != nil {
 				fmt.Println(err)
-				//c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				// c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 				c.Redirect(http.StatusSeeOther, "/chart/airflow/new")
 			}
 			c.Redirect(http.StatusSeeOther, "/user")

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/json"
+	"flag"
 	"os"
 
 	"github.com/nais/knorten/pkg/api"
@@ -11,25 +11,26 @@ import (
 	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
+type Config struct {
+	auth.OauthConfig
+}
+
 func main() {
 	log := logrus.New()
+	cfg := Config{}
+
+	flag.StringVar(&cfg.Hostname, "hostname", os.Getenv("HOSTNAME"), "Hostname the application is served from")
+	flag.StringVar(&cfg.ClientID, "oauth2-client-id", os.Getenv("AZURE_APP_CLIENT_ID"), "Client ID for azure app")
+	flag.StringVar(&cfg.ClientSecret, "oauth2-client-secret", os.Getenv("AZURE_APP_CLIENT_SECRET"), "Client secret for azure app")
+	flag.StringVar(&cfg.TenantID, "oauth2-tenant-id", os.Getenv("AZURE_APP_TENANT_ID"), "OAuth2 tenant ID")
+	flag.Parse()
 
 	repo, err := database.New("postgres://postgres:postgres@localhost:5432/knorten?sslmode=disable", log.WithField("subsystem", "repo"))
 	if err != nil {
 		log.WithError(err).Fatal("setting up database")
 	}
 
-	bytes, err := os.ReadFile("aad_secret.json")
-	if err != nil {
-		panic("error reading aad config")
-	}
-
-	var oauthConfig auth.OauthConfig
-	if err := json.Unmarshal(bytes, &oauthConfig); err != nil {
-		panic("unmarshalling aad config json")
-	}
-
-	azure := auth.New(&oauthConfig, log.WithField("subfield", "auth"))
+	azure := auth.New(cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, log.WithField("subfield", "auth"))
 
 	//ctx := context.Background()
 	//jhub := helm.NewJupyterhub("nada", "charts/jupyterhub/values.yaml", repo)

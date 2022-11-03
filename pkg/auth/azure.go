@@ -44,17 +44,17 @@ type User struct {
 	Expires time.Time
 }
 
-func New(oauthConfig *OauthConfig, log *logrus.Entry) *Azure {
-	provider, err := oidc.NewProvider(context.Background(), fmt.Sprintf("https://login.microsoftonline.com/%v/v2.0", oauthConfig.TenantID))
+func New(clientID, clientSecret, tenantID, hostname string, log *logrus.Entry) *Azure {
+	provider, err := oidc.NewProvider(context.Background(), fmt.Sprintf("https://login.microsoftonline.com/%v/v2.0", tenantID))
 	if err != nil {
 		panic(err)
 	}
 
 	a := &Azure{
-		clientID:     oauthConfig.ClientID,
-		clientSecret: oauthConfig.ClientSecret,
-		tenantID:     oauthConfig.TenantID,
-		hostname:     oauthConfig.Hostname,
+		clientID:     clientID,
+		clientSecret: clientSecret,
+		tenantID:     tenantID,
+		hostname:     hostname,
 		provider:     provider,
 		log:          log,
 	}

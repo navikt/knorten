@@ -1,9 +1,8 @@
-.PHONY: test integration-test local-with-auth local linux-build docker-build docker-push run-postgres-test stop-postgres-test install-sqlc 
+.PHONY: local install-sqlc 
 DATE = $(shell date "+%Y-%m-%d")
 LAST_COMMIT = $(shell git --no-pager log -1 --pretty=%h)
 VERSION ?= $(DATE)-$(LAST_COMMIT)
-LDFLAGS := -X github.com/navikt/nada-backend/backend/version.Revision=$(shell git rev-parse --short HEAD) -X github.com/navikt/nada-backend/backend/version.Version=$(VERSION)
-APP = nada-backend
+APP = knorten
 SQLC_VERSION ?= "v1.15.0"
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -14,13 +13,17 @@ endif
 
 -include .env
 
+env:
+	echo "AZURE_APP_CLIENT_ID=$(shell kubectl get secret --context=knada --namespace=knada-systems azureadapp -o jsonpath='{.data.AZURE_APP_CLIENT_ID}' | base64 -d)" > .env
+	echo "AZURE_APP_CLIENT_SECRET=$(shell kubectl get secret --context=knada --namespace=knada-systems azureadapp -o jsonpath='{.data.AZURE_APP_CLIENT_SECRET}' | base64 -d)" >> .env
+	echo "AZURE_APP_TENANT_ID=$(shell kubectl get secret --context=knada --namespace=knada-systems azureadapp -o jsonpath='{.data.AZURE_APP_TENANT_ID}' | base64 -d)" >> .env
+
 local:
-	go run ./cmd/nada-backend \
-	  --bind-address=127.0.0.1:8080 \
+	go run . \
 	  --hostname=localhost \
-	  --mock-auth \
-	  --skip-metadata-sync \
-	  --log-level=debug
+	  --oauth2-client-id=$(AZURE_APP_CLIENT_ID) \
+	  --oauth2-client-secret=$(AZURE_APP_CLIENT_SECRET) \
+	  --oauth2-tenant-id=$(AZURE_APP_TENANT_ID)
 
 generate-sql:
 	cd pkg && $(GOBIN)/sqlc generate

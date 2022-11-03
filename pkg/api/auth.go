@@ -93,7 +93,7 @@ func (a *API) Callback(c *gin.Context) (string, error) {
 	if err != nil {
 		host = c.Request.Host
 	}
-	loginPage := "/testy"
+	loginPage := "/user"
 
 	redirectURI, err := c.Cookie(RedirectURICookie)
 	if err == nil {

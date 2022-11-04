@@ -2,10 +2,11 @@ package helm
 
 import (
 	"context"
+	"strings"
+
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"helm.sh/helm/v3/pkg/chart"
-	"strings"
 )
 
 type Jupyterhub struct {

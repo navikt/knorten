@@ -85,7 +85,7 @@ func (a *API) setupAuthenticatedRoutes() {
 
 	a.router.GET("/chart/:chart/new", func(c *gin.Context) {
 		chartType := strings.ToLower(c.Param("chart"))
-		var form chart.Jupyter
+		var form chart.JupyterForm
 		err := c.ShouldBind(&form)
 		fmt.Println(err)
 		fmt.Println(form)

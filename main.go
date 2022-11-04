@@ -36,20 +36,9 @@ func main() {
 
 	azure := auth.New(cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, log.WithField("subfield", "auth"))
 
-	//ctx := context.Background()
-	//jhub := helm.NewJupyterhub("nada", "charts/jupyterhub/values.yaml", repo)
-	//chartVals, err := jhub.ChartValues(ctx)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//fmt.Println(chartVals)
-
-	// kApi := api.New(repo)
 	kApi := api.New(repo, azure, log.WithField("subsystem", "api"))
 	err = kApi.Run()
 	if err != nil {
 		return
 	}
-	// http.ListenAndServe(":8080", kApi.Router)
 }

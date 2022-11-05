@@ -148,12 +148,3 @@ func getChartType(chartType string) gensql.ChartType {
 		return ""
 	}
 }
-
-func (a *API) setupRouter() {
-	a.router.POST("/", func(c *gin.Context) {
-		releaseName := "user-nada-jupyterhub"
-		team := "user-nada"
-		jupyterhub := helm.NewJupyterhub("nada", "charts/jupyterhub/values.yaml", a.repo)
-		a.helmClient.InstallOrUpgrade(releaseName, team, jupyterhub)
-	})
-}

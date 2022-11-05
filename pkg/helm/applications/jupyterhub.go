@@ -6,6 +6,7 @@ import (
 
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/helm"
 	"helm.sh/helm/v3/pkg/chart"
 )
 
@@ -16,6 +17,7 @@ type Jupyterhub struct {
 }
 
 func NewJupyterhub(team, tmplPath string, repo *database.Repo) *Jupyterhub {
+	_ = helm.ChartValue{}
 	return &Jupyterhub{
 		team:         team,
 		templatePath: tmplPath,
@@ -24,7 +26,7 @@ func NewJupyterhub(team, tmplPath string, repo *database.Repo) *Jupyterhub {
 }
 
 func (j *Jupyterhub) Chart(ctx context.Context) (*chart.Chart, error) {
-	chart, err := FetchChart("jupyterhub", "0.11.1", "https://jupyterhub.github.io/helm-chart")
+	chart, err := helm.FetchChart("jupyterhub", "0.11.1", "https://jupyterhub.github.io/helm-chart")
 	if err != nil {
 		return nil, err
 	}

@@ -13,3 +13,8 @@ type JupyterGlobalValues struct {
 type JupyterTeamValues struct {
 	ProxyToken string
 }
+
+type ChartValue struct {
+	Key   string
+	Value string
+}

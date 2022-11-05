@@ -4,11 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"embed"
-	"errors"
 	"fmt"
-	"strings"
 
-	"github.com/nais/knorten/pkg/auth"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/pressly/goose/v3"
 	"github.com/sirupsen/logrus"
@@ -90,42 +87,4 @@ func (r *Repo) UserAppInsert(ctx context.Context, email, team string, chartType 
 
 func (r *Repo) UserAppsGet(ctx context.Context, email string) ([]gensql.UserAppsGetRow, error) {
 	return r.querier.UserAppsGet(ctx, email)
-}
-
-func (r *Repo) SessionCreate(ctx context.Context, session *auth.Session) error {
-	return r.querier.SessionCreate(ctx, gensql.SessionCreateParams{
-		Name:        session.Name,
-		Email:       strings.ToLower(session.Email),
-		Token:       session.Token,
-		AccessToken: session.AccessToken,
-		Expires:     session.Expires,
-	})
-}
-
-func (r *Repo) SessionGet(ctx context.Context, token string) (*auth.Session, error) {
-	dbSession, err := r.querier.SessionGet(ctx, token)
-	if err != nil {
-		return nil, err
-	}
-
-	return &auth.Session{
-		Email:       dbSession.Email,
-		Name:        dbSession.Name,
-		AccessToken: dbSession.AccessToken,
-		Token:       dbSession.Token,
-		Expires:     dbSession.Expires,
-	}, nil
-}
-
-func (r *Repo) SessionDelete(ctx context.Context, token string) error {
-	err := r.querier.SessionDelete(ctx, token)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			r.log.Info("no session exists")
-			return nil
-		}
-		return err
-	}
-
-	return nil
 }

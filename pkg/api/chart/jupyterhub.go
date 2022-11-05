@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/helm"
 )
 
 type JupyterForm struct {
@@ -40,28 +41,32 @@ func CreateJupyterhub(c *gin.Context, repo *database.Repo, chartType gensql.Char
 		return err
 	}
 
+	existing, err := repo.TeamValuesGet(c, gensql.ChartTypeJupyterhub, form.Namespace)
+	if err != nil {
+		return err
+	}
+	if len(existing) > 0 {
+		return fmt.Errorf("there already exists a jupyterhub for namespace %v", form.Namespace)
+	}
+
 	addGeneratedJupyterhubConfig(&form)
 
-	values := reflect.ValueOf(form.JupyterValues)
-	fields := reflect.VisibleFields(reflect.TypeOf(form.JupyterValues))
-	for _, field := range fields {
-		value := values.FieldByName(field.Name)
+	formValues := reflect.ValueOf(form.JupyterValues)
+	formFields := reflect.VisibleFields(reflect.TypeOf(form.JupyterValues))
+	chartValues := make([]*helm.ChartValue, len(formFields))
+	for idx, field := range formFields {
+		value := formValues.FieldByName(field.Name)
 		valueString, err := reflectValueToString(value)
 		if err != nil {
 			return err
 		}
 
-		err = repo.TeamChartValueInsert(c, field.Tag.Get("helm"), valueString, form.Namespace, chartType)
-		if err != nil {
-			return err
-		}
+		chartValues[idx] = &helm.ChartValue{Key: field.Tag.Get("helm"), Value: valueString}
 	}
 
-	for _, user := range form.AllowedUsers {
-		err = repo.UserAppInsert(c, user, form.Namespace, chartType)
-		if err != nil {
-			return err
-		}
+	err = repo.ApplicationCreate(c, chartType, chartValues, form.Namespace, form.AllowedUsers)
+	if err != nil {
+		return err
 	}
 
 	return nil

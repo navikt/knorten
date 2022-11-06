@@ -19,7 +19,12 @@ func reflectValueToString(value reflect.Value) (string, error) {
 		if !ok {
 			return "", fmt.Errorf("unable to parse reflect slice: %v", value)
 		}
-		valueString = fmt.Sprintf("[%v]", strings.Join(parts, ", "))
+
+		quotified := make([]string, len(parts))
+		for i, v := range parts {
+			quotified[i] = fmt.Sprintf("%q", v)
+		}
+		valueString = fmt.Sprintf("[%v]", strings.Join(quotified, ", "))
 	default:
 		return "", fmt.Errorf("helm value must be string or slice of strings, unable to parse helm value: %v", value)
 	}

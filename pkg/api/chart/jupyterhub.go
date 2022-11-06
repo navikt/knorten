@@ -1,7 +1,6 @@
 package chart
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -72,17 +71,21 @@ func CreateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *helm.Clie
 	}
 
 	jupyterhub := helmApps.NewJupyterhub(form.Namespace, repo)
-	chart, err := jupyterhub.Chart(c)
+	_, err = jupyterhub.Chart(c)
 	if err != nil {
 		return err
 	}
 
 	// debugs
-	jsonStr, err := json.Marshal(chart.Values)
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(jsonStr))
+	//jsonBytes, err := json.Marshal(chart.Values)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//err = os.WriteFile("out.json", jsonBytes, fs.ModeAppend)
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
 
 	go helmClient.InstallOrUpgrade(c, string(chartType), form.Namespace, jupyterhub)
 
@@ -91,8 +94,8 @@ func CreateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *helm.Clie
 
 func addGeneratedJupyterhubConfig(values *JupyterForm) {
 	values.ProxyToken = generateSecureToken(64)
-	values.Hosts = fmt.Sprintf("[%v]", values.Namespace+".jupyter.knada.io")
-	values.IngressTLS = fmt.Sprintf("[{hosts:[%v],secretName:%v}]", values.Namespace+".jupyter.knada.io", "jupyterhub-certificate")
+	values.Hosts = fmt.Sprintf("[\"%v\"]", values.Namespace+".jupyter.knada.io")
+	values.IngressTLS = fmt.Sprintf("[{\"hosts\":[\"%v\"], \"secretName\": \"%v\"}]", values.Namespace+".jupyter.knada.io", "jupyterhub-certificate")
 	values.ServiceAccount = values.Namespace
 	values.OAuthCallbackURL = fmt.Sprintf("https://%v.jupyter.knada.io/hub/oauth_callback", values.Namespace)
 	values.KnadaTeamSecret = fmt.Sprintf("projects/%v/secrets/%v", "knada-gcp", "team-"+values.Namespace)

@@ -2,6 +2,9 @@ package helm
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/nais/knorten/pkg/database"
@@ -63,7 +66,10 @@ func (j *Jupyterhub) globalValues(ctx context.Context) (map[string]any, error) {
 
 	values := map[string]any{}
 	for _, v := range dbValues {
-		values[v.Key] = parseValue(v.Value)
+		values[v.Key], err = parseValue(v.Value)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return values, nil
@@ -76,7 +82,10 @@ func (j *Jupyterhub) enrichWithTeamValues(ctx context.Context, values map[string
 	}
 
 	for _, v := range dbValues {
-		values[v.Key] = parseValue(v.Value)
+		values[v.Key], err = parseValue(v.Value)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return values, nil
@@ -115,47 +124,39 @@ func setChartValue(keys []string, value any, chart map[string]any) {
 	chart[key] = value
 }
 
-func parseValue(value any) any {
-	valueStr := value.(string)
-	if strings.HasPrefix(valueStr, "[") {
-		listItems := splitString(valueStr[1:len(valueStr)-1], ',')
-		value = []any{}
-		for _, i := range listItems {
-			value = append(value.([]any), parseValue(i))
+func parseValue(value any) (any, error) {
+	var err error
+
+	switch v := value.(type) {
+	case string:
+		value, err = parseString(v)
+		if err != nil {
+			fmt.Println("parsing value", v)
+			return nil, err
 		}
-	} else if strings.HasPrefix(valueStr, "{") {
-		mapItems := splitString(valueStr[1:len(valueStr)-1], ',')
-		value = map[string]any{}
-		for _, i := range mapItems {
-			kv := splitString(i, ':')
-			if len(kv) != 2 {
-				panic("invalid map format")
-			}
-			value.(map[string]any)[kv[0]] = parseValue(kv[1])
-		}
+	default:
+		value = v
 	}
 
-	return value
+	return value, nil
 }
 
-func splitString(value string, sep rune) []string {
-	mCount := 0
-	sCount := 0
-	items := strings.FieldsFunc(value, func(r rune) bool {
-		switch r {
-		case sep:
-			return sCount == 0 && mCount == 0
-		case '{':
-			mCount += 1
-		case '[':
-			sCount += 1
-		case '}':
-			mCount -= 1
-		case ']':
-			sCount -= 1
-		}
-		return false
-	})
+func parseString(value any) (any, error) {
+	valueString := value.(string)
 
-	return items
+	if d, err := strconv.ParseBool(valueString); err == nil {
+		return d, nil
+	} else if d, err := strconv.ParseInt(valueString, 10, 64); err == nil {
+		return d, nil
+	} else if d, err := strconv.ParseFloat(valueString, 64); err == nil {
+		return d, nil
+	} else if strings.HasPrefix(value.(string), "[") || strings.HasPrefix(value.(string), "{") {
+		var d any
+		if err := json.Unmarshal([]byte(valueString), &d); err != nil {
+			return nil, err
+		}
+		return d, nil
+	}
+
+	return valueString, nil
 }

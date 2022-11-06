@@ -25,6 +25,20 @@ func (q *Queries) UserAppInsert(ctx context.Context, arg UserAppInsertParams) er
 	return err
 }
 
+const userAppSetReady = `-- name: UserAppSetReady :exec
+UPDATE users SET ready = $1 WHERE team = $2
+`
+
+type UserAppSetReadyParams struct {
+	Ready bool
+	Team  string
+}
+
+func (q *Queries) UserAppSetReady(ctx context.Context, arg UserAppSetReadyParams) error {
+	_, err := q.db.ExecContext(ctx, userAppSetReady, arg.Ready, arg.Team)
+	return err
+}
+
 const userAppsGet = `-- name: UserAppsGet :many
 SELECT team, chart_type FROM users where email = $1
 `

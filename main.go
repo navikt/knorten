@@ -8,8 +8,8 @@ import (
 	"github.com/nais/knorten/pkg/api"
 	"github.com/nais/knorten/pkg/auth"
 	"github.com/nais/knorten/pkg/database"
+	"github.com/nais/knorten/pkg/helm"
 	"github.com/sirupsen/logrus"
-	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 type Config struct {
@@ -34,9 +34,11 @@ func main() {
 		log.WithError(err).Fatal("setting up database")
 	}
 
+	helmClient := helm.New(repo, log.WithField("subsystem", "helmClient"))
+
 	azure := auth.New(cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, log.WithField("subfield", "auth"))
 
-	kApi := api.New(repo, azure, log.WithField("subsystem", "api"))
+	kApi := api.New(repo, azure, helmClient, log.WithField("subsystem", "api"))
 	err = kApi.Run()
 	if err != nil {
 		return

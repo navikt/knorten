@@ -2,14 +2,15 @@ package helm
 
 import (
 	"context"
-	"fmt"
 	"log"
 
+	"github.com/nais/knorten/pkg/database"
 	"github.com/sirupsen/logrus"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli"
-	"helm.sh/helm/v3/pkg/release"
+
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 type HelmApplication interface {
@@ -17,16 +18,18 @@ type HelmApplication interface {
 }
 
 type Client struct {
-	log *logrus.Entry
+	repo *database.Repo
+	log  *logrus.Entry
 }
 
-func New(log *logrus.Entry) *Client {
+func New(repo *database.Repo, log *logrus.Entry) *Client {
 	return &Client{
-		log: log,
+		repo: repo,
+		log:  log,
 	}
 }
 
-func (h *Client) InstallOrUpgrade(releaseName, namespace string, app HelmApplication) {
+func (h *Client) InstallOrUpgrade(ctx context.Context, releaseName, namespace string, app HelmApplication) error {
 	hChart, err := app.Chart(context.Background())
 	if err != nil {
 		h.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
@@ -38,7 +41,7 @@ func (h *Client) InstallOrUpgrade(releaseName, namespace string, app HelmApplica
 	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "secret", log.Printf); err != nil {
 		log.Printf("%+v", err)
 		h.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
-		return
+		return err
 	}
 
 	listClient := action.NewList(actionConfig)
@@ -46,7 +49,7 @@ func (h *Client) InstallOrUpgrade(releaseName, namespace string, app HelmApplica
 	results, err := listClient.Run()
 	if err != nil {
 		h.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
-		return
+		return err
 	}
 
 	exists := false
@@ -56,30 +59,33 @@ func (h *Client) InstallOrUpgrade(releaseName, namespace string, app HelmApplica
 		}
 	}
 
-	var release *release.Release
 	if !exists {
-		fmt.Println("Installing release")
+		h.log.Infof("Installing release %v", releaseName)
 		installClient := action.NewInstall(actionConfig)
 		installClient.Namespace = namespace
 		installClient.CreateNamespace = true
 		installClient.ReleaseName = releaseName
 
-		release, err = installClient.Run(hChart, hChart.Values)
+		_, err = installClient.Run(hChart, hChart.Values)
 		if err != nil {
 			h.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
-			return
+			return err
 		}
 	} else {
-		fmt.Println("Upgrading existing release", releaseName)
+		h.log.Infof("Upgrading existing release %v", releaseName)
 		upgradeClient := action.NewUpgrade(actionConfig)
 		upgradeClient.Namespace = namespace
 
-		release, err = upgradeClient.Run(releaseName, hChart, hChart.Values)
+		_, err = upgradeClient.Run(releaseName, hChart, hChart.Values)
 		if err != nil {
 			h.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
-			return
+			return err
 		}
 	}
 
-	fmt.Println(release.Info)
+	if err := h.repo.UserAppSetReady(ctx, namespace, true); err != nil {
+		return err
+	}
+
+	return nil
 }

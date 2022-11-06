@@ -17,6 +17,7 @@ type Querier interface {
 	TeamValueInsert(ctx context.Context, arg TeamValueInsertParams) error
 	TeamValuesGet(ctx context.Context, arg TeamValuesGetParams) ([]ChartTeamValue, error)
 	UserAppInsert(ctx context.Context, arg UserAppInsertParams) error
+	UserAppSetReady(ctx context.Context, arg UserAppSetReadyParams) error
 	UserAppsGet(ctx context.Context, email string) ([]UserAppsGetRow, error)
 }
 

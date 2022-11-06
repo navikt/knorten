@@ -26,37 +26,6 @@ const (
 	sessionLength     time.Duration = 7 * time.Hour
 )
 
-func (a *API) setupUnauthenticatedRoutes() {
-	a.router.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.tmpl", gin.H{
-			"title": "Knorten",
-		})
-	})
-
-	a.router.GET("/oauth2/login", func(c *gin.Context) {
-		fmt.Println("login")
-		consentURL := a.Login(c)
-		c.Redirect(http.StatusSeeOther, consentURL)
-	})
-
-	a.router.GET("/oauth2/callback", func(c *gin.Context) {
-		redirectURL, err := a.Callback(c)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		}
-
-		c.Redirect(http.StatusSeeOther, redirectURL)
-	})
-
-	a.router.GET("/oauth2/logout", func(c *gin.Context) {
-		redirectURL, err := a.Logout(c)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		c.Redirect(http.StatusSeeOther, redirectURL)
-	})
-}
-
 func (a *API) Login(c *gin.Context) string {
 	host, _, err := net.SplitHostPort(c.Request.Host)
 	if err != nil {

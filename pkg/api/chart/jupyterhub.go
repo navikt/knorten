@@ -1,6 +1,7 @@
 package chart
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/helm"
+	helmApps "github.com/nais/knorten/pkg/helm/applications"
 )
 
 type JupyterForm struct {
@@ -34,7 +36,7 @@ type JupyterValues struct {
 	KnadaTeamSecret  string `helm:"singleuser.extraEnv.KNADA_TEAM_SECRET"`
 }
 
-func CreateJupyterhub(c *gin.Context, repo *database.Repo, chartType gensql.ChartType) error {
+func CreateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *helm.Client, chartType gensql.ChartType) error {
 	var form JupyterForm
 	err := c.ShouldBindWith(&form, binding.Form)
 	if err != nil {
@@ -53,15 +55,15 @@ func CreateJupyterhub(c *gin.Context, repo *database.Repo, chartType gensql.Char
 
 	formValues := reflect.ValueOf(form.JupyterValues)
 	formFields := reflect.VisibleFields(reflect.TypeOf(form.JupyterValues))
-	chartValues := make([]*helm.ChartValue, len(formFields))
-	for idx, field := range formFields {
+	chartValues := map[string]string{}
+	for _, field := range formFields {
 		value := formValues.FieldByName(field.Name)
 		valueString, err := reflectValueToString(value)
 		if err != nil {
 			return err
 		}
 
-		chartValues[idx] = &helm.ChartValue{Key: field.Tag.Get("helm"), Value: valueString}
+		chartValues[field.Tag.Get("helm")] = valueString
 	}
 
 	err = repo.ApplicationCreate(c, chartType, chartValues, form.Namespace, form.AllowedUsers)
@@ -69,13 +71,28 @@ func CreateJupyterhub(c *gin.Context, repo *database.Repo, chartType gensql.Char
 		return err
 	}
 
+	jupyterhub := helmApps.NewJupyterhub(form.Namespace, repo)
+	chart, err := jupyterhub.Chart(c)
+	if err != nil {
+		return err
+	}
+
+	// debugs
+	jsonStr, err := json.Marshal(chart.Values)
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(jsonStr))
+
+	go helmClient.InstallOrUpgrade(c, string(chartType), form.Namespace, jupyterhub)
+
 	return nil
 }
 
 func addGeneratedJupyterhubConfig(values *JupyterForm) {
 	values.ProxyToken = generateSecureToken(64)
 	values.Hosts = fmt.Sprintf("[%v]", values.Namespace+".jupyter.knada.io")
-	values.IngressTLS = fmt.Sprintf("[hosts: {hosts: [%v]}, secretName: %v]", values.Namespace+".jupyter.knada.io", "jupyterhub-certificate")
+	values.IngressTLS = fmt.Sprintf("[{hosts:[%v],secretName:%v}]", values.Namespace+".jupyter.knada.io", "jupyterhub-certificate")
 	values.ServiceAccount = values.Namespace
 	values.OAuthCallbackURL = fmt.Sprintf("https://%v.jupyter.knada.io/hub/oauth_callback", values.Namespace)
 	values.KnadaTeamSecret = fmt.Sprintf("projects/%v/secrets/%v", "knada-gcp", "team-"+values.Namespace)

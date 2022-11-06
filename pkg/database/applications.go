@@ -4,20 +4,19 @@ import (
 	"context"
 
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/helm"
 )
 
-func (r *Repo) ApplicationCreate(ctx context.Context, chartType gensql.ChartType, chartValues []*helm.ChartValue, namespace string, users []string) error {
+func (r *Repo) ApplicationCreate(ctx context.Context, chartType gensql.ChartType, chartValues map[string]string, namespace string, users []string) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
 
 	querier := r.querier.WithTx(tx)
-	for _, value := range chartValues {
+	for key, value := range chartValues {
 		err := querier.TeamValueInsert(ctx, gensql.TeamValueInsertParams{
-			Key:       value.Key,
-			Value:     value.Value,
+			Key:       key,
+			Value:     value,
 			Team:      namespace,
 			ChartType: chartType,
 		})

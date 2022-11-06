@@ -17,7 +17,7 @@ import (
 type API struct {
 	oauth2     *auth.Azure
 	router     *gin.Engine
-	helmClient helm.Client
+	helmClient *helm.Client
 	repo       *database.Repo
 	log        *logrus.Entry
 }
@@ -30,12 +30,13 @@ type Service struct {
 	ServiceAccount string
 }
 
-func New(repo *database.Repo, oauth2 *auth.Azure, log *logrus.Entry) *API {
+func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, log *logrus.Entry) *API {
 	api := API{
-		oauth2: oauth2,
-		router: gin.Default(),
-		repo:   repo,
-		log:    log,
+		oauth2:     oauth2,
+		helmClient: helmClient,
+		router:     gin.Default(),
+		repo:       repo,
+		log:        log,
 	}
 
 	api.router.Static("/assets", "./assets")
@@ -43,12 +44,42 @@ func New(repo *database.Repo, oauth2 *auth.Azure, log *logrus.Entry) *API {
 	api.setupUnauthenticatedRoutes()
 	api.router.Use(api.authMiddleware())
 	api.setupAuthenticatedRoutes()
-	// api.setupRouter()
 	return &api
 }
 
 func (a *API) Run() error {
 	return a.router.Run()
+}
+
+func (a *API) setupUnauthenticatedRoutes() {
+	a.router.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.tmpl", gin.H{
+			"title": "Knorten",
+		})
+	})
+
+	a.router.GET("/oauth2/login", func(c *gin.Context) {
+		fmt.Println("login")
+		consentURL := a.Login(c)
+		c.Redirect(http.StatusSeeOther, consentURL)
+	})
+
+	a.router.GET("/oauth2/callback", func(c *gin.Context) {
+		redirectURL, err := a.Callback(c)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+
+		c.Redirect(http.StatusSeeOther, redirectURL)
+	})
+
+	a.router.GET("/oauth2/logout", func(c *gin.Context) {
+		redirectURL, err := a.Logout(c)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		c.Redirect(http.StatusSeeOther, redirectURL)
+	})
 }
 
 func (a *API) setupAuthenticatedRoutes() {
@@ -99,7 +130,7 @@ func (a *API) setupAuthenticatedRoutes() {
 
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
-			err := chart.CreateJupyterhub(c, a.repo, chartType)
+			err := chart.CreateJupyterhub(c, a.repo, a.helmClient, chartType)
 			if err != nil {
 				fmt.Println(err)
 				// c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

@@ -87,4 +87,5 @@ type User struct {
 	Email     string
 	Team      string
 	ChartType ChartType
+	Ready     bool
 }

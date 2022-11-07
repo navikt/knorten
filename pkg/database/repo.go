@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"embed"
+	"encoding/json"
 	"fmt"
-
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/pressly/goose/v3"
 	"github.com/sirupsen/logrus"
@@ -23,6 +23,15 @@ type Repo struct {
 	querier Querier
 	db      *sql.DB
 	log     *logrus.Entry
+}
+
+type JupyterConfigurableValues struct {
+	AdminUsers      []string `form:"users[]" binding:"required" helm:"hub.config.Authenticator.admin_users"`
+	AllowedUsers    []string `form:"users[]" binding:"required" helm:"hub.config.Authenticator.allowed_users"`
+	CPULimit        string   `form:"cpu" helm:"singleuser.cpu.limit"`
+	CPUGuarantee    string   `form:"cpu" helm:"singleuser.cpu.guarantee"`
+	MemoryLimit     string   `form:"memory" helm:"singleuser.memory.limit"`
+	MemoryGuarantee string   `form:"memory" helm:"singleuser.memory.guarantee"`
 }
 
 type Querier interface {
@@ -75,4 +84,35 @@ func (r *Repo) TeamValuesGet(ctx context.Context, chartType gensql.ChartType, te
 		ChartType: chartType,
 		Team:      team,
 	})
+}
+
+func (r *Repo) TeamConfigurableValuesGet(ctx context.Context, chartType gensql.ChartType, team string) (JupyterConfigurableValues, error) {
+	teamValues, err := r.querier.TeamValuesGet(ctx, gensql.TeamValuesGetParams{
+		ChartType: chartType,
+		Team:      team,
+	})
+
+	var configurableValues JupyterConfigurableValues
+	for i, value := range teamValues {
+		fmt.Println(i, value)
+		switch value.Key {
+		case "singleuser.cpu.limit":
+			configurableValues.CPULimit = value.Value
+		case "singleuser.cpu.guarantee":
+			configurableValues.CPUGuarantee = value.Value
+		case "singleuser.memory.limit":
+			configurableValues.MemoryLimit = value.Value
+		case "singleuser.memory.guarantee":
+			configurableValues.MemoryGuarantee = value.Value
+		case "hub.config.Authenticator.admin_users":
+			var users []string
+			err := json.Unmarshal([]byte(value.Value), &users)
+			if err != nil {
+				return JupyterConfigurableValues{}, err
+			}
+			configurableValues.AdminUsers = users
+		}
+	}
+
+	return configurableValues, err
 }

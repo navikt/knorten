@@ -130,7 +130,7 @@ func (a *API) setupAuthenticatedRoutes() {
 
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
-			err := chart.CreateJupyterhub(c, a.repo, a.helmClient, chartType)
+			err := chart.CreateJupyterhub(c, a.repo, a.helmClient)
 			if err != nil {
 				fmt.Println(err)
 				// c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -149,12 +149,43 @@ func (a *API) setupAuthenticatedRoutes() {
 		}
 	})
 
-	a.router.GET("/chart/:chart/:owner/edit", func(c *gin.Context) {
-		chart := strings.ToLower(c.Param("chart"))
-		owner := c.Param("owner")
-		c.HTML(http.StatusOK, fmt.Sprintf("charts/%v.tmpl", chart), gin.H{
-			"owner": owner,
+	a.router.GET("/chart/:chart/:namespace/edit", func(c *gin.Context) {
+		chartType := getChartType(c.Param("chart"))
+		namespace := c.Param("namespace")
+		values, err := a.repo.TeamConfigurableValuesGet(c, chartType, namespace)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.HTML(http.StatusOK, fmt.Sprintf("charts/%v.tmpl", chartType), gin.H{
+			"values":    values,
+			"namespace": namespace,
 		})
+	})
+
+	a.router.POST("/chart/:chart/:namespace/edit", func(c *gin.Context) {
+		chartType := getChartType(c.Param("chart"))
+
+		switch chartType {
+		case gensql.ChartTypeJupyterhub:
+			err := chart.UpdateJupyterhub(c, a.repo, a.helmClient)
+			if err != nil {
+				fmt.Println(err)
+				// c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				c.Redirect(http.StatusSeeOther, "/chart/jupyterhub/new")
+				return
+			}
+			c.Redirect(http.StatusSeeOther, "/user")
+		case gensql.ChartTypeAirflow:
+			err := chart.CreateAirflow(c, a.repo, chartType)
+			if err != nil {
+				fmt.Println(err)
+				// c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				c.Redirect(http.StatusSeeOther, "/chart/airflow/new")
+			}
+			c.Redirect(http.StatusSeeOther, "/user")
+
+		}
 	})
 }
 

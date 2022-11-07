@@ -10,25 +10,30 @@
             <form class="pure-form pure-form-stacked" action="" method="POST">
                 <div class="pure-control-group">
                     <label for="namespace">Namespace</label>
-                    <input type="text" name="namespace" id="namespace" placeholder="Små bokstaver med bindestrek"/>
+                    <input type="text" name="namespace" id="namespace" value="{{ .namespace }}"
+                           placeholder="Små bokstaver med bindestrek"/>
                 </div>
                 <fieldset class="pure-group" id="users">
                     <legend>Brukere</legend>
                     <button type="button" class="pure-button pure-button-primary" onClick="addElement()">Legg til flere
                         bruker
                     </button>
-                    <input type="email" name="users[]" class="pure-input-1-2" placeholder="E-post"/>
+                    {{ range .values.AdminUsers }}
+                        <input type="email" name="users[]" class="pure-input-1-2" value="{{ . }}" placeholder="E-post"/>
+                    {{ else }}
+                        <input type="email" name="users[]" class="pure-input-1-2" placeholder="E-post"/>
+                    {{ end }}
                 </fieldset>
 
                 <fieldset>
                     <legend>Tilpasninger</legend>
                     <div class="pure-control-group">
                         <label for="cpu">CPU</label>
-                        <input type="text" name="cpu" id="cpu" placeholder="1"/>
+                        <input type="text" name="cpu" id="cpu" value="{{ .values.CPULimit }}" placeholder="1"/>
                     </div>
                     <div class="pure-control-group">
                         <label for="memory">Memory</label>
-                        <input type="text" name="memory" id="memory" placeholder="1GB"/>
+                        <input type="text" name="memory" id="memory" value="{{ .values.MemoryLimit }}" placeholder="1GB"/>
                     </div>
                     <div class="pure-controls">
                         <button type="submit" class="pure-button pure-button-primary">Lagre</button>

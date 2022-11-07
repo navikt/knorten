@@ -14,9 +14,9 @@ endif
 -include .env
 
 env:
-	echo "AZURE_APP_CLIENT_ID=$(shell kubectl get secret --context=knada --namespace=knada-systems azureadapp -o jsonpath='{.data.AZURE_APP_CLIENT_ID}' | base64 -d)" > .env
-	echo "AZURE_APP_CLIENT_SECRET=$(shell kubectl get secret --context=knada --namespace=knada-systems azureadapp -o jsonpath='{.data.AZURE_APP_CLIENT_SECRET}' | base64 -d)" >> .env
-	echo "AZURE_APP_TENANT_ID=$(shell kubectl get secret --context=knada --namespace=knada-systems azureadapp -o jsonpath='{.data.AZURE_APP_TENANT_ID}' | base64 -d)" >> .env
+	echo "AZURE_APP_CLIENT_ID=$(shell kubectl get secret --context=knada --namespace=knada-systems knorten -o jsonpath='{.data.AZURE_APP_CLIENT_ID}' | base64 -d)" > .env
+	echo "AZURE_APP_CLIENT_SECRET=$(shell kubectl get secret --context=knada --namespace=knada-systems knorten -o jsonpath='{.data.AZURE_APP_CLIENT_SECRET}' | base64 -d)" >> .env
+	echo "AZURE_APP_TENANT_ID=$(shell kubectl get secret --context=knada --namespace=knada-systems knorten -o jsonpath='{.data.AZURE_APP_TENANT_ID}' | base64 -d)" >> .env
 
 local:
 	go run . \

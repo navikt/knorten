@@ -34,3 +34,7 @@ install-sqlc:
 
 linux-build:
 	go build -a -installsuffix cgo -o $(APP) .
+
+# make goose cmd=status
+goose:
+	goose -dir pkg/database/migrations/ postgres "user=postgres password=postgres dbname=knorten host=localhost sslmode=disable" $(cmd)

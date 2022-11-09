@@ -8,7 +8,7 @@ import (
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/helm"
 	helmApps "github.com/nais/knorten/pkg/helm/applications"
-	"reflect"
+	"github.com/nais/knorten/pkg/reflect"
 )
 
 type JupyterForm struct {
@@ -57,9 +57,7 @@ func CreateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *helm.Clie
 }
 
 func installOrUpdateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *helm.Client, form JupyterForm) error {
-	values := reflect.ValueOf(form.JupyterValues)
-	fields := reflect.VisibleFields(reflect.TypeOf(form.JupyterValues))
-	chartValues, err := createChartValues(values, fields)
+	chartValues, err := reflect.CreateChartValues(form.JupyterValues)
 	if err != nil {
 		return err
 	}

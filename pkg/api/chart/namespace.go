@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	"reflect"
+	"github.com/nais/knorten/pkg/reflect"
 
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
@@ -45,9 +45,7 @@ func CreateNamespace(c *gin.Context, repo *database.Repo, helmClient *helm.Clien
 		return err
 	}
 
-	values := reflect.ValueOf(form)
-	fields := reflect.VisibleFields(reflect.TypeOf(form))
-	chartValues, err := createChartValues(values, fields)
+	chartValues, err := reflect.CreateChartValues(form)
 	if err != nil {
 		return err
 	}
@@ -74,9 +72,7 @@ func UpdateNamespace(c *gin.Context, repo *database.Repo) error {
 		return err
 	}
 
-	values := reflect.ValueOf(form)
-	fields := reflect.VisibleFields(reflect.TypeOf(form))
-	chartValues, err := createChartValues(values, fields)
+	chartValues, err := reflect.CreateChartValues(form)
 	if err != nil {
 		return err
 	}

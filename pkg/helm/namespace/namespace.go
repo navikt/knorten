@@ -9,25 +9,25 @@ import (
 	"helm.sh/helm/v3/pkg/chart"
 )
 
-type Jupyterhub struct {
+type Namespace struct {
 	team string
 	repo *database.Repo
 }
 
-func NewJupyterhub(team string, repo *database.Repo) *Jupyterhub {
-	return &Jupyterhub{
+func NewNamespace(team string, repo *database.Repo) *Namespace {
+	return &Namespace{
 		team: team,
 		repo: repo,
 	}
 }
 
-func (j *Jupyterhub) Chart(ctx context.Context) (*chart.Chart, error) {
-	chart, err := helm.FetchChart("jupyterhub", "jupyterhub", "0.11.1")
+func (n *Namespace) Chart(ctx context.Context) (*chart.Chart, error) {
+	chart, err := helm.FetchChart("oci://europe-west1-docker.pkg.dev/knada-gcp/helm", "knada-namespace-setup", "0.1.3")
 	if err != nil {
 		return nil, err
 	}
 
-	err = j.mergeValues(ctx, chart.Values)
+	err = n.mergeValues(ctx, chart.Values)
 	if err != nil {
 		return nil, err
 	}
@@ -35,13 +35,13 @@ func (j *Jupyterhub) Chart(ctx context.Context) (*chart.Chart, error) {
 	return chart, nil
 }
 
-func (j *Jupyterhub) mergeValues(ctx context.Context, defaultValues map[string]any) error {
-	values, err := j.globalValues(ctx)
+func (n *Namespace) mergeValues(ctx context.Context, defaultValues map[string]any) error {
+	values, err := n.globalValues(ctx)
 	if err != nil {
 		return err
 	}
 
-	values, err = j.enrichWithTeamValues(ctx, values)
+	values, err = n.enrichWithTeamValues(ctx, values)
 	if err != nil {
 		return err
 	}
@@ -54,8 +54,8 @@ func (j *Jupyterhub) mergeValues(ctx context.Context, defaultValues map[string]a
 	return nil
 }
 
-func (j *Jupyterhub) globalValues(ctx context.Context) (map[string]any, error) {
-	dbValues, err := j.repo.GlobalValuesGet(ctx, gensql.ChartTypeJupyterhub)
+func (n *Namespace) globalValues(ctx context.Context) (map[string]any, error) {
+	dbValues, err := n.repo.GlobalValuesGet(ctx, gensql.ChartTypeNamespace)
 	if err != nil {
 		return map[string]any{}, err
 	}
@@ -71,8 +71,8 @@ func (j *Jupyterhub) globalValues(ctx context.Context) (map[string]any, error) {
 	return values, nil
 }
 
-func (j *Jupyterhub) enrichWithTeamValues(ctx context.Context, values map[string]any) (map[string]any, error) {
-	dbValues, err := j.repo.TeamValuesGet(ctx, gensql.ChartTypeJupyterhub, j.team)
+func (n *Namespace) enrichWithTeamValues(ctx context.Context, values map[string]any) (map[string]any, error) {
+	dbValues, err := n.repo.TeamValuesGet(ctx, gensql.ChartTypeJupyterhub, n.team)
 	if err != nil {
 		return map[string]any{}, err
 	}

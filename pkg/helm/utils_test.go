@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func Test_setChartValue(t *testing.T) {
+func Test_SetChartValue(t *testing.T) {
 	type args struct {
 		keys  []string
 		value string
@@ -46,7 +46,7 @@ func Test_setChartValue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			setChartValue(tt.args.keys, tt.args.value, tt.args.chart)
+			SetChartValue(tt.args.keys, tt.args.value, tt.args.chart)
 			if !reflect.DeepEqual(tt.args.chart, tt.want) {
 				t.Errorf("setChartValue() = %v, want %v", tt.args.chart, tt.want)
 			}

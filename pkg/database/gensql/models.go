@@ -18,6 +18,7 @@ type ChartType string
 const (
 	ChartTypeJupyterhub ChartType = "jupyterhub"
 	ChartTypeAirflow    ChartType = "airflow"
+	ChartTypeNamespace  ChartType = "namespace"
 )
 
 func (e *ChartType) Scan(src interface{}) error {

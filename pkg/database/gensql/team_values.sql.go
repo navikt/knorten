@@ -10,17 +10,15 @@ import (
 )
 
 const teamValueInsert = `-- name: TeamValueInsert :exec
-INSERT INTO chart_team_values (
-    "key",
-    "value",
-    "team",
-    "chart_type"
-) VALUES (
-    $1,
-    $2,
-    $3,
-    $4
-)
+INSERT INTO chart_team_values ("key",
+                               "value",
+                               "team",
+                               "chart_type")
+VALUES ($1,
+        $2,
+        $3,
+        $4)
+ON CONFLICT DO NOTHING
 `
 
 type TeamValueInsertParams struct {

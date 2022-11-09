@@ -1,15 +1,13 @@
 -- name: TeamValueInsert :exec
-INSERT INTO chart_team_values (
-    "key",
-    "value",
-    "team",
-    "chart_type"
-) VALUES (
-    @key,
-    @value,
-    @team,
-    @chart_type
-);
+INSERT INTO chart_team_values ("key",
+                               "value",
+                               "team",
+                               "chart_type")
+VALUES (@key,
+        @value,
+        @team,
+        @chart_type)
+ON CONFLICT DO UPDATE SET value = @value;
 
 -- name: TeamValuesGet :many
 SELECT DISTINCT ON ("key") *

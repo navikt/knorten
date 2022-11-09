@@ -13,23 +13,30 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-type HelmApplication interface {
+type Application interface {
 	Chart(ctx context.Context) (*chart.Chart, error)
 }
 
 type Client struct {
-	repo *database.Repo
-	log  *logrus.Entry
+	repo   *database.Repo
+	log    *logrus.Entry
+	dryRun bool
 }
 
-func New(repo *database.Repo, log *logrus.Entry) *Client {
+func New(repo *database.Repo, log *logrus.Entry, dryRun bool) *Client {
 	return &Client{
-		repo: repo,
-		log:  log,
+		repo:   repo,
+		log:    log,
+		dryRun: dryRun,
 	}
 }
 
-func (h *Client) InstallOrUpgrade(ctx context.Context, releaseName, namespace string, app HelmApplication) error {
+func (h *Client) InstallOrUpgrade(ctx context.Context, releaseName, namespace string, app Application) error {
+	if h.dryRun {
+		h.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
 	hChart, err := app.Chart(context.Background())
 	if err != nil {
 		h.log.WithError(err).Errorf("install or upgrading release %v", releaseName)

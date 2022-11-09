@@ -2,14 +2,13 @@ package chart
 
 import (
 	"fmt"
-	"reflect"
-
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/helm"
 	helmApps "github.com/nais/knorten/pkg/helm/applications"
+	"reflect"
 )
 
 type JupyterForm struct {
@@ -17,14 +16,17 @@ type JupyterForm struct {
 	JupyterValues
 }
 
-type JupyterValues struct {
-	// User config
+type JupyterConfigurableValues struct {
 	AdminUsers      []string `form:"users[]" binding:"required" helm:"hub.config.Authenticator.admin_users"`
 	AllowedUsers    []string `form:"users[]" binding:"required" helm:"hub.config.Authenticator.allowed_users"`
 	CPULimit        string   `form:"cpu" helm:"singleuser.cpu.limit"`
 	CPUGuarantee    string   `form:"cpu" helm:"singleuser.cpu.guarantee"`
 	MemoryLimit     string   `form:"memory" helm:"singleuser.memory.limit"`
 	MemoryGuarantee string   `form:"memory" helm:"singleuser.memory.guarantee"`
+}
+
+type JupyterValues struct {
+	JupyterConfigurableValues
 
 	// Generated config
 	ProxyToken       string `helm:"proxy.secretToken"`
@@ -35,7 +37,7 @@ type JupyterValues struct {
 	KnadaTeamSecret  string `helm:"singleuser.extraEnv.KNADA_TEAM_SECRET"`
 }
 
-func CreateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *helm.Client, chartType gensql.ChartType) error {
+func CreateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *helm.Client) error {
 	var form JupyterForm
 	err := c.ShouldBindWith(&form, binding.Form)
 	if err != nil {
@@ -51,21 +53,18 @@ func CreateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *helm.Clie
 	}
 
 	addGeneratedJupyterhubConfig(&form)
+	return installOrUpdateJupyterhub(c, repo, helmClient, form)
+}
 
-	formValues := reflect.ValueOf(form.JupyterValues)
-	formFields := reflect.VisibleFields(reflect.TypeOf(form.JupyterValues))
-	chartValues := map[string]string{}
-	for _, field := range formFields {
-		value := formValues.FieldByName(field.Name)
-		valueString, err := reflectValueToString(value)
-		if err != nil {
-			return err
-		}
-
-		chartValues[field.Tag.Get("helm")] = valueString
+func installOrUpdateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *helm.Client, form JupyterForm) error {
+	values := reflect.ValueOf(form.JupyterValues)
+	fields := reflect.VisibleFields(reflect.TypeOf(form.JupyterValues))
+	chartValues, err := createChartValues(values, fields)
+	if err != nil {
+		return err
 	}
 
-	err = repo.ApplicationCreate(c, chartType, chartValues, form.Namespace, form.AllowedUsers)
+	err = repo.ApplicationCreate(c, gensql.ChartTypeJupyterhub, chartValues, form.Namespace, form.AllowedUsers)
 	if err != nil {
 		return err
 	}
@@ -76,20 +75,18 @@ func CreateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *helm.Clie
 		return err
 	}
 
-	// debugs
-	//jsonBytes, err := json.Marshal(chart.Values)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//err = os.WriteFile("out.json", jsonBytes, fs.ModeAppend)
-	//if err != nil {
-	//	fmt.Println(err)
-	//}
-
-	go helmClient.InstallOrUpgrade(c, string(chartType), form.Namespace, jupyterhub)
-
+	go helmClient.InstallOrUpgrade(c, string(gensql.ChartTypeJupyterhub), form.Namespace, jupyterhub)
 	return nil
+}
+
+func UpdateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *helm.Client) error {
+	var form JupyterForm
+	err := c.ShouldBindWith(&form, binding.Form)
+	if err != nil {
+		return err
+	}
+
+	return installOrUpdateJupyterhub(c, repo, helmClient, form)
 }
 
 func addGeneratedJupyterhubConfig(values *JupyterForm) {

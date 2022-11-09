@@ -7,30 +7,34 @@
             <h1>
                 Så mange apper du har, sier Knorten
             </h1>
-            <table class="pure-table">
-                <thead>
-                <tr>
-                    <th>App</th>
-                    <th>Adresse</th>
-                    <th>Namespace</th>
-                    <th>Secret</th>
-                    <th>Service Account</th>
-                    <th>Rediger</th>
-                </tr>
-                </thead>
-                <tbody>
-                {{ range .charts }}
+            {{ range .charts }}
+                <h2>
+                    {{ .Namespace }} (<a href="team/{{ .Namespace }}/edit">rediger</a>)
+                </h2>
+                <table class="pure-table">
+                    <thead>
                     <tr>
-                        <td>{{ .App }}</td>
-                        <td><a href="{{ .Ingress }}">{{ .Ingress }}</a></td>
-                        <td>{{ .Namespace }}</td>
-                        <td><a href="{{ .Secret }}">Secret Manager</a></td>
-                        <td>{{ .ServiceAccount }}</td>
-                        <td><a href="chart/{{ .App }}/{{ .Namespace }}/edit">Rediger</a></td>
+                        <th>App</th>
+                        <th>Adresse</th>
+                        <th>Secret</th>
+                        <th>Service Account</th>
+                        <th>Rediger</th>
                     </tr>
-                {{end}}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                    {{ if ne .App "namespace" }}
+                        <tr>
+                            <td>{{ .App }}</td>
+                            <td><a href="{{ .Ingress }}">{{ .Ingress }}</a></td>
+                            <td><a href="{{ .Secret }}">Secret Manager</a></td>
+                            <td>{{ .ServiceAccount }}</td>
+                            <td><a href="chart/{{ .App }}/{{ .Namespace }}/edit">Rediger</a></td>
+                        </tr>
+                    {{ end }}
+                    </tbody>
+                </table>
+            {{ end }}
+            <a class="pure-button pure-button-primary" href="/team/new">Nytt team</a>
             <a class="pure-button pure-button-primary" href="/chart/jupyterhub/new">Ny Jupyter</a>
             <a class="pure-button pure-button-primary" href="/chart/airflow/new">Ny Airflow</a>
         </div>

@@ -14,9 +14,9 @@ endif
 -include .env
 
 env:
-	echo "AZURE_APP_CLIENT_ID=$(shell kubectl get secret --context=knada --namespace=knada-systems azureadapp -o jsonpath='{.data.AZURE_APP_CLIENT_ID}' | base64 -d)" > .env
-	echo "AZURE_APP_CLIENT_SECRET=$(shell kubectl get secret --context=knada --namespace=knada-systems azureadapp -o jsonpath='{.data.AZURE_APP_CLIENT_SECRET}' | base64 -d)" >> .env
-	echo "AZURE_APP_TENANT_ID=$(shell kubectl get secret --context=knada --namespace=knada-systems azureadapp -o jsonpath='{.data.AZURE_APP_TENANT_ID}' | base64 -d)" >> .env
+	echo "AZURE_APP_CLIENT_ID=$(shell kubectl get secret --context=knada --namespace=knada-systems knorten -o jsonpath='{.data.AZURE_APP_CLIENT_ID}' | base64 -d)" > .env
+	echo "AZURE_APP_CLIENT_SECRET=$(shell kubectl get secret --context=knada --namespace=knada-systems knorten -o jsonpath='{.data.AZURE_APP_CLIENT_SECRET}' | base64 -d)" >> .env
+	echo "AZURE_APP_TENANT_ID=$(shell kubectl get secret --context=knada --namespace=knada-systems knorten -o jsonpath='{.data.AZURE_APP_TENANT_ID}' | base64 -d)" >> .env
 
 local:
 	go run . \
@@ -24,6 +24,15 @@ local:
 	  --oauth2-client-id=$(AZURE_APP_CLIENT_ID) \
 	  --oauth2-client-secret=$(AZURE_APP_CLIENT_SECRET) \
 	  --oauth2-tenant-id=$(AZURE_APP_TENANT_ID) \
+	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten
+
+local-offline:
+	go run . \
+	  --hostname=localhost \
+	  --oauth2-client-id=$(AZURE_APP_CLIENT_ID) \
+	  --oauth2-client-secret=$(AZURE_APP_CLIENT_SECRET) \
+	  --oauth2-tenant-id=$(AZURE_APP_TENANT_ID) \
+	  --dry-run \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten
 
 generate-sql:
@@ -34,3 +43,7 @@ install-sqlc:
 
 linux-build:
 	go build -a -installsuffix cgo -o $(APP) .
+
+# make goose cmd=status
+goose:
+	goose -dir pkg/database/migrations/ postgres "user=postgres password=postgres dbname=knorten host=localhost sslmode=disable" $(cmd)

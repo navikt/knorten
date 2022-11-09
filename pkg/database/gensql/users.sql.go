@@ -12,6 +12,7 @@ import (
 const userAppInsert = `-- name: UserAppInsert :exec
 INSERT INTO users ("email", "team", "chart_type")
 VALUES ($1, $2, $3)
+ON CONFLICT DO NOTHING
 `
 
 type UserAppInsertParams struct {
@@ -26,7 +27,9 @@ func (q *Queries) UserAppInsert(ctx context.Context, arg UserAppInsertParams) er
 }
 
 const userAppSetReady = `-- name: UserAppSetReady :exec
-UPDATE users SET ready = $1 WHERE team = $2
+UPDATE users
+SET ready = $1
+WHERE team = $2
 `
 
 type UserAppSetReadyParams struct {
@@ -40,7 +43,9 @@ func (q *Queries) UserAppSetReady(ctx context.Context, arg UserAppSetReadyParams
 }
 
 const userAppsGet = `-- name: UserAppsGet :many
-SELECT team, chart_type FROM users where email = $1
+SELECT team, chart_type
+FROM users
+where email = $1
 `
 
 type UserAppsGetRow struct {
@@ -54,7 +59,7 @@ func (q *Queries) UserAppsGet(ctx context.Context, email string) ([]UserAppsGetR
 		return nil, err
 	}
 	defer rows.Close()
-	items := []UserAppsGetRow{}
+	var items []UserAppsGetRow
 	for rows.Next() {
 		var i UserAppsGetRow
 		if err := rows.Scan(&i.Team, &i.ChartType); err != nil {

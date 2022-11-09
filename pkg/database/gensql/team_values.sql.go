@@ -10,17 +10,15 @@ import (
 )
 
 const teamValueInsert = `-- name: TeamValueInsert :exec
-INSERT INTO chart_team_values (
-    "key",
-    "value",
-    "team",
-    "chart_type"
-) VALUES (
-    $1,
-    $2,
-    $3,
-    $4
-)
+INSERT INTO chart_team_values ("key",
+                               "value",
+                               "team",
+                               "chart_type")
+VALUES ($1,
+        $2,
+        $3,
+        $4)
+ON CONFLICT DO NOTHING
 `
 
 type TeamValueInsertParams struct {
@@ -43,7 +41,8 @@ func (q *Queries) TeamValueInsert(ctx context.Context, arg TeamValueInsertParams
 const teamValuesGet = `-- name: TeamValuesGet :many
 SELECT DISTINCT ON ("key") id, created, key, value, chart_type, team
 FROM chart_team_values
-WHERE chart_type = $1 AND team = $2
+WHERE chart_type = $1
+  AND team = $2
 ORDER BY "key", "created" DESC
 `
 
@@ -58,7 +57,7 @@ func (q *Queries) TeamValuesGet(ctx context.Context, arg TeamValuesGetParams) ([
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ChartTeamValue{}
+	var items []ChartTeamValue
 	for rows.Next() {
 		var i ChartTeamValue
 		if err := rows.Scan(

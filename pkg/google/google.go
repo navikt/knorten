@@ -9,10 +9,14 @@ import (
 	"google.golang.org/api/iam/v1"
 )
 
-type Google struct{}
+type Google struct {
+	DryRun bool
+}
 
-func New() *Google {
-	return &Google{}
+func New(dryRun bool) *Google {
+	return &Google{
+		DryRun: dryRun,
+	}
 }
 
 func (g *Google) CreateIAMServiceAccount(ctx context.Context, parent, team string) (*iam.ServiceAccount, error) {

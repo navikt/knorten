@@ -64,9 +64,9 @@ func (a *API) Callback(c *gin.Context) (string, error) {
 	}
 	loginPage := "/user"
 
-	redirectURI, err := c.Cookie(RedirectURICookie)
-	if err == nil {
-		loginPage = loginPage + strings.TrimPrefix(redirectURI, "/")
+	redirectURI, _ := c.Cookie(RedirectURICookie)
+	if redirectURI != "" {
+		loginPage = redirectURI
 	}
 
 	if strings.HasPrefix(c.Request.Host, "localhost") {

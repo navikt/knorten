@@ -43,17 +43,11 @@ func CreateNamespace(c context.Context, repo *database.Repo, helmClient *helm.Cl
 		return err
 	}
 
-	formValues := reflect.ValueOf(form)
-	formFields := reflect.VisibleFields(reflect.TypeOf(form))
-	chartValues := map[string]string{}
-	for _, field := range formFields {
-		value := formValues.FieldByName(field.Name)
-		valueString, err := reflectValueToString(value)
-		if err != nil {
-			return err
-		}
-
-		chartValues[field.Tag.Get("helm")] = valueString
+	values := reflect.ValueOf(form)
+	fields := reflect.VisibleFields(reflect.TypeOf(form))
+	chartValues, err := createChartValues(values, fields)
+	if err != nil {
+		return err
 	}
 
 	if err := repo.NamespaceCreate(c, gensql.ChartTypeNamespace, chartValues, form.Namespace); err != nil {

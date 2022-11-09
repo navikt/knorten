@@ -80,13 +80,14 @@ func (r *Repo) TeamConfigurableValuesGet(ctx context.Context, chartType gensql.C
 		ChartType: chartType,
 		Team:      team,
 	})
-
-	for _, value := range teamValues {
-		err := reflect.InterfaceToStruct(obj, value.Key, value.Value)
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
 	}
 
-	return err
+	values := map[string]string{}
+	for _, value := range teamValues {
+		values[value.Key] = value.Value
+	}
+
+	return reflect.InterfaceToStruct(obj, values)
 }

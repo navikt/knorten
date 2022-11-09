@@ -53,50 +53,38 @@ func CreateChartValues(form any) (map[string]string, error) {
 	return chartValues, nil
 }
 
-func findFieldNameByTag(tag string, obj any) (string, error) {
+func InterfaceToStruct(obj any, values map[string]string) error {
 	structValue := reflect.ValueOf(obj).Elem()
 	fields := reflect.VisibleFields(structValue.Type())
-
 	for _, field := range fields {
 		fieldTag := field.Tag.Get("helm")
-		if tag == fieldTag {
-			return field.Name, nil
+		value := values[fieldTag]
+
+		structValue := reflect.ValueOf(obj).Elem()
+		structFieldValue := structValue.FieldByName(field.Name)
+
+		if !structFieldValue.IsValid() {
+			return fmt.Errorf("no such field: %s in obj", field.Name)
 		}
-	}
 
-	return "", fmt.Errorf("can't find 'helm' tag with the value: '%v'", tag)
-}
-
-func InterfaceToStruct(obj any, tag string, value string) error {
-	fieldName, err := findFieldNameByTag(tag, obj)
-	if err != nil {
-		return err
-	}
-
-	structValue := reflect.ValueOf(obj).Elem()
-	structFieldValue := structValue.FieldByName(fieldName)
-
-	if !structFieldValue.IsValid() {
-		return fmt.Errorf("no such field: %s in obj", fieldName)
-	}
-
-	if !structFieldValue.CanSet() {
-		return fmt.Errorf("cannot set %s field value", fieldName)
-	}
-
-	kind := structFieldValue.Kind()
-	switch kind {
-	case reflect.String:
-		structFieldValue.Set(reflect.ValueOf(value))
-	case reflect.Slice:
-		var users []string
-		err := json.Unmarshal([]byte(value), &users)
-		if err != nil {
-			return err
+		if !structFieldValue.CanSet() {
+			return fmt.Errorf("cannot set %s field value", field.Name)
 		}
-		structFieldValue.Set(reflect.ValueOf(users))
-	default:
-		return fmt.Errorf("unknown kind('%v')", kind)
+
+		kind := structFieldValue.Kind()
+		switch kind {
+		case reflect.String:
+			structFieldValue.Set(reflect.ValueOf(value))
+		case reflect.Slice:
+			var users []string
+			err := json.Unmarshal([]byte(value), &users)
+			if err != nil {
+				return err
+			}
+			structFieldValue.Set(reflect.ValueOf(users))
+		default:
+			return fmt.Errorf("unknown kind('%v')", kind)
+		}
 	}
 
 	return nil

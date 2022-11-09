@@ -104,7 +104,7 @@ func (a *API) setupAuthenticatedRoutes() {
 		for _, row := range get {
 			services = append(services, Service{
 				App:            string(row.ChartType),
-				Ingress:        CreateIngress(row.Team, row.ChartType),
+				Ingress:        createIngress(row.Team, row.ChartType),
 				Namespace:      row.Team,
 				Secret:         fmt.Sprintf("https://console.cloud.google.com/security/secret-manager/secret/%v/versions?project=knada-gcp", row.Team),
 				ServiceAccount: fmt.Sprintf("%v@knada-gcp.iam.gserviceaccount.com", row.Team),
@@ -173,75 +173,68 @@ func (a *API) setupAuthenticatedRoutes() {
 
 	a.router.POST("/chart/:chart/new", func(c *gin.Context) {
 		chartType := getChartType(c.Param("chart"))
+		var err error
 
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
-			err := chart.CreateJupyterhub(c, a.repo, a.helmClient)
-			if err != nil {
-				fmt.Println(err)
-				// c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-				c.Redirect(http.StatusSeeOther, "/chart/jupyterhub/new")
-			}
-			c.Redirect(http.StatusSeeOther, "/user")
+			err = chart.CreateJupyterhub(c, a.repo, a.helmClient)
 		case gensql.ChartTypeAirflow:
-			err := chart.CreateAirflow(c, a.repo, chartType)
-			if err != nil {
-				fmt.Println(err)
-				// c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-				c.Redirect(http.StatusSeeOther, "/chart/airflow/new")
-			}
-			c.Redirect(http.StatusSeeOther, "/user")
-
+			err = chart.CreateAirflow(c, a.repo, chartType)
 		}
+
+		if err != nil {
+			fmt.Println(err)
+			// c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/chart/%v/new", chartType))
+		}
+		c.Redirect(http.StatusSeeOther, "/user")
 	})
 
 	a.router.GET("/chart/:chart/:namespace/edit", func(c *gin.Context) {
 		chartType := getChartType(c.Param("chart"))
 		namespace := c.Param("namespace")
+		var form any
 
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
-			configurableValues := &chart.JupyterConfigurableValues{}
-			err := a.repo.TeamConfigurableValuesGet(c, chartType, namespace, configurableValues)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-				return
-			}
-			c.HTML(http.StatusOK, fmt.Sprintf("charts/%v.tmpl", chartType), gin.H{
-				"values":    configurableValues,
-				"namespace": namespace,
-			})
+			form = &chart.JupyterConfigurableValues{}
 		case gensql.ChartTypeAirflow:
+			form = &chart.JupyterConfigurableValues{}
 		}
+
+		err := a.repo.TeamConfigurableValuesGet(c, chartType, namespace, form)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.HTML(http.StatusOK, fmt.Sprintf("charts/%v.tmpl", chartType), gin.H{
+			"values":    form,
+			"namespace": namespace,
+		})
 	})
 
 	a.router.POST("/chart/:chart/:namespace/edit", func(c *gin.Context) {
 		chartType := getChartType(c.Param("chart"))
+		var err error
 
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
-			err := chart.UpdateJupyterhub(c, a.repo, a.helmClient)
-			if err != nil {
-				fmt.Println(err)
-				// c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-				c.Redirect(http.StatusSeeOther, "/chart/jupyterhub/new")
-				return
-			}
-			c.Redirect(http.StatusSeeOther, "/user")
+			err = chart.UpdateJupyterhub(c, a.repo, a.helmClient)
 		case gensql.ChartTypeAirflow:
-			err := chart.CreateAirflow(c, a.repo, chartType)
-			if err != nil {
-				fmt.Println(err)
-				// c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-				c.Redirect(http.StatusSeeOther, "/chart/airflow/new")
-			}
-			c.Redirect(http.StatusSeeOther, "/user")
-
+			err = chart.CreateAirflow(c, a.repo, chartType)
 		}
+
+		if err != nil {
+			fmt.Println(err)
+			// c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.Redirect(http.StatusSeeOther, fmt.Sprintf("charts/%v.tmpl", chartType))
+			return
+		}
+		c.Redirect(http.StatusSeeOther, "/user")
 	})
 }
 
-func CreateIngress(team string, chartType gensql.ChartType) string {
+func createIngress(team string, chartType gensql.ChartType) string {
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
 		return fmt.Sprintf("https://%v.jupyter.knada.io", team)

@@ -154,15 +154,21 @@ func (a *API) setupAuthenticatedRoutes() {
 	a.router.GET("/chart/:chart/:namespace/edit", func(c *gin.Context) {
 		chartType := getChartType(c.Param("chart"))
 		namespace := c.Param("namespace")
-		values, err := a.repo.TeamConfigurableValuesGet(c, chartType, namespace)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
+
+		switch chartType {
+		case gensql.ChartTypeJupyterhub:
+			configurableValues := &chart.JupyterConfigurableValues{}
+			err := a.repo.TeamConfigurableValuesGet(c, chartType, namespace, configurableValues)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			c.HTML(http.StatusOK, fmt.Sprintf("charts/%v.tmpl", chartType), gin.H{
+				"values":    configurableValues,
+				"namespace": namespace,
+			})
+		case gensql.ChartTypeAirflow:
 		}
-		c.HTML(http.StatusOK, fmt.Sprintf("charts/%v.tmpl", chartType), gin.H{
-			"values":    values,
-			"namespace": namespace,
-		})
 	})
 
 	a.router.POST("/chart/:chart/:namespace/edit", func(c *gin.Context) {

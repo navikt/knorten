@@ -16,8 +16,17 @@ type JupyterForm struct {
 	JupyterValues
 }
 
+type JupyterConfigurableValues struct {
+	AdminUsers      []string `form:"users[]" binding:"required" helm:"hub.config.Authenticator.admin_users"`
+	AllowedUsers    []string `form:"users[]" binding:"required" helm:"hub.config.Authenticator.allowed_users"`
+	CPULimit        string   `form:"cpu" helm:"singleuser.cpu.limit"`
+	CPUGuarantee    string   `form:"cpu" helm:"singleuser.cpu.guarantee"`
+	MemoryLimit     string   `form:"memory" helm:"singleuser.memory.limit"`
+	MemoryGuarantee string   `form:"memory" helm:"singleuser.memory.guarantee"`
+}
+
 type JupyterValues struct {
-	database.JupyterConfigurableValues
+	JupyterConfigurableValues
 
 	// Generated config
 	ProxyToken       string `helm:"proxy.secretToken"`

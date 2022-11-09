@@ -6,12 +6,11 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	_ "github.com/lib/pq"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/pressly/goose/v3"
 	"github.com/sirupsen/logrus"
-
-	_ "github.com/lib/pq"
-
+	"reflect"
 	// Pin version of sqlc cli
 	_ "github.com/kyleconroy/sqlc"
 )
@@ -23,15 +22,6 @@ type Repo struct {
 	querier Querier
 	db      *sql.DB
 	log     *logrus.Entry
-}
-
-type JupyterConfigurableValues struct {
-	AdminUsers      []string `form:"users[]" binding:"required" helm:"hub.config.Authenticator.admin_users"`
-	AllowedUsers    []string `form:"users[]" binding:"required" helm:"hub.config.Authenticator.allowed_users"`
-	CPULimit        string   `form:"cpu" helm:"singleuser.cpu.limit"`
-	CPUGuarantee    string   `form:"cpu" helm:"singleuser.cpu.guarantee"`
-	MemoryLimit     string   `form:"memory" helm:"singleuser.memory.limit"`
-	MemoryGuarantee string   `form:"memory" helm:"singleuser.memory.guarantee"`
 }
 
 type Querier interface {
@@ -86,32 +76,67 @@ func (r *Repo) TeamValuesGet(ctx context.Context, chartType gensql.ChartType, te
 	})
 }
 
-func (r *Repo) TeamConfigurableValuesGet(ctx context.Context, chartType gensql.ChartType, team string) (JupyterConfigurableValues, error) {
+func (r *Repo) TeamConfigurableValuesGet(ctx context.Context, chartType gensql.ChartType, team string, obj any) error {
 	teamValues, err := r.querier.TeamValuesGet(ctx, gensql.TeamValuesGetParams{
 		ChartType: chartType,
 		Team:      team,
 	})
 
-	var configurableValues JupyterConfigurableValues
 	for _, value := range teamValues {
-		switch value.Key {
-		case "singleuser.cpu.limit":
-			configurableValues.CPULimit = value.Value
-		case "singleuser.cpu.guarantee":
-			configurableValues.CPUGuarantee = value.Value
-		case "singleuser.memory.limit":
-			configurableValues.MemoryLimit = value.Value
-		case "singleuser.memory.guarantee":
-			configurableValues.MemoryGuarantee = value.Value
-		case "hub.config.Authenticator.admin_users":
-			var users []string
-			err := json.Unmarshal([]byte(value.Value), &users)
-			if err != nil {
-				return JupyterConfigurableValues{}, err
-			}
-			configurableValues.AdminUsers = users
+		err := InterfaceToStruct(obj, value.Key, value.Value)
+		if err != nil {
+			return err
 		}
 	}
 
-	return configurableValues, err
+	return err
+}
+
+func InterfaceToStruct(obj any, tag string, value string) error {
+	fieldName, err := findFieldNameByTag(tag, obj)
+	if err != nil {
+		return err
+	}
+
+	structValue := reflect.ValueOf(obj).Elem()
+	structFieldValue := structValue.FieldByName(fieldName)
+
+	if !structFieldValue.IsValid() {
+		return fmt.Errorf("no such field: %s in obj", fieldName)
+	}
+
+	if !structFieldValue.CanSet() {
+		return fmt.Errorf("cannot set %s field value", fieldName)
+	}
+
+	kind := structFieldValue.Kind()
+	switch kind {
+	case reflect.String:
+		structFieldValue.Set(reflect.ValueOf(value))
+	case reflect.Slice:
+		var users []string
+		err := json.Unmarshal([]byte(value), &users)
+		if err != nil {
+			return err
+		}
+		structFieldValue.Set(reflect.ValueOf(users))
+	default:
+		return fmt.Errorf("unknown kind('%v')", kind)
+	}
+
+	return nil
+}
+
+func findFieldNameByTag(tag string, obj any) (string, error) {
+	structValue := reflect.ValueOf(obj).Elem()
+	fields := reflect.VisibleFields(structValue.Type())
+
+	for _, field := range fields {
+		fieldTag := field.Tag.Get("helm")
+		if tag == fieldTag {
+			return field.Name, nil
+		}
+	}
+
+	return "", fmt.Errorf("can't find 'helm' tag with the value: '%v'", tag)
 }

@@ -3,6 +3,8 @@ package chart
 import (
 	"context"
 	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"reflect"
 
 	"github.com/nais/knorten/pkg/database"
@@ -22,13 +24,13 @@ type NamespaceForm struct {
 	GSMSecret         string `helm:"gsm.secretName"`
 }
 
-func CreateNamespace(c context.Context, repo *database.Repo, helmClient *helm.Client, chartType gensql.ChartType) error {
-	googleClient := google.New()
+func CreateNamespace(c *gin.Context, repo *database.Repo, helmClient *helm.Client, chartType gensql.ChartType, dryRun bool) error {
+	googleClient := google.New(dryRun)
 
-	// todo form in ui
-	form := NamespaceForm{
-		Namespace: "nada-test-til-sletting",
-		Users:     []string{},
+	var form NamespaceForm
+	err := c.ShouldBindWith(&form, binding.Form)
+	if err != nil {
+		return err
 	}
 
 	existing, err := repo.TeamValuesGet(c, gensql.ChartTypeNamespace, form.Namespace)
@@ -50,7 +52,7 @@ func CreateNamespace(c context.Context, repo *database.Repo, helmClient *helm.Cl
 		return err
 	}
 
-	if err := repo.NamespaceCreate(c, gensql.ChartTypeNamespace, chartValues, form.Namespace); err != nil {
+	if err := repo.ApplicationCreate(c, gensql.ChartTypeNamespace, chartValues, form.Namespace, form.Users); err != nil {
 		return err
 	}
 
@@ -65,7 +67,28 @@ func CreateNamespace(c context.Context, repo *database.Repo, helmClient *helm.Cl
 	return nil
 }
 
+func UpdateNamespace(c *gin.Context, repo *database.Repo) error {
+	var form NamespaceForm
+	err := c.ShouldBindWith(&form, binding.Form)
+	if err != nil {
+		return err
+	}
+
+	values := reflect.ValueOf(form)
+	fields := reflect.VisibleFields(reflect.TypeOf(form))
+	chartValues, err := createChartValues(values, fields)
+	if err != nil {
+		return err
+	}
+
+	return repo.ApplicationCreate(c, gensql.ChartTypeNamespace, chartValues, form.Namespace, form.Users)
+}
+
 func createGCPResources(c context.Context, form *NamespaceForm, googleClient *google.Google) error {
+	if googleClient.DryRun {
+		return nil
+	}
+
 	project := "projects/knada-gcp"
 
 	iamSA, err := googleClient.CreateIAMServiceAccount(c, project, form.Namespace)

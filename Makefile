@@ -26,6 +26,15 @@ local:
 	  --oauth2-tenant-id=$(AZURE_APP_TENANT_ID) \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten
 
+local-offline:
+	go run . \
+	  --hostname=localhost \
+	  --oauth2-client-id=$(AZURE_APP_CLIENT_ID) \
+	  --oauth2-client-secret=$(AZURE_APP_CLIENT_SECRET) \
+	  --oauth2-tenant-id=$(AZURE_APP_TENANT_ID) \
+	  --dry-run \
+	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten
+
 generate-sql:
 	cd pkg && $(GOBIN)/sqlc generate
 

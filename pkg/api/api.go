@@ -20,6 +20,7 @@ type API struct {
 	helmClient *helm.Client
 	repo       *database.Repo
 	log        *logrus.Entry
+	dryRun     bool
 }
 
 type Service struct {
@@ -30,13 +31,14 @@ type Service struct {
 	ServiceAccount string
 }
 
-func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, log *logrus.Entry) *API {
+func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, log *logrus.Entry, dryRun bool) *API {
 	api := API{
 		oauth2:     oauth2,
 		helmClient: helmClient,
 		router:     gin.Default(),
 		repo:       repo,
 		log:        log,
+		dryRun:     dryRun,
 	}
 
 	api.router.Static("/assets", "./assets")

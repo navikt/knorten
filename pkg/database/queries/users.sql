@@ -1,6 +1,7 @@
 -- name: UserAppInsert :exec
 INSERT INTO users ("email", "team", "chart_type")
-VALUES (@email, @team, @chart_type);
+VALUES (@email, @team, @chart_type)
+ON CONFLICT DO NOTHING;
 
 -- name: UserAppsGet :many
 SELECT team, chart_type

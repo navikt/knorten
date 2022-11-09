@@ -12,6 +12,7 @@ import (
 const userAppInsert = `-- name: UserAppInsert :exec
 INSERT INTO users ("email", "team", "chart_type")
 VALUES ($1, $2, $3)
+ON CONFLICT DO NOTHING
 `
 
 type UserAppInsertParams struct {

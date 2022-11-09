@@ -22,7 +22,11 @@ type NamespaceForm struct {
 	GSMSecret         string `helm:"gsm.secretName"`
 }
 
-func CreateNamespace(c context.Context, repo *database.Repo, helmClient *helm.Client, chartType gensql.ChartType) error {
+type NamespaceJupyterhubConfig struct {
+	Enabled bool `helm:"jupyterhub.enabled"`
+}
+
+func NamespaceCreate(c context.Context, repo *database.Repo, helmClient *helm.Client, chartType gensql.ChartType) error {
 	googleClient := google.New()
 
 	// todo form in ui
@@ -45,15 +49,9 @@ func CreateNamespace(c context.Context, repo *database.Repo, helmClient *helm.Cl
 
 	formValues := reflect.ValueOf(form)
 	formFields := reflect.VisibleFields(reflect.TypeOf(form))
-	chartValues := map[string]string{}
-	for _, field := range formFields {
-		value := formValues.FieldByName(field.Name)
-		valueString, err := reflectValueToString(value)
-		if err != nil {
-			return err
-		}
-
-		chartValues[field.Tag.Get("helm")] = valueString
+	chartValues, err := createChartValues(formValues, formFields)
+	if err != nil {
+		return err
 	}
 
 	if err := repo.NamespaceCreate(c, gensql.ChartTypeNamespace, chartValues, form.Namespace); err != nil {
@@ -69,6 +67,48 @@ func CreateNamespace(c context.Context, repo *database.Repo, helmClient *helm.Cl
 	go helmClient.InstallOrUpgrade(c, string(chartType), form.Namespace, namespace)
 
 	return nil
+}
+
+func NamespaceAddJupyterhub(c context.Context, repo *database.Repo, helmClient *helm.Client, team string) error {
+	jupyterConfig := NamespaceJupyterhubConfig{
+		Enabled: true,
+	}
+
+	existing, err := repo.TeamValuesGet(c, gensql.ChartTypeNamespace, form.Namespace)
+	if err != nil {
+		return err
+	}
+	if len(existing) > 0 {
+		return fmt.Errorf("there already exists a namespace %v", form.Namespace)
+	}
+
+	formValues := reflect.ValueOf(jupyterConfig)
+	formFields := reflect.VisibleFields(reflect.TypeOf(jupyterConfig))
+	chartValues, err := createChartValues(formValues, formFields)
+	if err != nil {
+		return err
+	}
+
+	if err := repo.NamespaceUpdate(c, gensql.ChartTypeNamespace, chartValues, team); err != nil {
+		return err
+	}
+
+	googleClient := google.New()
+	googleClient.CreateSAWorkloadIdentityBinding(c, iamSA string, namespace string)
+
+	namespace := helmNS.NewNamespace(team, repo)
+	_, err = namespace.Chart(c)
+	if err != nil {
+		return err
+	}
+
+	go helmClient.InstallOrUpgrade(c, string(gensql.ChartTypeNamespace), team, namespace)
+
+	return nil
+}
+
+func currentConfig()  {
+
 }
 
 func createGCPResources(c context.Context, form *NamespaceForm, googleClient *google.Google) error {
@@ -95,4 +135,7 @@ func createGCPResources(c context.Context, form *NamespaceForm, googleClient *go
 	}
 
 	return nil
+}
+
+func CreateJupyterhubGCPResources(ctx context.Context) error {
 }

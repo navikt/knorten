@@ -113,3 +113,34 @@ func (g *Google) CreateUserSecretOwnerBindings(ctx context.Context, users []stri
 	}
 	return nil
 }
+
+func (g *Google) CreateSAWorkloadIdentityBinding(ctx context.Context, iamSA, namespace string) error {
+	service, err := iam.NewService(ctx)
+	if err != nil {
+		return err
+	}
+
+	resource := "projects/knada-gcp/serviceAccounts/" + iamSA
+
+	policy, err := service.Projects.ServiceAccounts.GetIamPolicy(resource).Do()
+	if err != nil {
+		return err
+	}
+	bindings := policy.Bindings
+	for _, b := range bindings {
+		if b.Role == "roles/iam.workloadIdentityUser" {
+			b.Members = append(b.Members, fmt.Sprintf("serviceAccount:knada-gcp.svc.id.goog[%v/%v]", namespace, namespace))
+		}
+	}
+
+	_, err = service.Projects.ServiceAccounts.SetIamPolicy(resource, &iam.SetIamPolicyRequest{
+		Policy: &iam.Policy{
+			Bindings: bindings,
+		},
+	}).Do()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

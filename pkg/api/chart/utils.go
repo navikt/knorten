@@ -8,6 +8,21 @@ import (
 	"strings"
 )
 
+func createChartValues(formValues reflect.Value, formFields []reflect.StructField) (map[string]string, error) {
+	chartValues := map[string]string{}
+	for _, field := range formFields {
+		value := formValues.FieldByName(field.Name)
+		valueString, err := reflectValueToString(value)
+		if err != nil {
+			return nil, err
+		}
+
+		chartValues[field.Tag.Get("helm")] = valueString
+	}
+
+	return chartValues, nil
+}
+
 func reflectValueToString(value reflect.Value) (string, error) {
 	valueString := ""
 	switch value.Type().Kind() {

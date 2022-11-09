@@ -22,7 +22,7 @@ func NewNamespace(team string, repo *database.Repo) *Namespace {
 }
 
 func (n *Namespace) Chart(ctx context.Context) (*chart.Chart, error) {
-	chart, err := helm.FetchChart("oci://europe-west1-docker.pkg.dev/knada-gcp/helm", "knada-namespace-setup", "0.1.3")
+	chart, err := helm.FetchChart("oci://europe-west1-docker.pkg.dev/knada-gcp/helm", "knada-namespace-setup", "0.1.4")
 	if err != nil {
 		return nil, err
 	}

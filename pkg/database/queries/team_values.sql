@@ -14,5 +14,6 @@ INSERT INTO chart_team_values (
 -- name: TeamValuesGet :many
 SELECT DISTINCT ON ("key") *
 FROM chart_team_values
-WHERE chart_type = @chart_type AND team = @team
+WHERE chart_type = @chart_type
+  AND team = @team
 ORDER BY "key", "created" DESC;

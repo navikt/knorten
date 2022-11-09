@@ -45,7 +45,7 @@ func (q *Queries) GlobalValuesGet(ctx context.Context, chartType ChartType) ([]C
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ChartGlobalValue{}
+	var items []ChartGlobalValue
 	for rows.Next() {
 		var i ChartGlobalValue
 		if err := rows.Scan(

@@ -5,13 +5,14 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/reflect"
 )
 
 type Airflow struct {
-	Namespace     string   `form:"namespace" binding:"required"`
-	Users         []string `form:"users[]" binding:"required"`
-	DagRepo       string   `form:"repo" binding:"required"`
-	DagRepoBranch string   `form:"branch"`
+	Namespace     string   `form:"namespace" binding:"required" helm:"namespace"`
+	Users         []string `form:"users[]" binding:"required" helm:"users"`
+	DagRepo       string   `form:"repo" binding:"required" helm:"dags.gitSync.repo"`
+	DagRepoBranch string   `form:"branch" helm:"dags.gitSync.branch"`
 }
 
 func CreateAirflow(c *gin.Context, repo *database.Repo, chartType gensql.ChartType) error {
@@ -21,24 +22,25 @@ func CreateAirflow(c *gin.Context, repo *database.Repo, chartType gensql.ChartTy
 		return err
 	}
 
+	if form.DagRepoBranch == "" {
+		form.DagRepoBranch = "main"
+	}
+
+	chartValues, err := reflect.CreateChartValues(form)
+	if err != nil {
+		return err
+	}
+
+	err = repo.ApplicationCreate(c, gensql.ChartTypeJupyterhub, chartValues, form.Namespace, form.Users)
+	if err != nil {
+		return err
+	}
+
 	for _, user := range form.Users {
 		err = repo.UserAppInsert(c, user, form.Namespace, chartType)
 		if err != nil {
 			return err
 		}
-	}
-
-	err = repo.TeamChartValueInsert(c, "dags.gitSync.repo", form.DagRepo, form.Namespace, chartType)
-	if err != nil {
-		return err
-	}
-
-	if form.DagRepoBranch == "" {
-		form.DagRepoBranch = "main"
-	}
-	err = repo.TeamChartValueInsert(c, "dags.gitSync.branch", form.DagRepoBranch, form.Namespace, chartType)
-	if err != nil {
-		return err
 	}
 
 	return nil

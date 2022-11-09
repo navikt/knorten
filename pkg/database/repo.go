@@ -93,8 +93,7 @@ func (r *Repo) TeamConfigurableValuesGet(ctx context.Context, chartType gensql.C
 	})
 
 	var configurableValues JupyterConfigurableValues
-	for i, value := range teamValues {
-		fmt.Println(i, value)
+	for _, value := range teamValues {
 		switch value.Key {
 		case "singleuser.cpu.limit":
 			configurableValues.CPULimit = value.Value

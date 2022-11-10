@@ -18,7 +18,7 @@ VALUES ($1,
         $2,
         $3,
         $4)
-ON CONFLICT DO NOTHING
+ON CONFLICT DO UPDATE SET value = $2
 `
 
 type TeamValueInsertParams struct {
@@ -57,7 +57,7 @@ func (q *Queries) TeamValuesGet(ctx context.Context, arg TeamValuesGetParams) ([
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ChartTeamValue
+	items := []ChartTeamValue{}
 	for rows.Next() {
 		var i ChartTeamValue
 		if err := rows.Scan(

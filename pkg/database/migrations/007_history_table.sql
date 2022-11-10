@@ -56,13 +56,7 @@ ALTER TABLE users
 ALTER TABLE chart_team_values
     ADD CONSTRAINT new_value UNIQUE (key, value, chart_type, team);
 
-ALTER TABLE chart_team_values
-    ADD COLUMN "created" TIMESTAMPTZ DEFAULT NOW();
-
 -- +goose Down
-ALTER TABLE chart_team_values
-    DROP COLUMN "created";
-
 ALTER TABLE chart_team_values
     DROP CONSTRAINT new_value;
 

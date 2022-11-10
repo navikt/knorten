@@ -73,6 +73,18 @@ type ChartTeamValue struct {
 	Team      string
 }
 
+type ChartValuesHistory struct {
+	ID        int32
+	Tstamp    sql.NullTime
+	TableName sql.NullString
+	Operation sql.NullString
+	Team      sql.NullString
+	ChartType NullChartType
+	Key       sql.NullString
+	NewValue  sql.NullString
+	OldValue  sql.NullString
+}
+
 type Session struct {
 	Token       string
 	AccessToken string

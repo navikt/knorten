@@ -5,17 +5,19 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/helm"
+	helmApps "github.com/nais/knorten/pkg/helm/applications"
 	"github.com/nais/knorten/pkg/reflect"
 )
 
 type Airflow struct {
-	Namespace     string   `form:"namespace" binding:"required" helm:"namespace"`
-	Users         []string `form:"users[]" binding:"required" helm:"users"`
+	Namespace     string   `form:"namespace" binding:"required"`
+	Users         []string `helm:"users"`
 	DagRepo       string   `form:"repo" binding:"required" helm:"dags.gitSync.repo"`
 	DagRepoBranch string   `form:"branch" helm:"dags.gitSync.branch"`
 }
 
-func CreateAirflow(c *gin.Context, repo *database.Repo, chartType gensql.ChartType) error {
+func CreateAirflow(c *gin.Context, repo *database.Repo, helmClient *helm.Client) error {
 	var form Airflow
 	err := c.ShouldBindWith(&form, binding.Form)
 	if err != nil {
@@ -35,6 +37,14 @@ func CreateAirflow(c *gin.Context, repo *database.Repo, chartType gensql.ChartTy
 	if err != nil {
 		return err
 	}
+
+	application := helmApps.NewAirflow(form.Namespace, repo)
+	_, err = application.Chart(c)
+	if err != nil {
+		return err
+	}
+
+	go helmClient.InstallOrUpgrade(c, string(gensql.ChartTypeAirflow), form.Namespace, application)
 
 	return nil
 }

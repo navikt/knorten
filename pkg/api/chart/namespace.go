@@ -8,21 +8,19 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	helmApps "github.com/nais/knorten/pkg/helm/applications"
 	"github.com/nais/knorten/pkg/reflect"
 
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/google"
 	"github.com/nais/knorten/pkg/helm"
-	helmNS "github.com/nais/knorten/pkg/helm/namespace"
 )
 
 type NamespaceForm struct {
 	// User config
 	Namespace string   `form:"team" binding:"required" helm:"namespace"`
 	Users     []string `form:"users[]" binding:"required"`
-
-	JupyterhubEnabled bool `helm:"jupyterhub.enabled"`
 
 	// Generated config
 	IAMServiceAccount string `helm:"iam.serviceAccount"`
@@ -56,13 +54,13 @@ func CreateNamespace(c *gin.Context, repo *database.Repo, helmClient *helm.Clien
 		return err
 	}
 
-	namespace := helmNS.NewNamespace(form.Namespace, repo)
-	_, err = namespace.Chart(c)
+	application := helmApps.NewNamespace(form.Namespace, repo)
+	_, err = application.Chart(c)
 	if err != nil {
 		return err
 	}
 
-	go helmClient.InstallOrUpgrade(c, string(chartType), form.Namespace, namespace)
+	go helmClient.InstallOrUpgrade(c, string(chartType), form.Namespace, application)
 
 	return nil
 }

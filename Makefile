@@ -36,7 +36,7 @@ local-offline:
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten
 
 generate-sql:
-	cd pkg && $(GOBIN)/sqlc generate
+	$(GOBIN)/sqlc generate
 
 install-sqlc:
 	go install github.com/kyleconroy/sqlc/cmd/sqlc@$(SQLC_VERSION)

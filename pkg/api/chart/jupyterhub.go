@@ -75,13 +75,13 @@ func installOrUpdateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *
 		return err
 	}
 
-	jupyterhub := helmApps.NewJupyterhub(form.Namespace, repo)
-	_, err = jupyterhub.Chart(c)
+	application := helmApps.NewJupyterhub(form.Namespace, repo)
+	_, err = application.Chart(c)
 	if err != nil {
 		return err
 	}
 
-	go helmClient.InstallOrUpgrade(c, string(gensql.ChartTypeJupyterhub), form.Namespace, jupyterhub)
+	go helmClient.InstallOrUpgrade(c, string(gensql.ChartTypeJupyterhub), form.Namespace, application)
 	return nil
 }
 

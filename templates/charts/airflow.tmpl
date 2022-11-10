@@ -7,28 +7,34 @@
             <h1>
                 Her kan du lage en ny Airflow, sier Knorten
             </h1>
+            {{ .values }}
             <form class="pure-form pure-form-stacked" action="" method="POST">
                 <div class="pure-control-group">
                     <label for="namespace">Namespace</label>
-                    <input type="text" name="namespace" id="namespace" placeholder="Små bokstaver med bindestrek"/>
+                    <input type="text" name="namespace" id="namespace" value="{{ .namespace }}"
+                           placeholder="Små bokstaver med bindestrek"/>
                 </div>
                 <fieldset class="pure-group" id="users">
                     <legend>Brukere</legend>
                     <button type="button" class="pure-button pure-button-primary" onClick="addElement()">Legg til flere
                         bruker
                     </button>
-                    <input type="email" name="users[]" class="pure-input-1-2" placeholder="E-post"/>
+                    {{ range .values.Users }}
+                        <input type="email" name="users[]" class="pure-input-1-2" value="{{ . }}" placeholder="E-post"/>
+                    {{ else }}
+                        <input type="email" name="users[]" class="pure-input-1-2" placeholder="E-post"/>
+                    {{ end }}
                 </fieldset>
 
                 <fieldset>
                     <legend>Tilpasninger</legend>
                     <div class="pure-control-group">
                         <label for="repo">DAG's repo</label>
-                        <input type="text" name="repo" id="repo" placeholder="navikt/dags"/>
+                        <input type="text" name="repo" id="repo" value="{{ .values.DagRepo }}" placeholder="navikt/dags"/>
                     </div>
                     <div class="pure-control-group">
                         <label for="branch">DAG's repo branch</label>
-                        <input type="text" name="branch" id="branch" placeholder="main"/>
+                        <input type="text" name="branch" id="branch" value="{{ .values.DagRepoBranch }}" placeholder="main"/>
                     </div>
                     <div class="pure-controls">
                         <button type="submit" class="pure-button pure-button-primary">Lagre</button>

@@ -2,6 +2,7 @@ package helm
 
 import (
 	"context"
+
 	"helm.sh/helm/v3/pkg/chart"
 
 	"github.com/nais/knorten/pkg/database"
@@ -36,7 +37,7 @@ func NewJupyterhub(team string, repo *database.Repo) *Application {
 		chartName:    "jupyterhub",
 		chartRepo:    "jupyterhub",
 		chartType:    gensql.ChartTypeJupyterhub,
-		chartVersion: "0.11.1",
+		chartVersion: "2.0.0",
 		team:         team,
 		repo:         repo,
 	}
@@ -47,7 +48,7 @@ func NewNamespace(team string, repo *database.Repo) *Application {
 		chartName:    "knada-namespace-setup",
 		chartRepo:    "oci://europe-west1-docker.pkg.dev/knada-gcp/helm",
 		chartType:    gensql.ChartTypeNamespace,
-		chartVersion: "0.1.3",
+		chartVersion: "0.1.10",
 		team:         team,
 		repo:         repo,
 	}

@@ -81,7 +81,10 @@ func installOrUpdateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *
 		return err
 	}
 
-	go helmClient.InstallOrUpgrade(c, string(gensql.ChartTypeJupyterhub), form.Namespace, application)
+	// Release name must be unique across namespaces as the helm chart creates a clusterrole
+	// for each jupyterhub with the same name as the release name.
+	releaseName := fmt.Sprintf("%v-%v", string(gensql.ChartTypeJupyterhub), form.Namespace)
+	go helmClient.InstallOrUpgrade(c, releaseName, form.Namespace, application)
 	return nil
 }
 
@@ -101,5 +104,5 @@ func addGeneratedJupyterhubConfig(values *JupyterForm) {
 	values.IngressTLS = fmt.Sprintf("[{\"hosts\":[\"%v\"], \"secretName\": \"%v\"}]", values.Namespace+".jupyter.knada.io", "jupyterhub-certificate")
 	values.ServiceAccount = values.Namespace
 	values.OAuthCallbackURL = fmt.Sprintf("https://%v.jupyter.knada.io/hub/oauth_callback", values.Namespace)
-	values.KnadaTeamSecret = fmt.Sprintf("projects/%v/secrets/%v", "knada-gcp", "team-"+values.Namespace)
+	values.KnadaTeamSecret = fmt.Sprintf("projects/%v/secrets/%v", "knada-gcp", values.Namespace)
 }

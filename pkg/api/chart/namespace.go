@@ -72,7 +72,6 @@ func UpdateNamespace(c *gin.Context, helmClient *helm.Client, repo *database.Rep
 		return err
 	}
 
-	// oppdatere alle services dersom users er endret
 	if err := repo.TeamUpdate(c, form.Namespace, form.Users); err != nil {
 		return err
 	}

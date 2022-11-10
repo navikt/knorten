@@ -131,9 +131,17 @@ func (g *Google) CreateSAWorkloadIdentityBinding(ctx context.Context, iamSA, nam
 		return err
 	}
 	bindings := policy.Bindings
+	if !updateRoleBindingIfExists(bindings, "roles/iam.workloadIdentityUser", namespace) {
+		// Create role binding if not exists
+		bindings = append(bindings, &iam.Binding{
+			Members: []string{fmt.Sprintf("serviceAccount:knada-gcp.svc.id.goog[%v/%v]", namespace, namespace)},
+			Role:    "roles/iam.workloadIdentityUser",
+		})
+	}
+
 	for _, b := range bindings {
 		if b.Role == "roles/iam.workloadIdentityUser" {
-			b.Members = append(b.Members, fmt.Sprintf("serviceAccount:knada-gcp.svc.id.goog[%v/default]", namespace))
+			b.Members = append(b.Members, fmt.Sprintf("serviceAccount:knada-gcp.svc.id.goog[%v/%v]", namespace, namespace))
 		}
 	}
 
@@ -147,4 +155,14 @@ func (g *Google) CreateSAWorkloadIdentityBinding(ctx context.Context, iamSA, nam
 	}
 
 	return nil
+}
+
+func updateRoleBindingIfExists(bindings []*iam.Binding, role, namespace string) bool {
+	for _, b := range bindings {
+		if b.Role == role {
+			b.Members = append(b.Members, fmt.Sprintf("serviceAccount:knada-gcp.svc.id.goog[%v/%v]", namespace, namespace))
+			return true
+		}
+	}
+	return false
 }

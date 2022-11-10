@@ -21,7 +21,7 @@ BEGIN
     IF TG_OP = 'INSERT'
     THEN
         INSERT INTO chart_values_history (table_name, operation, team, chart_type, key, new_value)
-        VALUES (TG_TABLE_NAME, TG_OP, NEW.team, NEW.chart_type, NEW.key, NEw.value);
+        VALUES (TG_TABLE_NAME, TG_OP, NEW.team, NEW.chart_type, NEW.key, NEW.value);
         RETURN NEW;
     ELSIF TG_OP = 'UPDATE'
     THEN
@@ -44,20 +44,12 @@ CREATE TRIGGER values_history
     FOR EACH ROW
 EXECUTE PROCEDURE change_trigger();
 
-CREATE TRIGGER values_history
-    BEFORE INSERT OR UPDATE OR DELETE
-    ON chart_global_values
-    FOR EACH ROW
-EXECUTE PROCEDURE change_trigger();
-
 ALTER TABLE chart_team_values
     ADD CONSTRAINT new_value UNIQUE (key, value, chart_type, team);
 
 -- +goose Down
 ALTER TABLE chart_team_values
     DROP CONSTRAINT new_value;
-
-DROP TRIGGER values_history on chart_global_values;
 
 DROP TRIGGER values_history on chart_team_values;
 

@@ -90,9 +90,5 @@ func (h *Client) InstallOrUpgrade(ctx context.Context, releaseName, namespace st
 		}
 	}
 
-	if err := h.repo.UserAppSetReady(ctx, namespace, true); err != nil {
-		return err
-	}
-
 	return nil
 }

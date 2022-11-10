@@ -31,16 +31,9 @@ func CreateAirflow(c *gin.Context, repo *database.Repo, chartType gensql.ChartTy
 		return err
 	}
 
-	err = repo.ApplicationCreate(c, gensql.ChartTypeJupyterhub, chartValues, form.Namespace, form.Users)
+	err = repo.ServiceCreate(c, gensql.ChartTypeJupyterhub, chartValues, form.Namespace)
 	if err != nil {
 		return err
-	}
-
-	for _, user := range form.Users {
-		err = repo.UserAppInsert(c, user, form.Namespace, chartType)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil

@@ -13,17 +13,6 @@
                     <input type="text" name="namespace" id="namespace" value="{{ .namespace }}"
                            placeholder="Små bokstaver med bindestrek"/>
                 </div>
-                <fieldset class="pure-group" id="users">
-                    <legend>Brukere</legend>
-                    <button type="button" class="pure-button pure-button-primary" onClick="addElement()">Legg til flere
-                        bruker
-                    </button>
-                    {{ range .values.AdminUsers }}
-                        <input type="email" name="users[]" class="pure-input-1-2" value="{{ . }}" placeholder="E-post"/>
-                    {{ else }}
-                        <input type="email" name="users[]" class="pure-input-1-2" placeholder="E-post"/>
-                    {{ end }}
-                </fieldset>
 
                 <fieldset>
                     <legend>Tilpasninger</legend>

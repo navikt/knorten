@@ -2,6 +2,7 @@ package chart
 
 import (
 	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/database"
@@ -17,24 +18,24 @@ type JupyterForm struct {
 }
 
 type JupyterConfigurableValues struct {
-	AdminUsers      []string `form:"users[]" binding:"required" helm:"hub.config.Authenticator.admin_users"`
-	AllowedUsers    []string `form:"users[]" binding:"required" helm:"hub.config.Authenticator.allowed_users"`
-	CPULimit        string   `form:"cpu" helm:"singleuser.cpu.limit"`
-	CPUGuarantee    string   `form:"cpu" helm:"singleuser.cpu.guarantee"`
-	MemoryLimit     string   `form:"memory" helm:"singleuser.memory.limit"`
-	MemoryGuarantee string   `form:"memory" helm:"singleuser.memory.guarantee"`
+	CPULimit        string `form:"cpu" helm:"singleuser.cpu.limit"`
+	CPUGuarantee    string `form:"cpu" helm:"singleuser.cpu.guarantee"`
+	MemoryLimit     string `form:"memory" helm:"singleuser.memory.limit"`
+	MemoryGuarantee string `form:"memory" helm:"singleuser.memory.guarantee"`
 }
 
 type JupyterValues struct {
 	JupyterConfigurableValues
 
 	// Generated config
-	ProxyToken       string `helm:"proxy.secretToken"`
-	Hosts            string `helm:"ingress.hosts"`
-	IngressTLS       string `helm:"ingress.tls"`
-	ServiceAccount   string `helm:"singleuser.serviceAccountName"`
-	OAuthCallbackURL string `helm:"hub.config.AzureAdOAuthenticator.oauth_callback_url"`
-	KnadaTeamSecret  string `helm:"singleuser.extraEnv.KNADA_TEAM_SECRET"`
+	AdminUsers       []string `helm:"hub.config.Authenticator.admin_users"`
+	AllowedUsers     []string `helm:"hub.config.Authenticator.allowed_users"`
+	ProxyToken       string   `helm:"proxy.secretToken"`
+	Hosts            string   `helm:"ingress.hosts"`
+	IngressTLS       string   `helm:"ingress.tls"`
+	ServiceAccount   string   `helm:"singleuser.serviceAccountName"`
+	OAuthCallbackURL string   `helm:"hub.config.AzureAdOAuthenticator.oauth_callback_url"`
+	KnadaTeamSecret  string   `helm:"singleuser.extraEnv.KNADA_TEAM_SECRET"`
 }
 
 func CreateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *helm.Client) error {
@@ -43,6 +44,13 @@ func CreateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *helm.Clie
 	if err != nil {
 		return err
 	}
+
+	team, err := repo.TeamGet(c, form.Namespace)
+	if err != nil {
+		return err
+	}
+	form.AdminUsers = team.Users
+	form.AllowedUsers = team.Users
 
 	existing, err := repo.TeamValuesGet(c, gensql.ChartTypeJupyterhub, form.Namespace)
 	if err != nil {
@@ -62,7 +70,7 @@ func installOrUpdateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *
 		return err
 	}
 
-	err = repo.ApplicationCreate(c, gensql.ChartTypeJupyterhub, chartValues, form.Namespace, form.AllowedUsers)
+	err = repo.ServiceCreate(c, gensql.ChartTypeJupyterhub, chartValues, form.Namespace)
 	if err != nil {
 		return err
 	}

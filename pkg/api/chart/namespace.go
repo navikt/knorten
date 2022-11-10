@@ -2,6 +2,8 @@ package chart
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -18,7 +20,9 @@ import (
 type NamespaceForm struct {
 	// User config
 	Namespace string   `form:"team" binding:"required" helm:"namespace"`
-	Users     []string `form:"users[]" binding:"required" helm:"users"`
+	Users     []string `form:"users[]" binding:"required"`
+
+	JupyterhubEnabled bool `helm:"jupyterhub.enabled"`
 
 	// Generated config
 	IAMServiceAccount string `helm:"iam.serviceAccount"`
@@ -34,12 +38,9 @@ func CreateNamespace(c *gin.Context, repo *database.Repo, helmClient *helm.Clien
 		return err
 	}
 
-	existing, err := repo.TeamValuesGet(c, gensql.ChartTypeNamespace, form.Namespace)
-	if err != nil {
-		return err
-	}
-	if len(existing) > 0 {
-		return fmt.Errorf("there already exists a namespace %v", form.Namespace)
+	_, err = repo.TeamGet(c, form.Namespace)
+	if !errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("there already exists a team %v", form.Namespace)
 	}
 
 	if err := createGCPResources(c, &form, googleClient); err != nil {
@@ -51,7 +52,7 @@ func CreateNamespace(c *gin.Context, repo *database.Repo, helmClient *helm.Clien
 		return err
 	}
 
-	if err := repo.ApplicationCreate(c, gensql.ChartTypeNamespace, chartValues, form.Namespace, form.Users); err != nil {
+	if err := repo.TeamCreate(c, chartValues, form.Namespace, form.Users); err != nil {
 		return err
 	}
 
@@ -66,19 +67,30 @@ func CreateNamespace(c *gin.Context, repo *database.Repo, helmClient *helm.Clien
 	return nil
 }
 
-func UpdateNamespace(c *gin.Context, repo *database.Repo) error {
+func UpdateNamespace(c *gin.Context, helmClient *helm.Client, repo *database.Repo) error {
 	var form NamespaceForm
 	err := c.ShouldBindWith(&form, binding.Form)
 	if err != nil {
 		return err
 	}
 
-	chartValues, err := reflect.CreateChartValues(form)
-	if err != nil {
+	// oppdatere alle services dersom users er endret
+	if err := repo.TeamUpdate(c, form.Namespace, form.Users); err != nil {
 		return err
 	}
 
-	return repo.ApplicationCreate(c, gensql.ChartTypeNamespace, chartValues, form.Namespace, form.Users)
+	jupyterForm := JupyterForm{}
+	if err := repo.TeamConfigurableValuesGet(c, gensql.ChartTypeNamespace, form.Namespace, &jupyterForm.JupyterValues); err != nil {
+		return err
+	}
+	jupyterForm.AdminUsers = form.Users
+	jupyterForm.AllowedUsers = form.Users
+
+	if err := installOrUpdateJupyterhub(c, repo, helmClient, jupyterForm); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func createGCPResources(c context.Context, form *NamespaceForm, googleClient *google.Google) error {

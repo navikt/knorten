@@ -16,9 +16,9 @@ import (
 type ChartType string
 
 const (
+	ChartTypeNamespace  ChartType = "namespace"
 	ChartTypeJupyterhub ChartType = "jupyterhub"
 	ChartTypeAirflow    ChartType = "airflow"
-	ChartTypeNamespace  ChartType = "namespace"
 )
 
 func (e *ChartType) Scan(src interface{}) error {
@@ -82,11 +82,8 @@ type Session struct {
 	Expires     time.Time
 }
 
-type User struct {
-	ID        uuid.UUID
-	Created   sql.NullTime
-	Email     string
-	Team      string
-	ChartType ChartType
-	Ready     bool
+type Team struct {
+	Team    string
+	Users   []string
+	Created sql.NullTime
 }

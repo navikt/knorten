@@ -9,6 +9,40 @@ import (
 	"context"
 )
 
+const appsForTeamGet = `-- name: AppsForTeamGet :many
+SELECT DISTINCT ON (chart_type) chart_type, team
+FROM chart_team_values
+WHERE team = $1
+`
+
+type AppsForTeamGetRow struct {
+	ChartType ChartType
+	Team      string
+}
+
+func (q *Queries) AppsForTeamGet(ctx context.Context, team string) ([]AppsForTeamGetRow, error) {
+	rows, err := q.db.QueryContext(ctx, appsForTeamGet, team)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AppsForTeamGetRow{}
+	for rows.Next() {
+		var i AppsForTeamGetRow
+		if err := rows.Scan(&i.ChartType, &i.Team); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const teamValueInsert = `-- name: TeamValueInsert :exec
 INSERT INTO chart_team_values ("key",
                                "value",
@@ -18,7 +52,6 @@ VALUES ($1,
         $2,
         $3,
         $4)
-ON CONFLICT DO NOTHING
 `
 
 type TeamValueInsertParams struct {
@@ -57,7 +90,7 @@ func (q *Queries) TeamValuesGet(ctx context.Context, arg TeamValuesGetParams) ([
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ChartTeamValue
+	items := []ChartTeamValue{}
 	for rows.Next() {
 		var i ChartTeamValue
 		if err := rows.Scan(
@@ -68,6 +101,41 @@ func (q *Queries) TeamValuesGet(ctx context.Context, arg TeamValuesGetParams) ([
 			&i.ChartType,
 			&i.Team,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const teamsGet = `-- name: TeamsGet :many
+SELECT "team", "key", "value"
+FROM chart_team_values
+WHERE chart_type = 'namespace' AND key = 'users'
+`
+
+type TeamsGetRow struct {
+	Team  string
+	Key   string
+	Value string
+}
+
+func (q *Queries) TeamsGet(ctx context.Context) ([]TeamsGetRow, error) {
+	rows, err := q.db.QueryContext(ctx, teamsGet)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []TeamsGetRow{}
+	for rows.Next() {
+		var i TeamsGetRow
+		if err := rows.Scan(&i.Team, &i.Key, &i.Value); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

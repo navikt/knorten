@@ -92,23 +92,22 @@ func (a *API) setupAuthenticatedRoutes() {
 			user = anyUser.(*auth.User)
 		}
 
-		get, err := a.repo.UserAppsGet(c, user.Email)
-		if err != nil {
-			return
-		}
+		get, err := a.repo.ServicesForUser(c, user.Email)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 		var services []Service
-		for _, row := range get {
-			services = append(services, Service{
-				App:            string(row.ChartType),
-				Ingress:        createIngress(row.Team, row.ChartType),
-				Namespace:      row.Team,
-				Secret:         fmt.Sprintf("https://console.cloud.google.com/security/secret-manager/secret/%v/versions?project=knada-gcp", row.Team),
-				ServiceAccount: fmt.Sprintf("%v@knada-gcp.iam.gserviceaccount.com", row.Team),
-			})
+		for team, apps := range get {
+			for _, a := range apps {
+				services = append(services, Service{
+					App:            string(a),
+					Ingress:        createIngress(team, a),
+					Namespace:      team,
+					Secret:         fmt.Sprintf("https://console.cloud.google.com/security/secret-manager/secret/%v/versions?project=knada-gcp", team),
+					ServiceAccount: fmt.Sprintf("%v@knada-gcp.iam.gserviceaccount.com", team),
+				})
+			}
 		}
 		c.HTML(http.StatusOK, "user/index.tmpl", gin.H{
 			"user":   c.Param("logged in user"),
@@ -149,7 +148,7 @@ func (a *API) setupAuthenticatedRoutes() {
 	})
 
 	a.router.POST("/team/:team/edit", func(c *gin.Context) {
-		err := chart.UpdateNamespace(c, a.repo)
+		err := chart.UpdateNamespace(c, a.helmClient, a.repo)
 		if err != nil {
 			fmt.Println(err)
 			team := c.Param("team")

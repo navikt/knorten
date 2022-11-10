@@ -6,8 +6,7 @@ INSERT INTO chart_team_values ("key",
 VALUES (@key,
         @value,
         @team,
-        @chart_type)
-ON CONFLICT DO UPDATE SET value = @value;
+        @chart_type);
 
 -- name: TeamValuesGet :many
 SELECT DISTINCT ON ("key") *
@@ -15,3 +14,13 @@ FROM chart_team_values
 WHERE chart_type = @chart_type
   AND team = @team
 ORDER BY "key", "created" DESC;
+
+-- name: TeamsGet :many
+SELECT "team", "key", "value"
+FROM chart_team_values
+WHERE chart_type = 'namespace' AND key = 'users';
+
+-- name: AppsForTeamGet :many
+SELECT DISTINCT ON (chart_type) chart_type, team
+FROM chart_team_values
+WHERE team = @team;

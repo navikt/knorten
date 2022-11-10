@@ -59,7 +59,7 @@ func (q *Queries) UserAppsGet(ctx context.Context, email string) ([]UserAppsGetR
 		return nil, err
 	}
 	defer rows.Close()
-	var items []UserAppsGetRow
+	items := []UserAppsGetRow{}
 	for rows.Next() {
 		var i UserAppsGetRow
 		if err := rows.Scan(&i.Team, &i.ChartType); err != nil {

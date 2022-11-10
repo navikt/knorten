@@ -133,7 +133,7 @@ func (g *Google) CreateSAWorkloadIdentityBinding(ctx context.Context, iamSA, nam
 	bindings := policy.Bindings
 	for _, b := range bindings {
 		if b.Role == "roles/iam.workloadIdentityUser" {
-			b.Members = append(b.Members, fmt.Sprintf("serviceAccount:knada-gcp.svc.id.goog[%v/%v]", namespace, namespace))
+			b.Members = append(b.Members, fmt.Sprintf("serviceAccount:knada-gcp.svc.id.goog[%v/default]", namespace))
 		}
 	}
 

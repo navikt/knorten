@@ -118,5 +118,9 @@ func createGCPResources(c context.Context, form *NamespaceForm, googleClient *go
 		return err
 	}
 
+	if err := googleClient.CreateSAWorkloadIdentityBinding(c, iamSA.Email, form.Namespace); err != nil {
+		return err
+	}
+
 	return nil
 }

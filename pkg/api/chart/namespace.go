@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	helmApps "github.com/nais/knorten/pkg/helm/applications"
 	"github.com/nais/knorten/pkg/reflect"
 
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/google"
 	"github.com/nais/knorten/pkg/helm"
-	helmNS "github.com/nais/knorten/pkg/helm/namespace"
 )
 
 type NamespaceForm struct {
@@ -54,13 +54,13 @@ func CreateNamespace(c *gin.Context, repo *database.Repo, helmClient *helm.Clien
 		return err
 	}
 
-	namespace := helmNS.NewNamespace(form.Namespace, repo)
-	_, err = namespace.Chart(c)
+	application := helmApps.NewNamespace(form.Namespace, repo)
+	_, err = application.Chart(c)
 	if err != nil {
 		return err
 	}
 
-	go helmClient.InstallOrUpgrade(c, string(chartType), form.Namespace, namespace)
+	go helmClient.InstallOrUpgrade(c, string(chartType), form.Namespace, application)
 
 	return nil
 }

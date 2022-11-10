@@ -5,6 +5,8 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/helm"
+	helmApps "github.com/nais/knorten/pkg/helm/applications"
 	"github.com/nais/knorten/pkg/reflect"
 )
 
@@ -15,7 +17,7 @@ type Airflow struct {
 	DagRepoBranch string   `form:"branch" helm:"dags.gitSync.branch"`
 }
 
-func CreateAirflow(c *gin.Context, repo *database.Repo, chartType gensql.ChartType) error {
+func CreateAirflow(c *gin.Context, repo *database.Repo, helmClient *helm.Client) error {
 	var form Airflow
 	err := c.ShouldBindWith(&form, binding.Form)
 	if err != nil {
@@ -31,17 +33,25 @@ func CreateAirflow(c *gin.Context, repo *database.Repo, chartType gensql.ChartTy
 		return err
 	}
 
-	err = repo.ApplicationCreate(c, gensql.ChartTypeJupyterhub, chartValues, form.Namespace, form.Users)
+	err = repo.ApplicationCreate(c, gensql.ChartTypeAirflow, chartValues, form.Namespace, form.Users)
 	if err != nil {
 		return err
 	}
 
 	for _, user := range form.Users {
-		err = repo.UserAppInsert(c, user, form.Namespace, chartType)
+		err = repo.UserAppInsert(c, user, form.Namespace, gensql.ChartTypeAirflow)
 		if err != nil {
 			return err
 		}
 	}
+
+	application := helmApps.NewAirflow(form.Namespace, repo)
+	_, err = application.Chart(c)
+	if err != nil {
+		return err
+	}
+
+	go helmClient.InstallOrUpgrade(c, string(gensql.ChartTypeAirflow), form.Namespace, application)
 
 	return nil
 }

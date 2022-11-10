@@ -179,7 +179,7 @@ func (a *API) setupAuthenticatedRoutes() {
 		case gensql.ChartTypeJupyterhub:
 			err = chart.CreateJupyterhub(c, a.repo, a.helmClient)
 		case gensql.ChartTypeAirflow:
-			err = chart.CreateAirflow(c, a.repo, chartType)
+			err = chart.CreateAirflow(c, a.repo, a.helmClient)
 		}
 
 		if err != nil {
@@ -199,7 +199,7 @@ func (a *API) setupAuthenticatedRoutes() {
 		case gensql.ChartTypeJupyterhub:
 			form = &chart.JupyterConfigurableValues{}
 		case gensql.ChartTypeAirflow:
-			form = &chart.JupyterConfigurableValues{}
+			form = &chart.Airflow{}
 		}
 
 		err := a.repo.TeamConfigurableValuesGet(c, chartType, namespace, form)
@@ -221,7 +221,7 @@ func (a *API) setupAuthenticatedRoutes() {
 		case gensql.ChartTypeJupyterhub:
 			err = chart.UpdateJupyterhub(c, a.repo, a.helmClient)
 		case gensql.ChartTypeAirflow:
-			err = chart.CreateAirflow(c, a.repo, chartType)
+			err = chart.CreateAirflow(c, a.repo, a.helmClient)
 		}
 
 		if err != nil {

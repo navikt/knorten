@@ -37,7 +37,7 @@ func NewJupyterhub(team string, repo *database.Repo) *Application {
 		chartName:    "jupyterhub",
 		chartRepo:    "jupyterhub",
 		chartType:    gensql.ChartTypeJupyterhub,
-		chartVersion: "2.0.0",
+		chartVersion: "0.11.1",
 		team:         team,
 		repo:         repo,
 	}

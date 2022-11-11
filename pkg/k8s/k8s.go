@@ -21,7 +21,9 @@ type Client struct {
 }
 
 func New(dryRun, inCluster bool) (*Client, error) {
-	client := &Client{}
+	client := &Client{
+		dryRun: dryRun,
+	}
 
 	config, err := createConfig(inCluster)
 	if err != nil {

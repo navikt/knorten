@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 

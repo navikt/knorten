@@ -74,5 +74,10 @@ func ParseString(value any) (any, error) {
 		return d, nil
 	}
 
-	return valueString, nil
+	return removeQuotations(valueString), nil
+}
+
+func removeQuotations(s string) string {
+	s = strings.TrimPrefix(s, "\"")
+	return strings.TrimSuffix(s, "\"")
 }

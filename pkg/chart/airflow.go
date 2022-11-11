@@ -44,7 +44,7 @@ func CreateAirflow(c *gin.Context, repo *database.Repo, helmClient *helm.Client)
 		return err
 	}
 
-	go helmClient.InstallOrUpgrade(c, string(gensql.ChartTypeAirflow), form.Namespace, application)
+	go helmClient.InstallOrUpgrade(string(gensql.ChartTypeAirflow), form.Namespace, application)
 
 	return nil
 }

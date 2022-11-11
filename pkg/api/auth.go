@@ -26,7 +26,7 @@ const (
 	sessionLength     time.Duration = 7 * time.Hour
 )
 
-func (a *API) Login(c *gin.Context) string {
+func (a *API) login(c *gin.Context) string {
 	host, _, err := net.SplitHostPort(c.Request.Host)
 	if err != nil {
 		host = c.Request.Host
@@ -57,7 +57,7 @@ func (a *API) Login(c *gin.Context) string {
 	return a.oauth2.AuthCodeURL(oauthState)
 }
 
-func (a *API) Callback(c *gin.Context) (string, error) {
+func (a *API) callback(c *gin.Context) (string, error) {
 	host, _, err := net.SplitHostPort(c.Request.Host)
 	if err != nil {
 		host = c.Request.Host
@@ -147,7 +147,7 @@ func (a *API) Callback(c *gin.Context) (string, error) {
 	return loginPage, nil
 }
 
-func (a *API) Logout(c *gin.Context) (string, error) {
+func (a *API) logout(c *gin.Context) (string, error) {
 	host, _, err := net.SplitHostPort(c.Request.Host)
 	if err != nil {
 		host = c.Request.Host
@@ -219,4 +219,30 @@ func (a *API) authMiddleware() gin.HandlerFunc {
 		c.Set("user", user)
 		c.Next()
 	}
+}
+
+func (a *API) setupAuthRoutes() {
+
+	a.router.GET("/oauth2/login", func(c *gin.Context) {
+		fmt.Println("login")
+		consentURL := a.login(c)
+		c.Redirect(http.StatusSeeOther, consentURL)
+	})
+
+	a.router.GET("/oauth2/callback", func(c *gin.Context) {
+		redirectURL, err := a.callback(c)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+
+		c.Redirect(http.StatusSeeOther, redirectURL)
+	})
+
+	a.router.GET("/oauth2/logout", func(c *gin.Context) {
+		redirectURL, err := a.logout(c)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+		c.Redirect(http.StatusSeeOther, redirectURL)
+	})
 }

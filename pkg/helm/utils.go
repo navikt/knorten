@@ -19,7 +19,7 @@ func KeySplitHandleEscape(key string) []string {
 		return r == '.'
 	})
 
-	keysWithoutEscape := []string{}
+	var keysWithoutEscape []string
 	for _, k := range keys {
 		keysWithoutEscape = append(keysWithoutEscape, strings.ReplaceAll(k, "\\", ""))
 	}

@@ -1,6 +1,8 @@
 package chart
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -84,7 +86,7 @@ func installOrUpdateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *
 	// Release name must be unique across namespaces as the helm chart creates a clusterrole
 	// for each jupyterhub with the same name as the release name.
 	releaseName := fmt.Sprintf("%v-%v", string(gensql.ChartTypeJupyterhub), form.Namespace)
-	go helmClient.InstallOrUpgrade(c, releaseName, form.Namespace, application)
+	go helmClient.InstallOrUpgrade(releaseName, form.Namespace, application)
 	return nil
 }
 
@@ -96,6 +98,14 @@ func UpdateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *helm.Clie
 	}
 
 	return installOrUpdateJupyterhub(c, repo, helmClient, form)
+}
+
+func generateSecureToken(length int) string {
+	b := make([]byte, length)
+	if _, err := rand.Read(b); err != nil {
+		return ""
+	}
+	return hex.EncodeToString(b)
 }
 
 func addGeneratedJupyterhubConfig(values *JupyterForm) {

@@ -60,7 +60,7 @@ func CreateNamespace(c *gin.Context, repo *database.Repo, helmClient *helm.Clien
 		return err
 	}
 
-	go helmClient.InstallOrUpgrade(c, string(chartType), form.Namespace, application)
+	go helmClient.InstallOrUpgrade(string(chartType), form.Namespace, application)
 
 	return nil
 }

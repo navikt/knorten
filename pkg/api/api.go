@@ -1,17 +1,12 @@
 package api
 
 import (
-	"fmt"
-	"net/http"
-	"strings"
-
 	"github.com/gin-gonic/gin"
-	"github.com/nais/knorten/pkg/api/chart"
 	"github.com/nais/knorten/pkg/auth"
 	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/helm"
 	"github.com/sirupsen/logrus"
+	"net/http"
 )
 
 type API struct {
@@ -60,197 +55,11 @@ func (a *API) setupUnauthenticatedRoutes() {
 		})
 	})
 
-	a.router.GET("/oauth2/login", func(c *gin.Context) {
-		fmt.Println("login")
-		consentURL := a.Login(c)
-		c.Redirect(http.StatusSeeOther, consentURL)
-	})
-
-	a.router.GET("/oauth2/callback", func(c *gin.Context) {
-		redirectURL, err := a.Callback(c)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		}
-
-		c.Redirect(http.StatusSeeOther, redirectURL)
-	})
-
-	a.router.GET("/oauth2/logout", func(c *gin.Context) {
-		redirectURL, err := a.Logout(c)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		c.Redirect(http.StatusSeeOther, redirectURL)
-	})
+	a.setupAuthRoutes()
 }
 
 func (a *API) setupAuthenticatedRoutes() {
-	a.router.GET("/user", func(c *gin.Context) {
-		var user *auth.User
-		anyUser, exists := c.Get("user")
-		if exists {
-			user = anyUser.(*auth.User)
-		}
-
-		get, err := a.repo.ServicesForUser(c, user.Email)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		var services []Service
-		for team, apps := range get {
-			for _, a := range apps {
-				services = append(services, Service{
-					App:            string(a),
-					Ingress:        createIngress(team, a),
-					Namespace:      team,
-					Secret:         fmt.Sprintf("https://console.cloud.google.com/security/secret-manager/secret/%v/versions?project=knada-gcp", team),
-					ServiceAccount: fmt.Sprintf("%v@knada-gcp.iam.gserviceaccount.com", team),
-				})
-			}
-		}
-		c.HTML(http.StatusOK, "user/index.tmpl", gin.H{
-			"user":   c.Param("logged in user"),
-			"charts": services,
-		})
-	})
-
-	a.router.GET("/team/new", func(c *gin.Context) {
-		var form chart.NamespaceForm
-		// err := c.ShouldBind(&form)
-		c.HTML(http.StatusOK, "charts/namespace.tmpl", gin.H{
-			"form": form,
-		})
-	})
-
-	a.router.POST("/team/new", func(c *gin.Context) {
-		err := chart.CreateNamespace(c, a.repo, a.helmClient, gensql.ChartTypeNamespace, a.dryRun)
-		if err != nil {
-			fmt.Println(err)
-			// c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			c.Redirect(http.StatusSeeOther, "/team/new")
-		}
-		c.Redirect(http.StatusSeeOther, "/user")
-	})
-
-	a.router.GET("/team/:team/edit", func(c *gin.Context) {
-		team := c.Param("team")
-		namespaceForm := &chart.NamespaceForm{}
-		err := a.repo.TeamConfigurableValuesGet(c, gensql.ChartTypeNamespace, team, namespaceForm)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		c.HTML(http.StatusOK, "charts/namespace.tmpl", gin.H{
-			"values": namespaceForm,
-			"team":   team,
-		})
-	})
-
-	a.router.POST("/team/:team/edit", func(c *gin.Context) {
-		err := chart.UpdateNamespace(c, a.helmClient, a.repo)
-		if err != nil {
-			fmt.Println(err)
-			team := c.Param("team")
-			// c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/new", team))
-			return
-		}
-		c.Redirect(http.StatusSeeOther, "/user")
-	})
-
-	a.router.GET("/chart/:chart/new", func(c *gin.Context) {
-		chartType := strings.ToLower(c.Param("chart"))
-		var form chart.JupyterForm
-		err := c.ShouldBind(&form)
-		fmt.Println(err)
-		fmt.Println(form)
-		c.HTML(http.StatusOK, fmt.Sprintf("charts/%v.tmpl", chartType), gin.H{
-			"form": form,
-		})
-	})
-
-	a.router.POST("/chart/:chart/new", func(c *gin.Context) {
-		chartType := getChartType(c.Param("chart"))
-		var err error
-
-		switch chartType {
-		case gensql.ChartTypeJupyterhub:
-			err = chart.CreateJupyterhub(c, a.repo, a.helmClient)
-		case gensql.ChartTypeAirflow:
-			err = chart.CreateAirflow(c, a.repo, a.helmClient)
-		}
-
-		if err != nil {
-			fmt.Println(err)
-			// c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/chart/%v/new", chartType))
-		}
-		c.Redirect(http.StatusSeeOther, "/user")
-	})
-
-	a.router.GET("/chart/:chart/:namespace/edit", func(c *gin.Context) {
-		chartType := getChartType(c.Param("chart"))
-		namespace := c.Param("namespace")
-		var form any
-
-		switch chartType {
-		case gensql.ChartTypeJupyterhub:
-			form = &chart.JupyterConfigurableValues{}
-		case gensql.ChartTypeAirflow:
-			form = &chart.Airflow{}
-		}
-
-		err := a.repo.TeamConfigurableValuesGet(c, chartType, namespace, form)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		c.HTML(http.StatusOK, fmt.Sprintf("charts/%v.tmpl", chartType), gin.H{
-			"values":    form,
-			"namespace": namespace,
-		})
-	})
-
-	a.router.POST("/chart/:chart/:namespace/edit", func(c *gin.Context) {
-		chartType := getChartType(c.Param("chart"))
-		var err error
-
-		switch chartType {
-		case gensql.ChartTypeJupyterhub:
-			err = chart.UpdateJupyterhub(c, a.repo, a.helmClient)
-		case gensql.ChartTypeAirflow:
-			err = chart.CreateAirflow(c, a.repo, a.helmClient)
-		}
-
-		if err != nil {
-			fmt.Println(err)
-			// c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			c.Redirect(http.StatusSeeOther, fmt.Sprintf("charts/%v.tmpl", chartType))
-			return
-		}
-		c.Redirect(http.StatusSeeOther, "/user")
-	})
-}
-
-func createIngress(team string, chartType gensql.ChartType) string {
-	switch chartType {
-	case gensql.ChartTypeJupyterhub:
-		return fmt.Sprintf("https://%v.jupyter.knada.io", team)
-	case gensql.ChartTypeAirflow:
-		return fmt.Sprintf("https://%v.airflow.knada.io", team)
-	}
-
-	return ""
-}
-
-func getChartType(chartType string) gensql.ChartType {
-	switch chartType {
-	case string(gensql.ChartTypeJupyterhub):
-		return gensql.ChartTypeJupyterhub
-	case string(gensql.ChartTypeAirflow):
-		return gensql.ChartTypeAirflow
-	default:
-		return ""
-	}
+	a.setupUserRoutes()
+	a.setupTeamRoutes()
+	a.setupChartRoutes()
 }

@@ -31,7 +31,7 @@ func New(repo *database.Repo, log *logrus.Entry, dryRun bool) *Client {
 	}
 }
 
-func (h *Client) InstallOrUpgrade(ctx context.Context, releaseName, namespace string, app Application) error {
+func (h *Client) InstallOrUpgrade(releaseName, namespace string, app Application) error {
 	if h.dryRun {
 		h.log.Infof("NOOP: Running in dry run mode")
 		return nil

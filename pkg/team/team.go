@@ -13,14 +13,14 @@ import (
 	"github.com/nais/knorten/pkg/k8s"
 )
 
-type TeamForm struct {
+type Form struct {
 	// User config
 	Team  string   `form:"team" binding:"required"`
 	Users []string `form:"users[]" binding:"required"`
 }
 
 func Create(c *gin.Context, repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client) error {
-	var form TeamForm
+	var form Form
 	err := c.ShouldBindWith(&form, binding.Form)
 	if err != nil {
 		return err
@@ -46,7 +46,7 @@ func Create(c *gin.Context, repo *database.Repo, googleClient *google.Google, k8
 	return nil
 }
 
-func createGCPResources(c context.Context, form *TeamForm, googleClient *google.Google) error {
+func createGCPResources(c context.Context, form *Form, googleClient *google.Google) error {
 	if googleClient.DryRun {
 		return nil
 	}

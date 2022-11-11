@@ -1,21 +1,25 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/nais/knorten/pkg/auth"
 	"github.com/nais/knorten/pkg/database"
+	"github.com/nais/knorten/pkg/google"
 	"github.com/nais/knorten/pkg/helm"
+	"github.com/nais/knorten/pkg/k8s"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 type API struct {
-	oauth2     *auth.Azure
-	router     *gin.Engine
-	helmClient *helm.Client
-	repo       *database.Repo
-	log        *logrus.Entry
-	dryRun     bool
+	oauth2       *auth.Azure
+	router       *gin.Engine
+	helmClient   *helm.Client
+	repo         *database.Repo
+	log          *logrus.Entry
+	googleClient *google.Google
+	k8sClient    *k8s.Client
 }
 
 type Service struct {
@@ -26,14 +30,15 @@ type Service struct {
 	ServiceAccount string
 }
 
-func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, log *logrus.Entry, dryRun bool) *API {
+func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, log *logrus.Entry) *API {
 	api := API{
-		oauth2:     oauth2,
-		helmClient: helmClient,
-		router:     gin.Default(),
-		repo:       repo,
-		log:        log,
-		dryRun:     dryRun,
+		oauth2:       oauth2,
+		helmClient:   helmClient,
+		router:       gin.Default(),
+		repo:         repo,
+		googleClient: googleClient,
+		k8sClient:    k8sClient,
+		log:          log,
 	}
 
 	api.router.Static("/assets", "./assets")

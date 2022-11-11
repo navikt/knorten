@@ -24,6 +24,7 @@ local:
 	  --oauth2-client-id=$(AZURE_APP_CLIENT_ID) \
 	  --oauth2-client-secret=$(AZURE_APP_CLIENT_SECRET) \
 	  --oauth2-tenant-id=$(AZURE_APP_TENANT_ID) \
+	  --in-cluster=false \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten
 
 local-offline:
@@ -33,6 +34,7 @@ local-offline:
 	  --oauth2-client-secret=$(AZURE_APP_CLIENT_SECRET) \
 	  --oauth2-tenant-id=$(AZURE_APP_TENANT_ID) \
 	  --dry-run \
+	  --in-cluster=false \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten
 
 generate-sql:

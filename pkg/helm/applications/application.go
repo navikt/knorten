@@ -43,17 +43,6 @@ func NewJupyterhub(team string, repo *database.Repo) *Application {
 	}
 }
 
-func NewNamespace(team string, repo *database.Repo) *Application {
-	return &Application{
-		chartName:    "knada-namespace-setup",
-		chartRepo:    "oci://europe-west1-docker.pkg.dev/knada-gcp/helm",
-		chartType:    gensql.ChartTypeNamespace,
-		chartVersion: "0.1.10",
-		team:         team,
-		repo:         repo,
-	}
-}
-
 func (a *Application) Chart(ctx context.Context) (*chart.Chart, error) {
 	chart, err := helm.FetchChart(a.chartRepo, a.chartName, a.chartVersion)
 	if err != nil {

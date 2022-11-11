@@ -70,7 +70,7 @@ func (h *Client) InstallOrUpgrade(releaseName, namespace string, app Application
 		h.log.Infof("Installing release %v", releaseName)
 		installClient := action.NewInstall(actionConfig)
 		installClient.Namespace = namespace
-		installClient.CreateNamespace = true
+		installClient.CreateNamespace = false
 		installClient.ReleaseName = releaseName
 
 		_, err = installClient.Run(hChart, hChart.Values)

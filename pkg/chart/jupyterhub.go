@@ -3,7 +3,10 @@ package chart
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"io/fs"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -78,9 +81,19 @@ func installOrUpdateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *
 	}
 
 	application := helmApps.NewJupyterhub(form.Namespace, repo)
-	_, err = application.Chart(c)
+	charty, err := application.Chart(c)
 	if err != nil {
 		return err
+	}
+
+	bytes, err := json.Marshal(charty)
+	if err != nil {
+		panic(err)
+	}
+
+	err = os.WriteFile("out.json", bytes, fs.ModeAppend)
+	if err != nil {
+		fmt.Println(err)
 	}
 
 	// Release name must be unique across namespaces as the helm chart creates a clusterrole

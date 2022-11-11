@@ -18,7 +18,7 @@ import (
 )
 
 type JupyterForm struct {
-	Namespace string `form:"namespace" binding:"required"`
+	Namespace string `form:"namespace"`
 	JupyterValues
 }
 
@@ -43,12 +43,14 @@ type JupyterValues struct {
 	KnadaTeamSecret  string   `helm:"singleuser.extraEnv.KNADA_TEAM_SECRET"`
 }
 
-func CreateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *helm.Client) error {
+func CreateJupyterhub(c *gin.Context, teamName string, repo *database.Repo, helmClient *helm.Client) error {
 	var form JupyterForm
 	err := c.ShouldBindWith(&form, binding.Form)
 	if err != nil {
 		return err
 	}
+
+	form.Namespace = teamName
 
 	team, err := repo.TeamGet(c, form.Namespace)
 	if err != nil {
@@ -103,12 +105,14 @@ func installOrUpdateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *
 	return nil
 }
 
-func UpdateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *helm.Client) error {
+func UpdateJupyterhub(c *gin.Context, teamName string, repo *database.Repo, helmClient *helm.Client) error {
 	var form JupyterForm
 	err := c.ShouldBindWith(&form, binding.Form)
 	if err != nil {
 		return err
 	}
+
+	form.Namespace = teamName
 
 	return installOrUpdateJupyterhub(c, repo, helmClient, form)
 }

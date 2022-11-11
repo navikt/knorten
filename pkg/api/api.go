@@ -56,7 +56,7 @@ func (a *API) Run() error {
 func (a *API) setupUnauthenticatedRoutes() {
 	a.router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.tmpl", gin.H{
-			"title": "Knorten",
+			"current": "home",
 		})
 	})
 

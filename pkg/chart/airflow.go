@@ -1,6 +1,7 @@
 package chart
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/database"
@@ -10,19 +11,21 @@ import (
 	"github.com/nais/knorten/pkg/reflect"
 )
 
-type Airflow struct {
-	Namespace     string   `form:"namespace" binding:"required"`
+type AirflowForm struct {
+	Namespace     string   `form:"namespace"`
 	Users         []string `helm:"users"`
 	DagRepo       string   `form:"repo" binding:"required" helm:"dags.gitSync.repo"`
 	DagRepoBranch string   `form:"branch" helm:"dags.gitSync.branch"`
 }
 
-func CreateAirflow(c *gin.Context, repo *database.Repo, helmClient *helm.Client) error {
-	var form Airflow
+func CreateAirflow(c *gin.Context, teamName string, repo *database.Repo, helmClient *helm.Client) error {
+	var form AirflowForm
 	err := c.ShouldBindWith(&form, binding.Form)
 	if err != nil {
 		return err
 	}
+
+	form.Namespace = teamName
 
 	if form.DagRepoBranch == "" {
 		form.DagRepoBranch = "main"
@@ -46,5 +49,10 @@ func CreateAirflow(c *gin.Context, repo *database.Repo, helmClient *helm.Client)
 
 	go helmClient.InstallOrUpgrade(string(gensql.ChartTypeAirflow), form.Namespace, application)
 
+	return nil
+}
+
+func UpdateAirflow(c *gin.Context, teamName string, repo *database.Repo, helmClient *helm.Client) error {
+	fmt.Println("NOOP")
 	return nil
 }

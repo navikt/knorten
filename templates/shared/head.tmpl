@@ -2,16 +2,41 @@
     <!doctype html>
     <html lang="en">
     <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="description" content="">
-        <title>Knorten</title>
+        <title>Knorten by nada</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
         <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon.ico">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/pure-min.css"
               integrity="sha384-X38yfunGUhNzHpBaEBsWLO+A0HDYOQi8ufWDkZ0k9e0eXz/tH3II7uKZ9msv++Ls"
               crossorigin="anonymous">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/grids-responsive-min.css">
         <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css">
+
         <link rel="stylesheet" href="/assets/styles.css">
+        <link rel="stylesheet" href="/assets/css/main.css" />
     </head>
+
+    <body>
+    <div id="page-wrapper">
+
+        <!-- Header -->
+        <div id="header-wrapper">
+            <header id="header" class="container">
+
+                <!-- Logo -->
+                <div id="logo">
+                    <h1>Knorten</h1>
+                    <span>by nada</span>
+                </div>
+
+                <!-- Nav -->
+                <nav id="nav">
+                    <ul>
+                        <li {{ if eq .current "home" }}class="current"{{ end }}><a href="/">Forside</a></li>
+                        <li {{ if eq .current "user" }}class="current"{{ end }}><a href="/user">teams</a></li>
+                    </ul>
+                </nav>
+
+            </header>
+        </div>
 {{ end }}

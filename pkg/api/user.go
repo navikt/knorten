@@ -27,17 +27,22 @@ func (a *API) setupUserRoutes() {
 			user = anyUser.(*auth.User)
 		}
 
+		fmt.Println(user)
 		get, err := a.repo.ServicesForUser(c, user.Email)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		var services []Service
+
+		fmt.Println(get)
+		services := map[string][]Service{}
 		for team, apps := range get {
-			for _, a := range apps {
-				services = append(services, Service{
-					App:            string(a),
-					Ingress:        createIngress(team, a),
+			fmt.Println(team, apps)
+			services[team] = []Service{}
+			for _, app := range apps {
+				services[team] = append(services[team], Service{
+					App:            string(app),
+					Ingress:        createIngress(team, app),
 					Namespace:      team,
 					Secret:         fmt.Sprintf("https://console.cloud.google.com/security/secret-manager/secret/%v/versions?project=knada-gcp", team),
 					ServiceAccount: fmt.Sprintf("%v@knada-gcp.iam.gserviceaccount.com", team),
@@ -45,8 +50,9 @@ func (a *API) setupUserRoutes() {
 			}
 		}
 		c.HTML(http.StatusOK, "user/index.tmpl", gin.H{
-			"user":   c.Param("logged in user"),
-			"charts": services,
+			"current": "user",
+			"user":    c.Param("logged in user"),
+			"charts":  services,
 		})
 	})
 }

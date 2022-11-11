@@ -1,66 +1,22 @@
 {{ define "index.tmpl" }}
-    {{ template "head" }}
-    <body>
-
-    <div class="splash-container">
-        <div class="splash">
-            <h1 class="splash-head">Hei, sier {{ .title }}</h1>
-            <p class="splash-subhead">
-                Lorem ipsum dolor sit amet, consectetur adipisicing elit.
-            </p>
-            <p>
-                <a href="/oauth2/login" class="pure-button pure-button-primary">Logg inn</a>
-            </p>
-        </div>
-    </div>
-
-    <div class="content-wrapper">
-        <div class="content">
-            <h2 class="content-head is-center">Excepteur sint occaecat cupidatat.</h2>
-
-            <div class="pure-g">
-                <div class="l-box pure-u-1 pure-u-md-1-2 pure-u-lg-1-4">
-
-                    <h3 class="content-subhead">
-                        <i class="fa fa-rocket"></i>
-                        Knada docs
-                    </h3>
-                    <p>
-                        Phasellus eget enim eu lectus faucibus vestibulum. Suspendisse sodales pellentesque elementum.
-                    </p>
+    {{ template "head" . }}
+    <div id="banner-wrapper">
+        <div id="banner" class="box container">
+            <div class="row">
+                <div class="col-7 col-12-medium">
+                    <h2>Hei, dette er Knorten</h2>
+                    <p>Kodebasert analyse i skyen!</p>
                 </div>
-                <div class="l-box pure-u-1 pure-u-md-1-2 pure-u-lg-1-4">
-                    <h3 class="content-subhead">
-                        <i class="fa fa-mobile"></i>
-                        Airflow
-                    </h3>
-                    <p>
-                        Phasellus eget enim eu lectus faucibus vestibulum. Suspendisse sodales pellentesque elementum.
-                    </p>
-                </div>
-                <div class="l-box pure-u-1 pure-u-md-1-2 pure-u-lg-1-4">
-                    <h3 class="content-subhead">
-                        <i class="fa fa-th-large"></i>
-                        Jupyter
-                    </h3>
-                    <p>
-                        Phasellus eget enim eu lectus faucibus vestibulum. Suspendisse sodales pellentesque elementum.
-                    </p>
-                </div>
-                <div class="l-box pure-u-1 pure-u-md-1-2 pure-u-lg-1-4">
-                    <h3 class="content-subhead">
-                        <i class="fa fa-check-square-o"></i>
-                        Datamarkedsplassen
-                    </h3>
-                    <p>
-                        Phasellus eget enim eu lectus faucibus vestibulum. Suspendisse sodales pellentesque elementum.
-                    </p>
+                <div class="col-5 col-12-medium">
+                    <ul>
+                        <li><a href="/oauth2/login" class="button large icon solid fa-arrow-circle-right">Logg inn</a>
+                        </li>
+                        <li><a href="https://docs.knada.io"
+                               class="button alt large icon solid fa-question-circle">Doks</a></li>
+                    </ul>
                 </div>
             </div>
         </div>
-
     </div>
-
-    </body>
-    </html>
+    {{ template "footer" }}
 {{ end }}

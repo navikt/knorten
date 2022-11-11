@@ -3,10 +3,9 @@ package api
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	chart2 "github.com/nais/knorten/pkg/chart"
+	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"net/http"
-	"strings"
 )
 
 func getChartType(chartType string) gensql.ChartType {
@@ -21,26 +20,35 @@ func getChartType(chartType string) gensql.ChartType {
 }
 
 func (a *API) setupChartRoutes() {
-	a.router.GET("/chart/:chart/new", func(c *gin.Context) {
-		chartType := strings.ToLower(c.Param("chart"))
-		var form chart2.JupyterForm
-		err := c.ShouldBind(&form)
-		fmt.Println(err)
-		fmt.Println(form)
+	a.router.GET("/:team/:chart/new", func(c *gin.Context) {
+		team := c.Param("team")
+		chartType := getChartType(c.Param("chart"))
+
+		var form any
+
+		switch chartType {
+		case gensql.ChartTypeJupyterhub:
+			form = chart.JupyterForm{}
+		case gensql.ChartTypeAirflow:
+			form = chart.AirflowForm{}
+		}
+
 		c.HTML(http.StatusOK, fmt.Sprintf("charts/%v.tmpl", chartType), gin.H{
+			"team": team,
 			"form": form,
 		})
 	})
 
-	a.router.POST("/chart/:chart/new", func(c *gin.Context) {
+	a.router.POST("/:team/:chart/new", func(c *gin.Context) {
+		team := c.Param("team")
 		chartType := getChartType(c.Param("chart"))
 		var err error
 
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
-			err = chart2.CreateJupyterhub(c, a.repo, a.helmClient)
+			err = chart.CreateJupyterhub(c, team, a.repo, a.helmClient)
 		case gensql.ChartTypeAirflow:
-			err = chart2.CreateAirflow(c, a.repo, a.helmClient)
+			err = chart.CreateAirflow(c, team, a.repo, a.helmClient)
 		}
 
 		if err != nil {
@@ -51,38 +59,39 @@ func (a *API) setupChartRoutes() {
 		c.Redirect(http.StatusSeeOther, "/user")
 	})
 
-	a.router.GET("/chart/:chart/:namespace/edit", func(c *gin.Context) {
+	a.router.GET("/:team/:chart/edit", func(c *gin.Context) {
+		team := c.Param("team")
 		chartType := getChartType(c.Param("chart"))
-		namespace := c.Param("namespace")
 		var form any
 
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
-			form = &chart2.JupyterConfigurableValues{}
+			form = &chart.JupyterConfigurableValues{}
 		case gensql.ChartTypeAirflow:
-			form = &chart2.Airflow{}
+			form = &chart.AirflowForm{}
 		}
 
-		err := a.repo.TeamConfigurableValuesGet(c, chartType, namespace, form)
+		err := a.repo.TeamConfigurableValuesGet(c, chartType, team, form)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 		c.HTML(http.StatusOK, fmt.Sprintf("charts/%v.tmpl", chartType), gin.H{
-			"values":    form,
-			"namespace": namespace,
+			"team":   team,
+			"values": form,
 		})
 	})
 
-	a.router.POST("/chart/:chart/:namespace/edit", func(c *gin.Context) {
+	a.router.POST("/:team/:chart/edit", func(c *gin.Context) {
+		team := c.Param("team")
 		chartType := getChartType(c.Param("chart"))
 		var err error
 
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
-			err = chart2.UpdateJupyterhub(c, a.repo, a.helmClient)
+			err = chart.UpdateJupyterhub(c, team, a.repo, a.helmClient)
 		case gensql.ChartTypeAirflow:
-			err = chart2.CreateAirflow(c, a.repo, a.helmClient)
+			err = chart.CreateAirflow(c, team, a.repo, a.helmClient)
 		}
 
 		if err != nil {

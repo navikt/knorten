@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
@@ -14,6 +13,7 @@ func (r *Repo) ServicesForUser(ctx context.Context, email string) (map[string][]
 
 	userServices := map[string][]gensql.ChartType{}
 	for _, t := range teamsSQL {
+		userServices[t] = []gensql.ChartType{}
 		servicesForTeam, err := r.querier.AppsForTeamGet(ctx, t)
 		if err != nil {
 			return nil, err

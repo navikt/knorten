@@ -67,6 +67,29 @@ func (c *Client) CreateTeamNamespace(ctx context.Context, name string) error {
 	return nil
 }
 
+func (c *Client) CreateTeamServiceAccount(ctx context.Context, namespace, iamSA string) error {
+	if c.dryRun {
+		return nil
+	}
+
+	saSpec := &v1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      namespace,
+			Namespace: namespace,
+			Annotations: map[string]string{
+				"iam.gke.io/gcp-service-account": iamSA,
+			},
+		},
+	}
+
+	_, err := c.clientSet.CoreV1().ServiceAccounts(namespace).Create(ctx, saSpec, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func createConfig(inCluster bool) (*rest.Config, error) {
 	if inCluster {
 		return rest.InClusterConfig()

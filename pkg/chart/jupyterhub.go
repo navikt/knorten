@@ -50,6 +50,10 @@ func CreateJupyterhub(c *gin.Context, teamName string, repo *database.Repo, helm
 		return err
 	}
 
+	if err := form.ensureValidValues(); err != nil {
+		return err
+	}
+
 	form.Namespace = teamName
 
 	team, err := repo.TeamGet(c, form.Namespace)
@@ -112,7 +116,10 @@ func UpdateJupyterhub(c *gin.Context, teamName string, repo *database.Repo, helm
 		return err
 	}
 
-	form.Namespace = teamName
+	_, err = repo.TeamGet(c, teamName)
+	if err != nil {
+		return err
+	}
 
 	return installOrUpdateJupyterhub(c, repo, helmClient, form)
 }

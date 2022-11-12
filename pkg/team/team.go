@@ -17,6 +17,8 @@ type Form struct {
 	// User config
 	Team  string   `form:"team" binding:"required"`
 	Users []string `form:"users[]" binding:"required"`
+
+	IAMServiceAccount string
 }
 
 func Create(c *gin.Context, repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client) error {
@@ -43,6 +45,10 @@ func Create(c *gin.Context, repo *database.Repo, googleClient *google.Google, k8
 		return err
 	}
 
+	if err := k8sClient.CreateTeamServiceAccount(c, form.Team, form.IAMServiceAccount); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -57,6 +63,7 @@ func createGCPResources(c context.Context, form *Form, googleClient *google.Goog
 	if err != nil {
 		return err
 	}
+	form.IAMServiceAccount = iamSA.Email
 
 	gsmSecret, err := googleClient.CreateGSMSecret(c, project, form.Team)
 	if err != nil {

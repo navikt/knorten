@@ -46,7 +46,7 @@ func main() {
 
 	helmClient := helm.New(repo, log.WithField("subsystem", "helmClient"), cfg.DryRun)
 
-	k8sClient, err := k8s.New(cfg.DryRun, false)
+	k8sClient, err := k8s.New(cfg.DryRun, cfg.InCluster)
 	if err != nil {
 		log.WithError(err).Fatal("creating k8s client")
 	}

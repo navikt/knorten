@@ -3,6 +3,8 @@ package helm
 import (
 	"context"
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/nais/knorten/pkg/database"
 	"github.com/sirupsen/logrus"
@@ -23,12 +25,22 @@ type Client struct {
 	dryRun bool
 }
 
-func New(repo *database.Repo, log *logrus.Entry, dryRun bool) *Client {
+type Chart struct {
+	URL  string
+	Name string
+}
+
+func New(repo *database.Repo, log *logrus.Entry, dryRun, inCluster bool) (*Client, error) {
+	if inCluster {
+		if err := initRepositories(); err != nil {
+			return nil, err
+		}
+	}
 	return &Client{
 		repo:   repo,
 		log:    log,
 		dryRun: dryRun,
-	}
+	}, nil
 }
 
 func (h *Client) InstallOrUpgrade(releaseName, namespace string, app Application) error {
@@ -87,6 +99,38 @@ func (h *Client) InstallOrUpgrade(releaseName, namespace string, app Application
 			h.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
 			return err
 		}
+	}
+
+	return nil
+}
+
+func initRepositories() error {
+	charts := []Chart{
+		{
+			URL:  "https://jupyterhub.github.io/helm-chart",
+			Name: "jupyterhub",
+		},
+		{
+			URL:  "https://airflow.apache.org",
+			Name: "airflow",
+		},
+	}
+
+	settings := cli.New()
+	repoFile := settings.RepositoryConfig
+
+	err := os.MkdirAll(filepath.Dir(repoFile), os.ModePerm)
+	if err != nil && !os.IsExist(err) {
+		return err
+	}
+
+	for _, c := range charts {
+		if err := addHelmRepository(c.URL, c.Name, repoFile, settings); err != nil {
+			return err
+		}
+	}
+	if err := updateHelmRepositories(repoFile, settings); err != nil {
+		return err
 	}
 
 	return nil

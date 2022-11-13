@@ -44,7 +44,10 @@ func main() {
 
 	googleClient := google.New(cfg.DryRun)
 
-	helmClient := helm.New(repo, log.WithField("subsystem", "helmClient"), cfg.DryRun)
+	helmClient, err := helm.New(repo, log.WithField("subsystem", "helmClient"), cfg.DryRun, cfg.InCluster)
+	if err != nil {
+		log.WithError(err).Fatal("setting up helm client")
+	}
 
 	k8sClient, err := k8s.New(cfg.DryRun, cfg.InCluster)
 	if err != nil {

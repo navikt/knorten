@@ -15,8 +15,8 @@
                     </div>
                     <div class="pure-control-group">
                         <label for="memory">Memory</label>
-                        <input type="text" name="memory" id="memory" value="{{ .values.MemoryLimit }}"
-                               placeholder="1GB"/>
+                        <input type="number" step="0.1" min="0.5" name="memory" id="memory" value="{{ .values.MemoryLimit }}"
+                               placeholder="0,5"/>
                     </div>
                     <div class="pure-controls">
                         <button type="submit" class="pure-button pure-button-primary">Lagre</button>

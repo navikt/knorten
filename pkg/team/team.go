@@ -84,3 +84,8 @@ func createGCPResources(c context.Context, form *Form, googleClient *google.Goog
 
 	return nil
 }
+
+func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client) error {
+	fmt.Println("NOOP")
+	return nil
+}

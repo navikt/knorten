@@ -38,6 +38,7 @@ func main() {
 	repo, err := database.New(fmt.Sprintf("%v?sslmode=disable", cfg.DBConnString), log.WithField("subsystem", "repo"))
 	if err != nil {
 		log.WithError(err).Fatal("setting up database")
+		return
 	}
 
 	azure := auth.New(cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, log.WithField("subfield", "auth"))
@@ -47,14 +48,21 @@ func main() {
 	helmClient, err := helm.New(repo, log.WithField("subsystem", "helmClient"), cfg.DryRun, cfg.InCluster)
 	if err != nil {
 		log.WithError(err).Fatal("setting up helm client")
+		return
 	}
 
 	k8sClient, err := k8s.New(cfg.DryRun, cfg.InCluster)
 	if err != nil {
 		log.WithError(err).Fatal("creating k8s client")
+		return
 	}
 
-	kApi := api.New(repo, azure, helmClient, googleClient, k8sClient, log.WithField("subsystem", "api"))
+	kApi, err := api.New(repo, azure, helmClient, googleClient, k8sClient, log.WithField("subsystem", "api"))
+	if err != nil {
+		log.WithError(err).Fatal("creating api")
+		return
+	}
+
 	err = kApi.Run()
 	if err != nil {
 		return

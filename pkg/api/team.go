@@ -2,34 +2,39 @@ package api
 
 import (
 	"fmt"
-	"net/http"
-
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/nais/knorten/pkg/team"
+	"net/http"
 )
 
 func (a *API) setupTeamRoutes() {
 	a.router.GET("/team/new", func(c *gin.Context) {
 		var form team.Form
-		services, err := createServiceSidebar(c, a.repo)
+		session := sessions.Default(c)
+		flashes := session.Flashes()
+		err := session.Save()
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			a.log.WithError(err).Error("problem saving session")
 			return
 		}
 
 		c.HTML(http.StatusOK, "team/new", gin.H{
-			"form":     form,
-			"services": services,
+			"form":   form,
+			"errors": flashes,
 		})
 	})
 
 	a.router.POST("/team/new", func(c *gin.Context) {
 		err := team.Create(c, a.repo, a.googleClient, a.k8sClient)
 		if err != nil {
-			// TODO: Bruke middleware/session for å legge feilmeldinger til http-kallet
-			// c.Error()
-			fmt.Println(err)
-			// c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			session := sessions.Default(c)
+			session.AddFlash(err.Error())
+			err := session.Save()
+			if err != nil {
+				a.log.WithError(err).Error("problem saving session")
+				return
+			}
 			c.Redirect(http.StatusSeeOther, "/team/new")
 			return
 		}
@@ -41,25 +46,39 @@ func (a *API) setupTeamRoutes() {
 		get, err := a.repo.TeamGet(c, teamName)
 		if err != nil {
 			fmt.Println(err)
-			// c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			c.Redirect(http.StatusSeeOther, "/team/new")
+			a.log.WithError(err).Errorf("problem getting team %v", teamName)
+			c.Redirect(http.StatusSeeOther, "/user")
+			return
+		}
+
+		session := sessions.Default(c)
+		flashes := session.Flashes()
+		err = session.Save()
+		if err != nil {
+			a.log.WithError(err).Error("problem saving session")
 			return
 		}
 		c.HTML(http.StatusOK, "team/edit", gin.H{
-			"users": get.Users,
-			"team":  teamName,
+			"users":  get.Users,
+			"team":   teamName,
+			"errors": flashes,
 		})
 	})
 
-	//a.router.POST("/team/:team/edit", func(c *gin.Context) {
-	//	err := chart.UpdateNamespace(c, a.helmClient, a.repo)
-	//	if err != nil {
-	//		fmt.Println(err)
-	//		team := c.Param("team")
-	//		// c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	//		c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/new", team))
-	//		return
-	//	}
-	//	c.Redirect(http.StatusSeeOther, "/user")
-	//})
+	a.router.POST("/team/:team/edit", func(c *gin.Context) {
+		teamName := c.Param("team")
+		err := team.Update(c, a.repo, a.googleClient, a.k8sClient)
+		if err != nil {
+			session := sessions.Default(c)
+			session.AddFlash(err.Error())
+			err := session.Save()
+			if err != nil {
+				a.log.WithError(err).Error("problem saving session")
+				return
+			}
+			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/edit", teamName))
+			return
+		}
+		c.Redirect(http.StatusSeeOther, "/user")
+	})
 }

@@ -22,7 +22,7 @@ type API struct {
 	k8sClient    *k8s.Client
 }
 
-func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, log *logrus.Entry) *API {
+func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, log *logrus.Entry) (*API, error) {
 	api := API{
 		oauth2:       oauth2,
 		helmClient:   helmClient,
@@ -33,12 +33,17 @@ func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googl
 		log:          log,
 	}
 
+	session, err := repo.NewSessionStore()
+	if err != nil {
+		return &API{}, err
+	}
+	api.router.Use(session)
 	api.router.Static("/assets", "./assets")
 	api.router.LoadHTMLGlob("templates/**/*")
 	api.setupUnauthenticatedRoutes()
 	api.router.Use(api.authMiddleware())
 	api.setupAuthenticatedRoutes()
-	return &api
+	return &api, nil
 }
 
 func (a *API) Run() error {

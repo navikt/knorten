@@ -33,7 +33,7 @@
                 <nav id="nav">
                     <ul>
                         <li {{ if eq .current "home" }}class="current"{{ end }}><a href="/">Forside</a></li>
-                        <li {{ if eq .current "user" }}class="current"{{ end }}><a href="/user">teams</a></li>
+                        <li {{ if not .current }}class="current"{{ end }}><a href="/user">teams</a></li>
                     </ul>
                 </nav>
 

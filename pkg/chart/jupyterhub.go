@@ -109,19 +109,19 @@ func installOrUpdateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *
 	return nil
 }
 
-func UpdateJupyterhub(c *gin.Context, teamName string, repo *database.Repo, helmClient *helm.Client) error {
+func UpdateJupyterhub(c *gin.Context, teamName string, repo *database.Repo, helmClient *helm.Client) (JupyterForm, error) {
 	var form JupyterForm
 	err := c.ShouldBindWith(&form, binding.Form)
 	if err != nil {
-		return err
+		return form, err
 	}
 
 	_, err = repo.TeamGet(c, teamName)
 	if err != nil {
-		return err
+		return form, err
 	}
 
-	return installOrUpdateJupyterhub(c, repo, helmClient, form)
+	return form, installOrUpdateJupyterhub(c, repo, helmClient, form)
 }
 
 func generateSecureToken(length int) string {

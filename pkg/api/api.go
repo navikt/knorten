@@ -22,14 +22,6 @@ type API struct {
 	k8sClient    *k8s.Client
 }
 
-type Service struct {
-	App            string
-	Ingress        string
-	Namespace      string
-	Secret         string
-	ServiceAccount string
-}
-
 func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, log *logrus.Entry) *API {
 	api := API{
 		oauth2:       oauth2,
@@ -55,7 +47,7 @@ func (a *API) Run() error {
 
 func (a *API) setupUnauthenticatedRoutes() {
 	a.router.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.tmpl", gin.H{
+		c.HTML(http.StatusOK, "index", gin.H{
 			"current": "home",
 		})
 	})

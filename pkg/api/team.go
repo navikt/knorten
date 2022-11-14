@@ -45,7 +45,6 @@ func (a *API) setupTeamRoutes() {
 		teamName := c.Param("team")
 		get, err := a.repo.TeamGet(c, teamName)
 		if err != nil {
-			fmt.Println(err)
 			a.log.WithError(err).Errorf("problem getting team %v", teamName)
 			c.Redirect(http.StatusSeeOther, "/user")
 			return
@@ -67,7 +66,7 @@ func (a *API) setupTeamRoutes() {
 
 	a.router.POST("/team/:team/edit", func(c *gin.Context) {
 		teamName := c.Param("team")
-		err := team.Update(c, a.repo, a.googleClient, a.k8sClient)
+		err := team.Update(c, a.repo, a.googleClient, a.helmClient)
 		if err != nil {
 			session := sessions.Default(c)
 			session.AddFlash(err.Error())

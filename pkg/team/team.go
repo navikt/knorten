@@ -1,24 +1,23 @@
 package team
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"fmt"
-
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database"
+	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/google"
+	"github.com/nais/knorten/pkg/helm"
 	"github.com/nais/knorten/pkg/k8s"
+	"k8s.io/utils/strings/slices"
 )
 
 type Form struct {
-	// User config
 	Team  string   `form:"team" binding:"required"`
 	Users []string `form:"users[]" binding:"required"`
-
-	IAMServiceAccount string
 }
 
 func Create(c *gin.Context, repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client) error {
@@ -30,10 +29,12 @@ func Create(c *gin.Context, repo *database.Repo, googleClient *google.Google, k8
 
 	_, err = repo.TeamGet(c, form.Team)
 	if !errors.Is(err, sql.ErrNoRows) {
-		return fmt.Errorf("there already exists a team %v", form.Team)
+		return fmt.Errorf("there already exists a team '%v'", form.Team)
+	} else if err != nil {
+		return err
 	}
 
-	if err := createGCPResources(c, &form, googleClient); err != nil {
+	if err := googleClient.CreateGCPResources(c, form.Team, form.Users); err != nil {
 		return err
 	}
 
@@ -45,47 +46,60 @@ func Create(c *gin.Context, repo *database.Repo, googleClient *google.Google, k8
 		return err
 	}
 
-	if err := k8sClient.CreateTeamServiceAccount(c, form.Team, form.IAMServiceAccount); err != nil {
+	if err := k8sClient.CreateTeamServiceAccount(c, form.Team); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func createGCPResources(c context.Context, form *Form, googleClient *google.Google) error {
-	if googleClient.DryRun {
-		return nil
-	}
-
-	project := "projects/knada-gcp"
-
-	iamSA, err := googleClient.CreateIAMServiceAccount(c, project, form.Team)
-	if err != nil {
-		return err
-	}
-	form.IAMServiceAccount = iamSA.Email
-
-	gsmSecret, err := googleClient.CreateGSMSecret(c, project, form.Team)
+func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, helmClient *helm.Client) error {
+	var form Form
+	form.Team = c.Param("team")
+	err := c.ShouldBindWith(&form, binding.Form)
 	if err != nil {
 		return err
 	}
 
-	if err := googleClient.CreateSASecretAccessorBinding(c, iamSA.Email, gsmSecret.Name); err != nil {
+	err = repo.TeamUpdate(c, form.Team, form.Users)
+	if err != nil {
 		return err
 	}
 
-	if err := googleClient.CreateUserSecretOwnerBindings(c, form.Users, gsmSecret.Name); err != nil {
+	err = googleClient.Update(c, form.Team, form.Users)
+	if err != nil {
 		return err
 	}
 
-	if err := googleClient.CreateSAWorkloadIdentityBinding(c, iamSA.Email, form.Team); err != nil {
+	apps, err := repo.AppsForTeamGet(c, form.Team)
+	if err != nil {
 		return err
 	}
 
-	return nil
-}
+	if slices.Contains(apps, string(gensql.ChartTypeJupyterhub)) {
+		jupyterForm := chart.JupyterForm{
+			Namespace: form.Team,
+			JupyterValues: chart.JupyterValues{
+				AdminUsers:   form.Users,
+				AllowedUsers: form.Users,
+			},
+		}
+		err = chart.UpdateJupyterhub(c, jupyterForm, repo, helmClient)
+		if err != nil {
+			return err
+		}
+	}
 
-func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client) error {
-	fmt.Println("NOOP")
+	if slices.Contains(apps, string(gensql.ChartTypeAirflow)) {
+		airflowForm := chart.AirflowForm{
+			Namespace: form.Team,
+			Users:     form.Users,
+		}
+		err = chart.UpdateAirflow(c, airflowForm, repo, helmClient)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

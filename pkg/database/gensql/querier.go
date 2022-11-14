@@ -9,7 +9,7 @@ import (
 )
 
 type Querier interface {
-	AppsForTeamGet(ctx context.Context, team string) ([]AppsForTeamGetRow, error)
+	AppsForTeamGet(ctx context.Context, team string) ([]ChartType, error)
 	GlobalValueInsert(ctx context.Context, arg GlobalValueInsertParams) error
 	GlobalValuesGet(ctx context.Context, chartType ChartType) ([]ChartGlobalValue, error)
 	SessionCreate(ctx context.Context, arg SessionCreateParams) error

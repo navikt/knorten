@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 
 	v1 "k8s.io/api/core/v1"
@@ -69,7 +70,7 @@ func (c *Client) CreateTeamNamespace(ctx context.Context, name string) error {
 	return nil
 }
 
-func (c *Client) CreateTeamServiceAccount(ctx context.Context, namespace, iamSA string) error {
+func (c *Client) CreateTeamServiceAccount(ctx context.Context, namespace string) error {
 	if c.dryRun {
 		return nil
 	}
@@ -79,7 +80,7 @@ func (c *Client) CreateTeamServiceAccount(ctx context.Context, namespace, iamSA 
 			Name:      namespace,
 			Namespace: namespace,
 			Annotations: map[string]string{
-				"iam.gke.io/gcp-service-account": iamSA,
+				"iam.gke.io/gcp-service-account": fmt.Sprintf("%v@knada-gcp.iam.gserviceaccount.com", namespace),
 			},
 		},
 	}

@@ -10,29 +10,24 @@ import (
 )
 
 const appsForTeamGet = `-- name: AppsForTeamGet :many
-SELECT DISTINCT ON (chart_type) chart_type, team
+SELECT DISTINCT ON (chart_type) chart_type
 FROM chart_team_values
 WHERE team = $1
 `
 
-type AppsForTeamGetRow struct {
-	ChartType ChartType
-	Team      string
-}
-
-func (q *Queries) AppsForTeamGet(ctx context.Context, team string) ([]AppsForTeamGetRow, error) {
+func (q *Queries) AppsForTeamGet(ctx context.Context, team string) ([]ChartType, error) {
 	rows, err := q.db.QueryContext(ctx, appsForTeamGet, team)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []AppsForTeamGetRow{}
+	items := []ChartType{}
 	for rows.Next() {
-		var i AppsForTeamGetRow
-		if err := rows.Scan(&i.ChartType, &i.Team); err != nil {
+		var chart_type ChartType
+		if err := rows.Scan(&chart_type); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, chart_type)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -117,7 +112,8 @@ func (q *Queries) TeamValuesGet(ctx context.Context, arg TeamValuesGetParams) ([
 const teamsGet = `-- name: TeamsGet :many
 SELECT "team", "key", "value"
 FROM chart_team_values
-WHERE chart_type = 'namespace' AND key = 'users'
+WHERE chart_type = 'namespace'
+  AND key = 'users'
 `
 
 type TeamsGetRow struct {

@@ -46,17 +46,17 @@ func NewJupyterhub(team string, repo *database.Repo) *Application {
 }
 
 func (a *Application) Chart(ctx context.Context) (*chart.Chart, error) {
-	chart, err := helm.FetchChart(a.chartRepo, a.chartName, a.chartVersion)
+	charty, err := helm.FetchChart(a.chartRepo, a.chartName, a.chartVersion)
 	if err != nil {
 		return nil, err
 	}
 
-	err = a.mergeValues(ctx, chart.Values)
+	err = a.mergeValues(ctx, charty.Values)
 	if err != nil {
 		return nil, err
 	}
 
-	return chart, nil
+	return charty, nil
 }
 
 func (a *Application) mergeValues(ctx context.Context, defaultValues map[string]any) error {

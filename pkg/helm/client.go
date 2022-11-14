@@ -2,6 +2,7 @@ package helm
 
 import (
 	"context"
+	"helm.sh/helm/v3/pkg/chart"
 	"log"
 	"os"
 	"path/filepath"
@@ -9,7 +10,6 @@ import (
 	"github.com/nais/knorten/pkg/database"
 	"github.com/sirupsen/logrus"
 	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -105,6 +105,7 @@ func (h *Client) InstallOrUpgrade(releaseName, namespace string, app Application
 }
 
 func initRepositories() error {
+	// TODO: Dette burde være config, de har støtte for å laste denne fra fil
 	charts := []Chart{
 		{
 			URL:  "https://jupyterhub.github.io/helm-chart",

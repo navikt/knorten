@@ -3,12 +3,14 @@
     <div class="box container">
         <div id="content">
             <h2>Nytt team</h2>
-            {{ .errors }}
+            {{ with .errors }}
+                {{ . }}
+            {{ end }}
             <form class="pure-form pure-form-stacked" action="" method="POST">
                 <div class="pure-control-group">
                     <label for="team">Teamnavn</label>
                     <input type="text" name="team" id="team" value="{{ .team }}"
-                           placeholder="Små bokstaver med bindestrek"/>
+                           placeholder="Små bokstaver med bindestrek" minlength="6"/>
                 </div>
                 <fieldset class="pure-group" id="users">
                     <legend>Brukere</legend>

@@ -43,7 +43,7 @@ func main() {
 
 	azure := auth.New(cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, log.WithField("subfield", "auth"))
 
-	googleClient := google.New(cfg.DryRun)
+	googleClient := google.New(log.WithField("subsystem", "googleClient"), cfg.DryRun)
 
 	helmClient, err := helm.New(repo, log.WithField("subsystem", "helmClient"), cfg.DryRun, cfg.InCluster)
 	if err != nil {

@@ -5,6 +5,20 @@ import (
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
+func (r *Repo) AppsForTeamGet(ctx context.Context, team string) ([]string, error) {
+	get, err := r.querier.AppsForTeamGet(ctx, team)
+	if err != nil {
+		return nil, err
+	}
+
+	apps := make([]string, len(get))
+	for i, chartType := range get {
+		apps[i] = string(chartType)
+	}
+
+	return apps, nil
+}
+
 func (r *Repo) ServicesForUser(ctx context.Context, email string) (map[string][]gensql.ChartType, error) {
 	teamsSQL, err := r.querier.TeamsForUserGet(ctx, email)
 	if err != nil {
@@ -12,14 +26,14 @@ func (r *Repo) ServicesForUser(ctx context.Context, email string) (map[string][]
 	}
 
 	userServices := map[string][]gensql.ChartType{}
-	for _, t := range teamsSQL {
-		userServices[t] = []gensql.ChartType{}
-		servicesForTeam, err := r.querier.AppsForTeamGet(ctx, t)
+	for _, team := range teamsSQL {
+		userServices[team] = []gensql.ChartType{}
+		servicesForTeam, err := r.querier.AppsForTeamGet(ctx, team)
 		if err != nil {
 			return nil, err
 		}
-		for _, s := range servicesForTeam {
-			userServices[t] = append(userServices[t], s.ChartType)
+		for _, chartType := range servicesForTeam {
+			userServices[team] = append(userServices[team], chartType)
 		}
 	}
 	return userServices, nil

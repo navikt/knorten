@@ -3,23 +3,29 @@ package google
 import (
 	"context"
 	"fmt"
-
-	secretmanager "cloud.google.com/go/secretmanager/apiv1"
-	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/api/iam/v1"
 )
 
+const (
+	secretRoleName = "roles/owner"
+)
+
 type Google struct {
-	DryRun bool
+	dryRun  bool
+	log     *logrus.Entry
+	project string
 }
 
-func New(dryRun bool) *Google {
+func New(log *logrus.Entry, dryRun bool) *Google {
 	return &Google{
-		DryRun: dryRun,
+		log:     log,
+		dryRun:  dryRun,
+		project: "projects/knada-gcp", // TODO: Dette burde vært config
 	}
 }
 
-func (g *Google) CreateIAMServiceAccount(ctx context.Context, parent, team string) (*iam.ServiceAccount, error) {
+func (g *Google) createIAMServiceAccount(ctx context.Context, team string) (*iam.ServiceAccount, error) {
 	service, err := iam.NewService(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("iam.NewService: %v", err)
@@ -32,7 +38,7 @@ func (g *Google) CreateIAMServiceAccount(ctx context.Context, parent, team strin
 		},
 	}
 
-	account, err := service.Projects.ServiceAccounts.Create(parent, request).Do()
+	account, err := service.Projects.ServiceAccounts.Create(g.project, request).Do()
 	if err != nil {
 		return nil, fmt.Errorf("Projects.ServiceAccounts.Create: %v", err)
 	}
@@ -40,85 +46,7 @@ func (g *Google) CreateIAMServiceAccount(ctx context.Context, parent, team strin
 	return account, nil
 }
 
-func (g *Google) CreateGSMSecret(ctx context.Context, parent, team string) (*secretmanagerpb.Secret, error) {
-	client, err := secretmanager.NewClient(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create secretmanager client: %v", err)
-	}
-	defer client.Close()
-
-	req := &secretmanagerpb.CreateSecretRequest{
-		Parent:   parent,
-		SecretId: team,
-		Secret: &secretmanagerpb.Secret{
-			Labels: map[string]string{"team": team},
-			Replication: &secretmanagerpb.Replication{
-				Replication: &secretmanagerpb.Replication_UserManaged_{
-					UserManaged: &secretmanagerpb.Replication_UserManaged{
-						Replicas: []*secretmanagerpb.Replication_UserManaged_Replica{
-							{
-								Location: "europe-west1",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	result, err := client.CreateSecret(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create secret: %v", err)
-	}
-
-	return result, nil
-}
-
-func (g *Google) CreateSASecretAccessorBinding(ctx context.Context, sa, secret string) error {
-	client, err := secretmanager.NewClient(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to create secretmanager client: %v", err)
-	}
-	defer client.Close()
-
-	handle := client.IAM(secret)
-	policy, err := handle.Policy(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get policy: %v", err)
-	}
-
-	policy.Add("serviceAccount:"+sa, "roles/secretmanager.secretAccessor")
-	if err = handle.SetPolicy(ctx, policy); err != nil {
-		return fmt.Errorf("failed to save policy: %v", err)
-	}
-
-	return nil
-}
-
-func (g *Google) CreateUserSecretOwnerBindings(ctx context.Context, users []string, secret string) error {
-	client, err := secretmanager.NewClient(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to create secretmanager client: %v", err)
-	}
-	defer client.Close()
-
-	handle := client.IAM(secret)
-	policy, err := handle.Policy(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get policy: %v", err)
-	}
-
-	for _, user := range users {
-		policy.Add("user:"+user, "roles/owner")
-	}
-
-	if err = handle.SetPolicy(ctx, policy); err != nil {
-		return fmt.Errorf("failed to save policy: %v", err)
-	}
-	return nil
-}
-
-func (g *Google) CreateSAWorkloadIdentityBinding(ctx context.Context, iamSA, namespace string) error {
+func (g *Google) createSAWorkloadIdentityBinding(ctx context.Context, iamSA, namespace string) error {
 	service, err := iam.NewService(ctx)
 	if err != nil {
 		return err
@@ -165,4 +93,44 @@ func updateRoleBindingIfExists(bindings []*iam.Binding, role, namespace string) 
 		}
 	}
 	return false
+}
+
+func (g *Google) CreateGCPResources(c context.Context, team string, users []string) error {
+	if g.dryRun {
+		g.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
+	iamSA, err := g.createIAMServiceAccount(c, team)
+	if err != nil {
+		return err
+	}
+
+	gsmSecret, err := g.createSecret(c, team)
+	if err != nil {
+		return fmt.Errorf("failed to create secret: %v", err)
+	}
+
+	if err := g.createServiceAccountSecretAccessorBinding(c, iamSA.Email, gsmSecret.Name); err != nil {
+		return err
+	}
+
+	if err := g.setUsersSecretOwnerBinding(c, users, gsmSecret.Name); err != nil {
+		return fmt.Errorf("failed while creating secret binding: %v", err)
+	}
+
+	if err := g.createSAWorkloadIdentityBinding(c, iamSA.Email, team); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (g *Google) Update(c context.Context, secret string, users []string) error {
+	if g.dryRun {
+		g.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
+	return g.setUsersSecretOwnerBinding(c, users, fmt.Sprintf("%v/secrets/%v", g.project, secret))
 }

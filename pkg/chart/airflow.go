@@ -1,6 +1,7 @@
 package chart
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -40,6 +41,28 @@ type AirflowValues struct {
 	ExtraEnvs                     string `helm:"extraEnv"`
 }
 
+func installOrUpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, helmClient *helm.Client) error {
+	chartValues, err := reflect.CreateChartValues(form)
+	if err != nil {
+		return err
+	}
+
+	err = repo.ServiceCreate(ctx, gensql.ChartTypeAirflow, chartValues, form.Namespace)
+	if err != nil {
+		return err
+	}
+
+	application := helmApps.NewAirflow(form.Namespace, repo)
+	_, err = application.Chart(ctx) // TODO: Hvordan funker dette?
+	if err != nil {
+		return err
+	}
+
+	go helmClient.InstallOrUpgrade(string(gensql.ChartTypeAirflow), form.Namespace, application)
+
+	return nil
+}
+
 func CreateAirflow(c *gin.Context, teamName string, repo *database.Repo, helmClient *helm.Client) error {
 	var form AirflowForm
 	err := c.ShouldBindWith(&form, binding.Form)
@@ -63,30 +86,11 @@ func CreateAirflow(c *gin.Context, teamName string, repo *database.Repo, helmCli
 		return err
 	}
 
-	chartValues, err := reflect.CreateChartValues(form)
-	if err != nil {
-		return err
-	}
-
-	err = repo.ServiceCreate(c, gensql.ChartTypeAirflow, chartValues, form.Namespace)
-	if err != nil {
-		return err
-	}
-
-	application := helmApps.NewAirflow(form.Namespace, repo)
-	_, err = application.Chart(c)
-	if err != nil {
-		return err
-	}
-
-	go helmClient.InstallOrUpgrade(string(gensql.ChartTypeAirflow), form.Namespace, application)
-
-	return nil
+	return installOrUpdateAirflow(c, form, repo, helmClient)
 }
 
-func UpdateAirflow(c *gin.Context, teamName string, repo *database.Repo, helmClient *helm.Client) (AirflowForm, error) {
-	fmt.Println("NOOP")
-	return AirflowForm{}, nil
+func UpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, helmClient *helm.Client) error {
+	return installOrUpdateAirflow(ctx, form, repo, helmClient)
 }
 
 type AirflowUserEnv struct {

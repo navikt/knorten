@@ -1,13 +1,10 @@
 package chart
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
-	"io/fs"
-	"os"
-
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/database"
@@ -75,7 +72,7 @@ func CreateJupyterhub(c *gin.Context, teamName string, repo *database.Repo, helm
 	return installOrUpdateJupyterhub(c, repo, helmClient, form)
 }
 
-func installOrUpdateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *helm.Client, form JupyterForm) error {
+func installOrUpdateJupyterhub(c context.Context, repo *database.Repo, helmClient *helm.Client, form JupyterForm) error {
 	chartValues, err := reflect.CreateChartValues(form.JupyterValues)
 	if err != nil {
 		return err
@@ -87,21 +84,12 @@ func installOrUpdateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *
 	}
 
 	application := helmApps.NewJupyterhub(form.Namespace, repo)
-	charty, err := application.Chart(c)
+	_, err = application.Chart(c)
 	if err != nil {
 		return err
 	}
 
-	bytes, err := json.Marshal(charty)
-	if err != nil {
-		panic(err)
-	}
-
-	err = os.WriteFile("out.json", bytes, fs.ModeAppend)
-	if err != nil {
-		fmt.Println(err)
-	}
-
+	// TODO: Hadde vært kjekt om de ikke gjorde dette, kanskje endret i siste versjon?
 	// Release name must be unique across namespaces as the helm chart creates a clusterrole
 	// for each jupyterhub with the same name as the release name.
 	releaseName := fmt.Sprintf("%v-%v", string(gensql.ChartTypeJupyterhub), form.Namespace)
@@ -109,19 +97,8 @@ func installOrUpdateJupyterhub(c *gin.Context, repo *database.Repo, helmClient *
 	return nil
 }
 
-func UpdateJupyterhub(c *gin.Context, teamName string, repo *database.Repo, helmClient *helm.Client) (JupyterForm, error) {
-	var form JupyterForm
-	err := c.ShouldBindWith(&form, binding.Form)
-	if err != nil {
-		return form, err
-	}
-
-	_, err = repo.TeamGet(c, teamName)
-	if err != nil {
-		return form, err
-	}
-
-	return form, installOrUpdateJupyterhub(c, repo, helmClient, form)
+func UpdateJupyterhub(c *gin.Context, form JupyterForm, repo *database.Repo, helmClient *helm.Client) error {
+	return installOrUpdateJupyterhub(c, repo, helmClient, form)
 }
 
 func generateSecureToken(length int) string {

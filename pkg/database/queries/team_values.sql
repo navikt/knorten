@@ -18,9 +18,10 @@ ORDER BY "key", "created" DESC;
 -- name: TeamsGet :many
 SELECT "team", "key", "value"
 FROM chart_team_values
-WHERE chart_type = 'namespace' AND key = 'users';
+WHERE chart_type = 'namespace'
+  AND key = 'users';
 
 -- name: AppsForTeamGet :many
-SELECT DISTINCT ON (chart_type) chart_type, team
+SELECT DISTINCT ON (chart_type) chart_type
 FROM chart_team_values
 WHERE team = @team;

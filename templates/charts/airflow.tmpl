@@ -1,17 +1,23 @@
-{{ define "charts/airflow.tmpl" }}
+{{ define "charts/airflow" }}
     {{ template "head" }}
     <div class="box container">
         <div id="content">
-            <h2>Ny Airflow</h2>
+            {{ if .values }}
+                <h2>Rediger Airflow</h2>
+            {{ else }}
+                <h2>Ny Jupyter Notebook</h2>
+            {{ end }}
             <form class="pure-form pure-form-stacked" action="" method="POST">
                 <fieldset>
                     <div class="pure-control-group">
                         <label for="repo">DAG's repo</label>
-                        <input type="text" name="repo" id="repo" value="{{ .values.DagRepo }}" placeholder="navikt/dags"/>
+                        <input type="text" name="repo" id="repo" value="{{ .values.DagRepo }}"
+                               placeholder="navikt/dags"/>
                     </div>
                     <div class="pure-control-group">
                         <label for="branch">DAG's repo branch</label>
-                        <input type="text" name="branch" id="branch" value="{{ .values.DagRepoBranch }}" placeholder="main"/>
+                        <input type="text" name="branch" id="branch" value="{{ .values.DagRepoBranch }}"
+                               placeholder="main"/>
                     </div>
                     <div class="pure-controls">
                         <button type="submit" class="pure-button pure-button-primary">Lagre</button>

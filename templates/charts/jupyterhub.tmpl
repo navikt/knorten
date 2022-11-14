@@ -1,9 +1,12 @@
-{{ define "charts/jupyterhub.tmpl" }}
+{{ define "charts/jupyterhub" }}
     {{ template "head" }}
     <div class="box container">
         <div id="content">
-            <h2>Ny Jupyter Notebook</h2>
-
+            {{ if .values }}
+                <h2>Rediger Jupyter Notebook</h2>
+            {{ else }}
+                <h2>Ny Jupyter Notebook</h2>
+            {{ end }}
             <form class="pure-form pure-form-stacked" action="" method="POST">
                 <fieldset>
                     <div class="pure-control-group">

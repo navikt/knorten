@@ -52,7 +52,7 @@ func CreateAirflow(c *gin.Context, teamName string, repo *database.Repo, helmCli
 	return nil
 }
 
-func UpdateAirflow(c *gin.Context, teamName string, repo *database.Repo, helmClient *helm.Client) error {
+func UpdateAirflow(c *gin.Context, teamName string, repo *database.Repo, helmClient *helm.Client) (AirflowForm, error) {
 	fmt.Println("NOOP")
-	return nil
+	return AirflowForm{}, nil
 }

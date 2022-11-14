@@ -5,6 +5,9 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/postgres"
+	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/reflect"
@@ -45,6 +48,16 @@ func New(dbConnDSN string, log *logrus.Entry) (*Repo, error) {
 		db:      db,
 		log:     log,
 	}, nil
+}
+
+func (r *Repo) NewSessionStore() (gin.HandlerFunc, error) {
+	// TODO: Create session key
+	store, err := postgres.NewStore(r.db, []byte("securecookie.GenerateRandomKey(32)"))
+	if err != nil {
+		return nil, err
+	}
+
+	return sessions.Sessions("session", store), nil
 }
 
 func (r *Repo) GlobalChartValueInsert(ctx context.Context, key, value string, chartType gensql.ChartType) error {

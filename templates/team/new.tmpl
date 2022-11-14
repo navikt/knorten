@@ -1,0 +1,49 @@
+{{ define "team/new" }}
+    {{ template "head" }}
+    <div class="box container">
+        <div id="content">
+            <h2>Nytt team</h2>
+            <form class="pure-form pure-form-stacked" action="" method="POST">
+                <div class="pure-control-group">
+                    <label for="team">Teamnavn</label>
+                    <input type="text" name="team" id="team" value="{{ .team }}"
+                           placeholder="Små bokstaver med bindestrek"/>
+                </div>
+                <fieldset class="pure-group" id="users">
+                    <legend>Brukere</legend>
+                    <button type="button" class="pure-button pure-button-primary" onClick="addElement()">Legg til flere
+                        bruker
+                    </button>
+                    <input type="email" name="users[]" class="pure-input-1-2" placeholder="E-post"/>
+                </fieldset>
+
+                <fieldset>
+                    <div class="pure-controls">
+                        <button type="submit" class="pure-button pure-button-primary">Lagre</button>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+    </div>
+    <script>
+        function addElement() {
+            const newDiv = document.createElement("div");
+            newDiv.className = "pure-control-group"
+
+            const label = document.createElement("label");
+            label.setAttribute("for", "email");
+            label.appendChild(document.createTextNode("Ny bruker"));
+
+            const input = document.createElement("input");
+            input.type = "email"
+            input.name = "users[]"
+            input.id = "email"
+            input.placeholder = "E-post"
+
+            // add the newly created element and its content into the DOM
+            const currentDiv = document.getElementById("users");
+            currentDiv.appendChild(input);
+        }
+    </script>
+    {{ template "footer" }}
+{{ end }}

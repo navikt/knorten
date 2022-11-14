@@ -153,6 +153,11 @@ h3 {
     margin: 0 0 1em 0;
 }
 
+section > h3 {
+    font-size: 1.35em;
+    margin: 0 0 0 0;
+}
+
 b, strong {
     font-weight: 600;
     color: #444;
@@ -375,20 +380,20 @@ p, ul, ol, dl, table {
 }
 
 .row.gtr-0 {
-    margin-top: 0px;
-    margin-left: 0px;
+    margin-top: 0;
+    margin-left: 0;
 }
 
 .row.gtr-0 > * {
-    padding: 0px 0 0 0px;
+    padding: 0 0 0 0;
 }
 
 .row.gtr-0.gtr-uniform {
-    margin-top: 0px;
+    margin-top: 0;
 }
 
 .row.gtr-0.gtr-uniform > * {
-    padding-top: 0px;
+    padding-top: 0;
 }
 
 .row.gtr-25 {
@@ -618,20 +623,20 @@ p, ul, ol, dl, table {
     }
 
     .row.gtr-0 {
-        margin-top: 0px;
-        margin-left: 0px;
+        margin-top: 0;
+        margin-left: 0;
     }
 
     .row.gtr-0 > * {
-        padding: 0px 0 0 0px;
+        padding: 0 0 0 0;
     }
 
     .row.gtr-0.gtr-uniform {
-        margin-top: 0px;
+        margin-top: 0;
     }
 
     .row.gtr-0.gtr-uniform > * {
-        padding-top: 0px;
+        padding-top: 0;
     }
 
     .row.gtr-25 {
@@ -863,20 +868,20 @@ p, ul, ol, dl, table {
     }
 
     .row.gtr-0 {
-        margin-top: 0px;
-        margin-left: 0px;
+        margin-top: 0;
+        margin-left: 0;
     }
 
     .row.gtr-0 > * {
-        padding: 0px 0 0 0px;
+        padding: 0 0 0 0;
     }
 
     .row.gtr-0.gtr-uniform {
-        margin-top: 0px;
+        margin-top: 0;
     }
 
     .row.gtr-0.gtr-uniform > * {
-        padding-top: 0px;
+        padding-top: 0;
     }
 
     .row.gtr-25 {
@@ -1108,20 +1113,20 @@ p, ul, ol, dl, table {
     }
 
     .row.gtr-0 {
-        margin-top: 0px;
-        margin-left: 0px;
+        margin-top: 0;
+        margin-left: 0;
     }
 
     .row.gtr-0 > * {
-        padding: 0px 0 0 0px;
+        padding: 0 0 0 0;
     }
 
     .row.gtr-0.gtr-uniform {
-        margin-top: 0px;
+        margin-top: 0;
     }
 
     .row.gtr-0.gtr-uniform > * {
-        padding-top: 0px;
+        padding-top: 0;
     }
 
     .row.gtr-25 {
@@ -1353,20 +1358,20 @@ p, ul, ol, dl, table {
     }
 
     .row.gtr-0 {
-        margin-top: 0px;
-        margin-left: 0px;
+        margin-top: 0;
+        margin-left: 0;
     }
 
     .row.gtr-0 > * {
-        padding: 0px 0 0 0px;
+        padding: 0 0 0 0;
     }
 
     .row.gtr-0.gtr-uniform {
-        margin-top: 0px;
+        margin-top: 0;
     }
 
     .row.gtr-0.gtr-uniform > * {
-        padding-top: 0px;
+        padding-top: 0;
     }
 
     .row.gtr-25 {
@@ -1459,7 +1464,7 @@ p, ul, ol, dl, table {
 /* Section/Article */
 
 section, article {
-    margin-bottom: 5em;
+    margin-bottom: 1em;
 }
 
 section > :last-child,
@@ -1782,7 +1787,7 @@ ul.menu li:first-child {
 .box {
     background: #fff;
     border-radius: 6px;
-    box-shadow: 0px 3px 0px 0px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 3px 0 0 rgba(0, 0, 0, 0.05);
     padding: 2em;
 }
 
@@ -1918,7 +1923,7 @@ ul.menu li:first-child {
 
 #main-wrapper {
     background: #fff;
-    box-shadow: 0px 3px 0px 0px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 3px 0 0 rgba(0, 0, 0, 0.05);
     padding: 5em 0 5em 0;
 }
 
@@ -2394,7 +2399,7 @@ ul.menu li:first-child {
         width: 275px;
         z-index: 10002;
         background: #fff;
-        box-shadow: inset -3px 0px 0px 0px #dfdfdf;
+        box-shadow: inset -3px 0 0 0 #dfdfdf;
         padding: 0 23px 0 20px;
     }
 

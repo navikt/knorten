@@ -1,0 +1,9 @@
+{{ define "user/row" }}
+    <tr>
+        <td>{{ .App }}</td>
+        <td><a href="{{ .Ingress }}">{{ .Ingress }}</a></td>
+        <td><a href="{{ .Secret }}">Secret Manager</a></td>
+        <td>{{ .ServiceAccount }}</td>
+        <td><a href="/team/{{ .Namespace }}/{{ .App }}/edit">Rediger</a></td>
+    </tr>
+{{ end }}

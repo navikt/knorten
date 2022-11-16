@@ -4,6 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/chart"
@@ -28,27 +31,19 @@ func Create(c *gin.Context, repo *database.Repo, googleClient *google.Google, k8
 	}
 
 	_, err = repo.TeamGet(c, form.Team)
-	if !errors.Is(err, sql.ErrNoRows) {
-		return fmt.Errorf("there already exists a team '%v'", form.Team)
-	} else if err != nil {
-		return err
-	}
-
-	if err := googleClient.CreateGCPResources(c, form.Team, form.Users); err != nil {
-		return err
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			fmt.Println("Creating team", form.Team)
+		} else {
+			return err
+		}
 	}
 
 	if err := repo.TeamCreate(c, form.Team, form.Users); err != nil {
 		return err
 	}
 
-	if err := k8sClient.CreateTeamNamespace(c, form.Team); err != nil {
-		return err
-	}
-
-	if err := k8sClient.CreateTeamServiceAccount(c, form.Team); err != nil {
-		return err
-	}
+	go createExternalResources(c, googleClient, k8sClient, &form)
 
 	return nil
 }
@@ -102,4 +97,21 @@ func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, he
 	}
 
 	return nil
+}
+
+func createExternalResources(c *gin.Context, googleClient *google.Google, k8sClient *k8s.Client, form *Form) {
+	if err := googleClient.CreateGCPResources(c, form.Team, form.Users); err != nil {
+		logrus.Error(err)
+		return
+	}
+
+	if err := k8sClient.CreateTeamNamespace(c, form.Team); err != nil {
+		logrus.Error(err)
+		return
+	}
+
+	if err := k8sClient.CreateTeamServiceAccount(c, form.Team); err != nil {
+		logrus.Error(err)
+		return
+	}
 }

@@ -1,10 +1,11 @@
 package google
 
 import (
-	secretmanager "cloud.google.com/go/secretmanager/apiv1"
-	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"context"
 	"fmt"
+
+	secretmanager "cloud.google.com/go/secretmanager/apiv1"
+	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"k8s.io/utils/strings/slices"
 )
 
@@ -29,8 +30,8 @@ func (g *Google) createSecret(ctx context.Context, team string) (*secretmanagerp
 		SecretId: team,
 		Secret: &secretmanagerpb.Secret{
 			Labels: map[string]string{
-				"team":                team,
-				"knada.io/created-by": "knorten",
+				"team":       team,
+				"created-by": "knorten",
 			},
 			Replication: &secretmanagerpb.Replication{
 				Replication: &secretmanagerpb.Replication_UserManaged_{

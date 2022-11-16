@@ -2,10 +2,11 @@ package helm
 
 import (
 	"context"
-	"helm.sh/helm/v3/pkg/chart"
 	"log"
 	"os"
 	"path/filepath"
+
+	"helm.sh/helm/v3/pkg/chart"
 
 	"github.com/nais/knorten/pkg/database"
 	"github.com/sirupsen/logrus"

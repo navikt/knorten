@@ -35,10 +35,11 @@ type AirflowValues struct {
 	WebserverSecretKey            string `helm:"webserverSecretKey"`
 	IngressHosts                  string `helm:"ingress.web.hosts"`
 	WebserverGitSynkContainerArgs string `helm:"webserver.extraContainers.[0].args"`
+	SchedulerGitInitContainerArgs string `helm:"scheduler.extraInitContainers.[0].args"`
 	SchedulerGitSynkContainerArgs string `helm:"scheduler.extraContainers.[0].args"`
 	WorkersGitSynkContainerArgs   string `helm:"workers.extraContainers.[0].args"`
 	WorkerServiceAccount          string `helm:"workers.serviceAccount.name"`
-	ExtraEnvs                     string `helm:"extraEnv"`
+	ExtraEnvs                     string `helm:"env"`
 }
 
 func installOrUpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, helmClient *helm.Client) error {
@@ -94,8 +95,8 @@ func UpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, h
 }
 
 type AirflowUserEnv struct {
-	Name  string
-	Value string
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 func addGeneratedAirflowConfig(values *AirflowForm) error {
@@ -103,6 +104,7 @@ func addGeneratedAirflowConfig(values *AirflowForm) error {
 	values.IngressHosts = fmt.Sprintf("[{\"name\":\"%v\",\"tls\":{\"enabled\":true,\"secretName\":\"%v\"}}]", values.Namespace+".airflow.knada.io", "airflow-certificate")
 	values.WorkerServiceAccount = values.Namespace
 	values.WebserverGitSynkContainerArgs = fmt.Sprintf("[\"%v\",\"%v\",\"/dags\",\"60\"]", values.DagRepo, values.DagRepoBranch)
+	values.SchedulerGitInitContainerArgs = fmt.Sprintf("[\"%v\",\"%v\",\"/dags\",\"60\"]", values.DagRepo, values.DagRepoBranch)
 	values.SchedulerGitSynkContainerArgs = fmt.Sprintf("[\"%v\",\"%v\",\"/dags\",\"60\"]", values.DagRepo, values.DagRepoBranch)
 	values.WorkersGitSynkContainerArgs = fmt.Sprintf("[\"%v\",\"%v\",\"/dags\",\"60\"]", values.DagRepo, values.DagRepoBranch)
 
@@ -135,5 +137,5 @@ func userEnvs(values *AirflowForm) (string, error) {
 		return "", err
 	}
 
-	return fmt.Sprintf("%q", string(envBytes)), nil
+	return string(envBytes), nil
 }

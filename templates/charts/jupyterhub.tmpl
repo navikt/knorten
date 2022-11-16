@@ -17,9 +17,15 @@
                         <label for="memory">Memory</label>
                         <input type="text" name="memory" id="memory" value="{{ .values.MemoryLimit }}" placeholder="2G"/>
                     </div>
-                    <div class="pure-controls">
-                        <button type="submit" class="pure-button pure-button-primary">Lagre</button>
-                    </div>
+                    {{ if .values }}
+                        <div class="pure-controls">
+                            <button type="submit" class="pure-button pure-button-primary" disabled>Lagre</button>
+                        </div>
+                    {{ else }}
+                        <div class="pure-controls">
+                            <button type="submit" class="pure-button pure-button-primary">Lagre</button>
+                        </div>
+                    {{ end }}
                 </fieldset>
             </form>
         </div>

@@ -19,9 +19,16 @@
                         <input type="text" name="branch" id="branch" value="{{ .values.DagRepoBranch }}"
                                placeholder="main"/>
                     </div>
+
+                    {{ if .values }}
                     <div class="pure-controls">
-                        <button type="submit" class="pure-button pure-button-primary">Lagre</button>
+                        <button type="submit" class="pure-button pure-button-primary" disabled>Lagre</button>
                     </div>
+                    {{ else }}
+                        <div class="pure-controls">
+                            <button type="submit" class="pure-button pure-button-primary">Lagre</button>
+                        </div>
+                    {{ end }}
                 </fieldset>
             </form>
         </div>

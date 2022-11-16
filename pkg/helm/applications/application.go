@@ -28,7 +28,7 @@ func NewAirflow(team string, repo *database.Repo) *Application {
 		chartName:    "airflow",
 		chartRepo:    "apache-airflow",
 		chartType:    gensql.ChartTypeAirflow,
-		chartVersion: "1.7.0",
+		chartVersion: "1.6.0",
 		team:         team,
 		repo:         repo,
 	}

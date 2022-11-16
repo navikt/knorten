@@ -2,12 +2,13 @@ package api
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"net/http"
 )
 
 func getChartType(chartType string) gensql.ChartType {
@@ -50,7 +51,7 @@ func (a *API) setupChartRoutes() {
 		case gensql.ChartTypeJupyterhub:
 			err = chart.CreateJupyterhub(c, team, a.repo, a.helmClient)
 		case gensql.ChartTypeAirflow:
-			err = chart.CreateAirflow(c, team, a.repo, a.helmClient)
+			err = chart.CreateAirflow(c, team, a.repo, a.googleClient, a.k8sClient, a.helmClient)
 		}
 
 		if err != nil {

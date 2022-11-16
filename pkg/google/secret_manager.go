@@ -26,7 +26,7 @@ func (g *Google) createSecret(ctx context.Context, team string) (*secretmanagerp
 	defer g.closeClientFunc()(client)
 
 	req := &secretmanagerpb.CreateSecretRequest{
-		Parent:   g.project,
+		Parent:   "projects/" + g.project,
 		SecretId: team,
 		Secret: &secretmanagerpb.Secret{
 			Labels: map[string]string{

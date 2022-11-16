@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
@@ -32,9 +33,7 @@ func (r *Repo) ServicesForUser(ctx context.Context, email string) (map[string][]
 		if err != nil {
 			return nil, err
 		}
-		for _, chartType := range servicesForTeam {
-			userServices[team] = append(userServices[team], chartType)
-		}
+		userServices[team] = append(userServices[team], servicesForTeam...)
 	}
 	return userServices, nil
 }

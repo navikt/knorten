@@ -2,6 +2,8 @@ package chart
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -10,8 +12,10 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/google"
 	"github.com/nais/knorten/pkg/helm"
 	helmApps "github.com/nais/knorten/pkg/helm/applications"
+	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/reflect"
 )
 
@@ -40,6 +44,10 @@ type AirflowValues struct {
 	WorkersGitSynkContainerArgs   string `helm:"workers.extraContainers.[0].args"`
 	WorkerServiceAccount          string `helm:"workers.serviceAccount.name"`
 	ExtraEnvs                     string `helm:"env"`
+	DBUser                        string `helm:"data.metadataConnection.user"`
+	DBPassword                    string `helm:"data.metadataConnection.pass"`
+	DBHost                        string `helm:"data.metadataConnection.host"`
+	DBName                        string `helm:"data.metadataConnection.db"`
 }
 
 func installOrUpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, helmClient *helm.Client) error {
@@ -64,7 +72,7 @@ func installOrUpdateAirflow(ctx context.Context, form AirflowForm, repo *databas
 	return nil
 }
 
-func CreateAirflow(c *gin.Context, teamName string, repo *database.Repo, helmClient *helm.Client) error {
+func CreateAirflow(c *gin.Context, teamName string, repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, helmClient *helm.Client) error {
 	var form AirflowForm
 	err := c.ShouldBindWith(&form, binding.Form)
 	if err != nil {
@@ -86,6 +94,8 @@ func CreateAirflow(c *gin.Context, teamName string, repo *database.Repo, helmCli
 	if err := addGeneratedAirflowConfig(&form); err != nil {
 		return err
 	}
+
+	go createAirflowDB(c, teamName, googleClient, k8sClient, &form)
 
 	return installOrUpdateAirflow(c, form, repo, helmClient)
 }
@@ -113,6 +123,17 @@ func addGeneratedAirflowConfig(values *AirflowForm) error {
 	if err != nil {
 		return err
 	}
+
+	dbPassword, err := generatePassword(40)
+	if err != nil {
+		return err
+	}
+
+	values.DBHost = "airflow-sql-proxy"
+	values.DBName = values.Namespace
+	values.DBUser = values.Namespace
+	values.DBPassword = dbPassword
+
 	return nil
 }
 
@@ -138,4 +159,37 @@ func userEnvs(values *AirflowForm) (string, error) {
 	}
 
 	return string(envBytes), nil
+}
+
+func createAirflowDB(ctx context.Context, team string, googleClient *google.Google, k8sClient *k8s.Client, form *AirflowForm) error {
+	dbInstance := "airflow-" + team
+	if err := googleClient.CreateCloudSQLInstance(ctx, dbInstance); err != nil {
+		return err
+	}
+
+	if err := googleClient.CreateCloudSQLDatabase(ctx, team, dbInstance); err != nil {
+		return err
+	}
+
+	if err := googleClient.CreateCloudSQLUser(ctx, team, form.DBPassword, dbInstance); err != nil {
+		return err
+	}
+
+	if err := googleClient.CreateSQLClientIAMBinding(ctx, team); err != nil {
+		return err
+	}
+
+	if err := k8sClient.CreateCloudSQLProxy(ctx, form.DBHost, team, dbInstance); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func generatePassword(length int) (string, error) {
+	b := make([]byte, length)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }

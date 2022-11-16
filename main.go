@@ -20,6 +20,8 @@ type Config struct {
 	DBConnString string
 	DryRun       bool
 	InCluster    bool
+	GCPProject   string
+	GCPRegion    string
 }
 
 func main() {
@@ -33,6 +35,8 @@ func main() {
 	flag.StringVar(&cfg.DBConnString, "db-conn-string", os.Getenv("DB_CONN_STRING"), "Database connection string")
 	flag.BoolVar(&cfg.DryRun, "dry-run", false, "Don't run Helm commands")
 	flag.BoolVar(&cfg.InCluster, "in-cluster", true, "In cluster configuration for go client")
+	flag.StringVar(&cfg.GCPProject, "project", os.Getenv("GCP_PROJECT"), "GCP project")
+	flag.StringVar(&cfg.GCPRegion, "region", os.Getenv("GCP_REGION"), "GCP region")
 	flag.Parse()
 
 	repo, err := database.New(fmt.Sprintf("%v?sslmode=disable", cfg.DBConnString), log.WithField("subsystem", "repo"))
@@ -43,7 +47,7 @@ func main() {
 
 	azure := auth.New(cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, log.WithField("subfield", "auth"))
 
-	googleClient := google.New(log.WithField("subsystem", "googleClient"), cfg.DryRun)
+	googleClient := google.New(log.WithField("subsystem", "googleClient"), cfg.GCPProject, cfg.GCPRegion, cfg.DryRun)
 
 	helmClient, err := helm.New(repo, log.WithField("subsystem", "helmClient"), cfg.DryRun, cfg.InCluster)
 	if err != nil {
@@ -51,7 +55,7 @@ func main() {
 		return
 	}
 
-	k8sClient, err := k8s.New(cfg.DryRun, cfg.InCluster)
+	k8sClient, err := k8s.New(cfg.DryRun, cfg.InCluster, cfg.GCPProject, cfg.GCPRegion)
 	if err != nil {
 		log.WithError(err).Fatal("creating k8s client")
 		return

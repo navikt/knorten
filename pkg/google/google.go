@@ -3,6 +3,7 @@ package google
 import (
 	"context"
 	"fmt"
+
 	"github.com/sirupsen/logrus"
 	"google.golang.org/api/iam/v1"
 )
@@ -15,13 +16,15 @@ type Google struct {
 	dryRun  bool
 	log     *logrus.Entry
 	project string
+	region  string
 }
 
-func New(log *logrus.Entry, dryRun bool) *Google {
+func New(log *logrus.Entry, gcpProject, gcpRegion string, dryRun bool) *Google {
 	return &Google{
 		log:     log,
+		project: gcpProject,
+		region:  gcpRegion,
 		dryRun:  dryRun,
-		project: "projects/knada-gcp", // TODO: Dette burde vært config
 	}
 }
 
@@ -38,7 +41,7 @@ func (g *Google) createIAMServiceAccount(ctx context.Context, team string) (*iam
 		},
 	}
 
-	account, err := service.Projects.ServiceAccounts.Create(g.project, request).Do()
+	account, err := service.Projects.ServiceAccounts.Create("projects/"+g.project, request).Do()
 	if err != nil {
 		return nil, fmt.Errorf("Projects.ServiceAccounts.Create: %v", err)
 	}
@@ -52,24 +55,24 @@ func (g *Google) createSAWorkloadIdentityBinding(ctx context.Context, iamSA, nam
 		return err
 	}
 
-	resource := "projects/knada-gcp/serviceAccounts/" + iamSA
+	resource := fmt.Sprintf("projects/%v/serviceAccounts/%v", g.project, iamSA)
 
 	policy, err := service.Projects.ServiceAccounts.GetIamPolicy(resource).Do()
 	if err != nil {
 		return err
 	}
 	bindings := policy.Bindings
-	if !updateRoleBindingIfExists(bindings, "roles/iam.workloadIdentityUser", namespace) {
+	if !g.updateRoleBindingIfExists(bindings, "roles/iam.workloadIdentityUser", namespace) {
 		// Create role binding if not exists
 		bindings = append(bindings, &iam.Binding{
-			Members: []string{fmt.Sprintf("serviceAccount:knada-gcp.svc.id.goog[%v/%v]", namespace, namespace)},
+			Members: []string{fmt.Sprintf("serviceAccount:%v.svc.id.goog[%v/%v]", g.project, namespace, namespace)},
 			Role:    "roles/iam.workloadIdentityUser",
 		})
 	}
 
 	for _, b := range bindings {
 		if b.Role == "roles/iam.workloadIdentityUser" {
-			b.Members = append(b.Members, fmt.Sprintf("serviceAccount:knada-gcp.svc.id.goog[%v/%v]", namespace, namespace))
+			b.Members = append(b.Members, fmt.Sprintf("serviceAccount:%v.svc.id.goog[%v/%v]", g.project, namespace, namespace))
 		}
 	}
 
@@ -85,10 +88,10 @@ func (g *Google) createSAWorkloadIdentityBinding(ctx context.Context, iamSA, nam
 	return nil
 }
 
-func updateRoleBindingIfExists(bindings []*iam.Binding, role, namespace string) bool {
+func (g *Google) updateRoleBindingIfExists(bindings []*iam.Binding, role, namespace string) bool {
 	for _, b := range bindings {
 		if b.Role == role {
-			b.Members = append(b.Members, fmt.Sprintf("serviceAccount:knada-gcp.svc.id.goog[%v/%v]", namespace, namespace))
+			b.Members = append(b.Members, fmt.Sprintf("serviceAccount:%v.svc.id.goog[%v/%v]", g.project, namespace, namespace))
 			return true
 		}
 	}
@@ -132,5 +135,5 @@ func (g *Google) Update(c context.Context, secret string, users []string) error 
 		return nil
 	}
 
-	return g.setUsersSecretOwnerBinding(c, users, fmt.Sprintf("%v/secrets/%v", g.project, secret))
+	return g.setUsersSecretOwnerBinding(c, users, fmt.Sprintf("projects/%v/secrets/%v", g.project, secret))
 }

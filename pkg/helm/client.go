@@ -114,7 +114,7 @@ func initRepositories() error {
 		},
 		{
 			URL:  "https://airflow.apache.org",
-			Name: "airflow",
+			Name: "apache-airflow",
 		},
 	}
 

@@ -7,15 +7,20 @@
             {{ else }}
                 <h2>Ny Jupyter Notebook</h2>
             {{ end }}
+            {{ with .errors }}
+                {{ . }}
+            {{ end }}
             <form class="pure-form pure-form-stacked" action="" method="POST">
                 <fieldset>
                     <div class="pure-control-group">
                         <label for="cpu">CPU</label>
-                        <input type="number" name="cpu" id="cpu" value="{{ .values.CPULimit }}" placeholder="0.5" step="0.1" min="0.5"/>
+                        <input type="number" name="cpu" id="cpu" value="{{ or .values.CPULimit "0.5" }}"
+                               placeholder="0.5" step="0.1" min="0.5"/>
                     </div>
                     <div class="pure-control-group">
-                        <label for="memory">Memory</label>
-                        <input type="text" name="memory" id="memory" value="{{ .values.MemoryLimit }}" placeholder="2G"/>
+                        <label for="memory">Memory (gigabyte)</label>
+                        <input type="text" name="memory" id="memory" value="{{ or .values.MemoryLimit "2" }}"
+                               placeholder="2" step="0.1" min="1"/>
                     </div>
                     {{ if .values }}
                         <div class="pure-controls">

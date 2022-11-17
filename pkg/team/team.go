@@ -19,8 +19,8 @@ import (
 )
 
 type Form struct {
-	Team  string   `form:"team" binding:"required"`
-	Users []string `form:"users[]" binding:"required"`
+	Team  string   `form:"team" binding:"required,validTeam"`
+	Users []string `form:"users[]" binding:"required,validEmail"`
 }
 
 func Create(c *gin.Context, repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client) error {

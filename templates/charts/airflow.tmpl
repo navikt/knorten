@@ -7,6 +7,9 @@
             {{ else }}
                 <h2>Ny Jupyter Notebook</h2>
             {{ end }}
+            {{ with .errors }}
+                {{ . }}
+            {{ end }}
             <form class="pure-form pure-form-stacked" action="" method="POST">
                 <fieldset>
                     <div class="pure-control-group">

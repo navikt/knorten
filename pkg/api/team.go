@@ -4,11 +4,26 @@ import (
 	"fmt"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/validator/v10"
 	"github.com/nais/knorten/pkg/team"
 	"net/http"
 )
 
 func (a *API) setupTeamRoutes() {
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		err := v.RegisterValidation("validTeam", team.ValidateTeamName)
+		if err != nil {
+			a.log.WithError(err).Error("can't register validator")
+			return
+		}
+		err = v.RegisterValidation("validEmail", team.ValidateTeamUsers)
+		if err != nil {
+			a.log.WithError(err).Error("can't register validator")
+			return
+		}
+	}
+
 	a.router.GET("/team/new", func(c *gin.Context) {
 		var form team.Form
 		session := sessions.Default(c)

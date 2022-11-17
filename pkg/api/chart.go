@@ -125,7 +125,7 @@ func (a *API) setupChartRoutes() {
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
 			var form chart.JupyterForm
-			err := c.ShouldBindWith(&form, binding.Form)
+			err = c.ShouldBindWith(&form, binding.Form)
 			if err != nil {
 				session := sessions.Default(c)
 				session.AddFlash(err.Error())
@@ -138,6 +138,7 @@ func (a *API) setupChartRoutes() {
 				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", team, chartType))
 				return
 			}
+			form.Namespace = team
 			err = chart.UpdateJupyterhub(c, form, a.repo, a.helmClient)
 		case gensql.ChartTypeAirflow:
 			var form chart.AirflowForm
@@ -154,6 +155,7 @@ func (a *API) setupChartRoutes() {
 				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", team, chartType))
 				return
 			}
+			form.Namespace = team
 			err = chart.UpdateAirflow(c, form, a.repo, a.helmClient)
 		}
 

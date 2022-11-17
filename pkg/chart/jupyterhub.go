@@ -99,6 +99,13 @@ func installOrUpdateJupyterhub(c context.Context, repo *database.Repo, helmClien
 }
 
 func UpdateJupyterhub(c *gin.Context, form JupyterForm, repo *database.Repo, helmClient *helm.Client) error {
+	team, err := repo.TeamGet(c, form.Namespace)
+	if err != nil {
+		return err
+	}
+	form.AdminUsers = team.Users
+	form.AllowedUsers = team.Users
+
 	return installOrUpdateJupyterhub(c, repo, helmClient, form)
 }
 

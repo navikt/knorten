@@ -100,7 +100,7 @@ func (a *Application) enrichWithTeamValues(ctx context.Context, values map[strin
 	}
 
 	for _, v := range dbValues {
-		err = parseTeamValue(v.Key, v.Value, values)
+		_, err = parseTeamValue(v.Key, v.Value, values)
 		if err != nil {
 			return err
 		}
@@ -109,7 +109,7 @@ func (a *Application) enrichWithTeamValues(ctx context.Context, values map[strin
 	return nil
 }
 
-func parseTeamValue(key string, value any, values map[string]any) error {
+func parseTeamValue(key string, value any, values map[string]any) (any, error) {
 	keys := helm.KeySplitHandleEscape(key)
 
 	if pKeys, cKeys, idx, mutate := isMutation(keys); mutate {
@@ -118,20 +118,20 @@ func parseTeamValue(key string, value any, values map[string]any) error {
 
 	value, err := helm.ParseValue(value)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	helm.SetChartValue(keys, value, values)
 
-	return nil
+	return values, nil
 }
 
-func isMutation(keys []string) ([]string, []string, int, bool) {
+func isMutation(keys []string) ([]string, string, int, bool) {
 	for i, p := range keys {
 		if idx, isListElement := isListElement(p); isListElement {
-			return keys[:i], keys[i+1:], idx, true
+			return keys[:i], strings.Join(keys[i+1:], "."), idx, true
 		}
 	}
-	return []string{}, []string{}, 0, false
+	return []string{}, "", 0, false
 }
 
 func isListElement(p string) (int, bool) {
@@ -148,14 +148,23 @@ func isListElement(p string) (int, bool) {
 	return 0, false
 }
 
-func mutateGlobalListValue(pKeys, keys []string, idx int, value any, values map[string]any) error {
+func mutateGlobalListValue(pKeys []string, key string, idx int, value any, values map[string]any) (any, error) {
 	parentList := findParentList(pKeys, values)
 	value, err := helm.ParseValue(value)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	helm.SetChartValue(keys, value, parentList[idx].(map[string]any))
-	return nil
+
+	if parent, ok := parentList[idx].(map[string]any); ok {
+		parent, err := parseTeamValue(key, value, parent)
+		if err != nil {
+			return nil, err
+		}
+
+		return parent, nil
+	}
+	parentList[idx] = value
+	return parentList[idx], nil
 }
 
 func findParentList(pKeys []string, values map[string]any) []any {

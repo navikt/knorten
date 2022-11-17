@@ -36,9 +36,18 @@ func (a *API) setupChartRoutes() {
 			form = chart.AirflowForm{}
 		}
 
+		session := sessions.Default(c)
+		flashes := session.Flashes()
+		err := session.Save()
+		if err != nil {
+			a.log.WithError(err).Error("problem saving session")
+			return
+		}
+
 		c.HTML(http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
-			"team": team,
-			"form": form,
+			"team":   team,
+			"form":   form,
+			"errors": flashes,
 		})
 	})
 
@@ -55,10 +64,18 @@ func (a *API) setupChartRoutes() {
 		}
 
 		if err != nil {
-			fmt.Println(err)
-			// c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			session := sessions.Default(c)
+			session.AddFlash(err.Error())
+			err := session.Save()
+			if err != nil {
+				a.log.WithError(err).Error("problem saving session")
+				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/new", team, chartType))
+				return
+			}
 			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/new", team, chartType))
+			return
 		}
+
 		c.Redirect(http.StatusSeeOther, "/user")
 	})
 
@@ -86,9 +103,17 @@ func (a *API) setupChartRoutes() {
 			return
 		}
 
+		session := sessions.Default(c)
+		flashes := session.Flashes()
+		err = session.Save()
+		if err != nil {
+			a.log.WithError(err).Error("problem saving session")
+			return
+		}
 		c.HTML(http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
 			"team":   team,
 			"values": form,
+			"errors": flashes,
 		})
 	})
 

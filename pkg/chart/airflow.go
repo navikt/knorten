@@ -6,6 +6,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/database"
@@ -15,7 +17,6 @@ import (
 	helmApps "github.com/nais/knorten/pkg/helm/applications"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/reflect"
-	"strings"
 )
 
 type AirflowForm struct {
@@ -26,8 +27,8 @@ type AirflowForm struct {
 }
 
 type AirflowConfigurableValues struct {
-	DagRepo       string `form:"repo" binding:"required" helm:"dags.gitSync.repo"`
-	DagRepoBranch string `form:"branch" helm:"dags.gitSync.branch"`
+	DagRepo       string `form:"repo" binding:"required"`
+	DagRepoBranch string `form:"branch"`
 }
 
 type AirflowValues struct {
@@ -51,6 +52,7 @@ type AirflowValues struct {
 	DBPassword                 string `helm:"data.metadataConnection.pass"`
 	DBHost                     string `helm:"data.metadataConnection.host"`
 	DBName                     string `helm:"data.metadataConnection.db"`
+	CeleryResultBackend        string `helm:enableBuiltInSecretEnvVars.AIRFLOW__CELERY__CELERY_RESULT_BACKEND`
 }
 
 func installOrUpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, helmClient *helm.Client) error {
@@ -141,6 +143,7 @@ func addGeneratedAirflowConfig(values *AirflowForm) error {
 	values.DBUser = values.Namespace
 	values.DBPassword = dbPassword
 
+	values.CeleryResultBackend = "false"
 	return nil
 }
 
@@ -150,7 +153,7 @@ func setWebserverEnv(values *AirflowForm) error {
 		Value: strings.Join(values.Users, ","),
 	}
 
-	envBytes, err := json.Marshal(env)
+	envBytes, err := json.Marshal([]airflowEnv{env})
 	if err != nil {
 		return err
 	}

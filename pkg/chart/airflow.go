@@ -6,8 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"strings"
-
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/database"
@@ -17,6 +15,7 @@ import (
 	helmApps "github.com/nais/knorten/pkg/helm/applications"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/reflect"
+	"strings"
 )
 
 type AirflowForm struct {
@@ -35,7 +34,7 @@ type AirflowValues struct {
 	AirflowConfigurableValues
 
 	// Generated config
-	Users                      []string
+	WebserverEnv               string `helm:"webserver.env"`
 	WebserverSecretKey         string `helm:"webserverSecretKey"`
 	IngressHosts               string `helm:"ingress.web.hosts"`
 	WebserverGitSynkRepo       string `helm:"webserver.extraContainers.[0].args.[0]"`
@@ -87,10 +86,6 @@ func CreateAirflow(c *gin.Context, teamName string, repo *database.Repo, googleC
 	}
 	form.Users = team.Users
 
-	if form.DagRepoBranch == "" {
-		form.DagRepoBranch = "main"
-	}
-
 	if err := addGeneratedAirflowConfig(&form); err != nil {
 		return err
 	}
@@ -107,15 +102,17 @@ func UpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, h
 	if err != nil {
 		return err
 	}
+
 	form.Users = team.Users
-	if err := setUserEnvs(&form); err != nil {
+	err = setWebserverEnv(&form)
+	if err != nil {
 		return err
 	}
 
 	return installOrUpdateAirflow(ctx, form, repo, helmClient)
 }
 
-type AirflowUserEnv struct {
+type airflowEnv struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
@@ -134,6 +131,11 @@ func addGeneratedAirflowConfig(values *AirflowForm) error {
 		return err
 	}
 
+	err = setWebserverEnv(values)
+	if err != nil {
+		return err
+	}
+
 	values.DBHost = "airflow-sql-proxy"
 	values.DBName = values.Namespace
 	values.DBUser = values.Namespace
@@ -142,8 +144,24 @@ func addGeneratedAirflowConfig(values *AirflowForm) error {
 	return nil
 }
 
+func setWebserverEnv(values *AirflowForm) error {
+	env := airflowEnv{
+		Name:  "AIRFLOW_USERS",
+		Value: strings.Join(values.Users, ","),
+	}
+
+	envBytes, err := json.Marshal(env)
+	if err != nil {
+		return err
+	}
+
+	values.WebserverEnv = string(envBytes)
+
+	return nil
+}
+
 func setUserEnvs(values *AirflowForm) error {
-	userEnvs := []AirflowUserEnv{
+	userEnvs := []airflowEnv{
 		{
 			Name:  "KNADA_TEAM_SECRET",
 			Value: fmt.Sprintf("projects/%v/secrets/%v", "knada-gcp", values.Namespace),
@@ -151,10 +169,6 @@ func setUserEnvs(values *AirflowForm) error {
 		{
 			Name:  "TEAM",
 			Value: values.Namespace,
-		},
-		{
-			Name:  "AIRFLOW_USERS",
-			Value: strings.Join(values.Users, ","),
 		},
 	}
 
@@ -168,6 +182,10 @@ func setUserEnvs(values *AirflowForm) error {
 }
 
 func setSynkRepoAndBranch(values *AirflowForm) {
+	if values.DagRepoBranch == "" {
+		values.DagRepoBranch = "main"
+	}
+
 	values.WebserverGitSynkRepo = values.DagRepo
 	values.WebserverGitSynkRepoBranch = values.DagRepoBranch
 	values.SchedulerGitInitRepo = values.DagRepo

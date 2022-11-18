@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/database"
@@ -18,6 +17,13 @@ import (
 type JupyterForm struct {
 	Namespace string `form:"namespace"`
 	JupyterValues
+}
+
+func (v *JupyterConfigurableValues) MemoryWithoutUnit() string {
+	if v.MemoryLimit == "" {
+		return ""
+	}
+	return v.MemoryLimit[:len(v.MemoryLimit)-1]
 }
 
 type JupyterConfigurableValues struct {

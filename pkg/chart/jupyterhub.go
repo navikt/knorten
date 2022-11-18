@@ -91,10 +91,6 @@ func installOrUpdateJupyterhub(c context.Context, repo *database.Repo, helmClien
 	}
 
 	application := helmApps.NewJupyterhub(form.Namespace, repo)
-	_, err = application.Chart(c)
-	if err != nil {
-		return err
-	}
 
 	// TODO: Hadde vært kjekt om de ikke gjorde dette, kanskje endret i siste versjon?
 	// Release name must be unique across namespaces as the helm chart creates a clusterrole

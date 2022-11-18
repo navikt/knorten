@@ -66,10 +66,6 @@ func installOrUpdateAirflow(ctx context.Context, form AirflowForm, repo *databas
 	}
 
 	application := helmApps.NewAirflow(form.Namespace, repo)
-	_, err = application.Chart(ctx) // TODO: Hvordan funker dette?
-	if err != nil {
-		return err
-	}
 
 	go helmClient.InstallOrUpgrade(string(gensql.ChartTypeAirflow), form.Namespace, application)
 

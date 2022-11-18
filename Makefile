@@ -1,8 +1,4 @@
-.PHONY: local install-sqlc linux-build
-DATE = $(shell date "+%Y-%m-%d")
-LAST_COMMIT = $(shell git --no-pager log -1 --pretty=%h)
-VERSION ?= $(DATE)-$(LAST_COMMIT)
-APP = knorten
+.PHONY: env local local-offline generate-sql install-sqlc goose
 SQLC_VERSION ?= "v1.15.0"
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -48,9 +44,6 @@ generate-sql:
 
 install-sqlc:
 	go install github.com/kyleconroy/sqlc/cmd/sqlc@$(SQLC_VERSION)
-
-linux-build:
-	go build -a -installsuffix cgo -o $(APP) .
 
 # make goose cmd=status
 goose:

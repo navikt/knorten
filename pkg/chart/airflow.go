@@ -35,19 +35,23 @@ type AirflowValues struct {
 	AirflowConfigurableValues
 
 	// Generated config
-	Users                         []string
-	WebserverSecretKey            string `helm:"webserverSecretKey"`
-	IngressHosts                  string `helm:"ingress.web.hosts"`
-	WebserverGitSynkContainerArgs string `helm:"webserver.extraContainers.[0].args"`
-	SchedulerGitInitContainerArgs string `helm:"scheduler.extraInitContainers.[0].args"`
-	SchedulerGitSynkContainerArgs string `helm:"scheduler.extraContainers.[0].args"`
-	WorkersGitSynkContainerArgs   string `helm:"workers.extraContainers.[0].args"`
-	WorkerServiceAccount          string `helm:"workers.serviceAccount.name"`
-	ExtraEnvs                     string `helm:"env"`
-	DBUser                        string `helm:"data.metadataConnection.user"`
-	DBPassword                    string `helm:"data.metadataConnection.pass"`
-	DBHost                        string `helm:"data.metadataConnection.host"`
-	DBName                        string `helm:"data.metadataConnection.db"`
+	Users                      []string
+	WebserverSecretKey         string `helm:"webserverSecretKey"`
+	IngressHosts               string `helm:"ingress.web.hosts"`
+	WebserverGitSynkRepo       string `helm:"webserver.extraContainers.[0].args.[0]"`
+	WebserverGitSynkRepoBranch string `helm:"webserver.extraContainers.[0].args.[1]"`
+	SchedulerGitInitRepo       string `helm:"scheduler.extraInitContainers.[0].args.[0]"`
+	SchedulerGitInitRepoBranch string `helm:"scheduler.extraInitContainers.[0].args.[1]"`
+	SchedulerGitSynkRepo       string `helm:"scheduler.extraContainers.[0].args.[0]"`
+	SchedulerGitSynkRepoBranch string `helm:"scheduler.extraContainers.[0].args.[1]"`
+	WorkersGitSynkRepo         string `helm:"workers.extraContainers.[0].args.[0]"`
+	WorkersGitSynkRepoBranch   string `helm:"workers.extraContainers.[0].args.[1]"`
+	WorkerServiceAccount       string `helm:"workers.serviceAccount.name"`
+	ExtraEnvs                  string `helm:"env"`
+	DBUser                     string `helm:"data.metadataConnection.user"`
+	DBPassword                 string `helm:"data.metadataConnection.pass"`
+	DBHost                     string `helm:"data.metadataConnection.host"`
+	DBName                     string `helm:"data.metadataConnection.db"`
 }
 
 func installOrUpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, helmClient *helm.Client) error {
@@ -101,6 +105,17 @@ func CreateAirflow(c *gin.Context, teamName string, repo *database.Repo, googleC
 }
 
 func UpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, helmClient *helm.Client) error {
+	setSynkRepoAndBranch(&form)
+
+	team, err := repo.TeamGet(ctx, form.Namespace)
+	if err != nil {
+		return err
+	}
+	form.Users = team.Users
+	if err := setUserEnvs(&form); err != nil {
+		return err
+	}
+
 	return installOrUpdateAirflow(ctx, form, repo, helmClient)
 }
 
@@ -113,14 +128,8 @@ func addGeneratedAirflowConfig(values *AirflowForm) error {
 	values.WebserverSecretKey = generateSecureToken(64)
 	values.IngressHosts = fmt.Sprintf("[{\"name\":\"%v\",\"tls\":{\"enabled\":true,\"secretName\":\"%v\"}}]", values.Namespace+".airflow.knada.io", "airflow-certificate")
 	values.WorkerServiceAccount = values.Namespace
-	values.WebserverGitSynkContainerArgs = fmt.Sprintf("[\"%v\",\"%v\",\"/dags\",\"60\"]", values.DagRepo, values.DagRepoBranch)
-	values.SchedulerGitInitContainerArgs = fmt.Sprintf("[\"%v\",\"%v\",\"/dags\",\"60\"]", values.DagRepo, values.DagRepoBranch)
-	values.SchedulerGitSynkContainerArgs = fmt.Sprintf("[\"%v\",\"%v\",\"/dags\",\"60\"]", values.DagRepo, values.DagRepoBranch)
-	values.WorkersGitSynkContainerArgs = fmt.Sprintf("[\"%v\",\"%v\",\"/dags\",\"60\"]", values.DagRepo, values.DagRepoBranch)
-
-	var err error
-	values.ExtraEnvs, err = userEnvs(values)
-	if err != nil {
+	setSynkRepoAndBranch(values)
+	if err := setUserEnvs(values); err != nil {
 		return err
 	}
 
@@ -137,7 +146,7 @@ func addGeneratedAirflowConfig(values *AirflowForm) error {
 	return nil
 }
 
-func userEnvs(values *AirflowForm) (string, error) {
+func setUserEnvs(values *AirflowForm) error {
 	userEnvs := []AirflowUserEnv{
 		{
 			Name:  "KNADA_TEAM_SECRET",
@@ -155,10 +164,22 @@ func userEnvs(values *AirflowForm) (string, error) {
 
 	envBytes, err := json.Marshal(userEnvs)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return string(envBytes), nil
+	values.ExtraEnvs = string(envBytes)
+	return nil
+}
+
+func setSynkRepoAndBranch(values *AirflowForm) {
+	values.WebserverGitSynkRepo = values.DagRepo
+	values.WebserverGitSynkRepoBranch = values.DagRepoBranch
+	values.SchedulerGitInitRepo = values.DagRepo
+	values.SchedulerGitInitRepoBranch = values.DagRepoBranch
+	values.SchedulerGitSynkRepo = values.DagRepo
+	values.SchedulerGitSynkRepoBranch = values.DagRepoBranch
+	values.WorkersGitSynkRepo = values.DagRepo
+	values.WorkersGitSynkRepoBranch = values.DagRepoBranch
 }
 
 func createAirflowDB(ctx context.Context, team string, googleClient *google.Google, k8sClient *k8s.Client, form *AirflowForm) error {

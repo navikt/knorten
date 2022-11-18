@@ -34,6 +34,15 @@ func Test_parseTeamValue(t *testing.T) {
 			},
 			want: map[string]any{"webserver": map[string]any{"extraContainers": []any{map[string]any{"name": "hello", "args": []any{"navikt/repo", "main", "/dags", "60"}}}}},
 		},
+		{
+			name: "Replace nested value test single list element",
+			args: args{
+				key:    "webserver.extraContainers.[0].args.[0]",
+				value:  "navikt/repo",
+				values: map[string]any{"webserver": map[string]any{"extraContainers": []any{map[string]any{"name": "hello", "args": []any{"", "main", "/dags", "60"}}}}, "unaffected": "value"},
+			},
+			want: map[string]any{"webserver": map[string]any{"extraContainers": []any{map[string]any{"name": "hello", "args": []any{"navikt/repo", "main", "/dags", "60"}}}}, "unaffected": "value"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

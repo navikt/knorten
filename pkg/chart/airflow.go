@@ -147,8 +147,8 @@ func addGeneratedAirflowConfig(values *AirflowForm) error {
 	values.DBPassword = dbPassword
 
 	values.ResultDBHost = "airflow-sql-proxy"
-	values.ResultDBName = values.Namespace
-	values.ResultDBUser = values.Namespace
+	values.ResultDBName = values.Team
+	values.ResultDBUser = values.Team
 	values.ResultDBPassword = dbPassword
 	return nil
 }

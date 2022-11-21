@@ -2,6 +2,7 @@ package helm
 
 import (
 	"context"
+	"github.com/nais/knorten/pkg/team"
 	"log"
 	"os"
 	"path/filepath"
@@ -44,11 +45,12 @@ func New(repo *database.Repo, log *logrus.Entry, dryRun, inCluster bool) (*Clien
 	}, nil
 }
 
-func (h *Client) InstallOrUpgrade(releaseName, namespace string, app Application) error {
+func (h *Client) InstallOrUpgrade(releaseName, teamName string, app Application) error {
 	if h.dryRun {
 		h.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
+	namespace := team.NameToNamespace(teamName)
 
 	hChart, err := app.Chart(context.Background())
 	if err != nil {

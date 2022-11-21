@@ -17,11 +17,13 @@ import (
 	helmApps "github.com/nais/knorten/pkg/helm/applications"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/reflect"
+	"github.com/nais/knorten/pkg/team"
+	"strings"
 )
 
 type AirflowForm struct {
-	Namespace string `form:"namespace"`
-	Users     []string
+	Team  string
+	Users []string
 
 	AirflowValues
 }
@@ -64,14 +66,14 @@ func installOrUpdateAirflow(ctx context.Context, form AirflowForm, repo *databas
 		return err
 	}
 
-	err = repo.ServiceCreate(ctx, gensql.ChartTypeAirflow, chartValues, form.Namespace)
+	err = repo.ServiceCreate(ctx, gensql.ChartTypeAirflow, chartValues, form.Team)
 	if err != nil {
 		return err
 	}
 
-	application := helmApps.NewAirflow(form.Namespace, repo)
+	application := helmApps.NewAirflow(form.Team, repo)
 
-	go helmClient.InstallOrUpgrade(string(gensql.ChartTypeAirflow), form.Namespace, application)
+	go helmClient.InstallOrUpgrade(string(gensql.ChartTypeAirflow), form.Team, application)
 
 	return nil
 }
@@ -83,9 +85,9 @@ func CreateAirflow(c *gin.Context, teamName string, repo *database.Repo, googleC
 		return err
 	}
 
-	form.Namespace = teamName
+	form.Team = teamName
 
-	team, err := repo.TeamGet(c, form.Namespace)
+	team, err := repo.TeamGet(c, form.Team)
 	if err != nil {
 		return err
 	}
@@ -103,7 +105,7 @@ func CreateAirflow(c *gin.Context, teamName string, repo *database.Repo, googleC
 func UpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, helmClient *helm.Client) error {
 	setSynkRepoAndBranch(&form)
 
-	team, err := repo.TeamGet(ctx, form.Namespace)
+	team, err := repo.TeamGet(ctx, form.Team)
 	if err != nil {
 		return err
 	}
@@ -124,8 +126,8 @@ type airflowEnv struct {
 
 func addGeneratedAirflowConfig(values *AirflowForm) error {
 	values.WebserverSecretKey = generateSecureToken(64)
-	values.IngressHosts = fmt.Sprintf("[{\"name\":\"%v\",\"tls\":{\"enabled\":true,\"secretName\":\"%v\"}}]", values.Namespace+".airflow.knada.io", "airflow-certificate")
-	values.WorkerServiceAccount = values.Namespace
+	values.IngressHosts = fmt.Sprintf("[{\"name\":\"%v\",\"tls\":{\"enabled\":true,\"secretName\":\"%v\"}}]", values.Team+".airflow.knada.io", "airflow-certificate")
+	values.WorkerServiceAccount = values.Team
 	setSynkRepoAndBranch(values)
 	if err := setUserEnvs(values); err != nil {
 		return err
@@ -142,8 +144,8 @@ func addGeneratedAirflowConfig(values *AirflowForm) error {
 	}
 
 	values.DBHost = "airflow-sql-proxy"
-	values.DBName = values.Namespace
-	values.DBUser = values.Namespace
+	values.DBName = values.Team
+	values.DBUser = values.Team
 	values.DBPassword = dbPassword
 
 	values.ResultDBHost = "airflow-sql-proxy"
@@ -173,11 +175,11 @@ func setUserEnvs(values *AirflowForm) error {
 	userEnvs := []airflowEnv{
 		{
 			Name:  "KNADA_TEAM_SECRET",
-			Value: fmt.Sprintf("projects/%v/secrets/%v", "knada-gcp", values.Namespace),
+			Value: fmt.Sprintf("projects/%v/secrets/%v", "knada-gcp", values.Team),
 		},
 		{
 			Name:  "TEAM",
-			Value: values.Namespace,
+			Value: values.Team,
 		},
 	}
 
@@ -205,25 +207,25 @@ func setSynkRepoAndBranch(values *AirflowForm) {
 	values.WorkersGitSynkRepoBranch = values.DagRepoBranch
 }
 
-func createAirflowDB(ctx context.Context, team string, googleClient *google.Google, k8sClient *k8s.Client, form *AirflowForm) error {
-	dbInstance := "airflow-" + team
+func createAirflowDB(ctx context.Context, teamName string, googleClient *google.Google, k8sClient *k8s.Client, form *AirflowForm) error {
+	dbInstance := "airflow-" + teamName
 	if err := googleClient.CreateCloudSQLInstance(ctx, dbInstance); err != nil {
 		return err
 	}
 
-	if err := googleClient.CreateCloudSQLDatabase(ctx, team, dbInstance); err != nil {
+	if err := googleClient.CreateCloudSQLDatabase(ctx, teamName, dbInstance); err != nil {
 		return err
 	}
 
-	if err := googleClient.CreateCloudSQLUser(ctx, team, form.DBPassword, dbInstance); err != nil {
+	if err := googleClient.CreateCloudSQLUser(ctx, teamName, form.DBPassword, dbInstance); err != nil {
 		return err
 	}
 
-	if err := googleClient.CreateSQLClientIAMBinding(ctx, team); err != nil {
+	if err := googleClient.CreateSQLClientIAMBinding(ctx, teamName); err != nil {
 		return err
 	}
 
-	if err := k8sClient.CreateCloudSQLProxy(ctx, form.DBHost, team, dbInstance); err != nil {
+	if err := k8sClient.CreateCloudSQLProxy(ctx, form.DBHost, team.NameToNamespace(teamName), dbInstance); err != nil {
 		return err
 	}
 

@@ -109,39 +109,3 @@ func (q *Queries) TeamValuesGet(ctx context.Context, arg TeamValuesGetParams) ([
 	}
 	return items, nil
 }
-
-const teamsGet = `-- name: TeamsGet :many
-SELECT "team", "key", "value"
-FROM chart_team_values
-WHERE chart_type = 'namespace'
-  AND key = 'users'
-`
-
-type TeamsGetRow struct {
-	Team  string
-	Key   string
-	Value string
-}
-
-func (q *Queries) TeamsGet(ctx context.Context) ([]TeamsGetRow, error) {
-	rows, err := q.db.QueryContext(ctx, teamsGet)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []TeamsGetRow{}
-	for rows.Next() {
-		var i TeamsGetRow
-		if err := rows.Scan(&i.Team, &i.Key, &i.Value); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}

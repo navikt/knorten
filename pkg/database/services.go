@@ -38,7 +38,7 @@ func (r *Repo) ServicesForUser(ctx context.Context, email string) (map[string][]
 	return userServices, nil
 }
 
-func (r *Repo) ServiceCreate(ctx context.Context, chartType gensql.ChartType, chartValues map[string]string, namespace string) error {
+func (r *Repo) ServiceCreate(ctx context.Context, chartType gensql.ChartType, chartValues map[string]string, team string) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -49,7 +49,7 @@ func (r *Repo) ServiceCreate(ctx context.Context, chartType gensql.ChartType, ch
 		err := querier.TeamValueInsert(ctx, gensql.TeamValueInsertParams{
 			Key:       key,
 			Value:     value,
-			Team:      namespace,
+			Team:      team,
 			ChartType: chartType,
 		})
 		if err != nil {

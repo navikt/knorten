@@ -15,7 +15,7 @@ import (
 )
 
 type JupyterForm struct {
-	Namespace string `form:"namespace"`
+	Team string
 	JupyterValues
 }
 
@@ -58,21 +58,21 @@ func CreateJupyterhub(c *gin.Context, teamName string, repo *database.Repo, helm
 		return err
 	}
 
-	form.Namespace = teamName
+	form.Team = teamName
 
-	team, err := repo.TeamGet(c, form.Namespace)
+	team, err := repo.TeamGet(c, form.Team)
 	if err != nil {
 		return err
 	}
 	form.AdminUsers = team.Users
 	form.AllowedUsers = team.Users
 
-	existing, err := repo.TeamValuesGet(c, gensql.ChartTypeJupyterhub, form.Namespace)
+	existing, err := repo.TeamValuesGet(c, gensql.ChartTypeJupyterhub, form.Team)
 	if err != nil {
 		return err
 	}
 	if len(existing) > 0 {
-		return fmt.Errorf("there already exists a jupyterhub for namespace %v", form.Namespace)
+		return fmt.Errorf("there already exists a jupyterhub for team %v", form.Team)
 	}
 
 	addGeneratedJupyterhubConfig(&form)
@@ -85,23 +85,23 @@ func installOrUpdateJupyterhub(c context.Context, repo *database.Repo, helmClien
 		return err
 	}
 
-	err = repo.ServiceCreate(c, gensql.ChartTypeJupyterhub, chartValues, form.Namespace)
+	err = repo.ServiceCreate(c, gensql.ChartTypeJupyterhub, chartValues, form.Team)
 	if err != nil {
 		return err
 	}
 
-	application := helmApps.NewJupyterhub(form.Namespace, repo)
+	application := helmApps.NewJupyterhub(form.Team, repo)
 
 	// TODO: Hadde vært kjekt om de ikke gjorde dette, kanskje endret i siste versjon?
 	// Release name must be unique across namespaces as the helm chart creates a clusterrole
 	// for each jupyterhub with the same name as the release name.
-	releaseName := fmt.Sprintf("%v-%v", string(gensql.ChartTypeJupyterhub), form.Namespace)
-	go helmClient.InstallOrUpgrade(releaseName, form.Namespace, application)
+	releaseName := fmt.Sprintf("%v-%v", string(gensql.ChartTypeJupyterhub), form.Team)
+	go helmClient.InstallOrUpgrade(releaseName, form.Team, application)
 	return nil
 }
 
 func UpdateJupyterhub(c *gin.Context, form JupyterForm, repo *database.Repo, helmClient *helm.Client) error {
-	team, err := repo.TeamGet(c, form.Namespace)
+	team, err := repo.TeamGet(c, form.Team)
 	if err != nil {
 		return err
 	}
@@ -121,9 +121,9 @@ func generateSecureToken(length int) string {
 
 func addGeneratedJupyterhubConfig(values *JupyterForm) {
 	values.ProxyToken = generateSecureToken(64)
-	values.Hosts = fmt.Sprintf("[\"%v\"]", values.Namespace+".jupyter.knada.io")
-	values.IngressTLS = fmt.Sprintf("[{\"hosts\":[\"%v\"], \"secretName\": \"%v\"}]", values.Namespace+".jupyter.knada.io", "jupyterhub-certificate")
-	values.ServiceAccount = values.Namespace
-	values.OAuthCallbackURL = fmt.Sprintf("https://%v.jupyter.knada.io/hub/oauth_callback", values.Namespace)
-	values.KnadaTeamSecret = fmt.Sprintf("projects/%v/secrets/%v", "knada-gcp", values.Namespace)
+	values.Hosts = fmt.Sprintf("[\"%v\"]", values.Team+".jupyter.knada.io")
+	values.IngressTLS = fmt.Sprintf("[{\"hosts\":[\"%v\"], \"secretName\": \"%v\"}]", values.Team+".jupyter.knada.io", "jupyterhub-certificate")
+	values.ServiceAccount = values.Team
+	values.OAuthCallbackURL = fmt.Sprintf("https://%v.jupyter.knada.io/hub/oauth_callback", values.Team)
+	values.KnadaTeamSecret = fmt.Sprintf("projects/%v/secrets/%v", "knada-gcp", values.Team)
 }

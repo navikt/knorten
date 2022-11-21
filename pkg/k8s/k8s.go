@@ -77,17 +77,17 @@ func (c *Client) CreateTeamNamespace(ctx context.Context, name string) error {
 	return nil
 }
 
-func (c *Client) CreateTeamServiceAccount(ctx context.Context, namespace string) error {
+func (c *Client) CreateTeamServiceAccount(ctx context.Context, team, namespace string) error {
 	if c.dryRun {
 		return nil
 	}
 
 	saSpec := &v1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      namespace,
+			Name:      team,
 			Namespace: namespace,
 			Annotations: map[string]string{
-				"iam.gke.io/gcp-service-account": fmt.Sprintf("%v@%v.iam.gserviceaccount.com", namespace, c.gcpProject),
+				"iam.gke.io/gcp-service-account": fmt.Sprintf("%v@%v.iam.gserviceaccount.com", team, c.gcpProject),
 			},
 		},
 	}
@@ -100,7 +100,7 @@ func (c *Client) CreateTeamServiceAccount(ctx context.Context, namespace string)
 	return nil
 }
 
-func (c *Client) CreateCloudSQLProxy(ctx context.Context, name, team, dbInstance string) error {
+func (c *Client) CreateCloudSQLProxy(ctx context.Context, team, namespace, dbInstance string) error {
 	port := int32(5432)
 
 	if c.dryRun {
@@ -109,19 +109,21 @@ func (c *Client) CreateCloudSQLProxy(ctx context.Context, name, team, dbInstance
 
 	deploySpec := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: team,
+			Name:      team,
+			Namespace: namespace,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app": name,
+					"team": team,
+					"app":  "cloudsql-proxy",
 				},
 			},
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app": name,
+						"team": team,
+						"app":  "cloudsql-proxy",
 					},
 				},
 				Spec: v1.PodSpec{
@@ -148,19 +150,19 @@ func (c *Client) CreateCloudSQLProxy(ctx context.Context, name, team, dbInstance
 		},
 	}
 
-	_, err := c.clientSet.AppsV1().Deployments(team).Create(ctx, deploySpec, metav1.CreateOptions{})
+	_, err := c.clientSet.AppsV1().Deployments(namespace).Create(ctx, deploySpec, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
 
 	serviceSpec := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: team,
+			Name:      team,
+			Namespace: namespace,
 		},
 		Spec: v1.ServiceSpec{
 			Selector: map[string]string{
-				"app": name,
+				"app": team,
 			},
 			Ports: []v1.ServicePort{
 				{
@@ -172,7 +174,7 @@ func (c *Client) CreateCloudSQLProxy(ctx context.Context, name, team, dbInstance
 		},
 	}
 
-	_, err = c.clientSet.CoreV1().Services(team).Create(ctx, serviceSpec, metav1.CreateOptions{})
+	_, err = c.clientSet.CoreV1().Services(namespace).Create(ctx, serviceSpec, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}

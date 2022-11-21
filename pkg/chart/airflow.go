@@ -17,8 +17,6 @@ import (
 	helmApps "github.com/nais/knorten/pkg/helm/applications"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/reflect"
-	"github.com/nais/knorten/pkg/team"
-	"strings"
 )
 
 type AirflowForm struct {
@@ -73,7 +71,7 @@ func installOrUpdateAirflow(ctx context.Context, form AirflowForm, repo *databas
 
 	application := helmApps.NewAirflow(form.Team, repo)
 
-	go helmClient.InstallOrUpgrade(string(gensql.ChartTypeAirflow), form.Team, application)
+	go helmClient.InstallOrUpgrade(string(gensql.ChartTypeAirflow), k8s.NameToNamespace(form.Team), application)
 
 	return nil
 }
@@ -225,7 +223,7 @@ func createAirflowDB(ctx context.Context, teamName string, googleClient *google.
 		return err
 	}
 
-	if err := k8sClient.CreateCloudSQLProxy(ctx, form.DBHost, team.NameToNamespace(teamName), dbInstance); err != nil {
+	if err := k8sClient.CreateCloudSQLProxy(ctx, form.DBHost, k8s.NameToNamespace(teamName), dbInstance); err != nil {
 		return err
 	}
 

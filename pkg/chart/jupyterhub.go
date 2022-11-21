@@ -11,6 +11,7 @@ import (
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/helm"
 	helmApps "github.com/nais/knorten/pkg/helm/applications"
+	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/reflect"
 )
 
@@ -96,7 +97,7 @@ func installOrUpdateJupyterhub(c context.Context, repo *database.Repo, helmClien
 	// Release name must be unique across namespaces as the helm chart creates a clusterrole
 	// for each jupyterhub with the same name as the release name.
 	releaseName := fmt.Sprintf("%v-%v", string(gensql.ChartTypeJupyterhub), form.Team)
-	go helmClient.InstallOrUpgrade(releaseName, form.Team, application)
+	go helmClient.InstallOrUpgrade(releaseName, k8s.NameToNamespace(form.Team), application)
 	return nil
 }
 

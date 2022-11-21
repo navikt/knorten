@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -16,6 +17,16 @@ import (
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
+
+func NameToNamespace(name string) string {
+	if strings.HasPrefix(name, "team-") {
+		return name
+	} else if strings.HasPrefix(name, "team") {
+		return strings.Replace(name, "team", "team-", 1)
+	} else {
+		return fmt.Sprintf("team-%v", name)
+	}
+}
 
 type Client struct {
 	clientSet  *kubernetes.Clientset

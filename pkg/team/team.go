@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strings"
-
 	"github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
@@ -22,16 +20,6 @@ import (
 type Form struct {
 	Team  string   `form:"team" binding:"required,validTeam"`
 	Users []string `form:"users[]" binding:"required,validEmail"`
-}
-
-func NameToNamespace(name string) string {
-	if strings.HasPrefix(name, "team-") {
-		return name
-	} else if strings.HasPrefix(name, "team") {
-		return strings.Replace(name, "team", "team-", 1)
-	} else {
-		return fmt.Sprintf("team-%v", name)
-	}
 }
 
 func Create(c *gin.Context, repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client) error {
@@ -116,12 +104,12 @@ func createExternalResources(c *gin.Context, googleClient *google.Google, k8sCli
 		return
 	}
 
-	if err := k8sClient.CreateTeamNamespace(c, NameToNamespace(form.Team)); err != nil {
+	if err := k8sClient.CreateTeamNamespace(c, k8s.NameToNamespace(form.Team)); err != nil {
 		logrus.Error(err)
 		return
 	}
 
-	if err := k8sClient.CreateTeamServiceAccount(c, form.Team, NameToNamespace(form.Team)); err != nil {
+	if err := k8sClient.CreateTeamServiceAccount(c, form.Team, k8s.NameToNamespace(form.Team)); err != nil {
 		logrus.Error(err)
 		return
 	}

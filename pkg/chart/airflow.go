@@ -52,7 +52,10 @@ type AirflowValues struct {
 	DBPassword                 string `helm:"data.metadataConnection.pass"`
 	DBHost                     string `helm:"data.metadataConnection.host"`
 	DBName                     string `helm:"data.metadataConnection.db"`
-	CeleryResultBackend        string `helm:enableBuiltInSecretEnvVars.AIRFLOW__CELERY__CELERY_RESULT_BACKEND`
+	ResultDBUser               string `helm:"data.resultBackendConnection.user"`
+	ResultDBPassword           string `helm:"data.resultBackendConnection.pass"`
+	ResultDBHost               string `helm:"data.resultBackendConnection.host"`
+	ResultDBName               string `helm:"data.resultBackendConnection.db"`
 }
 
 func installOrUpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, helmClient *helm.Client) error {
@@ -143,7 +146,10 @@ func addGeneratedAirflowConfig(values *AirflowForm) error {
 	values.DBUser = values.Namespace
 	values.DBPassword = dbPassword
 
-	values.CeleryResultBackend = "false"
+	values.ResultDBHost = "airflow-sql-proxy"
+	values.ResultDBName = values.Namespace
+	values.ResultDBUser = values.Namespace
+	values.ResultDBPassword = dbPassword
 	return nil
 }
 

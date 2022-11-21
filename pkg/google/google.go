@@ -49,7 +49,7 @@ func (g *Google) createIAMServiceAccount(ctx context.Context, team string) (*iam
 	return account, nil
 }
 
-func (g *Google) createSAWorkloadIdentityBinding(ctx context.Context, iamSA, namespace string) error {
+func (g *Google) createSAWorkloadIdentityBinding(ctx context.Context, iamSA, team string) error {
 	service, err := iam.NewService(ctx)
 	if err != nil {
 		return err
@@ -62,17 +62,17 @@ func (g *Google) createSAWorkloadIdentityBinding(ctx context.Context, iamSA, nam
 		return err
 	}
 	bindings := policy.Bindings
-	if !g.updateRoleBindingIfExists(bindings, "roles/iam.workloadIdentityUser", namespace) {
+	if !g.updateRoleBindingIfExists(bindings, "roles/iam.workloadIdentityUser", team) {
 		// Create role binding if not exists
 		bindings = append(bindings, &iam.Binding{
-			Members: []string{fmt.Sprintf("serviceAccount:%v.svc.id.goog[%v/%v]", g.project, namespace, namespace)},
+			Members: []string{fmt.Sprintf("serviceAccount:%v.svc.id.goog[%v/%v]", g.project, team, team)},
 			Role:    "roles/iam.workloadIdentityUser",
 		})
 	}
 
 	for _, b := range bindings {
 		if b.Role == "roles/iam.workloadIdentityUser" {
-			b.Members = append(b.Members, fmt.Sprintf("serviceAccount:%v.svc.id.goog[%v/%v]", g.project, namespace, namespace))
+			b.Members = append(b.Members, fmt.Sprintf("serviceAccount:%v.svc.id.goog[%v/%v]", g.project, team, team))
 		}
 	}
 
@@ -88,10 +88,10 @@ func (g *Google) createSAWorkloadIdentityBinding(ctx context.Context, iamSA, nam
 	return nil
 }
 
-func (g *Google) updateRoleBindingIfExists(bindings []*iam.Binding, role, namespace string) bool {
+func (g *Google) updateRoleBindingIfExists(bindings []*iam.Binding, role, team string) bool {
 	for _, b := range bindings {
 		if b.Role == role {
-			b.Members = append(b.Members, fmt.Sprintf("serviceAccount:%v.svc.id.goog[%v/%v]", g.project, namespace, namespace))
+			b.Members = append(b.Members, fmt.Sprintf("serviceAccount:%v.svc.id.goog[%v/%v]", g.project, team, team))
 			return true
 		}
 	}

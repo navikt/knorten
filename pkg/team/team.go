@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 
@@ -21,6 +22,16 @@ import (
 type Form struct {
 	Team  string   `form:"team" binding:"required,validTeam"`
 	Users []string `form:"users[]" binding:"required,validEmail"`
+}
+
+func NameToNamespace(name string) string {
+	if strings.HasPrefix(name, "team-") {
+		return name
+	} else if strings.HasPrefix(name, "team") {
+		return strings.Replace(name, "team", "team-", 1)
+	} else {
+		return fmt.Sprintf("team-%v", name)
+	}
 }
 
 func Create(c *gin.Context, repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client) error {
@@ -73,7 +84,7 @@ func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, he
 
 	if slices.Contains(apps, string(gensql.ChartTypeJupyterhub)) {
 		jupyterForm := chart.JupyterForm{
-			Namespace: form.Team,
+			Team: form.Team,
 			JupyterValues: chart.JupyterValues{
 				AdminUsers:   form.Users,
 				AllowedUsers: form.Users,
@@ -87,8 +98,8 @@ func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, he
 
 	if slices.Contains(apps, string(gensql.ChartTypeAirflow)) {
 		airflowForm := chart.AirflowForm{
-			Namespace: form.Team,
-			Users:     form.Users,
+			Team:  form.Team,
+			Users: form.Users,
 		}
 		err = chart.UpdateAirflow(c, airflowForm, repo, helmClient)
 		if err != nil {
@@ -105,12 +116,12 @@ func createExternalResources(c *gin.Context, googleClient *google.Google, k8sCli
 		return
 	}
 
-	if err := k8sClient.CreateTeamNamespace(c, form.Team); err != nil {
+	if err := k8sClient.CreateTeamNamespace(c, NameToNamespace(form.Team)); err != nil {
 		logrus.Error(err)
 		return
 	}
 
-	if err := k8sClient.CreateTeamServiceAccount(c, form.Team); err != nil {
+	if err := k8sClient.CreateTeamServiceAccount(c, form.Team, NameToNamespace(form.Team)); err != nil {
 		logrus.Error(err)
 		return
 	}

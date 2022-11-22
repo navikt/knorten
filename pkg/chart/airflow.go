@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/go-playground/validator/v10"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -34,7 +35,7 @@ type AirflowForm struct {
 }
 
 type AirflowConfigurableValues struct {
-	DagRepo       string `form:"repo" binding:"required"`
+	DagRepo       string `form:"repo" binding:"validDagRepo,required"`
 	DagRepoBranch string `form:"branch"`
 }
 
@@ -56,6 +57,11 @@ type AirflowValues struct {
 	ExtraEnvs                  string `helm:"env"`
 	MetadataSecretName         string `helm:"data.metadataSecretName"`
 	ResultBackendSecretName    string `helm:"data.resultBackendSecretName"`
+}
+
+var AirflowValidateDagRepo validator.Func = func(fl validator.FieldLevel) bool {
+	repo := fl.Field().String()
+	return strings.HasPrefix(repo, "navikt/")
 }
 
 func CreateAirflow(c *gin.Context, slug string, repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, helmClient *helm.Client) error {

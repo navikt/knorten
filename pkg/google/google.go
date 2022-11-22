@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/nais/knorten/pkg/k8s"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/api/iam/v1"
 )
@@ -49,7 +50,7 @@ func (g *Google) createIAMServiceAccount(ctx context.Context, team string) (*iam
 	return account, nil
 }
 
-func (g *Google) createSAWorkloadIdentityBinding(ctx context.Context, iamSA, team string) error {
+func (g *Google) createSAWorkloadIdentityBinding(ctx context.Context, iamSA, k8sNamespace, team string) error {
 	service, err := iam.NewService(ctx)
 	if err != nil {
 		return err
@@ -62,18 +63,12 @@ func (g *Google) createSAWorkloadIdentityBinding(ctx context.Context, iamSA, tea
 		return err
 	}
 	bindings := policy.Bindings
-	if !g.updateRoleBindingIfExists(bindings, "roles/iam.workloadIdentityUser", team) {
+	if !g.updateRoleBindingIfExists(bindings, "roles/iam.workloadIdentityUser", k8sNamespace, team) {
 		// Create role binding if not exists
 		bindings = append(bindings, &iam.Binding{
-			Members: []string{fmt.Sprintf("serviceAccount:%v.svc.id.goog[%v/%v]", g.project, team, team)},
+			Members: []string{fmt.Sprintf("serviceAccount:%v.svc.id.goog[%v/%v]", g.project, k8sNamespace, team)},
 			Role:    "roles/iam.workloadIdentityUser",
 		})
-	}
-
-	for _, b := range bindings {
-		if b.Role == "roles/iam.workloadIdentityUser" {
-			b.Members = append(b.Members, fmt.Sprintf("serviceAccount:%v.svc.id.goog[%v/%v]", g.project, team, team))
-		}
 	}
 
 	_, err = service.Projects.ServiceAccounts.SetIamPolicy(resource, &iam.SetIamPolicyRequest{
@@ -88,10 +83,10 @@ func (g *Google) createSAWorkloadIdentityBinding(ctx context.Context, iamSA, tea
 	return nil
 }
 
-func (g *Google) updateRoleBindingIfExists(bindings []*iam.Binding, role, team string) bool {
+func (g *Google) updateRoleBindingIfExists(bindings []*iam.Binding, role, k8sNamespace, team string) bool {
 	for _, b := range bindings {
 		if b.Role == role {
-			b.Members = append(b.Members, fmt.Sprintf("serviceAccount:%v.svc.id.goog[%v/%v]", g.project, team, team))
+			b.Members = append(b.Members, fmt.Sprintf("serviceAccount:%v.svc.id.goog[%v/%v]", g.project, k8sNamespace, team))
 			return true
 		}
 	}
@@ -122,7 +117,7 @@ func (g *Google) CreateGCPResources(c context.Context, team string, users []stri
 		return fmt.Errorf("failed while creating secret binding: %v", err)
 	}
 
-	if err := g.createSAWorkloadIdentityBinding(c, iamSA.Email, team); err != nil {
+	if err := g.createSAWorkloadIdentityBinding(c, iamSA.Email, k8s.NameToNamespace(team), team); err != nil {
 		return err
 	}
 

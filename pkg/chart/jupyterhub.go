@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/database"
@@ -40,7 +41,6 @@ type JupyterValues struct {
 	// Generated config
 	AdminUsers       []string `helm:"hub.config.Authenticator.admin_users"`
 	AllowedUsers     []string `helm:"hub.config.Authenticator.allowed_users"`
-	ProxyToken       string   `helm:"proxy.secretToken"`
 	Hosts            string   `helm:"ingress.hosts"`
 	IngressTLS       string   `helm:"ingress.tls"`
 	ServiceAccount   string   `helm:"singleuser.serviceAccountName"`
@@ -112,19 +112,21 @@ func UpdateJupyterhub(c *gin.Context, form JupyterForm, repo *database.Repo, hel
 	return installOrUpdateJupyterhub(c, repo, helmClient, form)
 }
 
-func generateSecureToken(length int) string {
+func generateSecureToken(length int) (string, error) {
 	b := make([]byte, length)
 	if _, err := rand.Read(b); err != nil {
-		return ""
+		return "", err
 	}
-	return hex.EncodeToString(b)
+	token := hex.EncodeToString(b)
+	return token, nil
 }
 
-func addGeneratedJupyterhubConfig(values *JupyterForm) {
-	values.ProxyToken = generateSecureToken(64)
+func addGeneratedJupyterhubConfig(values *JupyterForm) error {
 	values.Hosts = fmt.Sprintf("[\"%v\"]", values.Team+".jupyter.knada.io")
 	values.IngressTLS = fmt.Sprintf("[{\"hosts\":[\"%v\"], \"secretName\": \"%v\"}]", values.Team+".jupyter.knada.io", "jupyterhub-certificate")
 	values.ServiceAccount = values.Team
 	values.OAuthCallbackURL = fmt.Sprintf("https://%v.jupyter.knada.io/hub/oauth_callback", values.Team)
 	values.KnadaTeamSecret = fmt.Sprintf("projects/%v/secrets/%v", "knada-gcp", values.Team)
+
+	return nil
 }

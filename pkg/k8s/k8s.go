@@ -193,6 +193,23 @@ func (c *Client) CreateCloudSQLProxy(ctx context.Context, team, namespace, dbIns
 	return nil
 }
 
+func (c *Client) CreateSecret(ctx context.Context, name, namespace string, data map[string]string) error {
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		StringData: data,
+	}
+
+	_, err := c.clientSet.CoreV1().Secrets(namespace).Create(ctx, secret, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func createConfig(inCluster bool) (*rest.Config, error) {
 	if inCluster {
 		return rest.InClusterConfig()

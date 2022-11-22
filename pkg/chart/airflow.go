@@ -123,7 +123,11 @@ type airflowEnv struct {
 }
 
 func addGeneratedAirflowConfig(values *AirflowForm) error {
-	values.WebserverSecretKey = generateSecureToken(64)
+	var err error
+	values.WebserverSecretKey, err = generateSecureToken(64)
+	if err != nil {
+		return err
+	}
 	values.IngressHosts = fmt.Sprintf("[{\"name\":\"%v\",\"tls\":{\"enabled\":true,\"secretName\":\"%v\"}}]", values.Team+".airflow.knada.io", "airflow-certificate")
 	values.WorkerServiceAccount = values.Team
 	setSynkRepoAndBranch(values)

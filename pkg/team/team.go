@@ -38,7 +38,7 @@ func Create(c *gin.Context, repo *database.Repo, googleClient *google.Google, k8
 		}
 	}
 
-	if err := repo.TeamCreate(c, form.Team, form.Users); err != nil {
+	if err := repo.TeamCreate(c, form.Team, removeEmptyUsers(form.Users)); err != nil {
 		return err
 	}
 
@@ -55,7 +55,7 @@ func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, he
 		return err
 	}
 
-	err = repo.TeamUpdate(c, form.Team, form.Users)
+	err = repo.TeamUpdate(c, form.Team, removeEmptyUsers(form.Users))
 	if err != nil {
 		return err
 	}
@@ -113,4 +113,10 @@ func createExternalResources(c *gin.Context, googleClient *google.Google, k8sCli
 		logrus.Error(err)
 		return
 	}
+}
+
+func removeEmptyUsers(formUsers []string) []string {
+	return slices.Filter(nil, formUsers, func(s string) bool {
+		return s != ""
+	})
 }

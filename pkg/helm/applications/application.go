@@ -17,30 +17,30 @@ type Application struct {
 	chartRepo    string
 	chartType    gensql.ChartType
 	chartVersion string
-	team         string
+	teamID       string
 	repo         *database.Repo
 }
 
 // TODO: Vi bør ta inn chart-settings som config
 
-func NewAirflow(team string, repo *database.Repo) *Application {
+func NewAirflow(teamID string, repo *database.Repo) *Application {
 	return &Application{
 		chartName:    "airflow",
 		chartRepo:    "apache-airflow",
 		chartType:    gensql.ChartTypeAirflow,
 		chartVersion: "1.7.0",
-		team:         team,
+		teamID:       teamID,
 		repo:         repo,
 	}
 }
 
-func NewJupyterhub(team string, repo *database.Repo) *Application {
+func NewJupyterhub(teamID string, repo *database.Repo) *Application {
 	return &Application{
 		chartName:    "jupyterhub",
 		chartRepo:    "jupyterhub",
 		chartType:    gensql.ChartTypeJupyterhub,
 		chartVersion: "2.0.0",
-		team:         team,
+		teamID:       teamID,
 		repo:         repo,
 	}
 }
@@ -94,7 +94,7 @@ func (a *Application) globalValues(ctx context.Context) (map[string]any, error) 
 }
 
 func (a *Application) enrichWithTeamValues(ctx context.Context, values map[string]any) error {
-	dbValues, err := a.repo.TeamValuesGet(ctx, a.chartType, a.team)
+	dbValues, err := a.repo.TeamValuesGet(ctx, a.chartType, a.teamID)
 	if err != nil {
 		return err
 	}

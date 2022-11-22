@@ -6,8 +6,7 @@ INSERT INTO chart_team_values ("key",
 VALUES (@key,
         @value,
         @team_id,
-        @chart_type)
-ON CONFLICT ON CONSTRAINT new_value DO UPDATE SET value = @value;
+        @chart_type);
 
 -- name: TeamValuesGet :many
 SELECT DISTINCT ON ("key") *

@@ -112,12 +112,12 @@ func installOrUpdateAirflow(ctx context.Context, form AirflowForm, repo *databas
 		return err
 	}
 
-	err = repo.TeamValuesInsert(ctx, gensql.ChartTypeAirflow, chartValues, form.Slug)
+	err = repo.TeamValuesInsert(ctx, gensql.ChartTypeAirflow, chartValues, form.TeamID)
 	if err != nil {
 		return err
 	}
 
-	application := helmApps.NewAirflow(form.Slug, repo)
+	application := helmApps.NewAirflow(form.TeamID, repo)
 
 	go helmClient.InstallOrUpgrade(string(gensql.ChartTypeAirflow), k8s.NameToNamespace(form.TeamID), application)
 
@@ -229,7 +229,7 @@ func createAirflowDB(ctx context.Context, teamID, dbPassword string, googleClien
 		return err
 	}
 
-	if err := googleClient.CreateSQLClientIAMBinding(ctx, teamID); err != nil {
+	if err := googleClient.SetSQLClientIAMBinding(ctx, teamID); err != nil {
 		return err
 	}
 

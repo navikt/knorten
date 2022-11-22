@@ -47,7 +47,6 @@ VALUES ($1,
         $2,
         $3,
         $4)
-ON CONFLICT ON CONSTRAINT new_value DO UPDATE SET value = $2
 `
 
 type TeamValueInsertParams struct {

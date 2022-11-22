@@ -101,12 +101,12 @@ func (g *Google) CreateCloudSQLUser(ctx context.Context, user, password, dbInsta
 	return nil
 }
 
-func (g *Google) CreateSQLClientIAMBinding(ctx context.Context, team string) error {
+func (g *Google) SetSQLClientIAMBinding(ctx context.Context, team string) error {
 	if g.dryRun {
 		g.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
-	
+
 	cmd := exec.CommandContext(
 		ctx,
 		"gcloud",

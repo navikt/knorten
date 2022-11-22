@@ -1,11 +1,11 @@
 -- name: TeamValueInsert :exec
 INSERT INTO chart_team_values ("key",
                                "value",
-                               "team",
+                               "team_id",
                                "chart_type")
 VALUES (@key,
         @value,
-        @team,
+        @team_id,
         @chart_type)
 ON CONFLICT ON CONSTRAINT new_value DO UPDATE SET value = @value;
 
@@ -13,10 +13,10 @@ ON CONFLICT ON CONSTRAINT new_value DO UPDATE SET value = @value;
 SELECT DISTINCT ON ("key") *
 FROM chart_team_values
 WHERE chart_type = @chart_type
-  AND team = @team
+  AND team_id = @team_id
 ORDER BY "key", "created" DESC;
 
 -- name: AppsForTeamGet :many
 SELECT DISTINCT ON (chart_type) chart_type
 FROM chart_team_values
-WHERE team = @team;
+WHERE team_id = @team_id;

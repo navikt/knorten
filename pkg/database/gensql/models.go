@@ -16,7 +16,6 @@ import (
 type ChartType string
 
 const (
-	ChartTypeNamespace  ChartType = "namespace"
 	ChartTypeJupyterhub ChartType = "jupyterhub"
 	ChartTypeAirflow    ChartType = "airflow"
 )
@@ -70,19 +69,7 @@ type ChartTeamValue struct {
 	Key       string
 	Value     string
 	ChartType ChartType
-	Team      string
-}
-
-type ChartValuesHistory struct {
-	ID        int32
-	Tstamp    sql.NullTime
-	TableName sql.NullString
-	Operation sql.NullString
-	Team      sql.NullString
-	ChartType NullChartType
-	Key       sql.NullString
-	NewValue  sql.NullString
-	OldValue  sql.NullString
+	TeamID    string
 }
 
 type Session struct {
@@ -95,7 +82,8 @@ type Session struct {
 }
 
 type Team struct {
-	Team    string
+	ID      string
+	Slug    string
 	Users   []string
 	Created sql.NullTime
 }

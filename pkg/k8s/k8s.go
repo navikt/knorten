@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"os"
 	"strings"
 
@@ -34,13 +35,15 @@ type Client struct {
 	inCluster  bool
 	gcpProject string
 	gcpRegion  string
+	log        *logrus.Entry
 }
 
-func New(dryRun, inCluster bool, gcpProject, gcpRegion string) (*Client, error) {
+func New(log *logrus.Entry, dryRun, inCluster bool, gcpProject, gcpRegion string) (*Client, error) {
 	client := &Client{
 		dryRun:     dryRun,
 		gcpProject: gcpProject,
 		gcpRegion:  gcpRegion,
+		log:        log,
 	}
 
 	config, err := createConfig(inCluster)
@@ -88,17 +91,18 @@ func (c *Client) CreateTeamNamespace(ctx context.Context, name string) error {
 	return nil
 }
 
-func (c *Client) CreateTeamServiceAccount(ctx context.Context, team, namespace string) error {
+func (c *Client) CreateTeamServiceAccount(ctx context.Context, teamID, namespace string) error {
 	if c.dryRun {
+		c.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
 
 	saSpec := &v1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      team,
+			Name:      teamID,
 			Namespace: namespace,
 			Annotations: map[string]string{
-				"iam.gke.io/gcp-service-account": fmt.Sprintf("%v@%v.iam.gserviceaccount.com", team, c.gcpProject),
+				"iam.gke.io/gcp-service-account": fmt.Sprintf("%v@%v.iam.gserviceaccount.com", teamID, c.gcpProject),
 			},
 		},
 	}
@@ -111,12 +115,13 @@ func (c *Client) CreateTeamServiceAccount(ctx context.Context, team, namespace s
 	return nil
 }
 
-func (c *Client) CreateCloudSQLProxy(ctx context.Context, name, team, namespace, dbInstance string) error {
-	port := int32(5432)
-
+func (c *Client) CreateCloudSQLProxy(ctx context.Context, name, teamID, namespace, dbInstance string) error {
 	if c.dryRun {
+		c.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
+
+	port := int32(5432)
 
 	deploySpec := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -126,19 +131,17 @@ func (c *Client) CreateCloudSQLProxy(ctx context.Context, name, team, namespace,
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"team": team,
-					"app":  "cloudsql-proxy",
+					"app": "cloudsql-proxy",
 				},
 			},
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"team": team,
-						"app":  "cloudsql-proxy",
+						"app": "cloudsql-proxy",
 					},
 				},
 				Spec: v1.PodSpec{
-					ServiceAccountName: team,
+					ServiceAccountName: teamID,
 					Containers: []v1.Container{
 						{
 							Name:  "cloudsql-proxy",
@@ -173,8 +176,7 @@ func (c *Client) CreateCloudSQLProxy(ctx context.Context, name, team, namespace,
 		},
 		Spec: v1.ServiceSpec{
 			Selector: map[string]string{
-				"team": team,
-				"app":  "cloudsql-proxy",
+				"app": "cloudsql-proxy",
 			},
 			Ports: []v1.ServicePort{
 				{
@@ -195,6 +197,11 @@ func (c *Client) CreateCloudSQLProxy(ctx context.Context, name, team, namespace,
 }
 
 func (c *Client) CreateSecret(ctx context.Context, name, namespace string, data map[string]string) error {
+	if c.dryRun {
+		c.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
 	secret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,

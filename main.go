@@ -45,7 +45,7 @@ func main() {
 		return
 	}
 
-	azure := auth.New(cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, log.WithField("subfield", "auth"))
+	azure := auth.New(cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, log.WithField("subsystem", "auth"))
 
 	googleClient := google.New(log.WithField("subsystem", "googleClient"), cfg.GCPProject, cfg.GCPRegion, cfg.DryRun)
 
@@ -55,7 +55,7 @@ func main() {
 		return
 	}
 
-	k8sClient, err := k8s.New(cfg.DryRun, cfg.InCluster, cfg.GCPProject, cfg.GCPRegion)
+	k8sClient, err := k8s.New(log.WithField("subsystem", "k8sClient"), cfg.DryRun, cfg.InCluster, cfg.GCPProject, cfg.GCPRegion)
 	if err != nil {
 		log.WithError(err).Fatal("creating k8s client")
 		return

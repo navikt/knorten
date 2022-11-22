@@ -2,8 +2,6 @@ package chart
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +15,8 @@ import (
 )
 
 type JupyterForm struct {
-	Team string
+	TeamID string
+	Slug   string
 	JupyterValues
 }
 
@@ -48,7 +47,7 @@ type JupyterValues struct {
 	KnadaTeamSecret  string   `helm:"singleuser.extraEnv.KNADA_TEAM_SECRET"`
 }
 
-func CreateJupyterhub(c *gin.Context, teamName string, repo *database.Repo, helmClient *helm.Client) error {
+func CreateJupyterhub(c *gin.Context, slug string, repo *database.Repo, helmClient *helm.Client) error {
 	var form JupyterForm
 	err := c.ShouldBindWith(&form, binding.Form)
 	if err != nil {
@@ -59,21 +58,22 @@ func CreateJupyterhub(c *gin.Context, teamName string, repo *database.Repo, helm
 		return err
 	}
 
-	form.Team = teamName
-
-	team, err := repo.TeamGet(c, form.Team)
+	team, err := repo.TeamGet(c, slug)
 	if err != nil {
 		return err
 	}
+
+	form.Slug = slug
+	form.TeamID = team.ID
 	form.AdminUsers = team.Users
 	form.AllowedUsers = team.Users
 
-	existing, err := repo.TeamValuesGet(c, gensql.ChartTypeJupyterhub, form.Team)
+	existing, err := repo.TeamValuesGet(c, gensql.ChartTypeJupyterhub, team.ID)
 	if err != nil {
 		return err
 	}
 	if len(existing) > 0 {
-		return fmt.Errorf("there already exists a jupyterhub for team %v", form.Team)
+		return fmt.Errorf("there already exists a jupyterhub for team '%v'", team.ID)
 	}
 
 	addGeneratedJupyterhubConfig(&form)
@@ -86,47 +86,37 @@ func installOrUpdateJupyterhub(c context.Context, repo *database.Repo, helmClien
 		return err
 	}
 
-	err = repo.ServiceCreate(c, gensql.ChartTypeJupyterhub, chartValues, form.Team)
+	err = repo.TeamValuesInsert(c, gensql.ChartTypeJupyterhub, chartValues, form.TeamID)
 	if err != nil {
 		return err
 	}
 
-	application := helmApps.NewJupyterhub(form.Team, repo)
+	application := helmApps.NewJupyterhub(form.TeamID, repo)
 
-	// TODO: Hadde vært kjekt om de ikke gjorde dette, kanskje endret i siste versjon?
 	// Release name must be unique across namespaces as the helm chart creates a clusterrole
 	// for each jupyterhub with the same name as the release name.
-	releaseName := fmt.Sprintf("%v-%v", string(gensql.ChartTypeJupyterhub), form.Team)
-	go helmClient.InstallOrUpgrade(releaseName, k8s.NameToNamespace(form.Team), application)
+	releaseName := fmt.Sprintf("%v-%v", string(gensql.ChartTypeJupyterhub), form.TeamID)
+	go helmClient.InstallOrUpgrade(releaseName, k8s.NameToNamespace(form.TeamID), application)
 	return nil
 }
 
 func UpdateJupyterhub(c *gin.Context, form JupyterForm, repo *database.Repo, helmClient *helm.Client) error {
-	team, err := repo.TeamGet(c, form.Team)
+	team, err := repo.TeamGet(c, form.Slug)
 	if err != nil {
 		return err
 	}
+
+	form.TeamID = team.ID
 	form.AdminUsers = team.Users
 	form.AllowedUsers = team.Users
 
 	return installOrUpdateJupyterhub(c, repo, helmClient, form)
 }
 
-func generateSecureToken(length int) (string, error) {
-	b := make([]byte, length)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	token := hex.EncodeToString(b)
-	return token, nil
-}
-
-func addGeneratedJupyterhubConfig(values *JupyterForm) error {
-	values.Hosts = fmt.Sprintf("[\"%v\"]", values.Team+".jupyter.knada.io")
-	values.IngressTLS = fmt.Sprintf("[{\"hosts\":[\"%v\"], \"secretName\": \"%v\"}]", values.Team+".jupyter.knada.io", "jupyterhub-certificate")
-	values.ServiceAccount = values.Team
-	values.OAuthCallbackURL = fmt.Sprintf("https://%v.jupyter.knada.io/hub/oauth_callback", values.Team)
-	values.KnadaTeamSecret = fmt.Sprintf("projects/%v/secrets/%v", "knada-gcp", values.Team)
-
-	return nil
+func addGeneratedJupyterhubConfig(values *JupyterForm) {
+	values.Hosts = fmt.Sprintf("[\"%v\"]", values.Slug+".jupyter.knada.io")
+	values.IngressTLS = fmt.Sprintf("[{\"hosts\":[\"%v\"], \"secretName\": \"%v\"}]", values.Slug+".jupyter.knada.io", "jupyterhub-certificate")
+	values.ServiceAccount = values.TeamID
+	values.OAuthCallbackURL = fmt.Sprintf("https://%v.jupyter.knada.io/hub/oauth_callback", values.Slug)
+	values.KnadaTeamSecret = fmt.Sprintf("projects/%v/secrets/%v", "knada-gcp", values.TeamID)
 }

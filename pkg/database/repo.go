@@ -76,7 +76,7 @@ func (r *Repo) TeamChartValueInsert(ctx context.Context, key, value, team string
 	return r.querier.TeamValueInsert(ctx, gensql.TeamValueInsertParams{
 		Key:       key,
 		Value:     value,
-		Team:      team,
+		TeamID:    team,
 		ChartType: chartType,
 	})
 }
@@ -84,14 +84,14 @@ func (r *Repo) TeamChartValueInsert(ctx context.Context, key, value, team string
 func (r *Repo) TeamValuesGet(ctx context.Context, chartType gensql.ChartType, team string) ([]gensql.ChartTeamValue, error) {
 	return r.querier.TeamValuesGet(ctx, gensql.TeamValuesGetParams{
 		ChartType: chartType,
-		Team:      team,
+		TeamID:    team,
 	})
 }
 
 func (r *Repo) TeamConfigurableValuesGet(ctx context.Context, chartType gensql.ChartType, team string, obj any) error {
 	teamValues, err := r.querier.TeamValuesGet(ctx, gensql.TeamValuesGetParams{
 		ChartType: chartType,
-		Team:      team,
+		TeamID:    team,
 	})
 	if err != nil {
 		return err

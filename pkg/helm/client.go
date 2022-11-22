@@ -2,6 +2,8 @@ package helm
 
 import (
 	"context"
+	"fmt"
+	"gopkg.in/yaml.v2"
 	"log"
 	"os"
 	"path/filepath"
@@ -44,15 +46,27 @@ func New(repo *database.Repo, log *logrus.Entry, dryRun, inCluster bool) (*Clien
 	}, nil
 }
 
-func (h *Client) InstallOrUpgrade(releaseName, namespace string, app Application) error {
-	if h.dryRun {
-		h.log.Infof("NOOP: Running in dry run mode")
+func (c *Client) InstallOrUpgrade(releaseName, namespace string, app Application) error {
+	if c.dryRun {
+		c.log.Infof("NOOP: Running in dry run mode")
+		charty, err := app.Chart(context.Background())
+		if err != nil {
+			return err
+		}
+
+		out, err := yaml.Marshal(charty.Values)
+		if err != nil {
+			return err
+		}
+
+		err = os.WriteFile(fmt.Sprintf("%v.yaml", releaseName), out, 0644)
+
 		return nil
 	}
 
-	hChart, err := app.Chart(context.Background())
+	charty, err := app.Chart(context.Background())
 	if err != nil {
-		h.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
+		c.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
 	}
 
 	settings := cli.New()
@@ -60,7 +74,7 @@ func (h *Client) InstallOrUpgrade(releaseName, namespace string, app Application
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "secret", log.Printf); err != nil {
 		log.Printf("%+v", err)
-		h.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
+		c.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
 		return err
 	}
 
@@ -68,7 +82,7 @@ func (h *Client) InstallOrUpgrade(releaseName, namespace string, app Application
 	listClient.Deployed = true
 	results, err := listClient.Run()
 	if err != nil {
-		h.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
+		c.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
 		return err
 	}
 
@@ -80,24 +94,24 @@ func (h *Client) InstallOrUpgrade(releaseName, namespace string, app Application
 	}
 
 	if !exists {
-		h.log.Infof("Installing release %v", releaseName)
+		c.log.Infof("Installing release %v", releaseName)
 		installClient := action.NewInstall(actionConfig)
 		installClient.Namespace = namespace
 		installClient.ReleaseName = releaseName
 
-		_, err = installClient.Run(hChart, hChart.Values)
+		_, err = installClient.Run(charty, charty.Values)
 		if err != nil {
-			h.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
+			c.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
 			return err
 		}
 	} else {
-		h.log.Infof("Upgrading existing release %v", releaseName)
+		c.log.Infof("Upgrading existing release %v", releaseName)
 		upgradeClient := action.NewUpgrade(actionConfig)
 		upgradeClient.Namespace = namespace
 
-		_, err = upgradeClient.Run(releaseName, hChart, hChart.Values)
+		_, err = upgradeClient.Run(releaseName, charty, charty.Values)
 		if err != nil {
-			h.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
+			c.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
 			return err
 		}
 	}

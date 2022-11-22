@@ -138,7 +138,7 @@ func (a *API) setupChartRoutes() {
 				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", team, chartType))
 				return
 			}
-			form.Team = team
+			form.Slug = team
 			err = chart.UpdateJupyterhub(c, form, a.repo, a.helmClient)
 		case gensql.ChartTypeAirflow:
 			var form chart.AirflowForm
@@ -155,7 +155,7 @@ func (a *API) setupChartRoutes() {
 				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", team, chartType))
 				return
 			}
-			form.Team = team
+			form.Slug = team
 			err = chart.UpdateAirflow(c, form, a.repo, a.helmClient)
 		}
 

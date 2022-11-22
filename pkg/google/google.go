@@ -93,18 +93,18 @@ func (g *Google) updateRoleBindingIfExists(bindings []*iam.Binding, role, k8sNam
 	return false
 }
 
-func (g *Google) CreateGCPResources(c context.Context, team string, users []string) error {
+func (g *Google) CreateGCPResources(c context.Context, teamID string, users []string) error {
 	if g.dryRun {
 		g.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
 
-	iamSA, err := g.createIAMServiceAccount(c, team)
+	iamSA, err := g.createIAMServiceAccount(c, teamID)
 	if err != nil {
 		return err
 	}
 
-	gsmSecret, err := g.createSecret(c, team)
+	gsmSecret, err := g.createSecret(c, teamID)
 	if err != nil {
 		return fmt.Errorf("failed to create secret: %v", err)
 	}
@@ -117,7 +117,7 @@ func (g *Google) CreateGCPResources(c context.Context, team string, users []stri
 		return fmt.Errorf("failed while creating secret binding: %v", err)
 	}
 
-	if err := g.createSAWorkloadIdentityBinding(c, iamSA.Email, k8s.NameToNamespace(team), team); err != nil {
+	if err := g.createSAWorkloadIdentityBinding(c, iamSA.Email, k8s.NameToNamespace(teamID), teamID); err != nil {
 		return err
 	}
 

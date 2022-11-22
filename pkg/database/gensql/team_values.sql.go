@@ -12,11 +12,11 @@ import (
 const appsForTeamGet = `-- name: AppsForTeamGet :many
 SELECT DISTINCT ON (chart_type) chart_type
 FROM chart_team_values
-WHERE team = $1
+WHERE team_id = $1
 `
 
-func (q *Queries) AppsForTeamGet(ctx context.Context, team string) ([]ChartType, error) {
-	rows, err := q.db.QueryContext(ctx, appsForTeamGet, team)
+func (q *Queries) AppsForTeamGet(ctx context.Context, teamID string) ([]ChartType, error) {
+	rows, err := q.db.QueryContext(ctx, appsForTeamGet, teamID)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func (q *Queries) AppsForTeamGet(ctx context.Context, team string) ([]ChartType,
 const teamValueInsert = `-- name: TeamValueInsert :exec
 INSERT INTO chart_team_values ("key",
                                "value",
-                               "team",
+                               "team_id",
                                "chart_type")
 VALUES ($1,
         $2,
@@ -53,7 +53,7 @@ ON CONFLICT ON CONSTRAINT new_value DO UPDATE SET value = $2
 type TeamValueInsertParams struct {
 	Key       string
 	Value     string
-	Team      string
+	TeamID    string
 	ChartType ChartType
 }
 
@@ -61,27 +61,27 @@ func (q *Queries) TeamValueInsert(ctx context.Context, arg TeamValueInsertParams
 	_, err := q.db.ExecContext(ctx, teamValueInsert,
 		arg.Key,
 		arg.Value,
-		arg.Team,
+		arg.TeamID,
 		arg.ChartType,
 	)
 	return err
 }
 
 const teamValuesGet = `-- name: TeamValuesGet :many
-SELECT DISTINCT ON ("key") id, created, key, value, chart_type, team
+SELECT DISTINCT ON ("key") id, created, key, value, chart_type, team_id
 FROM chart_team_values
 WHERE chart_type = $1
-  AND team = $2
+  AND team_id = $2
 ORDER BY "key", "created" DESC
 `
 
 type TeamValuesGetParams struct {
 	ChartType ChartType
-	Team      string
+	TeamID    string
 }
 
 func (q *Queries) TeamValuesGet(ctx context.Context, arg TeamValuesGetParams) ([]ChartTeamValue, error) {
-	rows, err := q.db.QueryContext(ctx, teamValuesGet, arg.ChartType, arg.Team)
+	rows, err := q.db.QueryContext(ctx, teamValuesGet, arg.ChartType, arg.TeamID)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (q *Queries) TeamValuesGet(ctx context.Context, arg TeamValuesGetParams) ([
 			&i.Key,
 			&i.Value,
 			&i.ChartType,
-			&i.Team,
+			&i.TeamID,
 		); err != nil {
 			return nil, err
 		}

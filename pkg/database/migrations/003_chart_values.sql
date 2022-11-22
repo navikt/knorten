@@ -1,5 +1,5 @@
 -- +goose Up
-CREATE TYPE CHART_TYPE AS ENUM ('namespace', 'jupyterhub', 'airflow');
+CREATE TYPE CHART_TYPE AS ENUM ('jupyterhub', 'airflow');
 
 CREATE TABLE chart_global_values (
     "id"         uuid                  DEFAULT uuid_generate_v4(),
@@ -16,11 +16,11 @@ CREATE TABLE chart_team_values (
     "key"        TEXT        NOT NULL,
     "value"      TEXT        NOT NULL,    
     "chart_type" CHART_TYPE  NOT NULL,
-    "team"       TEXT        NOT NULL,
+    "team_id"       TEXT        NOT NULL,
     PRIMARY KEY (id),
     CONSTRAINT fk_chart_team_values_team
-        FOREIGN KEY (team)
-            REFERENCES teams (team) ON DELETE CASCADE
+        FOREIGN KEY (team_id)
+            REFERENCES teams (id) ON DELETE CASCADE
 );
 
 -- +goose Down

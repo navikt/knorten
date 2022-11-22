@@ -11,6 +11,11 @@ import (
 )
 
 func (g *Google) CreateCloudSQLInstance(ctx context.Context, dbInstance string) error {
+	if g.dryRun {
+		g.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, 25*time.Minute)
 	cmd := exec.CommandContext(
 		ctxWithTimeout,
@@ -40,6 +45,11 @@ func (g *Google) CreateCloudSQLInstance(ctx context.Context, dbInstance string) 
 }
 
 func (g *Google) CreateCloudSQLDatabase(ctx context.Context, dbName, dbInstance string) error {
+	if g.dryRun {
+		g.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
 	cmd := exec.CommandContext(
 		ctx,
 		"gcloud",
@@ -63,6 +73,11 @@ func (g *Google) CreateCloudSQLDatabase(ctx context.Context, dbName, dbInstance 
 }
 
 func (g *Google) CreateCloudSQLUser(ctx context.Context, user, password, dbInstance string) error {
+	if g.dryRun {
+		g.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
 	cmd := exec.CommandContext(
 		ctx,
 		"gcloud",
@@ -87,6 +102,11 @@ func (g *Google) CreateCloudSQLUser(ctx context.Context, user, password, dbInsta
 }
 
 func (g *Google) CreateSQLClientIAMBinding(ctx context.Context, team string) error {
+	if g.dryRun {
+		g.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+	
 	cmd := exec.CommandContext(
 		ctx,
 		"gcloud",

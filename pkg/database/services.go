@@ -28,17 +28,17 @@ func (r *Repo) ServicesForUser(ctx context.Context, email string) (map[string][]
 
 	userServices := map[string][]gensql.ChartType{}
 	for _, team := range teamsSQL {
-		userServices[team] = []gensql.ChartType{}
-		servicesForTeam, err := r.querier.AppsForTeamGet(ctx, team)
+		userServices[team.Slug] = []gensql.ChartType{}
+		servicesForTeam, err := r.querier.AppsForTeamGet(ctx, team.ID)
 		if err != nil {
 			return nil, err
 		}
-		userServices[team] = append(userServices[team], servicesForTeam...)
+		userServices[team.Slug] = append(userServices[team.Slug], servicesForTeam...)
 	}
 	return userServices, nil
 }
 
-func (r *Repo) ServiceCreate(ctx context.Context, chartType gensql.ChartType, chartValues map[string]string, team string) error {
+func (r *Repo) TeamValuesInsert(ctx context.Context, chartType gensql.ChartType, chartValues map[string]string, team string) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -49,7 +49,7 @@ func (r *Repo) ServiceCreate(ctx context.Context, chartType gensql.ChartType, ch
 		err := querier.TeamValueInsert(ctx, gensql.TeamValueInsertParams{
 			Key:       key,
 			Value:     value,
-			Team:      team,
+			TeamID:    team,
 			ChartType: chartType,
 		})
 		if err != nil {

@@ -12,12 +12,7 @@ import (
 
 func (a *API) setupTeamRoutes() {
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-		err := v.RegisterValidation("validTeam", team.ValidateTeamName)
-		if err != nil {
-			a.log.WithError(err).Error("can't register validator")
-			return
-		}
-		err = v.RegisterValidation("validEmail", team.ValidateTeamUsers)
+		err := v.RegisterValidation("validEmail", team.ValidateTeamUsers)
 		if err != nil {
 			a.log.WithError(err).Error("can't register validator")
 			return

@@ -15,6 +15,7 @@ require (
 	github.com/lib/pq v1.10.6
 	github.com/pressly/goose/v3 v3.7.0
 	github.com/sirupsen/logrus v1.9.0
+	github.com/thanhpk/randstr v1.0.4
 	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783
 	google.golang.org/api v0.102.0
 	gopkg.in/yaml.v2 v2.4.0

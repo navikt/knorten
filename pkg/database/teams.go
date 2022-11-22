@@ -3,19 +3,19 @@ package database
 import (
 	"context"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"strings"
 )
 
-func (r *Repo) TeamCreate(ctx context.Context, team string, users []string) error {
+func (r *Repo) TeamCreate(ctx context.Context, team, slug string, users []string) error {
 	return r.querier.TeamCreate(ctx, gensql.TeamCreateParams{
-		Team:  strings.ToLower(team),
+		ID:    team,
 		Users: users,
+		Slug:  slug,
 	})
 }
 
 func (r *Repo) TeamUpdate(ctx context.Context, team string, users []string) error {
 	return r.querier.TeamUpdate(ctx, gensql.TeamUpdateParams{
-		Team:  team,
+		ID:    team,
 		Users: users,
 	})
 }

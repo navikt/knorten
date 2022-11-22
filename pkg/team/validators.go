@@ -6,16 +6,6 @@ import (
 	"strings"
 )
 
-var ValidateTeamName validator.Func = func(fl validator.FieldLevel) bool {
-	name := fl.Field().String()
-
-	if len(name) < 6 {
-		return false
-	}
-
-	return true
-}
-
 var ValidateTeamUsers validator.Func = func(fl validator.FieldLevel) bool {
 	users := fl.Field().Interface().([]string)
 	for _, user := range users {

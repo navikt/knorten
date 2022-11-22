@@ -111,7 +111,7 @@ func (c *Client) CreateTeamServiceAccount(ctx context.Context, team, namespace s
 	return nil
 }
 
-func (c *Client) CreateCloudSQLProxy(ctx context.Context, team, namespace, dbInstance string) error {
+func (c *Client) CreateCloudSQLProxy(ctx context.Context, name, team, namespace, dbInstance string) error {
 	port := int32(5432)
 
 	if c.dryRun {
@@ -120,7 +120,7 @@ func (c *Client) CreateCloudSQLProxy(ctx context.Context, team, namespace, dbIns
 
 	deploySpec := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      team,
+			Name:      name,
 			Namespace: namespace,
 		},
 		Spec: appsv1.DeploymentSpec{
@@ -168,12 +168,13 @@ func (c *Client) CreateCloudSQLProxy(ctx context.Context, team, namespace, dbIns
 
 	serviceSpec := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      team,
+			Name:      name,
 			Namespace: namespace,
 		},
 		Spec: v1.ServiceSpec{
 			Selector: map[string]string{
-				"app": team,
+				"team": team,
+				"app":  "cloudsql-proxy",
 			},
 			Ports: []v1.ServicePort{
 				{
@@ -186,6 +187,23 @@ func (c *Client) CreateCloudSQLProxy(ctx context.Context, team, namespace, dbIns
 	}
 
 	_, err = c.clientSet.CoreV1().Services(namespace).Create(ctx, serviceSpec, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) CreateSecret(ctx context.Context, name, namespace string, data map[string]string) error {
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		StringData: data,
+	}
+
+	_, err := c.clientSet.CoreV1().Secrets(namespace).Create(ctx, secret, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}

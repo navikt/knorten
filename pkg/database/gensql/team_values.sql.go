@@ -9,6 +9,21 @@ import (
 	"context"
 )
 
+const appDelete = `-- name: AppDelete :exec
+DELETE FROM chart_team_values
+WHERE team_id = $1 AND chart_type = $2
+`
+
+type AppDeleteParams struct {
+	TeamID    string
+	ChartType ChartType
+}
+
+func (q *Queries) AppDelete(ctx context.Context, arg AppDeleteParams) error {
+	_, err := q.db.ExecContext(ctx, appDelete, arg.TeamID, arg.ChartType)
+	return err
+}
+
 const appsForTeamGet = `-- name: AppsForTeamGet :many
 SELECT DISTINCT ON (chart_type) chart_type
 FROM chart_team_values

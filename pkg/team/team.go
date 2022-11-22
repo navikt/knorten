@@ -1,11 +1,13 @@
 package team
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -109,8 +111,25 @@ func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, he
 	return nil
 }
 
+func Delete(ctx context.Context, teamSlug string, repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client) error {
+	team, err := repo.TeamGet(ctx, teamSlug)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(team)
+
+	if err := repo.TeamDelete(ctx, team.ID); err != nil {
+		return err
+	}
+
+	go deleteExternalResources(ctx, team.ID, googleClient, k8sClient)
+
+	return nil
+}
+
 func createExternalResources(c *gin.Context, googleClient *google.Google, k8sClient *k8s.Client, teamID string, users []string) {
-	if err := googleClient.CreateGCPResources(c, teamID, users); err != nil {
+	if err := googleClient.CreateGCPTeamResources(c, teamID, users); err != nil {
 		logrus.Error(err)
 		return
 	}
@@ -121,6 +140,18 @@ func createExternalResources(c *gin.Context, googleClient *google.Google, k8sCli
 	}
 
 	if err := k8sClient.CreateTeamServiceAccount(c, teamID, k8s.NameToNamespace(teamID)); err != nil {
+		logrus.Error(err)
+		return
+	}
+}
+
+func deleteExternalResources(c context.Context, teamID string, googleClient *google.Google, k8sClient *k8s.Client) {
+	if err := googleClient.DeleteGCPTeamResources(c, teamID); err != nil {
+		logrus.Error(err)
+		return
+	}
+
+	if err := k8sClient.DeleteTeamNamespace(c, k8s.NameToNamespace(teamID)); err != nil {
 		logrus.Error(err)
 		return
 	}

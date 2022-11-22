@@ -6,6 +6,7 @@ import (
 
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iam/v1"
 )
 
@@ -27,6 +28,60 @@ func New(log *logrus.Entry, gcpProject, gcpRegion string, dryRun bool) *Google {
 		region:  gcpRegion,
 		dryRun:  dryRun,
 	}
+}
+
+func (g *Google) CreateGCPTeamResources(c context.Context, teamID string, users []string) error {
+	if g.dryRun {
+		g.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
+	iamSA, err := g.createIAMServiceAccount(c, teamID)
+	if err != nil {
+		return err
+	}
+
+	gsmSecret, err := g.createSecret(c, teamID)
+	if err != nil {
+		return fmt.Errorf("failed to create secret: %v", err)
+	}
+
+	if err := g.createServiceAccountSecretAccessorBinding(c, iamSA.Email, gsmSecret.Name); err != nil {
+		return err
+	}
+
+	if err := g.setUsersSecretOwnerBinding(c, users, gsmSecret.Name); err != nil {
+		return fmt.Errorf("failed while creating secret binding: %v", err)
+	}
+
+	if err := g.createSAWorkloadIdentityBinding(c, iamSA.Email, k8s.NameToNamespace(teamID), teamID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (g *Google) Update(c context.Context, secret string, users []string) error {
+	if g.dryRun {
+		g.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
+	return g.setUsersSecretOwnerBinding(c, users, fmt.Sprintf("projects/%v/secrets/%v", g.project, secret))
+}
+
+func (g *Google) DeleteGCPTeamResources(c context.Context, teamID string) error {
+	if err := g.deleteIAMServiceAccount(c, teamID); err != nil {
+		g.log.WithError(err).Errorf("deleting iam service account %v", teamID)
+		return err
+	}
+
+	if err := g.deleteSecret(c, teamID); err != nil {
+		g.log.WithError(err).Errorf("deleting gsm secret %v", teamID)
+		return err
+	}
+
+	return nil
 }
 
 func (g *Google) createIAMServiceAccount(ctx context.Context, team string) (*iam.ServiceAccount, error) {
@@ -93,42 +148,24 @@ func (g *Google) updateRoleBindingIfExists(bindings []*iam.Binding, role, k8sNam
 	return false
 }
 
-func (g *Google) CreateGCPResources(c context.Context, teamID string, users []string) error {
-	if g.dryRun {
-		g.log.Infof("NOOP: Running in dry run mode")
-		return nil
-	}
-
-	iamSA, err := g.createIAMServiceAccount(c, teamID)
+func (g *Google) deleteIAMServiceAccount(ctx context.Context, teamID string) error {
+	service, err := iam.NewService(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("iam.NewService: %v", err)
 	}
 
-	gsmSecret, err := g.createSecret(c, teamID)
+	sa := fmt.Sprintf("projects/%v/serviceAccounts/%v@%v.iam.gserviceaccount.com", g.project, teamID, g.project)
+	_, err = service.Projects.ServiceAccounts.Delete(sa).Do()
 	if err != nil {
-		return fmt.Errorf("failed to create secret: %v", err)
-	}
-
-	if err := g.createServiceAccountSecretAccessorBinding(c, iamSA.Email, gsmSecret.Name); err != nil {
-		return err
-	}
-
-	if err := g.setUsersSecretOwnerBinding(c, users, gsmSecret.Name); err != nil {
-		return fmt.Errorf("failed while creating secret binding: %v", err)
-	}
-
-	if err := g.createSAWorkloadIdentityBinding(c, iamSA.Email, k8s.NameToNamespace(teamID), teamID); err != nil {
+		apiError, ok := err.(*googleapi.Error)
+		if ok {
+			if apiError.Code == 404 {
+				g.log.Infof("delete iam service account: service account %v does not exist", teamID)
+				return nil
+			}
+		}
 		return err
 	}
 
 	return nil
-}
-
-func (g *Google) Update(c context.Context, secret string, users []string) error {
-	if g.dryRun {
-		g.log.Infof("NOOP: Running in dry run mode")
-		return nil
-	}
-
-	return g.setUsersSecretOwnerBinding(c, users, fmt.Sprintf("projects/%v/secrets/%v", g.project, secret))
 }

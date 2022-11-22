@@ -106,6 +106,23 @@ func UpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, h
 	return installOrUpdateAirflow(ctx, form, repo, helmClient)
 }
 
+func DeleteAirflow(ctx context.Context, teamSlug string, repo *database.Repo, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client) error {
+	team, err := repo.TeamGet(ctx, teamSlug)
+	if err != nil {
+		return err
+	}
+
+	if err := repo.AppDelete(ctx, team.ID, gensql.ChartTypeJupyterhub); err != nil {
+		return err
+	}
+
+	go helmClient.Uninstall(string(gensql.ChartTypeAirflow), k8s.NameToNamespace(team.ID))
+
+	go removeAirflowDB(ctx, team.ID, googleClient, k8sClient)
+
+	return nil
+}
+
 func installOrUpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, helmClient *helm.Client) error {
 	chartValues, err := reflect.CreateChartValues(form)
 	if err != nil {
@@ -216,7 +233,7 @@ func setSynkRepoAndBranch(values *AirflowForm) {
 }
 
 func createAirflowDB(ctx context.Context, teamID, dbPassword string, googleClient *google.Google, k8sClient *k8s.Client) error {
-	dbInstance := "airflow-" + teamID
+	dbInstance := airflowDBInstance(teamID)
 	if err := googleClient.CreateCloudSQLInstance(ctx, dbInstance); err != nil {
 		return err
 	}
@@ -240,10 +257,40 @@ func createAirflowDB(ctx context.Context, teamID, dbPassword string, googleClien
 	return nil
 }
 
+func removeAirflowDB(ctx context.Context, teamID string, googleClient *google.Google, k8sClient *k8s.Client) error {
+	dbInstance := airflowDBInstance(teamID)
+	if err := googleClient.DeleteCloudSQLInstance(ctx, dbInstance); err != nil {
+		return err
+	}
+
+	if err := googleClient.RemoveSQLClientIAMBinding(ctx, teamID); err != nil {
+		return err
+	}
+
+	namespace := k8s.NameToNamespace(teamID)
+	if err := k8sClient.DeleteCloudSQLProxy(ctx, sqlProxyHost, namespace); err != nil {
+		return err
+	}
+
+	if err := k8sClient.DeleteSecret(ctx, dbSecretName, namespace); err != nil {
+		return err
+	}
+
+	if err := k8sClient.DeleteSecret(ctx, resultDBSecretName, namespace); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func generatePassword(length int) (string, error) {
 	b := make([]byte, length)
 	if _, err := rand.Read(b); err != nil {
 		return "", err
 	}
 	return hex.EncodeToString(b), nil
+}
+
+func airflowDBInstance(teamID string) string {
+	return "airflow-" + teamID
 }

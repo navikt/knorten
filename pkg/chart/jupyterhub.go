@@ -95,7 +95,7 @@ func installOrUpdateJupyterhub(c context.Context, repo *database.Repo, helmClien
 
 	// Release name must be unique across namespaces as the helm chart creates a clusterrole
 	// for each jupyterhub with the same name as the release name.
-	releaseName := fmt.Sprintf("%v-%v", string(gensql.ChartTypeJupyterhub), form.TeamID)
+	releaseName := jupyterReleaseName(k8s.NameToNamespace(form.TeamID))
 	go helmClient.InstallOrUpgrade(releaseName, k8s.NameToNamespace(form.TeamID), application)
 	return nil
 }
@@ -111,6 +111,27 @@ func UpdateJupyterhub(c *gin.Context, form JupyterForm, repo *database.Repo, hel
 	form.AllowedUsers = team.Users
 
 	return installOrUpdateJupyterhub(c, repo, helmClient, form)
+}
+
+func DeleteJupyterhub(c *gin.Context, teamSlug string, repo *database.Repo, helmClient *helm.Client) error {
+	team, err := repo.TeamGet(c, teamSlug)
+	if err != nil {
+		return err
+	}
+
+	if err := repo.AppDelete(c, team.ID, gensql.ChartTypeJupyterhub); err != nil {
+		return err
+	}
+
+	namespace := k8s.NameToNamespace(team.ID)
+	releaseName := jupyterReleaseName(namespace)
+	go helmClient.Uninstall(releaseName, namespace)
+
+	return nil
+}
+
+func jupyterReleaseName(namespace string) string {
+	return fmt.Sprintf("%v-%v", string(gensql.ChartTypeJupyterhub), namespace)
 }
 
 func addGeneratedJupyterhubConfig(values *JupyterForm) {

@@ -110,6 +110,10 @@ func UpdateJupyterhub(c *gin.Context, form JupyterForm, repo *database.Repo, hel
 	form.AdminUsers = team.Users
 	form.AllowedUsers = team.Users
 
+	if err := form.ensureValidValues(); err != nil {
+		return err
+	}
+
 	return installOrUpdateJupyterhub(c, repo, helmClient, form)
 }
 

@@ -20,7 +20,7 @@ func (g *Google) closeClientFunc() func(client *secretmanager.Client) {
 	}
 }
 
-func (g *Google) createSecret(ctx context.Context, slug, teamID string) (*secretmanagerpb.Secret, error) {
+func (g *Google) CreateSecret(ctx context.Context, slug, teamID string) (*secretmanagerpb.Secret, error) {
 	client, err := secretmanager.NewClient(ctx)
 	if err != nil {
 		return nil, err
@@ -49,7 +49,25 @@ func (g *Google) createSecret(ctx context.Context, slug, teamID string) (*secret
 		},
 	}
 
-	return client.CreateSecret(ctx, req)
+	s, err := client.CreateSecret(ctx, req)
+	if err != nil {
+		apiError, ok := gErrors.FromError(err)
+		if ok {
+			if apiError.GRPCStatus().Code() == codes.AlreadyExists {
+				g.log.Infof("create secret: secret %v already exists", teamID)
+				return g.getSecret(ctx, client, teamID)
+			}
+		}
+		return nil, err
+	}
+
+	return s, nil
+}
+
+func (g *Google) getSecret(ctx context.Context, client *secretmanager.Client, sName string) (*secretmanagerpb.Secret, error) {
+	return client.GetSecret(ctx, &secretmanagerpb.GetSecretRequest{
+		Name: fmt.Sprintf("projects/%v/secrets/%v", g.project, sName),
+	})
 }
 
 func (g *Google) deleteSecret(ctx context.Context, teamID string) error {

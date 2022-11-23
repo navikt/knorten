@@ -41,7 +41,7 @@ func (g *Google) CreateGCPTeamResources(c context.Context, slug, teamID string, 
 		return err
 	}
 
-	gsmSecret, err := g.createSecret(c, slug, teamID)
+	gsmSecret, err := g.CreateSecret(c, slug, teamID)
 	if err != nil {
 		return fmt.Errorf("failed to create secret: %v", err)
 	}
@@ -99,10 +99,22 @@ func (g *Google) createIAMServiceAccount(ctx context.Context, team string) (*iam
 
 	account, err := service.Projects.ServiceAccounts.Create("projects/"+g.project, request).Do()
 	if err != nil {
+		gError, ok := err.(*googleapi.Error)
+		if ok {
+			if gError.Code == 409 {
+				g.log.Infof("create iam service account: service account %v already exists", team)
+				return g.getIAMServiceAccount(ctx, service, team)
+			}
+		}
 		return nil, fmt.Errorf("Projects.ServiceAccounts.Create: %v", err)
 	}
 
 	return account, nil
+}
+
+func (g *Google) getIAMServiceAccount(ctx context.Context, service *iam.Service, saName string) (*iam.ServiceAccount, error) {
+	sa := fmt.Sprintf("projects/%v/serviceAccounts/%v@%v.iam.gserviceaccount.com", g.project, saName, g.project)
+	return service.Projects.ServiceAccounts.Get(sa).Do()
 }
 
 func (g *Google) createSAWorkloadIdentityBinding(ctx context.Context, iamSA, k8sNamespace, team string) error {
@@ -119,7 +131,7 @@ func (g *Google) createSAWorkloadIdentityBinding(ctx context.Context, iamSA, k8s
 	}
 	bindings := policy.Bindings
 	if !g.updateRoleBindingIfExists(bindings, "roles/iam.workloadIdentityUser", k8sNamespace, team) {
-		// Create role binding if not exists
+		// Add role binding if not exists
 		bindings = append(bindings, &iam.Binding{
 			Members: []string{fmt.Sprintf("serviceAccount:%v.svc.id.goog[%v/%v]", g.project, k8sNamespace, team)},
 			Role:    "roles/iam.workloadIdentityUser",

@@ -194,7 +194,7 @@ func setUserEnvs(values *AirflowForm) error {
 		},
 		{
 			Name:  "TEAM",
-			Value: values.Slug,
+			Value: values.TeamID,
 		},
 		{
 			Name:  "NAMESPACE",

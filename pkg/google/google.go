@@ -30,7 +30,7 @@ func New(log *logrus.Entry, gcpProject, gcpRegion string, dryRun bool) *Google {
 	}
 }
 
-func (g *Google) CreateGCPTeamResources(c context.Context, teamID string, users []string) error {
+func (g *Google) CreateGCPTeamResources(c context.Context, slug, teamID string, users []string) error {
 	if g.dryRun {
 		g.log.Infof("NOOP: Running in dry run mode")
 		return nil
@@ -41,7 +41,7 @@ func (g *Google) CreateGCPTeamResources(c context.Context, teamID string, users 
 		return err
 	}
 
-	gsmSecret, err := g.createSecret(c, teamID)
+	gsmSecret, err := g.createSecret(c, slug, teamID)
 	if err != nil {
 		return fmt.Errorf("failed to create secret: %v", err)
 	}

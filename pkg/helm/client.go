@@ -146,6 +146,7 @@ func (c *Client) Uninstall(releaseName, namespace string) error {
 
 	if !releaseExists(results, releaseName) {
 		c.log.Infof("release %v does not exist", releaseName)
+		return nil
 	}
 
 	uninstallClient := action.NewUninstall(actionConfig)

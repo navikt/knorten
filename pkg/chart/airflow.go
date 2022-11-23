@@ -36,8 +36,8 @@ type AirflowForm struct {
 }
 
 type AirflowConfigurableValues struct {
-	DagRepo       string `form:"repo" binding:"validDagRepo,required"`
-	DagRepoBranch string `form:"branch"`
+	DagRepo       string `form:"repo" binding:"validDagRepo,required" helm:"webserver.extraContainers.[0].args.[0]"`
+	DagRepoBranch string `form:"branch" helm:"webserver.extraContainers.[0].args.[1]"`
 }
 
 type AirflowValues struct {

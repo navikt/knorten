@@ -48,7 +48,7 @@ func Create(c *gin.Context, repo *database.Repo, googleClient *google.Google, k8
 		return err
 	}
 
-	go createExternalResources(c, googleClient, k8sClient, teamID, form.Users)
+	go createExternalResources(c, googleClient, k8sClient, form.Slug, teamID, form.Users)
 
 	return nil
 }
@@ -128,8 +128,8 @@ func Delete(ctx context.Context, teamSlug string, repo *database.Repo, googleCli
 	return nil
 }
 
-func createExternalResources(c *gin.Context, googleClient *google.Google, k8sClient *k8s.Client, teamID string, users []string) {
-	if err := googleClient.CreateGCPTeamResources(c, teamID, users); err != nil {
+func createExternalResources(c *gin.Context, googleClient *google.Google, k8sClient *k8s.Client, slug, teamID string, users []string) {
+	if err := googleClient.CreateGCPTeamResources(c, slug, teamID, users); err != nil {
 		logrus.Error(err)
 		return
 	}

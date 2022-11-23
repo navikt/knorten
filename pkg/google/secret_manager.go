@@ -20,7 +20,7 @@ func (g *Google) closeClientFunc() func(client *secretmanager.Client) {
 	}
 }
 
-func (g *Google) createSecret(ctx context.Context, teamID string) (*secretmanagerpb.Secret, error) {
+func (g *Google) createSecret(ctx context.Context, slug, teamID string) (*secretmanagerpb.Secret, error) {
 	client, err := secretmanager.NewClient(ctx)
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func (g *Google) createSecret(ctx context.Context, teamID string) (*secretmanage
 		SecretId: teamID,
 		Secret: &secretmanagerpb.Secret{
 			Labels: map[string]string{
-				"team":       teamID,
+				"team":       slug,
 				"created-by": "knorten",
 			},
 			Replication: &secretmanagerpb.Replication{

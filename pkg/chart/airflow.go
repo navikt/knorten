@@ -253,7 +253,7 @@ func createAirflowDB(ctx context.Context, teamID, dbPassword string, googleClien
 		return err
 	}
 
-	if err := googleClient.CreateCloudSQLUser(ctx, teamID, dbPassword, dbInstance); err != nil {
+	if err := googleClient.CreateOrUpdateCloudSQLUser(ctx, teamID, dbPassword, dbInstance); err != nil {
 		return err
 	}
 

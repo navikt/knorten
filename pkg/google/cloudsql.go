@@ -3,6 +3,7 @@ package google
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -13,6 +14,16 @@ import (
 func (g *Google) CreateCloudSQLInstance(ctx context.Context, dbInstance string) error {
 	if g.dryRun {
 		g.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
+	sqlInstances, err := g.listSQLInstances()
+	if err != nil {
+		return err
+	}
+
+	if contains(sqlInstances, dbInstance) {
+		g.log.Infof("create sql instance: sql instance %v already exists", dbInstance)
 		return nil
 	}
 
@@ -44,9 +55,55 @@ func (g *Google) CreateCloudSQLInstance(ctx context.Context, dbInstance string) 
 	return nil
 }
 
+func (g *Google) DeleteCloudSQLInstance(ctx context.Context, dbInstance string) error {
+	if g.dryRun {
+		g.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
+	sqlInstances, err := g.listSQLInstances()
+	if err != nil {
+		return err
+	}
+
+	if !contains(sqlInstances, dbInstance) {
+		g.log.Infof("delete sql instance: sql instance %v does not exist", dbInstance)
+		return nil
+	}
+
+	deleteCmd := exec.CommandContext(
+		ctx,
+		"gcloud",
+		"sql",
+		"instances",
+		"delete",
+		dbInstance)
+
+	buf := &bytes.Buffer{}
+	deleteCmd.Stdout = buf
+	deleteCmd.Stderr = os.Stderr
+	if err := deleteCmd.Run(); err != nil {
+		io.Copy(os.Stdout, buf)
+		g.log.WithError(err).Error("delete db instance")
+		return err
+	}
+
+	return nil
+}
+
 func (g *Google) CreateCloudSQLDatabase(ctx context.Context, dbName, dbInstance string) error {
 	if g.dryRun {
 		g.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
+	sqlDBs, err := g.listSQLDatabases(dbInstance)
+	if err != nil {
+		return err
+	}
+
+	if contains(sqlDBs, dbName) {
+		g.log.Infof("create sql database: database %v already exists in db instance %v", dbName, dbInstance)
 		return nil
 	}
 
@@ -72,10 +129,20 @@ func (g *Google) CreateCloudSQLDatabase(ctx context.Context, dbName, dbInstance 
 	return nil
 }
 
-func (g *Google) CreateCloudSQLUser(ctx context.Context, user, password, dbInstance string) error {
+func (g *Google) CreateOrUpdateCloudSQLUser(ctx context.Context, user, password, dbInstance string) error {
 	if g.dryRun {
 		g.log.Infof("NOOP: Running in dry run mode")
 		return nil
+	}
+
+	sqlUsers, err := g.listSQLUsers(dbInstance)
+	if err != nil {
+		return err
+	}
+
+	if contains(sqlUsers, user) {
+		g.log.Infof("create sql user: updating password for user %v in db instance %v", user, dbInstance)
+		return g.updateSQLUser(ctx, user, password, dbInstance)
 	}
 
 	cmd := exec.CommandContext(
@@ -129,32 +196,6 @@ func (g *Google) SetSQLClientIAMBinding(ctx context.Context, teamID string) erro
 	return nil
 }
 
-func (g *Google) DeleteCloudSQLInstance(ctx context.Context, dbInstance string) error {
-	if g.dryRun {
-		g.log.Infof("NOOP: Running in dry run mode")
-		return nil
-	}
-
-	cmd := exec.CommandContext(
-		ctx,
-		"gcloud",
-		"sql",
-		"instances",
-		"delete",
-		dbInstance)
-
-	buf := &bytes.Buffer{}
-	cmd.Stdout = buf
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		io.Copy(os.Stdout, buf)
-		g.log.WithError(err).Error("delete db instance")
-		return err
-	}
-
-	return nil
-}
-
 func (g *Google) RemoveSQLClientIAMBinding(ctx context.Context, teamID string) error {
 	if g.dryRun {
 		g.log.Infof("NOOP: Running in dry run mode")
@@ -181,4 +222,117 @@ func (g *Google) RemoveSQLClientIAMBinding(ctx context.Context, teamID string) e
 	}
 
 	return nil
+}
+
+func (g *Google) listSQLInstances() ([]map[string]any, error) {
+	listCmd := exec.Command(
+		"gcloud",
+		"sql",
+		"instances",
+		"list",
+		"--format=json",
+		fmt.Sprintf("--project=%v", g.project))
+
+	buf := &bytes.Buffer{}
+	listCmd.Stdout = buf
+	listCmd.Stderr = os.Stderr
+	if err := listCmd.Run(); err != nil {
+		io.Copy(os.Stdout, buf)
+		g.log.WithError(err).Error("list db instances")
+		return nil, err
+	}
+
+	var sqlInstances []map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &sqlInstances); err != nil {
+		return nil, err
+	}
+
+	return sqlInstances, nil
+}
+
+func (g *Google) listSQLDatabases(dbInstance string) ([]map[string]any, error) {
+	listCmd := exec.Command(
+		"gcloud",
+		"sql",
+		"databases",
+		"list",
+		"--format=json",
+		fmt.Sprintf("--instance=%v", dbInstance),
+		fmt.Sprintf("--project=%v", g.project))
+
+	buf := &bytes.Buffer{}
+	listCmd.Stdout = buf
+	listCmd.Stderr = os.Stderr
+	if err := listCmd.Run(); err != nil {
+		io.Copy(os.Stdout, buf)
+		g.log.WithError(err).Error("list sql databases instances")
+		return nil, err
+	}
+
+	var sqlDBs []map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &sqlDBs); err != nil {
+		return nil, err
+	}
+
+	return sqlDBs, nil
+}
+
+func (g *Google) listSQLUsers(dbInstance string) ([]map[string]any, error) {
+	listCmd := exec.Command(
+		"gcloud",
+		"sql",
+		"users",
+		"list",
+		"--format=json",
+		fmt.Sprintf("--instance=%v", dbInstance),
+		fmt.Sprintf("--project=%v", g.project))
+
+	buf := &bytes.Buffer{}
+	listCmd.Stdout = buf
+	listCmd.Stderr = os.Stderr
+	if err := listCmd.Run(); err != nil {
+		io.Copy(os.Stdout, buf)
+		g.log.WithError(err).Error("list db instances")
+		return nil, err
+	}
+
+	var sqlUsers []map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &sqlUsers); err != nil {
+		return nil, err
+	}
+	return sqlUsers, nil
+}
+
+func (g *Google) updateSQLUser(ctx context.Context, user, password, dbInstance string) error {
+	cmd := exec.CommandContext(
+		ctx,
+		"gcloud",
+		"sql",
+		"users",
+		"set-password",
+		user,
+		fmt.Sprintf("--password=%v", password),
+		fmt.Sprintf("--instance=%v", dbInstance),
+		fmt.Sprintf("--project=%v", g.project))
+
+	buf := &bytes.Buffer{}
+	cmd.Stdout = buf
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		io.Copy(os.Stdout, buf)
+		g.log.WithError(err).Error("create db user")
+		return err
+	}
+
+	return nil
+}
+
+func contains(list []map[string]any, itemName string) bool {
+	for _, i := range list {
+		if i["name"] == itemName {
+			return true
+		}
+	}
+
+	return false
 }

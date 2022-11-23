@@ -76,12 +76,12 @@ func InterfaceToStruct(obj any, values map[string]string) error {
 		case reflect.String:
 			structFieldValue.Set(reflect.ValueOf(value))
 		case reflect.Slice:
-			var users []string
-			err := json.Unmarshal([]byte(value), &users)
+			var slice []string
+			err := json.Unmarshal([]byte(value), &slice)
 			if err != nil {
 				return err
 			}
-			structFieldValue.Set(reflect.ValueOf(users))
+			structFieldValue.Set(reflect.ValueOf(slice))
 		default:
 			return fmt.Errorf("unknown kind('%v')", kind)
 		}

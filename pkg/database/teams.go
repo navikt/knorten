@@ -20,8 +20,8 @@ func (r *Repo) TeamUpdate(ctx context.Context, team string, users []string) erro
 	})
 }
 
-func (r *Repo) TeamGet(ctx context.Context, team string) (gensql.TeamGetRow, error) {
-	return r.querier.TeamGet(ctx, team)
+func (r *Repo) TeamGet(ctx context.Context, slug string) (gensql.TeamGetRow, error) {
+	return r.querier.TeamGet(ctx, slug)
 }
 
 func (r *Repo) TeamDelete(ctx context.Context, team string) error {

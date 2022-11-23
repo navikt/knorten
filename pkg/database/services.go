@@ -10,7 +10,7 @@ import (
 type Service struct {
 	App            string
 	Ingress        string
-	Namespace      string
+	Slug           string
 	Secret         string
 	ServiceAccount string
 }
@@ -37,7 +37,7 @@ func createService(teamID, slug string, chartType gensql.ChartType) *Service {
 	return &Service{
 		App:            string(chartType),
 		Ingress:        createIngress(slug, chartType),
-		Namespace:      teamID,
+		Slug:           slug,
 		Secret:         fmt.Sprintf("https://console.cloud.google.com/security/secret-manager/secret/%v/versions?project=knada-gcp", teamID),
 		ServiceAccount: fmt.Sprintf("%v@knada-gcp.iam.gserviceaccount.com", teamID),
 	}

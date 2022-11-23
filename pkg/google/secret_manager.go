@@ -20,7 +20,7 @@ func (g *Google) closeClientFunc() func(client *secretmanager.Client) {
 	}
 }
 
-func (g *Google) CreateSecret(ctx context.Context, slug, teamID string) (*secretmanagerpb.Secret, error) {
+func (g *Google) createSecret(ctx context.Context, slug, teamID string) (*secretmanagerpb.Secret, error) {
 	client, err := secretmanager.NewClient(ctx)
 	if err != nil {
 		return nil, err

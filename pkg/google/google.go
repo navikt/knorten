@@ -41,7 +41,7 @@ func (g *Google) CreateGCPTeamResources(c context.Context, slug, teamID string, 
 		return err
 	}
 
-	gsmSecret, err := g.CreateSecret(c, slug, teamID)
+	gsmSecret, err := g.createSecret(c, slug, teamID)
 	if err != nil {
 		return fmt.Errorf("failed to create secret: %v", err)
 	}

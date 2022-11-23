@@ -207,7 +207,7 @@ func setUserEnvs(values *AirflowForm) error {
 	userEnvs := []airflowEnv{
 		{
 			Name:  "KNADA_TEAM_SECRET",
-			Value: fmt.Sprintf("projects/%v/secrets/%v", "knada-gcp", values.TeamID),
+			Value: fmt.Sprintf("projects/knada-gcp/secrets/%v", values.TeamID),
 		},
 		{
 			Name:  "TEAM",

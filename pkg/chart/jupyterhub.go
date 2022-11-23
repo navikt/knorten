@@ -139,5 +139,5 @@ func addGeneratedJupyterhubConfig(values *JupyterForm) {
 	values.IngressTLS = fmt.Sprintf("[{\"hosts\":[\"%v\"], \"secretName\": \"%v\"}]", values.Slug+".jupyter.knada.io", "jupyterhub-certificate")
 	values.ServiceAccount = values.TeamID
 	values.OAuthCallbackURL = fmt.Sprintf("https://%v.jupyter.knada.io/hub/oauth_callback", values.Slug)
-	values.KnadaTeamSecret = fmt.Sprintf("projects/%v/secrets/%v", "knada-gcp", values.TeamID)
+	values.KnadaTeamSecret = fmt.Sprintf("projects/knada-gcp/secrets/%v", values.TeamID)
 }

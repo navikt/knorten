@@ -3,10 +3,11 @@ package helm
 import (
 	"context"
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"log"
 	"os"
 	"path/filepath"
+
+	"gopkg.in/yaml.v2"
 
 	"helm.sh/helm/v3/pkg/chart"
 
@@ -59,7 +60,7 @@ func (c *Client) InstallOrUpgrade(releaseName, namespace string, app Application
 			return err
 		}
 
-		err = os.WriteFile(fmt.Sprintf("%v.yaml", releaseName), out, 0644)
+		err = os.WriteFile(fmt.Sprintf("%v.yaml", releaseName), out, 0o644)
 
 		return nil
 	}
@@ -114,6 +115,46 @@ func (c *Client) InstallOrUpgrade(releaseName, namespace string, app Application
 			c.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (c *Client) Uninstall(releaseName, namespace string) error {
+	if c.dryRun {
+		c.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
+	settings := cli.New()
+	settings.SetNamespace(namespace)
+	actionConfig := new(action.Configuration)
+	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "secret", log.Printf); err != nil {
+		log.Printf("%+v", err)
+		c.log.WithError(err).Errorf("uninstalling release %v", releaseName)
+		return err
+	}
+
+	listClient := action.NewList(actionConfig)
+	listClient.Deployed = true
+	results, err := listClient.Run()
+	if err != nil {
+		c.log.WithError(err).Errorf("uninstalling release %v", releaseName)
+		return err
+	}
+
+	for _, rel := range results {
+		if rel.Name == releaseName {
+			c.log.Info("%v release does not exist", releaseName)
+			return nil
+		}
+	}
+
+	uninstallClient := action.NewUninstall(actionConfig)
+	_, err = uninstallClient.Run(releaseName)
+	if err != nil {
+		c.log.WithError(err).Errorf("uninstalling release %v", releaseName)
+		return err
 	}
 
 	return nil

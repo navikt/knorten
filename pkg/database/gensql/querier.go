@@ -9,6 +9,7 @@ import (
 )
 
 type Querier interface {
+	AppDelete(ctx context.Context, arg AppDeleteParams) error
 	AppsForTeamGet(ctx context.Context, teamID string) ([]ChartType, error)
 	GlobalValueInsert(ctx context.Context, arg GlobalValueInsertParams) error
 	GlobalValuesGet(ctx context.Context, chartType ChartType) ([]ChartGlobalValue, error)

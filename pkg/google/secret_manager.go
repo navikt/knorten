@@ -6,6 +6,8 @@ import (
 
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
+	gErrors "github.com/googleapis/gax-go/v2/apierror"
+	"google.golang.org/grpc/codes"
 	"k8s.io/utils/strings/slices"
 )
 
@@ -48,6 +50,39 @@ func (g *Google) createSecret(ctx context.Context, teamID string) (*secretmanage
 	}
 
 	return client.CreateSecret(ctx, req)
+}
+
+func (g *Google) deleteSecret(ctx context.Context, teamID string) error {
+	client, err := secretmanager.NewClient(ctx)
+	if err != nil {
+		g.log.WithError(err).Errorf("deleting secret %v", teamID)
+		return err
+	}
+	defer g.closeClientFunc()(client)
+
+	project := fmt.Sprintf("projects/%v", g.project)
+	_ = client.ListSecrets(ctx, &secretmanagerpb.ListSecretsRequest{
+		Parent:   project,
+		PageSize: int32(500),
+	})
+
+	req := &secretmanagerpb.DeleteSecretRequest{
+		Name: fmt.Sprintf("%v/secrets/%v", project, teamID),
+	}
+
+	err = client.DeleteSecret(ctx, req)
+	if err != nil {
+		apiError, ok := gErrors.FromError(err)
+		if ok {
+			if apiError.GRPCStatus().Code() == codes.NotFound {
+				g.log.Infof("delete secret: secret %v does not exist", teamID)
+				return nil
+			}
+		}
+		return err
+	}
+
+	return nil
 }
 
 func (g *Google) createServiceAccountSecretAccessorBinding(ctx context.Context, sa, secret string) error {

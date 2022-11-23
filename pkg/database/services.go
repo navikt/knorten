@@ -57,6 +57,13 @@ func (r *Repo) AppsForTeamGet(ctx context.Context, team string) ([]string, error
 	return apps, nil
 }
 
+func (r *Repo) AppDelete(ctx context.Context, teamID string, chartType gensql.ChartType) error {
+	return r.querier.AppDelete(ctx, gensql.AppDeleteParams{
+		TeamID:    teamID,
+		ChartType: chartType,
+	})
+}
+
 func (r *Repo) ServicesForUser(ctx context.Context, email string) ([]TeamServices, error) {
 	teamsForUser, err := r.querier.TeamsForUserGet(ctx, email)
 	if err != nil {

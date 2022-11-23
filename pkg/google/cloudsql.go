@@ -101,7 +101,7 @@ func (g *Google) CreateCloudSQLUser(ctx context.Context, user, password, dbInsta
 	return nil
 }
 
-func (g *Google) SetSQLClientIAMBinding(ctx context.Context, team string) error {
+func (g *Google) SetSQLClientIAMBinding(ctx context.Context, teamID string) error {
 	if g.dryRun {
 		g.log.Infof("NOOP: Running in dry run mode")
 		return nil
@@ -114,9 +114,8 @@ func (g *Google) SetSQLClientIAMBinding(ctx context.Context, team string) error 
 		"add-iam-policy-binding",
 		g.project,
 		"--member",
-		fmt.Sprintf("serviceAccount:%v@%v.iam.gserviceaccount.com", team, g.project),
-		"--role",
-		"roles/cloudsql.client")
+		fmt.Sprintf("serviceAccount:%v@%v.iam.gserviceaccount.com", teamID, g.project),
+		"--role=roles/cloudsql.client")
 
 	buf := &bytes.Buffer{}
 	cmd.Stdout = buf
@@ -124,6 +123,60 @@ func (g *Google) SetSQLClientIAMBinding(ctx context.Context, team string) error 
 	if err := cmd.Run(); err != nil {
 		io.Copy(os.Stdout, buf)
 		g.log.WithError(err).Error("create sql client iam binding")
+		return err
+	}
+
+	return nil
+}
+
+func (g *Google) DeleteCloudSQLInstance(ctx context.Context, dbInstance string) error {
+	if g.dryRun {
+		g.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
+	cmd := exec.CommandContext(
+		ctx,
+		"gcloud",
+		"sql",
+		"instances",
+		"delete",
+		dbInstance)
+
+	buf := &bytes.Buffer{}
+	cmd.Stdout = buf
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		io.Copy(os.Stdout, buf)
+		g.log.WithError(err).Error("delete db instance")
+		return err
+	}
+
+	return nil
+}
+
+func (g *Google) RemoveSQLClientIAMBinding(ctx context.Context, teamID string) error {
+	if g.dryRun {
+		g.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
+	cmd := exec.CommandContext(
+		ctx,
+		"gcloud",
+		"projects",
+		"remove-iam-policy-binding",
+		g.project,
+		"--member",
+		fmt.Sprintf("serviceAccount:%v@%v.iam.gserviceaccount.com", teamID, g.project),
+		"--role=roles/cloudsql.client")
+
+	buf := &bytes.Buffer{}
+	cmd.Stdout = buf
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		io.Copy(os.Stdout, buf)
+		g.log.WithError(err).Error("remove sql client iam binding")
 		return err
 	}
 

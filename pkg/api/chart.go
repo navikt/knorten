@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"github.com/go-playground/validator/v10"
 	"net/http"
 
 	"github.com/gin-contrib/sessions"
@@ -23,6 +24,14 @@ func getChartType(chartType string) gensql.ChartType {
 }
 
 func (a *API) setupChartRoutes() {
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		err := v.RegisterValidation("validDagRepo", chart.AirflowValidateDagRepo)
+		if err != nil {
+			a.log.WithError(err).Error("can't register validator")
+			return
+		}
+	}
+
 	a.router.GET("/team/:team/:chart/new", func(c *gin.Context) {
 		team := c.Param("team")
 		chartType := getChartType(c.Param("chart"))

@@ -2,9 +2,46 @@ package database
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/nais/knorten/pkg/database/gensql"
 )
+
+type Service struct {
+	App            string
+	Ingress        string
+	Namespace      string
+	Secret         string
+	ServiceAccount string
+}
+
+type TeamServices struct {
+	TeamID     string
+	Slug       string
+	Jupyterhub *Service
+	Airflow    *Service
+}
+
+func createIngress(team string, chartType gensql.ChartType) string {
+	switch chartType {
+	case gensql.ChartTypeJupyterhub:
+		return fmt.Sprintf("https://%v.jupyter.knada.io", team)
+	case gensql.ChartTypeAirflow:
+		return fmt.Sprintf("https://%v.airflow.knada.io", team)
+	}
+
+	return ""
+}
+
+func createService(teamID, slug string, chartType gensql.ChartType) *Service {
+	return &Service{
+		App:            string(chartType),
+		Ingress:        createIngress(slug, chartType),
+		Namespace:      teamID,
+		Secret:         fmt.Sprintf("https://console.cloud.google.com/security/secret-manager/secret/%v/versions?project=knada-gcp", teamID),
+		ServiceAccount: fmt.Sprintf("%v@knada-gcp.iam.gserviceaccount.com", teamID),
+	}
+}
 
 func (r *Repo) AppsForTeamGet(ctx context.Context, team string) ([]string, error) {
 	get, err := r.querier.AppsForTeamGet(ctx, team)
@@ -27,22 +64,36 @@ func (r *Repo) AppDelete(ctx context.Context, teamID string, chartType gensql.Ch
 	})
 }
 
-func (r *Repo) ServicesForUser(ctx context.Context, email string) (map[string][]gensql.ChartType, error) {
-	teamsSQL, err := r.querier.TeamsForUserGet(ctx, email)
+func (r *Repo) ServicesForUser(ctx context.Context, email string) ([]TeamServices, error) {
+	teamsForUser, err := r.querier.TeamsForUserGet(ctx, email)
 	if err != nil {
 		return nil, err
 	}
 
-	userServices := map[string][]gensql.ChartType{}
-	for _, team := range teamsSQL {
-		userServices[team.Slug] = []gensql.ChartType{}
-		servicesForTeam, err := r.querier.AppsForTeamGet(ctx, team.ID)
+	var services []TeamServices
+	for _, team := range teamsForUser {
+		apps, err := r.querier.AppsForTeamGet(ctx, team.ID)
 		if err != nil {
 			return nil, err
 		}
-		userServices[team.Slug] = append(userServices[team.Slug], servicesForTeam...)
+
+		teamServices := TeamServices{
+			TeamID: team.ID,
+			Slug:   team.Slug,
+		}
+
+		for _, app := range apps {
+			switch app {
+			case gensql.ChartTypeJupyterhub:
+				teamServices.Jupyterhub = createService(team.ID, team.Slug, app)
+			case gensql.ChartTypeAirflow:
+				teamServices.Airflow = createService(team.ID, team.Slug, app)
+			}
+		}
+
+		services = append(services, teamServices)
 	}
-	return userServices, nil
+	return services, nil
 }
 
 func (r *Repo) TeamValuesInsert(ctx context.Context, chartType gensql.ChartType, chartValues map[string]string, team string) error {

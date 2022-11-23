@@ -2,10 +2,10 @@
     {{ template "head" . }}
     <div class="box container">
         <div id="content">
-            {{ range $team, $service := .services }}
+            {{ range .services }}
                 <section>
                     <h2>
-                        {{ $team }} (<a href="team/{{ $team }}/edit">rediger</a>)
+                        {{ .Slug }} (<a href="team/{{ .Slug }}/edit">rediger</a>)
                     </h2>
                     <table class="">
                         <thead>
@@ -18,7 +18,7 @@
                         </tr>
                         </thead>
                         <tbody>
-                        {{ with $service.Jupyterhub }}
+                        {{ with .Jupyterhub }}
                             {{ template "user/row" . }}
                         {{ else }}
                             <tr>
@@ -26,10 +26,10 @@
                                 <td></td>
                                 <td></td>
                                 <td></td>
-                                <td><a href="/team/{{ $team }}/jupyterhub/new">Installer</a></td>
+                                <td><a href="/team/{{ .Slug }}/jupyterhub/new">Installer</a></td>
                             </tr>
                         {{ end }}
-                        {{ with $service.Airflow }}
+                        {{ with .Airflow }}
                             {{ template "user/row" . }}
                         {{ else }}
                             <tr>
@@ -37,7 +37,7 @@
                                 <td></td>
                                 <td></td>
                                 <td></td>
-                                <td><a href="/team/{{ $team }}/airflow/new">Installer</a></td>
+                                <td><a href="/team/{{ .Slug }}/airflow/new">Installer</a></td>
                             </tr>
                         {{ end }}
                         </tbody>

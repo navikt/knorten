@@ -117,7 +117,7 @@ func UpdateJupyterhub(c *gin.Context, form JupyterForm, repo *database.Repo, hel
 	return installOrUpdateJupyterhub(c, repo, helmClient, form)
 }
 
-func DeleteJupyterhub(c *gin.Context, teamSlug string, repo *database.Repo, helmClient *helm.Client) error {
+func DeleteJupyterhub(c context.Context, teamSlug string, repo *database.Repo, helmClient *helm.Client) error {
 	team, err := repo.TeamGet(c, teamSlug)
 	if err != nil {
 		return err

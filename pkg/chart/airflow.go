@@ -119,7 +119,7 @@ func DeleteAirflow(ctx context.Context, teamSlug string, repo *database.Repo, he
 		return err
 	}
 
-	if err := repo.AppDelete(ctx, team.ID, gensql.ChartTypeJupyterhub); err != nil {
+	if err := repo.AppDelete(ctx, team.ID, gensql.ChartTypeAirflow); err != nil {
 		return err
 	}
 

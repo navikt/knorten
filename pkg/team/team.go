@@ -117,8 +117,6 @@ func Delete(ctx context.Context, teamSlug string, repo *database.Repo, googleCli
 		return err
 	}
 
-	fmt.Println(team)
-
 	if err := repo.TeamDelete(ctx, team.ID); err != nil {
 		return err
 	}

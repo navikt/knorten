@@ -10,6 +10,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/release"
 
 	"github.com/nais/knorten/pkg/database"
 	"github.com/sirupsen/logrus"
@@ -143,11 +144,8 @@ func (c *Client) Uninstall(releaseName, namespace string) error {
 		return err
 	}
 
-	for _, rel := range results {
-		if rel.Name == releaseName {
-			c.log.Info("%v release does not exist", releaseName)
-			return nil
-		}
+	if !releaseExists(results, releaseName) {
+		c.log.Infof("release %v does not exist", releaseName)
 	}
 
 	uninstallClient := action.NewUninstall(actionConfig)
@@ -191,4 +189,14 @@ func initRepositories() error {
 	}
 
 	return nil
+}
+
+func releaseExists(releases []*release.Release, releaseName string) bool {
+	for _, r := range releases {
+		if r.Name == releaseName {
+			return true
+		}
+	}
+
+	return false
 }

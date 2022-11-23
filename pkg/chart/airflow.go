@@ -6,8 +6,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/go-playground/validator/v10"
 	"strings"
+
+	"github.com/go-playground/validator/v10"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -194,6 +195,10 @@ func setUserEnvs(values *AirflowForm) error {
 		{
 			Name:  "TEAM",
 			Value: values.Slug,
+		},
+		{
+			Name:  "NAMESPACE",
+			Value: k8s.NameToNamespace(values.TeamID),
 		},
 	}
 

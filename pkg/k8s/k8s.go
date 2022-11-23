@@ -87,6 +87,10 @@ func (c *Client) CreateTeamNamespace(ctx context.Context, name string) error {
 
 	_, err := c.clientSet.CoreV1().Namespaces().Create(ctx, nsSpec, metav1.CreateOptions{})
 	if err != nil {
+		if k8sErrors.IsAlreadyExists(err) {
+			c.log.Infof("namespace %v already exists", name)
+			return nil
+		}
 		c.log.WithError(err).Error("creating team namespace")
 		return err
 	}
@@ -129,6 +133,10 @@ func (c *Client) CreateTeamServiceAccount(ctx context.Context, teamID, namespace
 
 	_, err := c.clientSet.CoreV1().ServiceAccounts(namespace).Create(ctx, saSpec, metav1.CreateOptions{})
 	if err != nil {
+		if k8sErrors.IsAlreadyExists(err) {
+			c.log.Infof("service account %v already exists in namespace %v", teamID, namespace)
+			return nil
+		}
 		c.log.WithError(err).Error("creating team service account")
 		return err
 	}
@@ -144,6 +152,98 @@ func (c *Client) CreateCloudSQLProxy(ctx context.Context, name, teamID, namespac
 
 	port := int32(5432)
 
+	if err := c.createCloudSQLProxyDeployment(ctx, name, namespace, teamID, dbInstance, port); err != nil {
+		c.log.WithError(err).Error("creating cloudsql proxy deployment")
+		return err
+	}
+
+	if err := c.createCloudSQLProxyService(ctx, name, namespace, port); err != nil {
+		c.log.WithError(err).Error("creating cloudsql proxy service")
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) DeleteCloudSQLProxy(ctx context.Context, name, namespace string) error {
+	if c.dryRun {
+		c.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
+	if err := c.deleteCloudSQLProxyDeployment(ctx, name, namespace); err != nil {
+		c.log.WithError(err).Error("deleting cloudsql proxy deployment")
+		return err
+	}
+
+	if err := c.deleteCloudSQLProxyService(ctx, name, namespace); err != nil {
+		c.log.WithError(err).Error("deleting cloudsql proxy service")
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) CreateOrUpdateSecret(ctx context.Context, name, namespace string, data map[string]string) error {
+	if c.dryRun {
+		c.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		StringData: data,
+	}
+
+	_, err := c.clientSet.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		if k8sErrors.IsNotFound(err) {
+			return c.createSecret(ctx, secret)
+		}
+		return err
+	}
+
+	_, err = c.clientSet.CoreV1().Secrets(secret.Namespace).Update(ctx, secret, metav1.UpdateOptions{})
+	if err != nil {
+		c.log.WithError(err).Errorf("updating secret %v in namespace %v", secret.Name, secret.Namespace)
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) DeleteSecret(ctx context.Context, name, namespace string) error {
+	if c.dryRun {
+		c.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
+	if err := c.clientSet.CoreV1().Secrets(namespace).Delete(ctx, name, metav1.DeleteOptions{}); err != nil {
+		if k8sErrors.IsNotFound(err) {
+			c.log.Infof("delete secret: secret %v in namespace %v does not exist", name, namespace)
+			return nil
+		}
+		c.log.WithError(err).Error("deleting secret %v in namespace %v", name, namespace)
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) createSecret(ctx context.Context, secret *v1.Secret) error {
+	_, err := c.clientSet.CoreV1().Secrets(secret.Namespace).Create(ctx, secret, metav1.CreateOptions{})
+	if err != nil {
+		c.log.WithError(err).Errorf("creating secret %v in namespace %v", secret.Name, secret.Namespace)
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) createCloudSQLProxyDeployment(ctx context.Context, name, namespace, saName, dbInstance string, port int32) error {
 	deploySpec := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -162,7 +262,7 @@ func (c *Client) CreateCloudSQLProxy(ctx context.Context, name, teamID, namespac
 					},
 				},
 				Spec: v1.PodSpec{
-					ServiceAccountName: teamID,
+					ServiceAccountName: saName,
 					Containers: []v1.Container{
 						{
 							Name:  "cloudsql-proxy",
@@ -187,10 +287,29 @@ func (c *Client) CreateCloudSQLProxy(ctx context.Context, name, teamID, namespac
 
 	_, err := c.clientSet.AppsV1().Deployments(namespace).Create(ctx, deploySpec, metav1.CreateOptions{})
 	if err != nil {
-		c.log.WithError(err).Error("creating cloudsql proxy deployment")
+		if k8sErrors.IsAlreadyExists(err) {
+			c.log.Infof("cloudsql proxy deployment %v already exists in namespace %v", name, namespace)
+			return nil
+		}
 		return err
 	}
 
+	return nil
+}
+
+func (c *Client) deleteCloudSQLProxyDeployment(ctx context.Context, name, namespace string) error {
+	if err := c.clientSet.AppsV1().Deployments(namespace).Delete(ctx, name, metav1.DeleteOptions{}); err != nil {
+		if k8sErrors.IsNotFound(err) {
+			c.log.Infof("delete deployment: deployment %v in namespace %v does not exist", name, namespace)
+			return nil
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) createCloudSQLProxyService(ctx context.Context, name, namespace string, port int32) error {
 	serviceSpec := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -210,77 +329,25 @@ func (c *Client) CreateCloudSQLProxy(ctx context.Context, name, teamID, namespac
 		},
 	}
 
-	_, err = c.clientSet.CoreV1().Services(namespace).Create(ctx, serviceSpec, metav1.CreateOptions{})
+	_, err := c.clientSet.CoreV1().Services(namespace).Create(ctx, serviceSpec, metav1.CreateOptions{})
 	if err != nil {
-		c.log.WithError(err).Error("creating cloudsql proxy service")
+		if k8sErrors.IsAlreadyExists(err) {
+			c.log.Infof("cloudsql proxy service %v already exists in namespace %v", name, namespace)
+			return nil
+		}
 		return err
 	}
 
 	return nil
 }
 
-func (c *Client) DeleteCloudSQLProxy(ctx context.Context, name, namespace string) error {
-	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
-		return nil
-	}
-
-	if err := c.clientSet.AppsV1().Deployments(namespace).Delete(ctx, name, metav1.DeleteOptions{}); err != nil {
-		if k8sErrors.IsNotFound(err) {
-			c.log.Infof("delete deployment: deployment %v in namespace %v does not exist", name, namespace)
-			return nil
-		}
-		c.log.WithError(err).Error("deleting cloudsql proxy deployment")
-		return err
-	}
-
+func (c *Client) deleteCloudSQLProxyService(ctx context.Context, name, namespace string) error {
 	if err := c.clientSet.CoreV1().Services(namespace).Delete(ctx, name, metav1.DeleteOptions{}); err != nil {
 		if k8sErrors.IsNotFound(err) {
 			c.log.Infof("delete service: service %v in namespace %v does not exist", name, namespace)
 			return nil
 		}
 		c.log.WithError(err).Error("deleting cloudsql proxy service")
-		return err
-	}
-
-	return nil
-}
-
-func (c *Client) CreateSecret(ctx context.Context, name, namespace string, data map[string]string) error {
-	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
-		return nil
-	}
-
-	secret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		StringData: data,
-	}
-
-	_, err := c.clientSet.CoreV1().Secrets(namespace).Create(ctx, secret, metav1.CreateOptions{})
-	if err != nil {
-		c.log.WithError(err).Error("creating secret %v in namespace %v", name, namespace)
-		return err
-	}
-
-	return nil
-}
-
-func (c *Client) DeleteSecret(ctx context.Context, name, namespace string) error {
-	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
-		return nil
-	}
-
-	if err := c.clientSet.CoreV1().Secrets(namespace).Delete(ctx, name, metav1.DeleteOptions{}); err != nil {
-		if k8sErrors.IsNotFound(err) {
-			c.log.Infof("delete secret: secret %v in namespace %v does not exist", name, namespace)
-			return nil
-		}
-		c.log.WithError(err).Error("deleting secret %v in namespace %v", name, namespace)
 		return err
 	}
 

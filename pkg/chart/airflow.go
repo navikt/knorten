@@ -167,7 +167,7 @@ func addGeneratedAirflowConfig(c *gin.Context, dbPassword string, values *Airflo
 	}
 
 	dbConn := fmt.Sprintf("postgresql://%v:%v@%v:5432/%v?sslmode=disable", values.TeamID, dbPassword, sqlProxyHost, values.TeamID)
-	err = k8sClient.CreateSecret(c, dbSecretName, k8s.NameToNamespace(values.TeamID), map[string]string{
+	err = k8sClient.CreateOrUpdateSecret(c, dbSecretName, k8s.NameToNamespace(values.TeamID), map[string]string{
 		"connection": dbConn,
 	})
 	if err != nil {
@@ -176,7 +176,7 @@ func addGeneratedAirflowConfig(c *gin.Context, dbPassword string, values *Airflo
 	values.MetadataSecretName = dbSecretName
 
 	resultDBConn := fmt.Sprintf("db+postgresql://%v:%v@%v:5432/%v?sslmode=disable", values.TeamID, dbPassword, sqlProxyHost, values.TeamID)
-	err = k8sClient.CreateSecret(c, resultDBSecretName, k8s.NameToNamespace(values.TeamID), map[string]string{
+	err = k8sClient.CreateOrUpdateSecret(c, resultDBSecretName, k8s.NameToNamespace(values.TeamID), map[string]string{
 		"connection": resultDBConn,
 	})
 	if err != nil {

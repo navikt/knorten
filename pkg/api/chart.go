@@ -2,8 +2,9 @@ package api
 
 import (
 	"fmt"
-	"github.com/go-playground/validator/v10"
 	"net/http"
+
+	"github.com/go-playground/validator/v10"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -179,6 +180,34 @@ func (a *API) setupChartRoutes() {
 				return
 			}
 			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", slug, chartType))
+			return
+		}
+		c.Redirect(http.StatusSeeOther, "/user")
+	})
+
+	a.router.POST("/team/:team/:chart/delete", func(c *gin.Context) {
+		slug := c.Param("team")
+		chartType := getChartType(c.Param("chart"))
+		var err error
+
+		switch chartType {
+		case gensql.ChartTypeJupyterhub:
+			err = chart.DeleteJupyterhub(c, slug, a.repo, a.helmClient)
+		case gensql.ChartTypeAirflow:
+			err = chart.DeleteAirflow(c, slug, a.repo, a.helmClient, a.googleClient, a.k8sClient)
+		}
+
+		if err != nil {
+			a.log.WithError(err).Errorf("problem deleting chart %v for team %v", chartType, slug)
+			session := sessions.Default(c)
+			session.AddFlash(err.Error())
+			err := session.Save()
+			if err != nil {
+				a.log.WithError(err).Error("problem saving session")
+				c.Redirect(http.StatusSeeOther, "/user")
+				return
+			}
+			c.Redirect(http.StatusSeeOther, "/user")
 			return
 		}
 		c.Redirect(http.StatusSeeOther, "/user")

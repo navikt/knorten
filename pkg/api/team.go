@@ -2,12 +2,13 @@ package api
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 	"github.com/nais/knorten/pkg/team"
-	"net/http"
 )
 
 func (a *API) setupTeamRoutes() {
@@ -86,6 +87,23 @@ func (a *API) setupTeamRoutes() {
 				return
 			}
 			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/edit", teamName))
+			return
+		}
+		c.Redirect(http.StatusSeeOther, "/user")
+	})
+
+	a.router.POST("/team/:team/delete", func(c *gin.Context) {
+		teamName := c.Param("team")
+		err := team.Delete(c, teamName, a.repo, a.googleClient, a.k8sClient)
+		if err != nil {
+			session := sessions.Default(c)
+			session.AddFlash(err.Error())
+			err := session.Save()
+			if err != nil {
+				a.log.WithError(err).Error("problem saving session")
+				return
+			}
+			c.Redirect(http.StatusSeeOther, "/user")
 			return
 		}
 		c.Redirect(http.StatusSeeOther, "/user")

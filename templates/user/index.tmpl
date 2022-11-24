@@ -5,7 +5,13 @@
             {{ range .services }}
                 <section>
                     <h2>
-                        {{ .Slug }} (<a href="team/{{ .Slug }}/edit">rediger</a>)
+                        {{ .Slug }}
+                        (<div style="display: inline;">
+                            <a href="team/{{ .Slug }}/edit">rediger</a> /
+                            <form style="display: inline;" method="POST" action="team/{{ .Slug }}/delete">
+                                <a style="cursor: pointer;" onclick="this.parentNode.submit();">slett</a>
+                            </form>
+                        </div>)
                     </h2>
                     <table class="">
                         <thead>

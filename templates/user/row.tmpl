@@ -5,5 +5,14 @@
         <td><a href="{{ .Secret }}">Secret Manager</a></td>
         <td>{{ .ServiceAccount }}</td>
         <td><a href="/team/{{ .Slug }}/{{ .App }}/edit">Rediger</a></td>
+        <td>
+            <form class="pure-form pure-form-stacked" action="/team/{{ .Slug }}/{{ .App }}/delete" method="POST">
+                <fieldset>
+                    <div class="pure-controls">
+                        <button type="submit" class="pure-button pure-button-primary">Slett</button>
+                    </div>
+                </fieldset>
+            </form>
+        </td>
     </tr>
 {{ end }}

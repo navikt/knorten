@@ -1,0 +1,110 @@
+{{ define "admin/chart" }}
+    {{ template "head" }}
+    <div class="box container">
+        <div id="content">
+            <h2>Rediger globale {{ .chart }} verdier</h2>
+            {{ with .errors }}
+                {{ . }}
+            {{ end }}
+
+            <form class="pure-form pure-form-stacked" action="" method="POST">
+                <fieldset>
+                    <div id="values"></div>
+
+                    <div class="pure-controls">
+                        <button type="button" class="pure-button" onClick="addNewElement()">
+                            Nytt felt
+                        </button>
+                    </div>
+                    <br>
+                </fieldset>
+
+                <div class="pure-controls">
+                    <button type="submit" class="pure-button pure-button-primary">Lagre</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let inputCounter = 0
+
+        function deleteRow() {
+            const valuesDiv = document.getElementById("values");
+            valuesDiv.removeChild(this.parentElement.parentElement)
+        }
+
+        function addNewElement() {
+            const outerDiv = document.createElement("div");
+            outerDiv.className = "pure-control-group"
+
+            const keyInput = document.createElement("input");
+            keyInput.className = "pure-input-1-2"
+            keyInput.type = "text"
+            keyInput.name = "key." + inputCounter
+            keyInput.id = "key." + inputCounter
+            outerDiv.appendChild(keyInput)
+
+            const innerDiv = document.createElement("div");
+            innerDiv.style.display = "flex"
+
+            const valueInput = document.createElement("input");
+            valueInput.className = "pure-input-1-2"
+            valueInput.type = "text"
+            valueInput.name = "value." + inputCounter
+            valueInput.id = "value." + inputCounter
+            innerDiv.appendChild(valueInput)
+
+            const button = document.createElement("button");
+            button.className = "pure-button pure-button-primary"
+            button.type = "button"
+            button.textContent = "Slett"
+            button.addEventListener("click", deleteRow)
+            innerDiv.appendChild(button)
+
+            outerDiv.appendChild(innerDiv)
+
+            const valuesDiv = document.getElementById("values");
+            valuesDiv.appendChild(outerDiv);
+            inputCounter += 1;
+        }
+
+        function addElement(key, value) {
+            const outerDiv = document.createElement("div");
+            outerDiv.className = "pure-control-group"
+
+            const label = document.createElement("label")
+            label.htmlFor = key
+            label.textContent = key
+            outerDiv.appendChild(label)
+
+            const innerDiv = document.createElement("div");
+            innerDiv.style.display = "flex"
+
+            const input = document.createElement("input");
+            input.className = "pure-input-1-2"
+            input.type = "text"
+            input.name = key
+            input.id = key
+            input.value = value
+            innerDiv.appendChild(input)
+
+            const button = document.createElement("button");
+            button.className = "pure-button pure-button-primary"
+            button.type = "button"
+            button.textContent = "Slett"
+            button.addEventListener("click", deleteRow)
+            innerDiv.appendChild(button)
+
+            outerDiv.appendChild(innerDiv)
+
+            const valuesDiv = document.getElementById("values");
+            valuesDiv.appendChild(outerDiv);
+        }
+
+        {{ range .values }}
+        addElement({{ .Key }}, {{ .Value }})
+        {{ end }}
+    </script>
+    {{ template "footer" }}
+{{ end }}

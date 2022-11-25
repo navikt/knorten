@@ -1,0 +1,114 @@
+{{ define "admin/index" }}
+    {{ template "head" }}
+    <div class="box container">
+        <div id="content">
+            <h2>Adminpanel</h2>
+            {{ with .errors }}
+                {{ . }}
+            {{ end }}
+            <ul>
+                <li><a href="/admin/jupyterhub">Rediger globale Jupyter verdier</a></li>
+                <li><a href="/admin/airflow">Rediger globale Airflow verdier</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let inputCounter = 0
+
+        function deleteJupyterRow() {
+            const typeDiv = document.getElementById("jupyter");
+            typeDiv.removeChild(this.parentElement.parentElement)
+        }
+
+        function deleteAirflowRow() {
+            const typeDiv = document.getElementById("airflow");
+            typeDiv.removeChild(this.parentElement.parentElement)
+        }
+
+        function addNewElement(type) {
+            const outerDiv = document.createElement("div");
+            outerDiv.className = "pure-control-group"
+
+            const keyInput = document.createElement("input");
+            keyInput.className = "pure-input-1-2"
+            keyInput.type = "text"
+            keyInput.name = "key." + type + "." + inputCounter
+            keyInput.id = "key." + type + "." + inputCounter
+            outerDiv.appendChild(keyInput)
+
+            const innerDiv = document.createElement("div");
+            innerDiv.style.display = "flex"
+
+            const valueInput = document.createElement("input");
+            valueInput.className = "pure-input-1-2"
+            valueInput.type = "text"
+            valueInput.name = "value." + type + "." + inputCounter
+            valueInput.id = "value." + type + "." + inputCounter
+            innerDiv.appendChild(valueInput)
+
+            const button = document.createElement("button");
+            button.className = "pure-button pure-button-primary"
+            button.type = "button"
+            button.textContent = "Slett"
+            if (type === "jupyter") {
+                button.addEventListener("click", deleteJupyterRow)
+            } else {
+                button.addEventListener("click", deleteAirflowRow)
+            }
+            innerDiv.appendChild(button)
+
+            outerDiv.appendChild(innerDiv)
+
+            const typeDiv = document.getElementById(type);
+            typeDiv.appendChild(outerDiv);
+            inputCounter += 1;
+        }
+
+        function addElement(type, key, value) {
+            const outerDiv = document.createElement("div");
+            outerDiv.className = "pure-control-group"
+
+            const label = document.createElement("label")
+            label.htmlFor = type + "." + key
+            label.textContent = key
+            outerDiv.appendChild(label)
+
+            const innerDiv = document.createElement("div");
+            innerDiv.style.display = "flex"
+
+            const input = document.createElement("input");
+            input.className = "pure-input-1-2"
+            input.type = "text"
+            input.name = type + "." + key
+            input.id = type + "." + key
+            input.value = value
+            innerDiv.appendChild(input)
+
+            const button = document.createElement("button");
+            button.className = "pure-button pure-button-primary"
+            button.type = "button"
+            button.textContent = "Slett"
+            if (type === "jupyter") {
+                button.addEventListener("click", deleteJupyterRow)
+            } else {
+                button.addEventListener("click", deleteAirflowRow)
+            }
+            innerDiv.appendChild(button)
+
+            outerDiv.appendChild(innerDiv)
+
+            const typeDiv = document.getElementById(type);
+            typeDiv.appendChild(outerDiv);
+        }
+
+        {{ range .jupyterhub }}
+        addElement("jupyter", {{ .Key }}, {{ .Value }})
+        {{ end }}
+
+        {{ range .airflow }}
+        addElement("airflow", {{ .Key }}, {{ .Value }})
+        {{ end }}
+    </script>
+    {{ template "footer" }}
+{{ end }}

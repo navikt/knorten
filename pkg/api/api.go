@@ -41,8 +41,10 @@ func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googl
 	api.router.Static("/assets", "./assets")
 	api.router.LoadHTMLGlob("templates/**/*")
 	api.setupUnauthenticatedRoutes()
-	api.router.Use(api.authMiddleware())
+	api.router.Use(api.authMiddleware([]string{}))
 	api.setupAuthenticatedRoutes()
+	api.router.Use(api.authMiddleware([]string{"kyrre.havik@nav.no", "erik.vattekar@nav.no"}))
+	api.setupAdminRoutes()
 	return &api, nil
 }
 
@@ -61,8 +63,11 @@ func (a *API) setupUnauthenticatedRoutes() {
 }
 
 func (a *API) setupAuthenticatedRoutes() {
-	a.setupAdminRoutes()
 	a.setupUserRoutes()
 	a.setupTeamRoutes()
 	a.setupChartRoutes()
+}
+
+func (a *API) setupAuthenticatedAdminRoutes() {
+	a.setupAdminRoutes()
 }

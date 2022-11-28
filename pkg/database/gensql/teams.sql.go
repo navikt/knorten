@@ -28,7 +28,8 @@ func (q *Queries) TeamCreate(ctx context.Context, arg TeamCreateParams) error {
 }
 
 const teamDelete = `-- name: TeamDelete :exec
-DELETE FROM teams
+DELETE
+FROM teams
 WHERE id = $1
 `
 
@@ -38,7 +39,8 @@ func (q *Queries) TeamDelete(ctx context.Context, id string) error {
 }
 
 const teamGet = `-- name: TeamGet :one
-SELECT id, users, slug FROM teams
+SELECT id, users, slug
+FROM teams
 WHERE slug = $1
 `
 
@@ -72,8 +74,9 @@ func (q *Queries) TeamUpdate(ctx context.Context, arg TeamUpdateParams) error {
 }
 
 const teamsForUserGet = `-- name: TeamsForUserGet :many
-SELECT id, slug FROM teams
-WHERE $1::TEXT = ANY("users")
+SELECT id, slug
+FROM teams
+WHERE $1::TEXT = ANY ("users")
 `
 
 type TeamsForUserGetRow struct {
@@ -91,6 +94,40 @@ func (q *Queries) TeamsForUserGet(ctx context.Context, email string) ([]TeamsFor
 	for rows.Next() {
 		var i TeamsForUserGetRow
 		if err := rows.Scan(&i.ID, &i.Slug); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const teamsGet = `-- name: TeamsGet :many
+select id, users, slug
+from teams
+`
+
+type TeamsGetRow struct {
+	ID    string
+	Users []string
+	Slug  string
+}
+
+func (q *Queries) TeamsGet(ctx context.Context) ([]TeamsGetRow, error) {
+	rows, err := q.db.QueryContext(ctx, teamsGet)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []TeamsGetRow{}
+	for rows.Next() {
+		var i TeamsGetRow
+		if err := rows.Scan(&i.ID, pq.Array(&i.Users), &i.Slug); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

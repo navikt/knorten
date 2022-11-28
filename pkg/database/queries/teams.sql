@@ -8,13 +8,20 @@ SET users = @users
 WHERE id = @id;
 
 -- name: TeamsForUserGet :many
-SELECT id, slug FROM teams
-WHERE @email::TEXT = ANY("users");
+SELECT id, slug
+FROM teams
+WHERE @email::TEXT = ANY ("users");
 
 -- name: TeamGet :one
-SELECT id, users, slug FROM teams
+SELECT id, users, slug
+FROM teams
 WHERE slug = @slug;
 
 -- name: TeamDelete :exec
-DELETE FROM teams
+DELETE
+FROM teams
 WHERE id = @id;
+
+-- name: TeamsGet :many
+select id, users, slug
+from teams;

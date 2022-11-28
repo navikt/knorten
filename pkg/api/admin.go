@@ -26,8 +26,24 @@ func (a *API) setupAdminRoutes() {
 			return
 		}
 
+		teams, err := a.repo.TeamsGet(c)
+		if err != nil {
+			session := sessions.Default(c)
+			session.AddFlash(err.Error())
+			err = session.Save()
+			if err != nil {
+				a.log.WithError(err).Error("problem saving session")
+				c.Redirect(http.StatusSeeOther, "/admin")
+				return
+			}
+
+			c.Redirect(http.StatusSeeOther, "/admin")
+			return
+		}
+
 		c.HTML(http.StatusOK, "admin/index", gin.H{
 			"errors": flashes,
+			"teams":  teams,
 		})
 	})
 

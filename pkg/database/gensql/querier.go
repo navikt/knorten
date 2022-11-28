@@ -23,6 +23,7 @@ type Querier interface {
 	TeamValueInsert(ctx context.Context, arg TeamValueInsertParams) error
 	TeamValuesGet(ctx context.Context, arg TeamValuesGetParams) ([]ChartTeamValue, error)
 	TeamsForUserGet(ctx context.Context, email string) ([]TeamsForUserGetRow, error)
+	TeamsGet(ctx context.Context) ([]TeamsGetRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

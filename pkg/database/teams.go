@@ -27,3 +27,7 @@ func (r *Repo) TeamGet(ctx context.Context, slug string) (gensql.TeamGetRow, err
 func (r *Repo) TeamDelete(ctx context.Context, team string) error {
 	return r.querier.TeamDelete(ctx, team)
 }
+
+func (r *Repo) TeamsGet(ctx context.Context) ([]gensql.TeamsGetRow, error) {
+	return r.querier.TeamsGet(ctx)
+}

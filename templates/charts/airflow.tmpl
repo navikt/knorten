@@ -3,9 +3,9 @@
     <div class="box container">
         <div id="content">
             {{ if .values }}
-                <h2>Rediger Airflow</h2>
+                <h2>Rediger {{ .team }} sin Airflow</h2>
             {{ else }}
-                <h2>Ny Airflow Notebook</h2>
+                <h2>Ny Airflow Notebook for {{ .team }}</h2>
             {{ end }}
             {{ with .errors }}
                 {{ . }}

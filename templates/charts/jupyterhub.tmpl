@@ -3,9 +3,9 @@
     <div class="box container">
         <div id="content">
             {{ if .values }}
-                <h2>Rediger Jupyter Notebook</h2>
+                <h2>Rediger {{ .team }} sin Jupyter Notebook</h2>
             {{ else }}
-                <h2>Ny Jupyter Notebook</h2>
+                <h2>Ny Jupyter Notebook for {{ .team }}</h2>
             {{ end }}
             {{ with .errors }}
                 {{ . }}

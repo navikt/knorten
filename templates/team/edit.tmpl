@@ -2,7 +2,7 @@
     {{ template "head" }}
     <div class="box container">
         <div id="content">
-            <h2>Rediger team</h2>
+            <h2>Rediger {{ .team }}</h2>
             {{ with .errors }}
                 {{ . }}
             {{ end }}

@@ -182,7 +182,7 @@ func findChangedValues(originals []gensql.ChartGlobalValue, formValues url.Value
 		value := values[0]
 
 		if strings.HasPrefix(key, "key") {
-			correctValue := valueForKey(changedValues, value)
+			correctValue := valueForKey(changedValues, key)
 			if correctValue != "" {
 				diff := diffValue{
 					New: correctValue,

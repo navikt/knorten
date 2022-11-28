@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/postgres"
 	"github.com/gin-gonic/gin"
@@ -13,6 +14,7 @@ import (
 	"github.com/nais/knorten/pkg/reflect"
 	"github.com/pressly/goose/v3"
 	"github.com/sirupsen/logrus"
+
 	// Pin version of sqlc cli
 	_ "github.com/kyleconroy/sqlc"
 )
@@ -22,6 +24,7 @@ var embedMigrations embed.FS
 
 type Repo struct {
 	querier Querier
+	encKey  string
 	db      *sql.DB
 	log     *logrus.Entry
 }
@@ -60,7 +63,7 @@ func (r *Repo) NewSessionStore() (gin.HandlerFunc, error) {
 	return sessions.Sessions("session", store), nil
 }
 
-func (r *Repo) GlobalChartValueInsert(ctx context.Context, key, value string, chartType gensql.ChartType) error {
+func (r *Repo) GlobalChartValueInsert(ctx context.Context, key, value string, chartType gensql.ChartType, encrypted bool) error {
 	return r.querier.GlobalValueInsert(ctx, gensql.GlobalValueInsertParams{
 		Key:       key,
 		Value:     value,

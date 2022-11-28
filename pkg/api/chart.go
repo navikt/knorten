@@ -68,9 +68,9 @@ func (a *API) setupChartRoutes() {
 
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
-			err = chart.CreateJupyterhub(c, slug, a.repo, a.helmClient)
+			err = chart.CreateJupyterhub(c, slug, a.repo, a.helmClient, a.cryptor)
 		case gensql.ChartTypeAirflow:
-			err = chart.CreateAirflow(c, slug, a.repo, a.googleClient, a.k8sClient, a.helmClient)
+			err = chart.CreateAirflow(c, slug, a.repo, a.googleClient, a.k8sClient, a.helmClient, a.cryptor)
 		}
 
 		if err != nil {
@@ -149,7 +149,7 @@ func (a *API) setupChartRoutes() {
 				return
 			}
 			form.Slug = slug
-			err = chart.UpdateJupyterhub(c, form, a.repo, a.helmClient)
+			err = chart.UpdateJupyterhub(c, form, a.repo, a.helmClient, a.cryptor)
 		case gensql.ChartTypeAirflow:
 			var form chart.AirflowForm
 			err = c.ShouldBindWith(&form, binding.Form)
@@ -166,7 +166,7 @@ func (a *API) setupChartRoutes() {
 				return
 			}
 			form.Slug = slug
-			err = chart.UpdateAirflow(c, form, a.repo, a.helmClient)
+			err = chart.UpdateAirflow(c, form, a.repo, a.helmClient, a.cryptor)
 		}
 
 		if err != nil {

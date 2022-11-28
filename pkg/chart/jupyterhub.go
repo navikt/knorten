@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/database"
+	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/helm"
 	helmApps "github.com/nais/knorten/pkg/helm/applications"
@@ -47,7 +48,7 @@ type JupyterValues struct {
 	KnadaTeamSecret  string   `helm:"singleuser.extraEnv.KNADA_TEAM_SECRET"`
 }
 
-func CreateJupyterhub(c *gin.Context, slug string, repo *database.Repo, helmClient *helm.Client) error {
+func CreateJupyterhub(c *gin.Context, slug string, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
 	var form JupyterForm
 	err := c.ShouldBindWith(&form, binding.Form)
 	if err != nil {
@@ -77,10 +78,10 @@ func CreateJupyterhub(c *gin.Context, slug string, repo *database.Repo, helmClie
 	}
 
 	addGeneratedJupyterhubConfig(&form)
-	return installOrUpdateJupyterhub(c, repo, helmClient, form)
+	return installOrUpdateJupyterhub(c, repo, helmClient, form, cryptor)
 }
 
-func installOrUpdateJupyterhub(c context.Context, repo *database.Repo, helmClient *helm.Client, form JupyterForm) error {
+func installOrUpdateJupyterhub(c context.Context, repo *database.Repo, helmClient *helm.Client, form JupyterForm, cryptor *crypto.EncrypterDecrypter) error {
 	chartValues, err := reflect.CreateChartValues(form.JupyterValues)
 	if err != nil {
 		return err
@@ -91,7 +92,7 @@ func installOrUpdateJupyterhub(c context.Context, repo *database.Repo, helmClien
 		return err
 	}
 
-	application := helmApps.NewJupyterhub(form.TeamID, repo)
+	application := helmApps.NewJupyterhub(form.TeamID, repo, cryptor)
 
 	// Release name must be unique across namespaces as the helm chart creates a clusterrole
 	// for each jupyterhub with the same name as the release name.
@@ -100,7 +101,7 @@ func installOrUpdateJupyterhub(c context.Context, repo *database.Repo, helmClien
 	return nil
 }
 
-func UpdateJupyterhub(c *gin.Context, form JupyterForm, repo *database.Repo, helmClient *helm.Client) error {
+func UpdateJupyterhub(c *gin.Context, form JupyterForm, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
 	team, err := repo.TeamGet(c, form.Slug)
 	if err != nil {
 		return err
@@ -114,7 +115,7 @@ func UpdateJupyterhub(c *gin.Context, form JupyterForm, repo *database.Repo, hel
 		return err
 	}
 
-	return installOrUpdateJupyterhub(c, repo, helmClient, form)
+	return installOrUpdateJupyterhub(c, repo, helmClient, form, cryptor)
 }
 
 func DeleteJupyterhub(c context.Context, teamSlug string, repo *database.Repo, helmClient *helm.Client) error {

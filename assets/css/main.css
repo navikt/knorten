@@ -1628,9 +1628,6 @@ table thead {
 
 /* Button */
 
-input[type="button"],
-input[type="submit"],
-input[type="reset"],
 button,
 .button {
     -moz-transition: background-color .25s ease-in-out;
@@ -1652,9 +1649,6 @@ button,
     padding: 0.6em 1.5em;
 }
 
-input[type="button"].icon:before,
-input[type="submit"].icon:before,
-input[type="reset"].icon:before,
 button.icon:before,
 .button.icon:before {
     position: relative;
@@ -1662,25 +1656,6 @@ button.icon:before,
     top: 0.05em;
 }
 
-input[type="button"]:hover,
-input[type="submit"]:hover,
-input[type="reset"]:hover,
-button:hover,
-.button:hover {
-    background: #10a0d5;
-}
-
-input[type="button"]:active,
-input[type="submit"]:active,
-input[type="reset"]:active,
-button:active,
-.button:active {
-    background: #20b0e5;
-}
-
-input[type="button"].alt,
-input[type="submit"].alt,
-input[type="reset"].alt,
 button.alt,
 .button.alt {
     background: #f1f1f1;
@@ -1688,31 +1663,54 @@ button.alt,
     color: #444;
 }
 
-input[type="button"].alt:hover,
-input[type="submit"].alt:hover,
-input[type="reset"].alt:hover,
 button.alt:hover,
 .button.alt:hover {
     background: #e8e8e8;
     background: rgba(0, 0, 0, 0.085);
 }
 
-input[type="button"].alt:active,
-input[type="submit"].alt:active,
-input[type="reset"].alt:active,
 button.alt:active,
 .button.alt:active {
     background: #e4e4e4;
     background: rgba(0, 0, 0, 0.15);
 }
 
-input[type="button"].large,
-input[type="submit"].large,
-input[type="reset"].large,
 button.large,
 .button.large {
     font-size: 2.25em;
     padding: 0.8em 0.9em;
+}
+
+.pure-button {
+    border-radius: 4px;
+}
+
+.button-success,
+.button-error,
+.button-warning,
+.button-secondary {
+    color: white;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.button-success {
+    background: rgb(28, 184, 65);
+    /* this is a green */
+}
+
+.button-error {
+    background: rgb(202, 60, 60);
+    /* this is a maroon */
+}
+
+.button-warning {
+    background: rgb(223, 117, 20);
+    /* this is an orange */
+}
+
+.button-secondary {
+    background: rgb(66, 184, 221);
+    /* this is a light blue */
 }
 
 /* List */

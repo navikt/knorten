@@ -10,6 +10,15 @@
             {{ with .errors }}
                 {{ . }}
             {{ end }}
+
+            <form class="pure-form pure-form-stacked" action="delete" method="POST">
+                <fieldset>
+                    <div class="pure-controls">
+                        <button type="submit" class="pure-button button-error">Slett Airflow</button>
+                    </div>
+                </fieldset>
+            </form>
+
             <form class="pure-form pure-form-stacked" action="" method="POST">
                 <fieldset>
                     <div class="pure-control-group">

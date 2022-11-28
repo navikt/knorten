@@ -6,14 +6,23 @@
             {{ with .errors }}
                 {{ . }}
             {{ end }}
+
+            <form class="pure-form pure-form-stacked" action="delete" method="POST">
+                <fieldset>
+                    <div class="pure-controls">
+                        <button type="submit" class="pure-button button-error">Slett {{ .team }}</button>
+                    </div>
+                </fieldset>
+            </form>
+
             <form class="pure-form pure-form-stacked" action="" method="POST">
                 <fieldset class="pure-group" id="users">
-                    <legend>Brukere
-                        <button type="button" class="pure-button pure-button-primary" onClick="addElement()">Legg til
-                            flere
-                            bruker
-                        </button>
-                    </legend>
+                    <legend>Brukere</legend>
+                    <button type="button" class="pure-button pure-button-primary" onClick="addElement()">Legg
+                        til
+                        flere
+                        bruker
+                    </button>
                 </fieldset>
 
                 <fieldset>

@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/nais/knorten/pkg/auth"
 	"github.com/nais/knorten/pkg/database"
+	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/google"
 	"github.com/nais/knorten/pkg/helm"
 	"github.com/nais/knorten/pkg/k8s"
@@ -20,9 +21,10 @@ type API struct {
 	log          *logrus.Entry
 	googleClient *google.Google
 	k8sClient    *k8s.Client
+	cryptor      *crypto.EncrypterDecrypter
 }
 
-func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, log *logrus.Entry) (*API, error) {
+func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, cryptor *crypto.EncrypterDecrypter, log *logrus.Entry) (*API, error) {
 	api := API{
 		oauth2:       oauth2,
 		helmClient:   helmClient,
@@ -30,6 +32,7 @@ func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googl
 		repo:         repo,
 		googleClient: googleClient,
 		k8sClient:    k8sClient,
+		cryptor:      cryptor,
 		log:          log,
 	}
 

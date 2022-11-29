@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database"
+	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/google"
 	"github.com/nais/knorten/pkg/helm"
@@ -53,7 +54,7 @@ func Create(c *gin.Context, repo *database.Repo, googleClient *google.Google, k8
 	return nil
 }
 
-func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, helmClient *helm.Client) error {
+func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
 	var form Form
 	form.Slug = c.Param("team")
 	err := c.ShouldBindWith(&form, binding.Form)
@@ -90,7 +91,7 @@ func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, he
 				AllowedUsers: form.Users,
 			},
 		}
-		err = chart.UpdateJupyterhub(c, jupyterForm, repo, helmClient)
+		err = chart.UpdateJupyterhub(c, jupyterForm, repo, helmClient, cryptor)
 		if err != nil {
 			return err
 		}
@@ -102,7 +103,7 @@ func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, he
 			TeamID: team.ID,
 			Users:  form.Users,
 		}
-		err = chart.UpdateAirflow(c, airflowForm, repo, helmClient)
+		err = chart.UpdateAirflow(c, airflowForm, repo, helmClient, cryptor)
 		if err != nil {
 			return err
 		}

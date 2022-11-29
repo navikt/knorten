@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/database"
+	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/google"
 	"github.com/nais/knorten/pkg/helm"
@@ -65,7 +66,7 @@ var AirflowValidateDagRepo validator.Func = func(fl validator.FieldLevel) bool {
 	return strings.HasPrefix(repo, "navikt/")
 }
 
-func CreateAirflow(c *gin.Context, slug string, repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, helmClient *helm.Client) error {
+func CreateAirflow(c *gin.Context, slug string, repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
 	var form AirflowForm
 	err := c.ShouldBindWith(&form, binding.Form)
 	if err != nil {
@@ -92,10 +93,10 @@ func CreateAirflow(c *gin.Context, slug string, repo *database.Repo, googleClien
 
 	go createAirflowDB(c, form.TeamID, dbPassword, googleClient, k8sClient)
 
-	return installOrUpdateAirflow(c, form, repo, helmClient)
+	return installOrUpdateAirflow(c, form, repo, helmClient, cryptor)
 }
 
-func UpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, helmClient *helm.Client) error {
+func UpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
 	setSynkRepoAndBranch(&form)
 
 	team, err := repo.TeamGet(ctx, form.Slug)
@@ -110,7 +111,7 @@ func UpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, h
 		return err
 	}
 
-	return installOrUpdateAirflow(ctx, form, repo, helmClient)
+	return installOrUpdateAirflow(ctx, form, repo, helmClient, cryptor)
 }
 
 func DeleteAirflow(ctx context.Context, teamSlug string, repo *database.Repo, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client) error {
@@ -130,7 +131,7 @@ func DeleteAirflow(ctx context.Context, teamSlug string, repo *database.Repo, he
 	return nil
 }
 
-func installOrUpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, helmClient *helm.Client) error {
+func installOrUpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
 	chartValues, err := reflect.CreateChartValues(form)
 	if err != nil {
 		return err
@@ -141,7 +142,7 @@ func installOrUpdateAirflow(ctx context.Context, form AirflowForm, repo *databas
 		return err
 	}
 
-	application := helmApps.NewAirflow(form.TeamID, repo)
+	application := helmApps.NewAirflow(form.TeamID, repo, cryptor)
 
 	go helmClient.InstallOrUpgrade(string(gensql.ChartTypeAirflow), k8s.NameToNamespace(form.TeamID), application)
 

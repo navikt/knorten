@@ -2,11 +2,13 @@
 INSERT INTO chart_global_values (
     "key",
     "value",
-    "chart_type"
+    "chart_type",
+    "encrypted"
 ) VALUES (
     @key,
     @value,
-    @chart_type
+    @chart_type,
+    @encrypted
 );
 
 -- name: GlobalValuesGet :many

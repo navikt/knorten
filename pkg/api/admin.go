@@ -12,8 +12,9 @@ import (
 )
 
 type diffValue struct {
-	Old string
-	New string
+	Old       string
+	New       string
+	Encrypted string
 }
 
 func (a *API) setupAdminRoutes() {
@@ -171,6 +172,65 @@ func (a *API) setupAdminRoutes() {
 			"chart":         string(chartType),
 		})
 	})
+
+	a.router.POST("/admin/:chart/confirm", func(c *gin.Context) {
+		session := sessions.Default(c)
+		chartType := getChartType(c.Param("chart"))
+
+		err := c.Request.ParseForm()
+		if err != nil {
+			a.log.WithError(err)
+			session.AddFlash(err.Error())
+			err = session.Save()
+			if err != nil {
+				a.log.WithError(err).Error("problem saving session")
+				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v/confirm", chartType))
+				return
+			}
+			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v/confirm", chartType))
+			return
+		}
+
+		formValues := c.Request.PostForm
+		for key, values := range formValues {
+			fmt.Println(key, values)
+		}
+
+		if true {
+			c.Redirect(http.StatusSeeOther, "/admin")
+			return
+		}
+
+		for key, values := range formValues {
+			if len(values) == 0 {
+				err = a.repo.GlobalValueDelete(c, key, chartType)
+				if err != nil {
+					break
+				}
+			} else {
+				err = a.repo.GlobalChartValueInsert(c, key, values[0], false, chartType)
+				if err != nil {
+					break
+				}
+			}
+		}
+
+		if err != nil {
+			a.log.WithError(err)
+			session.AddFlash(err.Error())
+			err = session.Save()
+			if err != nil {
+				a.log.WithError(err).Error("problem saving session")
+				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v/confirm", chartType))
+				return
+			}
+			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v/confirm", chartType))
+			return
+		}
+
+		c.Redirect(http.StatusSeeOther, "/admin")
+		return
+	})
 }
 
 func findDeletedValues(changedValues map[string]diffValue, originals []gensql.ChartGlobalValue, formValues url.Values) {
@@ -195,20 +255,22 @@ func findChangedValues(originals []gensql.ChartGlobalValue, formValues url.Value
 	changedValues := map[string]diffValue{}
 
 	for key, values := range formValues {
+		var encrypted string
 		value := values[0]
+		if len(values) == 2 {
+			encrypted = values[1]
+		}
 
 		if strings.HasPrefix(key, "key") {
 			correctValue := valueForKey(changedValues, key)
-			if correctValue != "" {
-				diff := diffValue{
-					New: correctValue,
-				}
-				changedValues[value] = diff
+			if correctValue != nil {
+				changedValues[value] = *correctValue
 				delete(changedValues, key)
 			} else {
 				key := strings.Replace(key, "key", "value", 1)
 				diff := diffValue{
-					New: key,
+					New:       key,
+					Encrypted: encrypted,
 				}
 				changedValues[value] = diff
 			}
@@ -216,13 +278,15 @@ func findChangedValues(originals []gensql.ChartGlobalValue, formValues url.Value
 			correctKey := keyForValue(changedValues, key)
 			if correctKey != "" {
 				diff := diffValue{
-					New: value,
+					New:       value,
+					Encrypted: encrypted,
 				}
 				changedValues[correctKey] = diff
 			} else {
 				key := strings.Replace(key, "value", "key", 1)
 				diff := diffValue{
-					New: value,
+					New:       value,
+					Encrypted: encrypted,
 				}
 				changedValues[key] = diff
 			}
@@ -230,9 +294,11 @@ func findChangedValues(originals []gensql.ChartGlobalValue, formValues url.Value
 			for _, originalValue := range originals {
 				if originalValue.Key == key {
 					if originalValue.Value != value {
+						// TODO: Kan man endre krypterte verdier? Hvordan?
 						diff := diffValue{
-							Old: originalValue.Value,
-							New: value,
+							Old:       originalValue.Value,
+							New:       value,
+							Encrypted: encrypted,
 						}
 						changedValues[key] = diff
 						break
@@ -245,14 +311,14 @@ func findChangedValues(originals []gensql.ChartGlobalValue, formValues url.Value
 	return changedValues
 }
 
-func valueForKey(values map[string]diffValue, needle string) string {
+func valueForKey(values map[string]diffValue, needle string) *diffValue {
 	for key, value := range values {
 		if key == needle {
-			return value.New
+			return &value
 		}
 	}
 
-	return ""
+	return nil
 }
 
 func keyForValue(values map[string]diffValue, needle string) string {

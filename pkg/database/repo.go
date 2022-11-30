@@ -63,18 +63,6 @@ func (r *Repo) NewSessionStore() (gin.HandlerFunc, error) {
 	return sessions.Sessions("session", store), nil
 }
 
-func (r *Repo) GlobalChartValueInsert(ctx context.Context, key, value string, chartType gensql.ChartType, encrypted bool) error {
-	return r.querier.GlobalValueInsert(ctx, gensql.GlobalValueInsertParams{
-		Key:       key,
-		Value:     value,
-		ChartType: chartType,
-	})
-}
-
-func (r *Repo) GlobalValuesGet(ctx context.Context, chartType gensql.ChartType) ([]gensql.ChartGlobalValue, error) {
-	return r.querier.GlobalValuesGet(ctx, chartType)
-}
-
 func (r *Repo) TeamChartValueInsert(ctx context.Context, key, value, team string, chartType gensql.ChartType) error {
 	return r.querier.TeamValueInsert(ctx, gensql.TeamValueInsertParams{
 		Key:       key,

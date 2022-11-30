@@ -11,6 +11,7 @@ import (
 type Querier interface {
 	AppDelete(ctx context.Context, arg AppDeleteParams) error
 	AppsForTeamGet(ctx context.Context, teamID string) ([]ChartType, error)
+	GlobalValueDelete(ctx context.Context, arg GlobalValueDeleteParams) error
 	GlobalValueInsert(ctx context.Context, arg GlobalValueInsertParams) error
 	GlobalValuesGet(ctx context.Context, chartType ChartType) ([]ChartGlobalValue, error)
 	SessionCreate(ctx context.Context, arg SessionCreateParams) error

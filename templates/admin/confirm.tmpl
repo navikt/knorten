@@ -9,13 +9,21 @@
                 <fieldset>
                     {{ range $key, $value := $values }}
                         <div class="pure-control-group">
-                            <label for="repo">{{ if not $value.New }}- {{ end }}{{ if not $value.Old }}+ {{ end }}{{ $key }}</label>
+                            <label for="{{ $key }}">{{ if not $value.New }}- {{ end }}{{ if not $value.Old }}+ {{ end }}{{ $key }}</label>
                             {{ if $value.Old }}
-                                <span type="text" name="repo" id="repo">- {{ $value.Old }}</span>
+                                <span>- {{ $value.Old }}</span>
                                 <br>
                             {{ end }}
                             {{ if $value.New }}
-                                <span type="text" name="repo" id="repo">+ {{ $value.New }}</span>
+                                {{ if $value.Encrypted }}
+                                    <span type="text" name="{{ $key }}" id="{{ $key }}">+ encrypted value</span>
+                                    <input type="checkbox" name="{{ $key }}" id="{{ $key }}" checked hidden/>
+                                {{ else }}
+                                    <span type="text" name="{{ $key }}" id="{{ $key }}">+ {{ $value.New }}</span>
+                                {{ end }}
+                                <input type="text" name="{{ $key }}" id="{{ $key }}" value="{{ $value.New }}" hidden/>
+                            {{ else }}
+                                <input type="text" name="{{ $key }}" id="{{ $key }}" hidden/>
                             {{ end }}
                         </div>
                     {{ end }}

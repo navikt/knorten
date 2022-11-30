@@ -43,6 +43,7 @@
             keyInput.type = "text"
             keyInput.name = "key." + inputCounter
             keyInput.id = "key." + inputCounter
+            keyInput.placeholder = "key"
             outerDiv.appendChild(keyInput)
 
             const innerDiv = document.createElement("div");
@@ -53,7 +54,15 @@
             valueInput.type = "text"
             valueInput.name = "value." + inputCounter
             valueInput.id = "value." + inputCounter
+            valueInput.placeholder = "value"
             innerDiv.appendChild(valueInput)
+
+            const checkboxInput = document.createElement("input");
+            checkboxInput.type = "checkbox"
+            checkboxInput.name = "value." + inputCounter
+            checkboxInput.id = "value." + inputCounter
+            checkboxInput.value = "encrypt"
+            innerDiv.appendChild(checkboxInput)
 
             const button = document.createElement("button");
             button.className = "pure-button pure-button-primary"

@@ -15,13 +15,13 @@
                                 <br>
                             {{ end }}
                             {{ if $value.New }}
+                                <input type="text" name="{{ $key }}" id="{{ $key }}" value="{{ $value.New }}" hidden/>
                                 {{ if $value.Encrypted }}
                                     <span type="text" name="{{ $key }}" id="{{ $key }}">+ encrypted value</span>
                                     <input type="checkbox" name="{{ $key }}" id="{{ $key }}" checked hidden/>
                                 {{ else }}
                                     <span type="text" name="{{ $key }}" id="{{ $key }}">+ {{ $value.New }}</span>
                                 {{ end }}
-                                <input type="text" name="{{ $key }}" id="{{ $key }}" value="{{ $value.New }}" hidden/>
                             {{ else }}
                                 <input type="text" name="{{ $key }}" id="{{ $key }}" hidden/>
                             {{ end }}

@@ -3,19 +3,11 @@ package api
 import (
 	"encoding/gob"
 	"fmt"
+	"net/http"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/nais/knorten/pkg/database/gensql"
-	"net/http"
-	"net/url"
-	"strings"
 )
-
-type diffValue struct {
-	Old       string
-	New       string
-	Encrypted string
-}
 
 func (a *API) setupAdminRoutes() {
 	a.router.GET("/admin", func(c *gin.Context) {
@@ -51,15 +43,7 @@ func (a *API) setupAdminRoutes() {
 	a.router.GET("/admin/:chart", func(c *gin.Context) {
 		chartType := getChartType(c.Param("chart"))
 
-		var values []gensql.ChartGlobalValue
-		var err error
-		switch chartType {
-		case gensql.ChartTypeJupyterhub:
-			values, err = a.repo.GlobalValuesGet(c, gensql.ChartTypeJupyterhub)
-		case gensql.ChartTypeAirflow:
-			values, err = a.repo.GlobalValuesGet(c, gensql.ChartTypeAirflow)
-		}
-
+		values, err := a.repo.GlobalValuesGet(c, chartType)
 		if err != nil {
 			session := sessions.Default(c)
 			session.AddFlash(err.Error())
@@ -106,14 +90,7 @@ func (a *API) setupAdminRoutes() {
 			return
 		}
 
-		var chartValues []gensql.ChartGlobalValue
-		switch chartType {
-		case gensql.ChartTypeJupyterhub:
-			chartValues, err = a.repo.GlobalValuesGet(c, gensql.ChartTypeJupyterhub)
-		case gensql.ChartTypeAirflow:
-			chartValues, err = a.repo.GlobalValuesGet(c, gensql.ChartTypeAirflow)
-		}
-
+		changedValues, err := a.adminClient.FindGlobalValueChanges(c, c.Request.PostForm, chartType)
 		if err != nil {
 			session := sessions.Default(c)
 			session.AddFlash(err.Error())
@@ -127,10 +104,6 @@ func (a *API) setupAdminRoutes() {
 			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
 			return
 		}
-
-		formValues := c.Request.PostForm
-		changedValues := findChangedValues(chartValues, formValues)
-		findDeletedValues(changedValues, chartValues, formValues)
 		gob.Register(changedValues)
 
 		if len(changedValues) == 0 {
@@ -153,7 +126,6 @@ func (a *API) setupAdminRoutes() {
 			return
 		}
 		c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v/confirm", chartType))
-		return
 	})
 
 	a.router.GET("/admin/:chart/confirm", func(c *gin.Context) {
@@ -191,28 +163,9 @@ func (a *API) setupAdminRoutes() {
 			return
 		}
 
-		formValues := c.Request.PostForm
-		for key, values := range formValues {
-			fmt.Println(key, values)
-		}
-
-		if true {
+		if err := a.adminClient.UpdateGlobalValues(c, c.Request.PostForm, chartType); err != nil {
 			c.Redirect(http.StatusSeeOther, "/admin")
 			return
-		}
-
-		for key, values := range formValues {
-			if len(values) == 0 {
-				err = a.repo.GlobalValueDelete(c, key, chartType)
-				if err != nil {
-					break
-				}
-			} else {
-				err = a.repo.GlobalChartValueInsert(c, key, values[0], false, chartType)
-				if err != nil {
-					break
-				}
-			}
 		}
 
 		if err != nil {
@@ -229,104 +182,5 @@ func (a *API) setupAdminRoutes() {
 		}
 
 		c.Redirect(http.StatusSeeOther, "/admin")
-		return
 	})
-}
-
-func findDeletedValues(changedValues map[string]diffValue, originals []gensql.ChartGlobalValue, formValues url.Values) {
-	for _, original := range originals {
-		notFound := true
-		for key := range formValues {
-			if original.Key == key {
-				notFound = false
-				break
-			}
-		}
-
-		if notFound {
-			changedValues[original.Key] = diffValue{
-				Old: original.Value,
-			}
-		}
-	}
-}
-
-func findChangedValues(originals []gensql.ChartGlobalValue, formValues url.Values) map[string]diffValue {
-	changedValues := map[string]diffValue{}
-
-	for key, values := range formValues {
-		var encrypted string
-		value := values[0]
-		if len(values) == 2 {
-			encrypted = values[1]
-		}
-
-		if strings.HasPrefix(key, "key") {
-			correctValue := valueForKey(changedValues, key)
-			if correctValue != nil {
-				changedValues[value] = *correctValue
-				delete(changedValues, key)
-			} else {
-				key := strings.Replace(key, "key", "value", 1)
-				diff := diffValue{
-					New:       key,
-					Encrypted: encrypted,
-				}
-				changedValues[value] = diff
-			}
-		} else if strings.HasPrefix(key, "value") {
-			correctKey := keyForValue(changedValues, key)
-			if correctKey != "" {
-				diff := diffValue{
-					New:       value,
-					Encrypted: encrypted,
-				}
-				changedValues[correctKey] = diff
-			} else {
-				key := strings.Replace(key, "value", "key", 1)
-				diff := diffValue{
-					New:       value,
-					Encrypted: encrypted,
-				}
-				changedValues[key] = diff
-			}
-		} else {
-			for _, originalValue := range originals {
-				if originalValue.Key == key {
-					if originalValue.Value != value {
-						// TODO: Kan man endre krypterte verdier? Hvordan?
-						diff := diffValue{
-							Old:       originalValue.Value,
-							New:       value,
-							Encrypted: encrypted,
-						}
-						changedValues[key] = diff
-						break
-					}
-				}
-			}
-		}
-	}
-
-	return changedValues
-}
-
-func valueForKey(values map[string]diffValue, needle string) *diffValue {
-	for key, value := range values {
-		if key == needle {
-			return &value
-		}
-	}
-
-	return nil
-}
-
-func keyForValue(values map[string]diffValue, needle string) string {
-	for key, value := range values {
-		if value.New == needle {
-			return key
-		}
-	}
-
-	return ""
 }

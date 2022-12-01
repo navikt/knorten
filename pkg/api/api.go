@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nais/knorten/pkg/admin"
 	"github.com/nais/knorten/pkg/auth"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/crypto"
@@ -21,10 +22,12 @@ type API struct {
 	log          *logrus.Entry
 	googleClient *google.Google
 	k8sClient    *k8s.Client
+	adminClient  *admin.AdminClient
 	cryptor      *crypto.EncrypterDecrypter
 }
 
 func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, cryptor *crypto.EncrypterDecrypter, log *logrus.Entry) (*API, error) {
+	adminClient := admin.New(repo, helmClient, cryptor)
 	api := API{
 		oauth2:       oauth2,
 		helmClient:   helmClient,
@@ -32,6 +35,7 @@ func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googl
 		repo:         repo,
 		googleClient: googleClient,
 		k8sClient:    k8sClient,
+		adminClient:  adminClient,
 		cryptor:      cryptor,
 		log:          log,
 	}
@@ -52,7 +56,7 @@ func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googl
 }
 
 func (a *API) Run() error {
-	return a.router.Run()
+	return a.router.Run("localhost:8080")
 }
 
 func (a *API) setupUnauthenticatedRoutes() {

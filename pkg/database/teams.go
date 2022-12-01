@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
@@ -26,4 +27,12 @@ func (r *Repo) TeamGet(ctx context.Context, slug string) (gensql.TeamGetRow, err
 
 func (r *Repo) TeamDelete(ctx context.Context, team string) error {
 	return r.querier.TeamDelete(ctx, team)
+}
+
+func (r *Repo) TeamsGet(ctx context.Context) ([]gensql.TeamsGetRow, error) {
+	return r.querier.TeamsGet(ctx)
+}
+
+func (r *Repo) TeamsForAppGet(ctx context.Context, chartType gensql.ChartType) ([]string, error) {
+	return r.querier.TeamsForAppGet(ctx, chartType)
 }

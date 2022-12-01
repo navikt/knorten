@@ -191,7 +191,7 @@ func deleteCookie(c *gin.Context, name, host string) {
 	)
 }
 
-func (a *API) authMiddleware() gin.HandlerFunc {
+func (a *API) authMiddleware(allowedUsers []string) gin.HandlerFunc {
 	certificates, err := a.oauth2.FetchCertificates()
 	if err != nil {
 		a.log.Fatalf("Fetching signing certificates from IdP: %v", err)
@@ -214,6 +214,20 @@ func (a *API) authMiddleware() gin.HandlerFunc {
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
+		}
+
+		if len(allowedUsers) > 0 {
+			allowed := false
+			for _, allowedUser := range allowedUsers {
+				if user.Email == allowedUser {
+					allowed = true
+				}
+			}
+
+			if !allowed {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+				return
+			}
 		}
 
 		c.Set("user", user)

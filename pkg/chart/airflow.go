@@ -93,7 +93,11 @@ func CreateAirflow(c *gin.Context, slug string, repo *database.Repo, googleClien
 
 	go createAirflowDB(c, form.TeamID, dbPassword, googleClient, k8sClient)
 
-	return installOrUpdateAirflow(c, form, repo, helmClient, cryptor)
+	if err := addAirflowTeamValues(c, repo, form); err != nil {
+		return err
+	}
+
+	return InstallOrUpdateAirflow(form.TeamID, repo, helmClient, cryptor)
 }
 
 func UpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
@@ -111,7 +115,11 @@ func UpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, h
 		return err
 	}
 
-	return installOrUpdateAirflow(ctx, form, repo, helmClient, cryptor)
+	if err := addAirflowTeamValues(ctx, repo, form); err != nil {
+		return err
+	}
+
+	return InstallOrUpdateAirflow(form.TeamID, repo, helmClient, cryptor)
 }
 
 func DeleteAirflow(ctx context.Context, teamSlug string, repo *database.Repo, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client) error {
@@ -131,20 +139,24 @@ func DeleteAirflow(ctx context.Context, teamSlug string, repo *database.Repo, he
 	return nil
 }
 
-func installOrUpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
+func InstallOrUpdateAirflow(teamID string, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
+	application := helmApps.NewAirflow(teamID, repo, cryptor)
+
+	go helmClient.InstallOrUpgrade(string(gensql.ChartTypeAirflow), k8s.NameToNamespace(teamID), application)
+
+	return nil
+}
+
+func addAirflowTeamValues(c context.Context, repo *database.Repo, form AirflowForm) error {
 	chartValues, err := reflect.CreateChartValues(form)
 	if err != nil {
 		return err
 	}
 
-	err = repo.TeamValuesInsert(ctx, gensql.ChartTypeAirflow, chartValues, form.TeamID)
+	err = repo.TeamValuesInsert(c, gensql.ChartTypeAirflow, chartValues, form.TeamID)
 	if err != nil {
 		return err
 	}
-
-	application := helmApps.NewAirflow(form.TeamID, repo, cryptor)
-
-	go helmClient.InstallOrUpgrade(string(gensql.ChartTypeAirflow), k8s.NameToNamespace(form.TeamID), application)
 
 	return nil
 }

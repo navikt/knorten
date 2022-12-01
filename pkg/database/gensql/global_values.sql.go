@@ -9,6 +9,23 @@ import (
 	"context"
 )
 
+const globalValueDelete = `-- name: GlobalValueDelete :exec
+DELETE
+FROM chart_global_values
+WHERE key = $1
+  AND chart_type = $2
+`
+
+type GlobalValueDeleteParams struct {
+	Key       string
+	ChartType ChartType
+}
+
+func (q *Queries) GlobalValueDelete(ctx context.Context, arg GlobalValueDeleteParams) error {
+	_, err := q.db.ExecContext(ctx, globalValueDelete, arg.Key, arg.ChartType)
+	return err
+}
+
 const globalValueInsert = `-- name: GlobalValueInsert :exec
 INSERT INTO chart_global_values (
     "key",

@@ -123,3 +123,32 @@ func (q *Queries) TeamValuesGet(ctx context.Context, arg TeamValuesGetParams) ([
 	}
 	return items, nil
 }
+
+const teamsForAppGet = `-- name: TeamsForAppGet :many
+SELECT DISTINCT ON (team_id) team_id
+FROM chart_team_values
+WHERE chart_type = $1
+`
+
+func (q *Queries) TeamsForAppGet(ctx context.Context, chartType ChartType) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, teamsForAppGet, chartType)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var team_id string
+		if err := rows.Scan(&team_id); err != nil {
+			return nil, err
+		}
+		items = append(items, team_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

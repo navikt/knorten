@@ -1,5 +1,4 @@
 .PHONY: env local local-offline generate-sql install-sqlc goose
-SQLC_VERSION ?= "v1.15.0"
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
 	GOBIN=$(shell go env GOPATH)/bin
@@ -46,7 +45,7 @@ generate-sql:
 	$(GOBIN)/sqlc generate
 
 install-sqlc:
-	go install github.com/kyleconroy/sqlc/cmd/sqlc@$(SQLC_VERSION)
+	go install github.com/kyleconroy/sqlc/cmd/sqlc@latest
 
 # make goose cmd=status
 goose:

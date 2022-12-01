@@ -56,7 +56,7 @@ func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googl
 }
 
 func (a *API) Run() error {
-	return a.router.Run("localhost:8080")
+	return a.router.Run()
 }
 
 func (a *API) setupUnauthenticatedRoutes() {

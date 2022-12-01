@@ -25,6 +25,7 @@ import (
 const (
 	sqlProxyHost       = "airflow-sql-proxy"
 	dbSecretName       = "airflow-db"
+	webserverSecret    = "airflow-webserver"
 	resultDBSecretName = "airflow-result-db"
 )
 
@@ -92,6 +93,8 @@ func CreateAirflow(c *gin.Context, slug string, repo *database.Repo, googleClien
 	}
 
 	go createAirflowDB(c, form.TeamID, dbPassword, googleClient, k8sClient)
+
+	go createWebserverSecret(c, form.TeamID, k8sClient)
 
 	if err := addAirflowTeamValues(c, repo, form); err != nil {
 		return err
@@ -275,6 +278,19 @@ func createAirflowDB(ctx context.Context, teamID, dbPassword string, googleClien
 	}
 
 	if err := k8sClient.CreateCloudSQLProxy(ctx, sqlProxyHost, teamID, k8s.NameToNamespace(teamID), dbInstance); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createWebserverSecret(ctx context.Context, teamID string, k8sClient *k8s.Client) error {
+	secretKey, err := generatePassword(32)
+	if err != nil {
+		return err
+	}
+
+	if err := k8sClient.CreateOrUpdateSecret(ctx, webserverSecret, k8s.NameToNamespace(teamID, map[string]string{"webserver-secret-key": secretKey}); err != nil {
 		return err
 	}
 

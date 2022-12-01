@@ -290,7 +290,7 @@ func createWebserverSecret(ctx context.Context, teamID string, k8sClient *k8s.Cl
 		return err
 	}
 
-	if err := k8sClient.CreateOrUpdateSecret(ctx, webserverSecret, k8s.NameToNamespace(teamID, map[string]string{"webserver-secret-key": secretKey}); err != nil {
+	if err := k8sClient.CreateOrUpdateSecret(ctx, webserverSecret, k8s.NameToNamespace(teamID), map[string]string{"webserver-secret-key": secretKey}); err != nil {
 		return err
 	}
 

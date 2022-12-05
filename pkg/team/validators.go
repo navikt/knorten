@@ -1,10 +1,19 @@
 package team
 
 import (
-	"github.com/go-playground/validator/v10"
 	"net/mail"
+	"regexp"
 	"strings"
+
+	"github.com/go-playground/validator/v10"
 )
+
+var ValidateTeamName validator.Func = func(fl validator.FieldLevel) bool {
+	teamSlug := fl.Field().Interface().(string)
+
+	r, _ := regexp.Compile("^[a-z-]+$")
+	return r.MatchString(teamSlug)
+}
 
 var ValidateTeamUsers validator.Func = func(fl validator.FieldLevel) bool {
 	users := fl.Field().Interface().([]string)

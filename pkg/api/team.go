@@ -18,6 +18,12 @@ func (a *API) setupTeamRoutes() {
 			a.log.WithError(err).Error("can't register validator")
 			return
 		}
+
+		err = v.RegisterValidation("validTeamName", team.ValidateTeamName)
+		if err != nil {
+			a.log.WithError(err).Error("can't register validator")
+			return
+		}
 	}
 
 	a.router.GET("/team/new", func(c *gin.Context) {

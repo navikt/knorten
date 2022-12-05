@@ -23,7 +23,7 @@ import (
 )
 
 type Form struct {
-	Slug  string   `form:"team" binding:"required"`
+	Slug  string   `form:"team" binding:"required,validTeamName"`
 	Users []string `form:"users[]" binding:"required,validEmail"`
 }
 

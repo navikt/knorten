@@ -91,7 +91,7 @@ func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, he
 				AllowedUsers: form.Users,
 			},
 		}
-		err = chart.UpdateJupyterhub(c, jupyterForm, repo, helmClient, cryptor)
+		err = chart.UpdateJupyterTeamValuesAndInstall(c, jupyterForm, repo, helmClient, cryptor)
 		if err != nil {
 			return err
 		}

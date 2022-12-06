@@ -59,10 +59,6 @@ func CreateJupyterhub(c *gin.Context, slug string, repo *database.Repo, helmClie
 		return err
 	}
 
-	if err := form.ensureValidValues(); err != nil {
-		return err
-	}
-
 	team, err := repo.TeamGet(c, slug)
 	if err != nil {
 		return err
@@ -83,11 +79,11 @@ func CreateJupyterhub(c *gin.Context, slug string, repo *database.Repo, helmClie
 
 	addGeneratedJupyterhubConfig(&form)
 
-	if err := storeJupyterTeamValues(c, repo, form); err != nil {
+	if err := form.ensureValidValues(); err != nil {
 		return err
 	}
 
-	return InstallOrUpdateJupyterhub(form.TeamID, repo, helmClient, cryptor)
+	return UpdateJupyterTeamValuesAndInstall(c, form, repo, helmClient, cryptor)
 }
 
 func UpdateJupyterhub(c *gin.Context, form JupyterForm, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
@@ -103,6 +99,11 @@ func UpdateJupyterhub(c *gin.Context, form JupyterForm, repo *database.Repo, hel
 	if err := form.ensureValidValues(); err != nil {
 		return err
 	}
+
+	return UpdateJupyterTeamValuesAndInstall(c, form, repo, helmClient, cryptor)
+}
+
+func UpdateJupyterTeamValuesAndInstall(c *gin.Context, form JupyterForm, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
 	if err := storeJupyterTeamValues(c, repo, form); err != nil {
 		return err
 	}

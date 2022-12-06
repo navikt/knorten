@@ -31,6 +31,16 @@
                         <input type="number" name="memory" id="memory" value="{{ or .values.MemoryWithoutUnit "2" }}"
                                placeholder="2" step="0.1" min="1"/>
                     </div>
+                     <div class="pure-control-group">
+                        <label for="imagename">Image</label>
+                        <input type="string" name="imagename" id="imagename" value="{{ .values.Image }}" 
+                               placeholder="Spesifiser image, velger default hvis utelatt"/>
+                    </div>
+                    <div class="pure-control-group">
+                        <label for="imagetag">Image Tag</label>
+                        <input type="string" name="imagetag" id="imagetag" value="{{ .values.ImageTag }}" 
+                               placeholder="Spesifiser image tag, velger default hvis utelatt"/>
+                    </div>
                     <div class="pure-controls">
                         <button type="submit" class="pure-button pure-button-primary">Lagre</button>
                     </div>

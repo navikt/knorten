@@ -16,8 +16,10 @@ import (
 )
 
 type JupyterForm struct {
-	TeamID string
-	Slug   string
+	TeamID    string
+	Slug      string
+	ImageName string
+	ImageTag  string
 	JupyterValues
 }
 
@@ -33,6 +35,8 @@ type JupyterConfigurableValues struct {
 	CPUGuarantee    string `form:"cpu" helm:"singleuser.cpu.guarantee"`
 	MemoryLimit     string `form:"memory" helm:"singleuser.memory.limit"`
 	MemoryGuarantee string `form:"memory" helm:"singleuser.memory.guarantee"`
+	ImageName       string `form:"imagename" helm:"singleuser.image.name"`
+	ImageTag        string `form:"imagetag" helm:"singleuser.image.tag"`
 }
 
 type JupyterValues struct {

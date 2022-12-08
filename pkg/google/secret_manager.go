@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	gIAM "cloud.google.com/go/iam"
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	gErrors "github.com/googleapis/gax-go/v2/apierror"
@@ -145,11 +146,41 @@ func (g *Google) setUsersSecretOwnerBinding(ctx context.Context, users []string,
 		}
 	}
 
+	err = handle.SetPolicy(ctx, policy)
+	if err != nil {
+		return err
+	}
+
 	for _, user := range users {
-		if !slices.Contains(policyMembers, user) {
-			policy.Add("user:"+user, secretRoleName)
+		if err := g.updatePolicy(ctx, handle, user); err != nil {
+			return err
 		}
 	}
 
-	return handle.SetPolicy(ctx, policy)
+	return nil
+}
+
+func (g *Google) updatePolicy(ctx context.Context, handle *gIAM.Handle, user string) error {
+	policy, err := handle.Policy(ctx)
+	if err != nil {
+		return err
+	}
+	policyMembers := policy.Members(secretRoleName)
+
+	if !slices.Contains(policyMembers, user) {
+		policy.Add("user:"+user, secretRoleName)
+		err = handle.SetPolicy(ctx, policy)
+		if err != nil {
+			apiError, ok := gErrors.FromError(err)
+			if ok {
+				if apiError.GRPCStatus().Code() == codes.InvalidArgument {
+					g.log.Infof("User %v does not exist in GCP", user)
+					return nil
+				}
+			}
+			return err
+		}
+	}
+
+	return nil
 }

@@ -126,6 +126,8 @@ func (g *Google) createServiceAccountSecretAccessorBinding(ctx context.Context, 
 }
 
 func (g *Google) setUsersSecretOwnerBinding(ctx context.Context, users []string, secret string) error {
+	users = addUserTypePrefix(users)
+
 	client, err := secretmanager.NewClient(ctx)
 	if err != nil {
 		return err
@@ -168,13 +170,13 @@ func (g *Google) updatePolicy(ctx context.Context, handle *gIAM.Handle, user str
 	policyMembers := policy.Members(secretRoleName)
 
 	if !slices.Contains(policyMembers, user) {
-		policy.Add("user:"+user, secretRoleName)
+		policy.Add(user, secretRoleName)
 		err = handle.SetPolicy(ctx, policy)
 		if err != nil {
 			apiError, ok := gErrors.FromError(err)
 			if ok {
 				if apiError.GRPCStatus().Code() == codes.InvalidArgument {
-					g.log.Infof("User %v does not exist in GCP", user)
+					g.log.Infof("%v does not exist in GCP", user)
 					return nil
 				}
 			}
@@ -183,4 +185,12 @@ func (g *Google) updatePolicy(ctx context.Context, handle *gIAM.Handle, user str
 	}
 
 	return nil
+}
+
+func addUserTypePrefix(users []string) []string {
+	for i, u := range users {
+		users[i] = "user:" + u
+	}
+
+	return users
 }

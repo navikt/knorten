@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"gopkg.in/yaml.v2"
 
@@ -34,6 +35,10 @@ type Chart struct {
 	URL  string
 	Name string
 }
+
+const (
+	helmTimeout = 30 * time.Minute
+)
 
 func New(repo *database.Repo, log *logrus.Entry, dryRun, inCluster bool) (*Client, error) {
 	if inCluster {
@@ -100,6 +105,7 @@ func (c *Client) InstallOrUpgrade(releaseName, namespace string, app Application
 		installClient := action.NewInstall(actionConfig)
 		installClient.Namespace = namespace
 		installClient.ReleaseName = releaseName
+		installClient.Timeout = helmTimeout
 
 		_, err = installClient.Run(charty, charty.Values)
 		if err != nil {
@@ -110,6 +116,8 @@ func (c *Client) InstallOrUpgrade(releaseName, namespace string, app Application
 		c.log.Infof("Upgrading existing release %v", releaseName)
 		upgradeClient := action.NewUpgrade(actionConfig)
 		upgradeClient.Namespace = namespace
+		upgradeClient.Atomic = true
+		upgradeClient.Timeout = helmTimeout
 
 		_, err = upgradeClient.Run(releaseName, charty, charty.Values)
 		if err != nil {

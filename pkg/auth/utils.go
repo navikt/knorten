@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -52,7 +51,7 @@ func (k *KeyDiscovery) Map() (result map[string]CertificateList, err error) {
 func (c EncodedCertificate) Decode() (*x509.Certificate, error) {
 	stream := strings.NewReader(string(c))
 	decoder := base64.NewDecoder(base64.StdEncoding, stream)
-	key, err := ioutil.ReadAll(decoder)
+	key, err := io.ReadAll(decoder)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +69,7 @@ func DiscoverURL(url string) (*KeyDiscovery, error) {
 }
 
 func Discover(reader io.Reader) (*KeyDiscovery, error) {
-	document, err := ioutil.ReadAll(reader)
+	document, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, err
 	}

@@ -108,10 +108,11 @@ func UpdateJupyterTeamValuesAndInstall(c *gin.Context, form JupyterForm, repo *d
 		return err
 	}
 
-	return InstallOrUpdateJupyterhub(form.TeamID, repo, helmClient, cryptor)
+	InstallOrUpdateJupyterhub(form.TeamID, repo, helmClient, cryptor)
+	return nil
 }
 
-func InstallOrUpdateJupyterhub(teamID string, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
+func InstallOrUpdateJupyterhub(teamID string, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) {
 	application := helmApps.NewJupyterhub(teamID, repo, cryptor)
 
 	// Release name must be unique across namespaces as the helm chart creates a clusterrole
@@ -119,7 +120,7 @@ func InstallOrUpdateJupyterhub(teamID string, repo *database.Repo, helmClient *h
 	releaseName := jupyterReleaseName(k8s.NameToNamespace(teamID))
 	go helmClient.InstallOrUpgrade(releaseName, k8s.NameToNamespace(teamID), application)
 
-	return nil
+	return
 }
 
 func DeleteJupyterhub(c context.Context, teamSlug string, repo *database.Repo, helmClient *helm.Client) error {

@@ -100,7 +100,8 @@ func CreateAirflow(c *gin.Context, slug string, repo *database.Repo, googleClien
 		return err
 	}
 
-	return InstallOrUpdateAirflow(form.TeamID, repo, helmClient, cryptor)
+	InstallOrUpdateAirflow(form.TeamID, repo, helmClient, cryptor)
+	return nil
 }
 
 func UpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
@@ -122,7 +123,8 @@ func UpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, h
 		return err
 	}
 
-	return InstallOrUpdateAirflow(form.TeamID, repo, helmClient, cryptor)
+	InstallOrUpdateAirflow(form.TeamID, repo, helmClient, cryptor)
+	return nil
 }
 
 func DeleteAirflow(ctx context.Context, teamSlug string, repo *database.Repo, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client) error {
@@ -142,12 +144,12 @@ func DeleteAirflow(ctx context.Context, teamSlug string, repo *database.Repo, he
 	return nil
 }
 
-func InstallOrUpdateAirflow(teamID string, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
+func InstallOrUpdateAirflow(teamID string, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) {
 	application := helmApps.NewAirflow(teamID, repo, cryptor)
 
 	go helmClient.InstallOrUpgrade(string(gensql.ChartTypeAirflow), k8s.NameToNamespace(teamID), application)
 
-	return nil
+	return
 }
 
 func addAirflowTeamValues(c context.Context, repo *database.Repo, form AirflowForm) error {

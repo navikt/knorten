@@ -48,44 +48,43 @@ func New(repo *database.Repo, log *logrus.Entry, dryRun, inCluster bool) (*Clien
 	}, nil
 }
 
-func (c *Client) InstallOrUpgrade(releaseName, namespace string, app Application) error {
+func (c *Client) InstallOrUpgrade(releaseName, namespace string, app Application) {
 	if c.dryRun {
 		c.log.Infof("NOOP: Running in dry run mode")
 		charty, err := app.Chart(context.Background())
 		if err != nil {
-			return err
+			c.log.WithError(err).Errorf("error while generating chart for %v", releaseName)
+			return
 		}
 
 		out, err := yaml.Marshal(charty.Values)
 		if err != nil {
-			return err
+			c.log.WithError(err).Errorf("error while marshaling chart for %v", releaseName)
+			return
 		}
 
 		err = os.WriteFile(fmt.Sprintf("%v.yaml", releaseName), out, 0o644)
-
-		return nil
-	}
-
-	charty, err := app.Chart(context.Background())
-	if err != nil {
-		c.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
+		if err != nil {
+			c.log.WithError(err).Errorf("error while writing to file %v.yaml", releaseName)
+			return
+		}
+		return
 	}
 
 	settings := cli.New()
 	settings.SetNamespace(namespace)
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "secret", log.Printf); err != nil {
-		log.Printf("%+v", err)
-		c.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
-		return err
+		c.log.WithError(err).Errorf("error while init actionConfig for %v", releaseName)
+		return
 	}
 
 	listClient := action.NewList(actionConfig)
 	listClient.Deployed = true
 	results, err := listClient.Run()
 	if err != nil {
-		c.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
-		return err
+		c.log.WithError(err).Errorf("error while listing helm releases %v", releaseName)
+		return
 	}
 
 	exists := false
@@ -93,6 +92,12 @@ func (c *Client) InstallOrUpgrade(releaseName, namespace string, app Application
 		if rel.Name == releaseName {
 			exists = true
 		}
+	}
+
+	charty, err := app.Chart(context.Background())
+	if err != nil {
+		c.log.WithError(err).Errorf("error generating chart for %v", releaseName)
+		return
 	}
 
 	if !exists {
@@ -103,8 +108,8 @@ func (c *Client) InstallOrUpgrade(releaseName, namespace string, app Application
 
 		_, err = installClient.Run(charty, charty.Values)
 		if err != nil {
-			c.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
-			return err
+			c.log.WithError(err).Errorf("error while installing release %v", releaseName)
+			return
 		}
 	} else {
 		c.log.Infof("Upgrading existing release %v", releaseName)
@@ -113,50 +118,45 @@ func (c *Client) InstallOrUpgrade(releaseName, namespace string, app Application
 
 		_, err = upgradeClient.Run(releaseName, charty, charty.Values)
 		if err != nil {
-			c.log.WithError(err).Errorf("install or upgrading release %v", releaseName)
-			return err
+			c.log.WithError(err).Errorf("error while upgrading release %v", releaseName)
+			return
 		}
 	}
-
-	return nil
 }
 
-func (c *Client) Uninstall(releaseName, namespace string) error {
+func (c *Client) Uninstall(releaseName, namespace string) {
 	if c.dryRun {
 		c.log.Infof("NOOP: Running in dry run mode")
-		return nil
+		return
 	}
 
 	settings := cli.New()
 	settings.SetNamespace(namespace)
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "secret", log.Printf); err != nil {
-		log.Printf("%+v", err)
-		c.log.WithError(err).Errorf("uninstalling release %v", releaseName)
-		return err
+		c.log.WithError(err).Errorf("error while init actionConfig for %v", releaseName)
+		return
 	}
 
 	listClient := action.NewList(actionConfig)
 	listClient.Deployed = true
 	results, err := listClient.Run()
 	if err != nil {
-		c.log.WithError(err).Errorf("uninstalling release %v", releaseName)
-		return err
+		c.log.WithError(err).Errorf("error while listing helm releases %v", releaseName)
+		return
 	}
 
 	if !releaseExists(results, releaseName) {
 		c.log.Infof("release %v does not exist", releaseName)
-		return nil
+		return
 	}
 
 	uninstallClient := action.NewUninstall(actionConfig)
 	_, err = uninstallClient.Run(releaseName)
 	if err != nil {
-		c.log.WithError(err).Errorf("uninstalling release %v", releaseName)
-		return err
+		c.log.WithError(err).Errorf("error while uninstalling release %v", releaseName)
+		return
 	}
-
-	return nil
 }
 
 func initRepositories() error {

@@ -22,7 +22,7 @@ type API struct {
 	log          *logrus.Entry
 	googleClient *google.Google
 	k8sClient    *k8s.Client
-	adminClient  *admin.AdminClient
+	adminClient  *admin.Client
 	cryptor      *crypto.EncrypterDecrypter
 }
 

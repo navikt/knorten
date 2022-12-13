@@ -1,16 +1,7 @@
 package helm
 
 import (
-	"context"
 	"fmt"
-	"io/fs"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
-
-	"github.com/gofrs/flock"
 	"gopkg.in/yaml.v2"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -19,6 +10,8 @@ import (
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/repo"
+	"io/fs"
+	"os"
 )
 
 func FetchChart(repo, chartName, version string) (*chart.Chart, error) {
@@ -52,33 +45,13 @@ func FetchChart(repo, chartName, version string) (*chart.Chart, error) {
 }
 
 func addHelmRepository(url, chartName, repoFile string, settings *cli.EnvSettings) error {
-	// Acquire a file lock for process synchronization
-	repoFileExt := filepath.Ext(repoFile)
-	var lockPath string
-	if len(repoFileExt) > 0 && len(repoFileExt) < len(repoFile) {
-		lockPath = strings.TrimSuffix(repoFile, repoFileExt) + ".lock"
-	} else {
-		lockPath = repoFile + ".lock"
-	}
-	fileLock := flock.New(lockPath)
-	lockCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	locked, err := fileLock.TryLockContext(lockCtx, time.Second)
-	if err == nil && locked {
-		defer fileLock.Unlock()
-	}
-	if err != nil {
-		return err
-	}
-
-	b, err := ioutil.ReadFile(repoFile)
+	bytes, err := os.ReadFile(repoFile)
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
 	var f repo.File
-	if err := yaml.Unmarshal(b, &f); err != nil {
+	if err := yaml.Unmarshal(bytes, &f); err != nil {
 		return err
 	}
 

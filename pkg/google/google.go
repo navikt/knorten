@@ -103,7 +103,7 @@ func (g *Google) createIAMServiceAccount(ctx context.Context, team string) (*iam
 		if ok {
 			if gError.Code == 409 {
 				g.log.Infof("create iam service account: service account %v already exists", team)
-				return g.getIAMServiceAccount(ctx, service, team)
+				return g.getIAMServiceAccount(service, team)
 			}
 		}
 		return nil, fmt.Errorf("Projects.ServiceAccounts.Create: %v", err)
@@ -112,7 +112,7 @@ func (g *Google) createIAMServiceAccount(ctx context.Context, team string) (*iam
 	return account, nil
 }
 
-func (g *Google) getIAMServiceAccount(ctx context.Context, service *iam.Service, saName string) (*iam.ServiceAccount, error) {
+func (g *Google) getIAMServiceAccount(service *iam.Service, saName string) (*iam.ServiceAccount, error) {
 	sa := fmt.Sprintf("projects/%v/serviceAccounts/%v@%v.iam.gserviceaccount.com", g.project, saName, g.project)
 	return service.Projects.ServiceAccounts.Get(sa).Do()
 }

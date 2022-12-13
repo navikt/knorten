@@ -19,11 +19,11 @@ import (
 )
 
 const (
-	RedirectURICookie               = "redirecturi"
-	OAuthStateCookie                = "oauthstate"
-	sessionCookie                   = "knorten_session"
-	tokenLength                     = 32
-	sessionLength     time.Duration = 7 * time.Hour
+	RedirectURICookie = "redirecturi"
+	OAuthStateCookie  = "oauthstate"
+	sessionCookie     = "knorten_session"
+	tokenLength       = 32
+	sessionLength     = 7 * time.Hour
 )
 
 func (a *API) login(c *gin.Context) string {

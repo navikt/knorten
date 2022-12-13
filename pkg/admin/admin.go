@@ -13,7 +13,7 @@ import (
 	"github.com/nais/knorten/pkg/helm"
 )
 
-type AdminClient struct {
+type Client struct {
 	repo       *database.Repo
 	helmClient *helm.Client
 	cryptor    *crypto.EncrypterDecrypter
@@ -25,15 +25,15 @@ type diffValue struct {
 	Encrypted string
 }
 
-func New(repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) *AdminClient {
-	return &AdminClient{
+func New(repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) *Client {
+	return &Client{
 		repo:       repo,
 		helmClient: helmClient,
 		cryptor:    cryptor,
 	}
 }
 
-func (a *AdminClient) FindGlobalValueChanges(ctx context.Context, formValues url.Values, chartType gensql.ChartType) (map[string]diffValue, error) {
+func (a *Client) FindGlobalValueChanges(ctx context.Context, formValues url.Values, chartType gensql.ChartType) (map[string]diffValue, error) {
 	originals, err := a.repo.GlobalValuesGet(ctx, chartType)
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func (a *AdminClient) FindGlobalValueChanges(ctx context.Context, formValues url
 	return changed, nil
 }
 
-func (a *AdminClient) UpdateGlobalValues(ctx context.Context, formValues url.Values, chartType gensql.ChartType) error {
+func (a *Client) UpdateGlobalValues(ctx context.Context, formValues url.Values, chartType gensql.ChartType) error {
 	for key, values := range formValues {
 		if values[0] == "" {
 			err := a.repo.GlobalValueDelete(ctx, key, chartType)
@@ -67,7 +67,7 @@ func (a *AdminClient) UpdateGlobalValues(ctx context.Context, formValues url.Val
 	return a.updateHelmReleases(ctx, chartType)
 }
 
-func (a *AdminClient) updateHelmReleases(ctx context.Context, chartType gensql.ChartType) error {
+func (a *Client) updateHelmReleases(ctx context.Context, chartType gensql.ChartType) error {
 	teams, err := a.repo.TeamsForAppGet(ctx, chartType)
 	if err != nil {
 		return err
@@ -87,7 +87,7 @@ func (a *AdminClient) updateHelmReleases(ctx context.Context, chartType gensql.C
 	return nil
 }
 
-func (a *AdminClient) parseValue(values []string) (string, bool, error) {
+func (a *Client) parseValue(values []string) (string, bool, error) {
 	if len(values) == 2 {
 		value, err := a.cryptor.EncryptValue(values[0])
 		if err != nil {

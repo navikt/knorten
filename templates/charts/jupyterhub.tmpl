@@ -21,6 +21,7 @@
 
             <form class="pure-form pure-form-stacked" action="" method="POST">
                 <fieldset>
+                    {{ .pending_jupyterhub }}
                     <div class="pure-control-group">
                         <label for="cpu">CPU</label>
                         <input type="number" name="cpu" id="cpu" value="{{ or .values.CPULimit "0.5" }}"
@@ -42,7 +43,7 @@
                                placeholder="Spesifiser image tag, velger default hvis utelatt"/>
                     </div>
                     <div class="pure-controls">
-                        <button type="submit" class="pure-button pure-button-primary">Lagre</button>
+                        <button id="submit" type="submit" class="pure-button pure-button-primary">Lagre</button>
                     </div>
                 </fieldset>
             </form>
@@ -67,6 +68,7 @@
             const currentDiv = document.getElementById("users");
             currentDiv.appendChild(input);
         }
+        document.getElementById("submit").disabled = {{ .pending_jupyterhub }};
     </script>
     {{ template "footer" }}
 {{ end }}

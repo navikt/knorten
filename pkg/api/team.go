@@ -75,9 +75,11 @@ func (a *API) setupTeamRoutes() {
 			return
 		}
 		c.HTML(http.StatusOK, "team/edit", gin.H{
-			"users":  get.Users,
-			"team":   teamName,
-			"errors": flashes,
+			"users":              get.Users,
+			"team":               teamName,
+			"pending_jupyterhub": get.PendingJupyterUpgrade,
+			"pending_airflow":    get.PendingAirflowUpgrade,
+			"errors":             flashes,
 		})
 	})
 

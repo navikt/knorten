@@ -76,9 +76,9 @@ func (a *Client) updateHelmReleases(ctx context.Context, chartType gensql.ChartT
 	for _, t := range teams {
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
-			chart.InstallOrUpdateJupyterhub(t, a.repo, a.helmClient, a.cryptor)
+			chart.InstallOrUpdateJupyterhub(ctx, t, a.repo, a.helmClient, a.cryptor)
 		case gensql.ChartTypeAirflow:
-			chart.InstallOrUpdateAirflow(t, a.repo, a.helmClient, a.cryptor)
+			chart.InstallOrUpdateAirflow(ctx, t, a.repo, a.helmClient, a.cryptor)
 		default:
 			return fmt.Errorf("invalid chart type %v", chartType)
 		}

@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/nais/knorten/pkg/database/gensql"
 )
@@ -35,4 +36,22 @@ func (r *Repo) TeamsGet(ctx context.Context) ([]gensql.TeamsGetRow, error) {
 
 func (r *Repo) TeamsForAppGet(ctx context.Context, chartType gensql.ChartType) ([]string, error) {
 	return r.querier.TeamsForAppGet(ctx, chartType)
+}
+
+func (r *Repo) TeamSetPendingUpgrade(ctx context.Context, teamID, chartType string, pendingUpgrade bool) error {
+	var err error
+	switch chartType {
+	case string(gensql.ChartTypeJupyterhub):
+		fmt.Printf("set pending upgrade for chart %v to %v (team: %v)\n", chartType, pendingUpgrade, teamID)
+		err = r.querier.TeamSetPendingJupyterUpgrade(ctx, gensql.TeamSetPendingJupyterUpgradeParams{
+			ID:                    teamID,
+			PendingJupyterUpgrade: pendingUpgrade,
+		})
+	case string(gensql.ChartTypeAirflow):
+		err = r.querier.TeamSetPendingAirflowUpgrade(ctx, gensql.TeamSetPendingAirflowUpgradeParams{
+			ID:                    teamID,
+			PendingAirflowUpgrade: pendingUpgrade,
+		})
+	}
+	return err
 }

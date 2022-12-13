@@ -33,7 +33,7 @@
                     </div>
 
                     <div class="pure-controls">
-                        <button type="submit" class="pure-button pure-button-primary">Lagre</button>
+                        <button id="submit" type="submit" class="pure-button pure-button-primary">Lagre</button>
                     </div>
                 </fieldset>
             </form>
@@ -58,6 +58,7 @@
             const currentDiv = document.getElementById("users");
             currentDiv.appendChild(input);
         }
+        document.getElementById("submit").disabled = {{ .pending_airflow }};
     </script>
     {{ template "footer" }}
 {{ end }}

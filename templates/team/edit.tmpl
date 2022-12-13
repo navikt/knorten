@@ -27,7 +27,7 @@
 
                 <fieldset>
                     <div class="pure-controls">
-                        <button type="submit" class="pure-button pure-button-primary">Lagre</button>
+                        <button id="submit" type="submit" class="pure-button pure-button-primary">Lagre</button>
                     </div>
                 </fieldset>
             </form>
@@ -37,6 +37,9 @@
         {{ template "team/script" }}
         {{ range .users }}
         addElement({{ . }})
+        {{ end }}
+        {{ if or (.pending_jupyterhub) (.pending_airflow) }}
+            document.getElementById("submit").disabled = true;
         {{ end }}
     </script>
     {{ template "footer" }}

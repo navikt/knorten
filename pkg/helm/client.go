@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v2"
@@ -14,6 +15,7 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 
 	"github.com/nais/knorten/pkg/database"
+	"github.com/nais/knorten/pkg/k8s"
 	"github.com/sirupsen/logrus"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
@@ -53,7 +55,7 @@ func New(repo *database.Repo, log *logrus.Entry, dryRun, inCluster bool) (*Clien
 	}, nil
 }
 
-func (c *Client) InstallOrUpgrade(releaseName, namespace string, app Application) {
+func (c *Client) InstallOrUpgrade(ctx context.Context, releaseName, teamID string, app Application) {
 	if c.dryRun {
 		c.log.Infof("NOOP: Running in dry run mode")
 		charty, err := app.Chart(context.Background())
@@ -73,6 +75,13 @@ func (c *Client) InstallOrUpgrade(releaseName, namespace string, app Application
 			c.log.WithError(err).Errorf("error while writing to file %v.yaml", releaseName)
 			return
 		}
+		return
+	}
+
+	namespace := k8s.NameToNamespace(teamID)
+
+	if err := c.repo.TeamSetPendingUpgrade(ctx, teamID, releaseNameToChartType(releaseName), true); err != nil {
+		c.log.WithError(err).Errorf("install or upgrading release %v, error setting pending upgrade lock", releaseName)
 		return
 	}
 
@@ -129,6 +138,11 @@ func (c *Client) InstallOrUpgrade(releaseName, namespace string, app Application
 			c.log.WithError(err).Errorf("error while upgrading release %v", releaseName)
 			return
 		}
+	}
+
+	if err := c.repo.TeamSetPendingUpgrade(ctx, teamID, releaseNameToChartType(releaseName), false); err != nil {
+		c.log.WithError(err).Errorf("install or upgrading release %v, error clearing pending upgrade lock", releaseName)
+		return
 	}
 }
 
@@ -208,4 +222,8 @@ func releaseExists(releases []*release.Release, releaseName string) bool {
 	}
 
 	return false
+}
+
+func releaseNameToChartType(releaseName string) string {
+	return strings.Split(releaseName, "-")[0]
 }

@@ -121,9 +121,11 @@ func (a *API) setupChartRoutes() {
 			return
 		}
 		c.HTML(http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
-			"team":   slug,
-			"values": form,
-			"errors": flashes,
+			"team":               slug,
+			"pending_jupyterhub": team.PendingJupyterUpgrade,
+			"pending_airflow":    team.PendingAirflowUpgrade,
+			"values":             form,
+			"errors":             flashes,
 		})
 	})
 

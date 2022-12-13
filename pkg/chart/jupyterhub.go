@@ -13,6 +13,7 @@ import (
 	helmApps "github.com/nais/knorten/pkg/helm/applications"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/reflect"
+	log "github.com/sirupsen/logrus"
 )
 
 type JupyterForm struct {
@@ -63,6 +64,10 @@ func CreateJupyterhub(c *gin.Context, slug string, repo *database.Repo, helmClie
 	if err != nil {
 		return err
 	}
+	if team.PendingJupyterUpgrade {
+		log.Info("pending jupyterhub install")
+		return nil
+	}
 
 	form.Slug = slug
 	form.TeamID = team.ID
@@ -91,6 +96,10 @@ func UpdateJupyterhub(c *gin.Context, form JupyterForm, repo *database.Repo, hel
 	if err != nil {
 		return err
 	}
+	if team.PendingJupyterUpgrade {
+		log.Info("pending jupyterhub upgrade")
+		return nil
+	}
 
 	form.TeamID = team.ID
 	form.AdminUsers = team.Users
@@ -108,19 +117,17 @@ func UpdateJupyterTeamValuesAndInstall(c *gin.Context, form JupyterForm, repo *d
 		return err
 	}
 
-	InstallOrUpdateJupyterhub(form.TeamID, repo, helmClient, cryptor)
+	InstallOrUpdateJupyterhub(c, form.TeamID, repo, helmClient, cryptor)
 	return nil
 }
 
-func InstallOrUpdateJupyterhub(teamID string, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) {
+func InstallOrUpdateJupyterhub(ctx context.Context, teamID string, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) {
 	application := helmApps.NewJupyterhub(teamID, repo, cryptor)
 
 	// Release name must be unique across namespaces as the helm chart creates a clusterrole
 	// for each jupyterhub with the same name as the release name.
 	releaseName := jupyterReleaseName(k8s.NameToNamespace(teamID))
-	go helmClient.InstallOrUpgrade(releaseName, k8s.NameToNamespace(teamID), application)
-
-	return
+	go helmClient.InstallOrUpgrade(ctx, releaseName, teamID, application)
 }
 
 func DeleteJupyterhub(c context.Context, teamSlug string, repo *database.Repo, helmClient *helm.Client) error {

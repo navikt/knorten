@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator/v10"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -78,6 +79,10 @@ func CreateAirflow(c *gin.Context, slug string, repo *database.Repo, googleClien
 	if err != nil {
 		return err
 	}
+	if team.PendingAirflowUpgrade {
+		log.Info("pending airflow install")
+		return nil
+	}
 
 	form.Slug = slug
 	form.TeamID = team.ID
@@ -100,7 +105,7 @@ func CreateAirflow(c *gin.Context, slug string, repo *database.Repo, googleClien
 		return err
 	}
 
-	InstallOrUpdateAirflow(form.TeamID, repo, helmClient, cryptor)
+	InstallOrUpdateAirflow(c, form.TeamID, repo, helmClient, cryptor)
 	return nil
 }
 
@@ -110,6 +115,10 @@ func UpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, h
 	team, err := repo.TeamGet(ctx, form.Slug)
 	if err != nil {
 		return err
+	}
+	if team.PendingAirflowUpgrade {
+		log.Info("pending airflow upgrade")
+		return nil
 	}
 
 	form.TeamID = team.ID
@@ -123,7 +132,7 @@ func UpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, h
 		return err
 	}
 
-	InstallOrUpdateAirflow(form.TeamID, repo, helmClient, cryptor)
+	InstallOrUpdateAirflow(ctx, form.TeamID, repo, helmClient, cryptor)
 	return nil
 }
 
@@ -144,12 +153,10 @@ func DeleteAirflow(ctx context.Context, teamSlug string, repo *database.Repo, he
 	return nil
 }
 
-func InstallOrUpdateAirflow(teamID string, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) {
+func InstallOrUpdateAirflow(ctx context.Context, teamID string, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) {
 	application := helmApps.NewAirflow(teamID, repo, cryptor)
 
-	go helmClient.InstallOrUpgrade(string(gensql.ChartTypeAirflow), k8s.NameToNamespace(teamID), application)
-
-	return
+	go helmClient.InstallOrUpgrade(ctx, string(gensql.ChartTypeAirflow), teamID, application)
 }
 
 func addAirflowTeamValues(c context.Context, repo *database.Repo, form AirflowForm) error {

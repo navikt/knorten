@@ -11,6 +11,16 @@ import (
 	"github.com/lib/pq"
 )
 
+const clearPendingUpgradeLocks = `-- name: ClearPendingUpgradeLocks :exec
+UPDATE teams
+SET pending_jupyter_upgrade = false, pending_airflow_upgrade = false
+`
+
+func (q *Queries) ClearPendingUpgradeLocks(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, clearPendingUpgradeLocks)
+	return err
+}
+
 const teamCreate = `-- name: TeamCreate :exec
 INSERT INTO teams ("id", "users", "slug")
 VALUES ($1, $2, $3)
@@ -39,22 +49,62 @@ func (q *Queries) TeamDelete(ctx context.Context, id string) error {
 }
 
 const teamGet = `-- name: TeamGet :one
-SELECT id, users, slug
+SELECT id, users, slug, pending_jupyter_upgrade, pending_airflow_upgrade
 FROM teams
 WHERE slug = $1
 `
 
 type TeamGetRow struct {
-	ID    string
-	Users []string
-	Slug  string
+	ID                    string
+	Users                 []string
+	Slug                  string
+	PendingJupyterUpgrade bool
+	PendingAirflowUpgrade bool
 }
 
 func (q *Queries) TeamGet(ctx context.Context, slug string) (TeamGetRow, error) {
 	row := q.db.QueryRowContext(ctx, teamGet, slug)
 	var i TeamGetRow
-	err := row.Scan(&i.ID, pq.Array(&i.Users), &i.Slug)
+	err := row.Scan(
+		&i.ID,
+		pq.Array(&i.Users),
+		&i.Slug,
+		&i.PendingJupyterUpgrade,
+		&i.PendingAirflowUpgrade,
+	)
 	return i, err
+}
+
+const teamSetPendingAirflowUpgrade = `-- name: TeamSetPendingAirflowUpgrade :exec
+UPDATE teams
+SET pending_airflow_upgrade = $1
+WHERE id = $2
+`
+
+type TeamSetPendingAirflowUpgradeParams struct {
+	PendingAirflowUpgrade bool
+	ID                    string
+}
+
+func (q *Queries) TeamSetPendingAirflowUpgrade(ctx context.Context, arg TeamSetPendingAirflowUpgradeParams) error {
+	_, err := q.db.ExecContext(ctx, teamSetPendingAirflowUpgrade, arg.PendingAirflowUpgrade, arg.ID)
+	return err
+}
+
+const teamSetPendingJupyterUpgrade = `-- name: TeamSetPendingJupyterUpgrade :exec
+UPDATE teams
+SET pending_jupyter_upgrade = $1
+WHERE id = $2
+`
+
+type TeamSetPendingJupyterUpgradeParams struct {
+	PendingJupyterUpgrade bool
+	ID                    string
+}
+
+func (q *Queries) TeamSetPendingJupyterUpgrade(ctx context.Context, arg TeamSetPendingJupyterUpgradeParams) error {
+	_, err := q.db.ExecContext(ctx, teamSetPendingJupyterUpgrade, arg.PendingJupyterUpgrade, arg.ID)
+	return err
 }
 
 const teamUpdate = `-- name: TeamUpdate :exec

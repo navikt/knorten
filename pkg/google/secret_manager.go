@@ -188,9 +188,10 @@ func (g *Google) updatePolicy(ctx context.Context, handle *gIAM.Handle, user str
 }
 
 func addUserTypePrefix(users []string) []string {
+	prefixedUsers := make([]string, len(users))
 	for i, u := range users {
-		users[i] = "user:" + u
+		prefixedUsers[i] = "user:" + u
 	}
 
-	return users
+	return prefixedUsers
 }

@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
       - name: knorten
-        image: ${image}
+        image: ""
         ports:
         - containerPort: 8080

@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
       - name: knorten
-        image: europe-west1-docker.pkg.dev/$PROJECT_ID/knorten/knorten
+        image: europe-west1-docker.pkg.dev/knada-gcp/knorten/knorten
         ports:
         - containerPort: 8080

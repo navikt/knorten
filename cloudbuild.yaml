@@ -4,5 +4,12 @@ options:
 steps:
 - name: 'gcr.io/cloud-builders/docker'
   args: [ 'build', '-t', 'europe-west1-docker.pkg.dev/$PROJECT_ID/knorten/knorten:$SHORT_SHA', '.' ]
+- name: "gcr.io/cloud-builders/gke-deploy"
+  args:
+  - run
+  - --filename=k8s
+  - --image=europe-west1-docker.pkg.dev/$PROJECT_ID/knorten/knorten:$SHORT_SHA
+  - --location=$_REGION
+  - --cluster=$_CLUSTER
 images:
 - 'europe-west1-docker.pkg.dev/$PROJECT_ID/knorten/knorten:$SHORT_SHA'

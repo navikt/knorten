@@ -3,6 +3,6 @@ options:
 
 steps:
 - name: 'gcr.io/cloud-builders/docker'
-  args: [ 'build', '-t', 'europe-west1-docker.pkg.dev/$PROJECT_ID/knorten/knorten:$SHORT_SHA-$(date +%m-%d-%Y)', '.' ]
+  args: [ 'build', '-t', 'europe-west1-docker.pkg.dev/$PROJECT_ID/knorten/knorten:$SHORT_SHA', '.' ]
 images:
-- 'europe-west1-docker.pkg.dev/$PROJECT_ID/knorten/knorten:$SHORT_SHA-$(date +%m-%d-%Y)'
+- 'europe-west1-docker.pkg.dev/$PROJECT_ID/knorten/knorten:$SHORT_SHA'

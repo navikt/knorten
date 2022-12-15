@@ -3,7 +3,7 @@ name: Build and push knorten image
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   set-version:

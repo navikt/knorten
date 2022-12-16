@@ -1,5 +1,7 @@
 options:
   logging: CLOUD_LOGGING_ONLY
+  workerPool:
+    'projects/$PROJECT_ID/locations/europe-west1/workerPools/knada-cloudbuild-pool'
 
 steps:
 - name: "gcr.io/cloud-builders/gke-deploy"

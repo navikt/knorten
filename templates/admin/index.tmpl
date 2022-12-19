@@ -13,7 +13,7 @@
         <h3>Teams som bruker Knada</h3>
         <ul>
             {{ range .teams }}
-                <li>{{ .Slug }} ({{ .ID }}) med {{ .Users | len }} brukere</li>
+                <li>{{ .Slug }} ({{ .ID }}) med {{ .Users | len }} brukere ({{ .Users }})</li>
             {{ end }}
         </ul>
 

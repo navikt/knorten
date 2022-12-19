@@ -3,6 +3,8 @@ options:
   workerPool:
     "projects/knada-gcp/locations/europe-west1/workerPools/knada-cloudbuild-pool"
 
+serviceAccount: "projects/knada-gcp/serviceAccounts/ci-knorten-cloud-build@knada-gcp.iam.gserviceaccount.com"
+
 steps:
 - name: "gcr.io/cloud-builders/gke-deploy"
   args:

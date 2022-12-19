@@ -16,6 +16,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type JupyterhubClient struct {
+	repo       *database.Repo
+	helmClient *helm.Client
+	cryptor    *crypto.EncrypterDecrypter
+}
+
 type JupyterForm struct {
 	TeamID    string
 	Slug      string
@@ -53,14 +59,13 @@ type JupyterValues struct {
 	KnadaTeamSecret  string   `helm:"singleuser.extraEnv.KNADA_TEAM_SECRET"`
 }
 
-func CreateJupyterhub(c *gin.Context, slug string, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
+func (j JupyterhubClient) Create(c *gin.Context, slug string) error {
 	var form JupyterForm
-	err := c.ShouldBindWith(&form, binding.Form)
-	if err != nil {
+	if err := c.ShouldBindWith(&form, binding.Form); err != nil {
 		return err
 	}
 
-	team, err := repo.TeamGet(c, slug)
+	team, err := j.repo.TeamGet(c, slug)
 	if err != nil {
 		return err
 	}
@@ -74,7 +79,7 @@ func CreateJupyterhub(c *gin.Context, slug string, repo *database.Repo, helmClie
 	form.AdminUsers = team.Users
 	form.AllowedUsers = team.Users
 
-	existing, err := repo.TeamValuesGet(c, gensql.ChartTypeJupyterhub, team.ID)
+	existing, err := j.repo.TeamValuesGet(c, gensql.ChartTypeJupyterhub, team.ID)
 	if err != nil {
 		return err
 	}
@@ -88,11 +93,11 @@ func CreateJupyterhub(c *gin.Context, slug string, repo *database.Repo, helmClie
 		return err
 	}
 
-	return UpdateJupyterTeamValuesAndInstall(c, form, repo, helmClient, cryptor)
+	return UpdateJupyterTeamValuesAndInstall(c, form, j.repo, j.helmClient, j.cryptor)
 }
 
-func UpdateJupyterhub(c *gin.Context, form JupyterForm, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
-	team, err := repo.TeamGet(c, form.Slug)
+func (j JupyterhubClient) Update(c *gin.Context, form JupyterForm) error {
+	team, err := j.repo.TeamGet(c, form.Slug)
 	if err != nil {
 		return err
 	}
@@ -109,7 +114,7 @@ func UpdateJupyterhub(c *gin.Context, form JupyterForm, repo *database.Repo, hel
 		return err
 	}
 
-	return UpdateJupyterTeamValuesAndInstall(c, form, repo, helmClient, cryptor)
+	return UpdateJupyterTeamValuesAndInstall(c, form, j.repo, j.helmClient, j.cryptor)
 }
 
 func UpdateJupyterTeamValuesAndInstall(c *gin.Context, form JupyterForm, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
@@ -130,19 +135,19 @@ func InstallOrUpdateJupyterhub(ctx context.Context, teamID string, repo *databas
 	go helmClient.InstallOrUpgrade(ctx, releaseName, teamID, application)
 }
 
-func DeleteJupyterhub(c context.Context, teamSlug string, repo *database.Repo, helmClient *helm.Client) error {
-	team, err := repo.TeamGet(c, teamSlug)
+func (j JupyterhubClient) Delete(c context.Context, teamSlug string) error {
+	team, err := j.repo.TeamGet(c, teamSlug)
 	if err != nil {
 		return err
 	}
 
-	if err := repo.AppDelete(c, team.ID, gensql.ChartTypeJupyterhub); err != nil {
+	if err := j.repo.AppDelete(c, team.ID, gensql.ChartTypeJupyterhub); err != nil {
 		return err
 	}
 
 	namespace := k8s.NameToNamespace(team.ID)
 	releaseName := jupyterReleaseName(namespace)
-	go helmClient.Uninstall(releaseName, namespace)
+	go j.helmClient.Uninstall(releaseName, namespace)
 
 	return nil
 }

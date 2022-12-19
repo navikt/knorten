@@ -68,9 +68,9 @@ func (a *API) setupChartRoutes() {
 
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
-			err = chart.CreateJupyterhub(c, slug, a.repo, a.helmClient, a.cryptor)
+			err = a.chart.Jupyterhub.Create(c, slug)
 		case gensql.ChartTypeAirflow:
-			err = chart.CreateAirflow(c, slug, a.repo, a.googleClient, a.k8sClient, a.helmClient, a.cryptor)
+			err = a.chart.Airflow.Create(c, slug)
 		}
 
 		if err != nil {
@@ -121,11 +121,9 @@ func (a *API) setupChartRoutes() {
 			return
 		}
 		c.HTML(http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
-			"team":               slug,
-			"pending_jupyterhub": team.PendingJupyterUpgrade,
-			"pending_airflow":    team.PendingAirflowUpgrade,
-			"values":             form,
-			"errors":             flashes,
+			"team":   slug,
+			"values": form,
+			"errors": flashes,
 		})
 	})
 
@@ -151,7 +149,7 @@ func (a *API) setupChartRoutes() {
 				return
 			}
 			form.Slug = slug
-			err = chart.UpdateJupyterhub(c, form, a.repo, a.helmClient, a.cryptor)
+			err = a.chart.Jupyterhub.Update(c, form)
 		case gensql.ChartTypeAirflow:
 			var form chart.AirflowForm
 			err = c.ShouldBindWith(&form, binding.Form)
@@ -168,7 +166,7 @@ func (a *API) setupChartRoutes() {
 				return
 			}
 			form.Slug = slug
-			err = chart.UpdateAirflow(c, form, a.repo, a.helmClient, a.cryptor)
+			err = chart.UpdateAirflow(c, form, a.repo, a.helmClient, a.cryptoClient)
 		}
 
 		if err != nil {
@@ -194,7 +192,7 @@ func (a *API) setupChartRoutes() {
 
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
-			err = chart.DeleteJupyterhub(c, slug, a.repo, a.helmClient)
+			err = a.chart.Jupyterhub.Delete(c, slug)
 		case gensql.ChartTypeAirflow:
 			err = chart.DeleteAirflow(c, slug, a.repo, a.helmClient, a.googleClient, a.k8sClient)
 		}

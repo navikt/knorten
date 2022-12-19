@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator/v10"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -29,6 +28,14 @@ const (
 	webserverSecret    = "airflow-webserver"
 	resultDBSecretName = "airflow-result-db"
 )
+
+type AirflowClient struct {
+	repo         *database.Repo
+	googleClient *google.Google
+	k8sClient    *k8s.Client
+	helmClient   *helm.Client
+	cryptor      *crypto.EncrypterDecrypter
+}
 
 type AirflowForm struct {
 	TeamID string
@@ -68,20 +75,16 @@ var AirflowValidateDagRepo validator.Func = func(fl validator.FieldLevel) bool {
 	return strings.HasPrefix(repo, "navikt/")
 }
 
-func CreateAirflow(c *gin.Context, slug string, repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
+func (a AirflowClient) Create(c *gin.Context, slug string) error {
 	var form AirflowForm
 	err := c.ShouldBindWith(&form, binding.Form)
 	if err != nil {
 		return err
 	}
 
-	team, err := repo.TeamGet(c, slug)
+	team, err := a.repo.TeamGet(c, slug)
 	if err != nil {
 		return err
-	}
-	if team.PendingAirflowUpgrade {
-		log.Info("pending airflow install")
-		return nil
 	}
 
 	form.Slug = slug
@@ -93,19 +96,19 @@ func CreateAirflow(c *gin.Context, slug string, repo *database.Repo, googleClien
 		return err
 	}
 
-	if err := addGeneratedAirflowConfig(c, dbPassword, &form, k8sClient); err != nil {
+	if err := addGeneratedAirflowConfig(c, dbPassword, &form, a.k8sClient); err != nil {
 		return err
 	}
 
-	go createAirflowDB(c, form.TeamID, dbPassword, googleClient, k8sClient)
+	go createAirflowDB(c, form.TeamID, dbPassword, a.googleClient, a.k8sClient)
 
-	go createWebserverSecret(c, form.TeamID, k8sClient)
+	go createWebserverSecret(c, form.TeamID, a.k8sClient)
 
-	if err := addAirflowTeamValues(c, repo, form); err != nil {
+	if err := addAirflowTeamValues(c, a.repo, form); err != nil {
 		return err
 	}
 
-	InstallOrUpdateAirflow(c, form.TeamID, repo, helmClient, cryptor)
+	InstallOrUpdateAirflow(c, form.TeamID, a.repo, a.helmClient, a.cryptor)
 	return nil
 }
 
@@ -115,10 +118,6 @@ func UpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, h
 	team, err := repo.TeamGet(ctx, form.Slug)
 	if err != nil {
 		return err
-	}
-	if team.PendingAirflowUpgrade {
-		log.Info("pending airflow upgrade")
-		return nil
 	}
 
 	form.TeamID = team.ID

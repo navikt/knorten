@@ -36,7 +36,7 @@ func main() {
 	flag.StringVar(&cfg.TenantID, "oauth2-tenant-id", os.Getenv("AZURE_APP_TENANT_ID"), "OAuth2 tenant ID")
 	flag.StringVar(&cfg.DBConnString, "db-conn-string", os.Getenv("DB_CONN_STRING"), "Database connection string")
 	flag.StringVar(&cfg.DBEncKey, "db-enc-key", os.Getenv("DB_ENC_KEY"), "Chart value encryption key")
-	flag.BoolVar(&cfg.DryRun, "dry-run", false, "Don't run Helm commands")
+	flag.BoolVar(&cfg.DryRun, "dry-run", false, "Don't run external commands")
 	flag.BoolVar(&cfg.InCluster, "in-cluster", true, "In cluster configuration for go client")
 	flag.StringVar(&cfg.GCPProject, "project", os.Getenv("GCP_PROJECT"), "GCP project")
 	flag.StringVar(&cfg.GCPRegion, "region", os.Getenv("GCP_REGION"), "GCP region")
@@ -48,25 +48,25 @@ func main() {
 		return
 	}
 
-	azure := auth.New(cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, log.WithField("subsystem", "auth"))
+	azureClient := auth.New(cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, log.WithField("subsystem", "auth"))
 
-	googleClient := google.New(log.WithField("subsystem", "googleClient"), cfg.GCPProject, cfg.GCPRegion, cfg.DryRun)
+	googleClient := google.New(log.WithField("subsystem", "google"), cfg.GCPProject, cfg.GCPRegion, cfg.DryRun)
 
-	helmClient, err := helm.New(repo, log.WithField("subsystem", "helmClient"), cfg.DryRun, cfg.InCluster)
+	helmClient, err := helm.New(repo, log.WithField("subsystem", "helm"), cfg.DryRun, cfg.InCluster)
 	if err != nil {
 		log.WithError(err).Fatal("setting up helm client")
 		return
 	}
 
-	k8sClient, err := k8s.New(log.WithField("subsystem", "k8sClient"), cfg.DryRun, cfg.InCluster, cfg.GCPProject, cfg.GCPRegion)
+	k8sClient, err := k8s.New(log.WithField("subsystem", "k8s"), cfg.DryRun, cfg.InCluster, cfg.GCPProject, cfg.GCPRegion)
 	if err != nil {
 		log.WithError(err).Fatal("creating k8s client")
 		return
 	}
 
-	cryptor := crypto.New(cfg.DBEncKey)
+	cryptoClient := crypto.New(cfg.DBEncKey)
 
-	kApi, err := api.New(repo, azure, helmClient, googleClient, k8sClient, cryptor, log.WithField("subsystem", "api"))
+	kApi, err := api.New(repo, azureClient, helmClient, googleClient, k8sClient, cryptoClient, log.WithField("subsystem", "api"))
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return

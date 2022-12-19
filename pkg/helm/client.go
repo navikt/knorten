@@ -3,6 +3,8 @@ package helm
 import (
 	"context"
 	"fmt"
+	"github.com/nais/knorten/pkg/database"
+	"github.com/nais/knorten/pkg/k8s"
 	"log"
 	"os"
 	"path/filepath"
@@ -14,8 +16,6 @@ import (
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/release"
 
-	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/k8s"
 	"github.com/sirupsen/logrus"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
@@ -78,12 +78,12 @@ func (c *Client) InstallOrUpgrade(ctx context.Context, releaseName, teamID strin
 		return
 	}
 
-	namespace := k8s.NameToNamespace(teamID)
-
 	if err := c.repo.TeamSetPendingUpgrade(ctx, teamID, releaseNameToChartType(releaseName), true); err != nil {
 		c.log.WithError(err).Errorf("install or upgrading release %v, error setting pending upgrade lock", releaseName)
 		return
 	}
+
+	namespace := k8s.NameToNamespace(teamID)
 
 	settings := cli.New()
 	settings.SetNamespace(namespace)

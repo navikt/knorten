@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/nais/knorten/pkg/chart"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +15,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type chartClients struct {
+	Airflow    chart.AirflowClient
+	Jupyterhub chart.JupyterhubClient
+}
+
 type API struct {
 	oauth2       *auth.Azure
 	router       *gin.Engine
@@ -23,11 +29,12 @@ type API struct {
 	googleClient *google.Google
 	k8sClient    *k8s.Client
 	adminClient  *admin.Client
-	cryptor      *crypto.EncrypterDecrypter
+	cryptoClient *crypto.EncrypterDecrypter
+	chart        chartClients
 }
 
-func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, cryptor *crypto.EncrypterDecrypter, log *logrus.Entry) (*API, error) {
-	adminClient := admin.New(repo, helmClient, cryptor)
+func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, cryptoClient *crypto.EncrypterDecrypter, log *logrus.Entry) (*API, error) {
+	adminClient := admin.New(repo, helmClient, cryptoClient)
 	api := API{
 		oauth2:       oauth2,
 		helmClient:   helmClient,
@@ -36,7 +43,7 @@ func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googl
 		googleClient: googleClient,
 		k8sClient:    k8sClient,
 		adminClient:  adminClient,
-		cryptor:      cryptor,
+		cryptoClient: cryptoClient,
 		log:          log,
 	}
 
@@ -52,11 +59,12 @@ func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googl
 	api.setupAuthenticatedRoutes()
 	api.router.Use(api.authMiddleware([]string{"kyrre.havik@nav.no", "erik.vattekar@nav.no"}))
 	api.setupAdminRoutes()
+
 	return &api, nil
 }
 
 func (a *API) Run() error {
-	return a.router.Run()
+	return a.router.Run("localhost:8080")
 }
 
 func (a *API) setupUnauthenticatedRoutes() {
@@ -73,8 +81,4 @@ func (a *API) setupAuthenticatedRoutes() {
 	a.setupUserRoutes()
 	a.setupTeamRoutes()
 	a.setupChartRoutes()
-}
-
-func (a *API) setupAuthenticatedAdminRoutes() {
-	a.setupAdminRoutes()
 }

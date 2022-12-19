@@ -21,6 +21,7 @@ type chartClients struct {
 }
 
 type API struct {
+	offline      bool
 	oauth2       *auth.Azure
 	router       *gin.Engine
 	helmClient   *helm.Client
@@ -33,7 +34,7 @@ type API struct {
 	chart        chartClients
 }
 
-func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, cryptoClient *crypto.EncrypterDecrypter, log *logrus.Entry) (*API, error) {
+func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, cryptoClient *crypto.EncrypterDecrypter, log *logrus.Entry, offline bool) (*API, error) {
 	adminClient := admin.New(repo, helmClient, cryptoClient)
 	api := API{
 		oauth2:       oauth2,
@@ -45,6 +46,7 @@ func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googl
 		adminClient:  adminClient,
 		cryptoClient: cryptoClient,
 		log:          log,
+		offline:      offline,
 	}
 
 	session, err := repo.NewSessionStore()
@@ -64,7 +66,11 @@ func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googl
 }
 
 func (a *API) Run() error {
-	return a.router.Run("localhost:8080")
+	if a.offline {
+		return a.router.Run("localhost:8080")
+	}
+
+	return a.router.Run()
 }
 
 func (a *API) setupUnauthenticatedRoutes() {

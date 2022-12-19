@@ -66,7 +66,7 @@ func main() {
 
 	cryptoClient := crypto.New(cfg.DBEncKey)
 
-	kApi, err := api.New(repo, azureClient, helmClient, googleClient, k8sClient, cryptoClient, log.WithField("subsystem", "api"))
+	kApi, err := api.New(repo, azureClient, helmClient, googleClient, k8sClient, cryptoClient, log.WithField("subsystem", "api"), cfg.DryRun)
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return

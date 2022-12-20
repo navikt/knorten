@@ -24,9 +24,10 @@ type API struct {
 	k8sClient    *k8s.Client
 	adminClient  *admin.Client
 	cryptor      *crypto.EncrypterDecrypter
+	dryRun       bool
 }
 
-func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, cryptor *crypto.EncrypterDecrypter, log *logrus.Entry) (*API, error) {
+func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, cryptor *crypto.EncrypterDecrypter, log *logrus.Entry, dryRun bool) (*API, error) {
 	adminClient := admin.New(repo, helmClient, cryptor)
 	api := API{
 		oauth2:       oauth2,
@@ -38,12 +39,14 @@ func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googl
 		adminClient:  adminClient,
 		cryptor:      cryptor,
 		log:          log,
+		dryRun:       dryRun,
 	}
 
 	session, err := repo.NewSessionStore()
 	if err != nil {
 		return &API{}, err
 	}
+
 	api.router.Use(session)
 	api.router.Static("/assets", "./assets")
 	api.router.LoadHTMLGlob("templates/**/*")

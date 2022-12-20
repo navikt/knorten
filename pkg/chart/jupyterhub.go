@@ -135,6 +135,10 @@ func DeleteJupyterhub(c context.Context, teamSlug string, repo *database.Repo, h
 	if err != nil {
 		return err
 	}
+	if team.PendingJupyterUpgrade {
+		log.Info("pending jupyterhub install")
+		return nil
+	}
 
 	if err := repo.AppDelete(c, team.ID, gensql.ChartTypeJupyterhub); err != nil {
 		return err

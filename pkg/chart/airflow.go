@@ -141,6 +141,10 @@ func DeleteAirflow(ctx context.Context, teamSlug string, repo *database.Repo, he
 	if err != nil {
 		return err
 	}
+	if team.PendingAirflowUpgrade {
+		log.Info("pending airflow upgrade")
+		return nil
+	}
 
 	if err := repo.AppDelete(ctx, team.ID, gensql.ChartTypeAirflow); err != nil {
 		return err

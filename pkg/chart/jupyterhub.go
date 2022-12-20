@@ -125,17 +125,17 @@ func (j JupyterhubClient) Update(c *gin.Context, form JupyterForm) error {
 	return UpdateJupyterTeamValuesAndInstall(c, form, j.repo, j.helmClient, j.cryptClient)
 }
 
-func UpdateJupyterTeamValuesAndInstall(c *gin.Context, form JupyterForm, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
+func UpdateJupyterTeamValuesAndInstall(c *gin.Context, form JupyterForm, repo *database.Repo, helmClient *helm.Client, cryptClient *crypto.EncrypterDecrypter) error {
 	if err := storeJupyterTeamValues(c, repo, form); err != nil {
 		return err
 	}
 
-	InstallOrUpdateJupyterhub(c, form.TeamID, repo, helmClient, cryptor)
+	InstallOrUpdateJupyterhub(c, form.TeamID, repo, helmClient, cryptClient)
 	return nil
 }
 
-func InstallOrUpdateJupyterhub(ctx context.Context, teamID string, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) {
-	application := helmApps.NewJupyterhub(teamID, repo, cryptor)
+func InstallOrUpdateJupyterhub(ctx context.Context, teamID string, repo *database.Repo, helmClient *helm.Client, cryptClient *crypto.EncrypterDecrypter) {
+	application := helmApps.NewJupyterhub(teamID, repo, cryptClient)
 
 	// Release name must be unique across namespaces as the helm chart creates a clusterrole
 	// for each jupyterhub with the same name as the release name.

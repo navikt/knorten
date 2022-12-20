@@ -14,9 +14,9 @@ import (
 )
 
 type Client struct {
-	repo       *database.Repo
-	helmClient *helm.Client
-	cryptor    *crypto.EncrypterDecrypter
+	repo        *database.Repo
+	helmClient  *helm.Client
+	cryptClient *crypto.EncrypterDecrypter
 }
 
 type diffValue struct {
@@ -25,11 +25,11 @@ type diffValue struct {
 	Encrypted string
 }
 
-func New(repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) *Client {
+func New(repo *database.Repo, helmClient *helm.Client, cryptClient *crypto.EncrypterDecrypter) *Client {
 	return &Client{
-		repo:       repo,
-		helmClient: helmClient,
-		cryptor:    cryptor,
+		repo:        repo,
+		helmClient:  helmClient,
+		cryptClient: cryptClient,
 	}
 }
 
@@ -89,7 +89,7 @@ func (a *Client) updateHelmReleases(ctx context.Context, chartType gensql.ChartT
 
 func (a *Client) parseValue(values []string) (string, bool, error) {
 	if len(values) == 2 {
-		value, err := a.cryptor.EncryptValue(values[0])
+		value, err := a.cryptClient.EncryptValue(values[0])
 		if err != nil {
 			return "", false, err
 		}

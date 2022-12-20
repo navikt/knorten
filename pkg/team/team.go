@@ -54,7 +54,7 @@ func Create(c *gin.Context, repo *database.Repo, googleClient *google.Google, k8
 	return nil
 }
 
-func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
+func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, helmClient *helm.Client, cryptClient *crypto.EncrypterDecrypter) error {
 	var form Form
 	form.Slug = c.Param("team")
 	err := c.ShouldBindWith(&form, binding.Form)
@@ -91,7 +91,7 @@ func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, he
 				AllowedUsers: form.Users,
 			},
 		}
-		err = chart.UpdateJupyterTeamValuesAndInstall(c, jupyterForm, repo, helmClient, cryptor)
+		err = chart.UpdateJupyterTeamValuesAndInstall(c, jupyterForm, repo, helmClient, cryptClient)
 		if err != nil {
 			return err
 		}
@@ -103,7 +103,7 @@ func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, he
 			TeamID: team.ID,
 			Users:  form.Users,
 		}
-		err = chart.UpdateAirflow(c, airflowForm, repo, helmClient, cryptor)
+		err = chart.UpdateAirflow(c, airflowForm, repo, helmClient, cryptClient)
 		if err != nil {
 			return err
 		}

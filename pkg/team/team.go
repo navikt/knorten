@@ -112,8 +112,13 @@ func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, he
 	return nil
 }
 
-func Delete(ctx context.Context, teamSlug string, repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client) error {
+func Delete(ctx context.Context, teamSlug string, repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, helmClient *helm.Client) error {
 	team, err := repo.TeamGet(ctx, teamSlug)
+	if err != nil {
+		return err
+	}
+
+	apps, err := repo.AppsForTeamGet(ctx, team.ID)
 	if err != nil {
 		return err
 	}
@@ -122,7 +127,7 @@ func Delete(ctx context.Context, teamSlug string, repo *database.Repo, googleCli
 		return err
 	}
 
-	go deleteExternalResources(ctx, team.ID, googleClient, k8sClient)
+	go delete(ctx, team, apps, repo, googleClient, k8sClient, helmClient)
 
 	return nil
 }
@@ -144,13 +149,26 @@ func createExternalResources(c *gin.Context, googleClient *google.Google, k8sCli
 	}
 }
 
-func deleteExternalResources(c context.Context, teamID string, googleClient *google.Google, k8sClient *k8s.Client) {
-	if err := googleClient.DeleteGCPTeamResources(c, teamID); err != nil {
+func delete(ctx context.Context, team gensql.TeamGetRow, apps []string, repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, helmClient *helm.Client) {
+	if err := googleClient.DeleteGCPTeamResources(ctx, team.ID); err != nil {
 		logrus.Error(err)
 		return
 	}
 
-	if err := k8sClient.DeleteTeamNamespace(c, k8s.NameToNamespace(teamID)); err != nil {
+	namespace := k8s.NameToNamespace(team.ID)
+
+	if slices.Contains(apps, string(gensql.ChartTypeJupyterhub)) {
+		helmClient.Uninstall(chart.JupyterReleaseName(namespace), namespace)
+	}
+
+	if slices.Contains(apps, string(gensql.ChartTypeAirflow)) {
+		if err := googleClient.DeleteCloudSQLInstance(ctx, chart.AirflowDBInstance(team.ID)); err != nil {
+			logrus.Error(err)
+			return
+		}
+	}
+
+	if err := k8sClient.DeleteTeamNamespace(ctx, namespace); err != nil {
 		logrus.Error(err)
 		return
 	}

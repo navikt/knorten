@@ -102,7 +102,7 @@ func (a *API) setupTeamRoutes() {
 
 	a.router.POST("/team/:team/delete", func(c *gin.Context) {
 		teamName := c.Param("team")
-		err := team.Delete(c, teamName, a.repo, a.googleClient, a.k8sClient)
+		err := team.Delete(c, teamName, a.repo, a.googleClient, a.k8sClient, a.helmClient)
 		if err != nil {
 			session := sessions.Default(c)
 			session.AddFlash(err.Error())

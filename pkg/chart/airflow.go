@@ -273,7 +273,7 @@ func setSynkRepoAndBranch(values *AirflowForm) {
 }
 
 func createAirflowDB(ctx context.Context, teamID, dbPassword string, googleClient *google.Google, k8sClient *k8s.Client) error {
-	dbInstance := airflowDBInstance(teamID)
+	dbInstance := AirflowDBInstance(teamID)
 	if err := googleClient.CreateCloudSQLInstance(ctx, dbInstance); err != nil {
 		return err
 	}
@@ -311,7 +311,7 @@ func createWebserverSecret(ctx context.Context, teamID string, k8sClient *k8s.Cl
 }
 
 func removeAirflowDB(ctx context.Context, teamID string, googleClient *google.Google, k8sClient *k8s.Client) error {
-	dbInstance := airflowDBInstance(teamID)
+	dbInstance := AirflowDBInstance(teamID)
 	if err := googleClient.DeleteCloudSQLInstance(ctx, dbInstance); err != nil {
 		return err
 	}
@@ -344,6 +344,6 @@ func generatePassword(length int) (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-func airflowDBInstance(teamID string) string {
+func AirflowDBInstance(teamID string) string {
 	return "airflow-" + teamID
 }

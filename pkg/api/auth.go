@@ -54,7 +54,7 @@ func (a *API) login(c *gin.Context) string {
 		true,
 	)
 
-	return a.oauth2.AuthCodeURL(oauthState)
+	return a.azureClient.AuthCodeURL(oauthState)
 }
 
 func (a *API) callback(c *gin.Context) (string, error) {
@@ -93,7 +93,7 @@ func (a *API) callback(c *gin.Context) (string, error) {
 		return loginPage + "?error=invalid-state", errors.New("invalid state")
 	}
 
-	tokens, err := a.oauth2.Exchange(c.Request.Context(), code)
+	tokens, err := a.azureClient.Exchange(c.Request.Context(), code)
 	if err != nil {
 		a.log.Errorf("Exchanging authorization code for tokens: %v", err)
 		return loginPage + "?error=invalid-state", errors.New("forbidden")
@@ -106,7 +106,7 @@ func (a *API) callback(c *gin.Context) (string, error) {
 	}
 
 	// Parse and verify ID Token payload.
-	_, err = a.oauth2.Verify(c.Request.Context(), rawIDToken)
+	_, err = a.azureClient.Verify(c.Request.Context(), rawIDToken)
 	if err != nil {
 		a.log.Info("Invalid id_token")
 		return loginPage + "?error=unauthenticated", errors.New("unauthenticated")
@@ -192,7 +192,7 @@ func deleteCookie(c *gin.Context, name, host string) {
 }
 
 func (a *API) authMiddleware(allowedUsers []string) gin.HandlerFunc {
-	certificates, err := a.oauth2.FetchCertificates()
+	certificates, err := a.azureClient.FetchCertificates()
 	if err != nil {
 		a.log.Fatalf("Fetching signing certificates from IdP: %v", err)
 	}
@@ -210,7 +210,7 @@ func (a *API) authMiddleware(allowedUsers []string) gin.HandlerFunc {
 			return
 		}
 
-		user, err := a.oauth2.ValidateUser(certificates, session.AccessToken)
+		user, err := a.azureClient.ValidateUser(certificates, session.AccessToken)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return

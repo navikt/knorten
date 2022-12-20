@@ -3,7 +3,6 @@ package chart
 import (
 	"context"
 	"fmt"
-
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/database"
@@ -15,6 +14,12 @@ import (
 	"github.com/nais/knorten/pkg/reflect"
 	log "github.com/sirupsen/logrus"
 )
+
+type JupyterhubClient struct {
+	repo        *database.Repo
+	helmClient  *helm.Client
+	cryptClient *crypto.EncrypterDecrypter
+}
 
 type JupyterForm struct {
 	TeamID    string
@@ -53,14 +58,22 @@ type JupyterValues struct {
 	KnadaTeamSecret  string   `helm:"singleuser.extraEnv.KNADA_TEAM_SECRET"`
 }
 
-func CreateJupyterhub(c *gin.Context, slug string, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
+func NewJupyterhubClient(repo *database.Repo, helmClient *helm.Client, cryptClient *crypto.EncrypterDecrypter) JupyterhubClient {
+	return JupyterhubClient{
+		repo:        repo,
+		helmClient:  helmClient,
+		cryptClient: cryptClient,
+	}
+}
+
+func (j JupyterhubClient) Create(c *gin.Context, slug string) error {
 	var form JupyterForm
 	err := c.ShouldBindWith(&form, binding.Form)
 	if err != nil {
 		return err
 	}
 
-	team, err := repo.TeamGet(c, slug)
+	team, err := j.repo.TeamGet(c, slug)
 	if err != nil {
 		return err
 	}
@@ -74,7 +87,7 @@ func CreateJupyterhub(c *gin.Context, slug string, repo *database.Repo, helmClie
 	form.AdminUsers = team.Users
 	form.AllowedUsers = team.Users
 
-	existing, err := repo.TeamValuesGet(c, gensql.ChartTypeJupyterhub, team.ID)
+	existing, err := j.repo.TeamValuesGet(c, gensql.ChartTypeJupyterhub, team.ID)
 	if err != nil {
 		return err
 	}
@@ -88,11 +101,11 @@ func CreateJupyterhub(c *gin.Context, slug string, repo *database.Repo, helmClie
 		return err
 	}
 
-	return UpdateJupyterTeamValuesAndInstall(c, form, repo, helmClient, cryptor)
+	return UpdateJupyterTeamValuesAndInstall(c, form, j.repo, j.helmClient, j.cryptClient)
 }
 
-func UpdateJupyterhub(c *gin.Context, form JupyterForm, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
-	team, err := repo.TeamGet(c, form.Slug)
+func (j JupyterhubClient) Update(c *gin.Context, form JupyterForm) error {
+	team, err := j.repo.TeamGet(c, form.Slug)
 	if err != nil {
 		return err
 	}
@@ -109,7 +122,7 @@ func UpdateJupyterhub(c *gin.Context, form JupyterForm, repo *database.Repo, hel
 		return err
 	}
 
-	return UpdateJupyterTeamValuesAndInstall(c, form, repo, helmClient, cryptor)
+	return UpdateJupyterTeamValuesAndInstall(c, form, j.repo, j.helmClient, j.cryptClient)
 }
 
 func UpdateJupyterTeamValuesAndInstall(c *gin.Context, form JupyterForm, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {

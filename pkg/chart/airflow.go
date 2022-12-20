@@ -30,6 +30,14 @@ const (
 	resultDBSecretName = "airflow-result-db"
 )
 
+type AirflowClient struct {
+	repo         *database.Repo
+	googleClient *google.Google
+	k8sClient    *k8s.Client
+	helmClient   *helm.Client
+	cryptClient  *crypto.EncrypterDecrypter
+}
+
 type AirflowForm struct {
 	TeamID string
 	Slug   string
@@ -68,14 +76,24 @@ var AirflowValidateDagRepo validator.Func = func(fl validator.FieldLevel) bool {
 	return strings.HasPrefix(repo, "navikt/")
 }
 
-func CreateAirflow(c *gin.Context, slug string, repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
+func NewAirflowClient(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, helmClient *helm.Client, cryptClient *crypto.EncrypterDecrypter) AirflowClient {
+	return AirflowClient{
+		repo:         repo,
+		googleClient: googleClient,
+		k8sClient:    k8sClient,
+		helmClient:   helmClient,
+		cryptClient:  cryptClient,
+	}
+}
+
+func (a AirflowClient) Create(c *gin.Context, slug string) error {
 	var form AirflowForm
 	err := c.ShouldBindWith(&form, binding.Form)
 	if err != nil {
 		return err
 	}
 
-	team, err := repo.TeamGet(c, slug)
+	team, err := a.repo.TeamGet(c, slug)
 	if err != nil {
 		return err
 	}
@@ -93,26 +111,26 @@ func CreateAirflow(c *gin.Context, slug string, repo *database.Repo, googleClien
 		return err
 	}
 
-	if err := addGeneratedAirflowConfig(c, dbPassword, &form, k8sClient); err != nil {
+	if err := addGeneratedAirflowConfig(c, dbPassword, &form, a.k8sClient); err != nil {
 		return err
 	}
 
-	go createAirflowDB(c, form.TeamID, dbPassword, googleClient, k8sClient)
+	go createAirflowDB(c, form.TeamID, dbPassword, a.googleClient, a.k8sClient)
 
-	go createWebserverSecret(c, form.TeamID, k8sClient)
+	go createWebserverSecret(c, form.TeamID, a.k8sClient)
 
-	if err := addAirflowTeamValues(c, repo, form); err != nil {
+	if err := addAirflowTeamValues(c, a.repo, form); err != nil {
 		return err
 	}
 
-	InstallOrUpdateAirflow(c, form.TeamID, repo, helmClient, cryptor)
+	InstallOrUpdateAirflow(c, form.TeamID, a.repo, a.helmClient, a.cryptClient)
 	return nil
 }
 
-func UpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
+func (a AirflowClient) Update(ctx context.Context, form AirflowForm) error {
 	setSynkRepoAndBranch(&form)
 
-	team, err := repo.TeamGet(ctx, form.Slug)
+	team, err := a.repo.TeamGet(ctx, form.Slug)
 	if err != nil {
 		return err
 	}
@@ -128,11 +146,11 @@ func UpdateAirflow(ctx context.Context, form AirflowForm, repo *database.Repo, h
 		return err
 	}
 
-	if err := addAirflowTeamValues(ctx, repo, form); err != nil {
+	if err := addAirflowTeamValues(ctx, a.repo, form); err != nil {
 		return err
 	}
 
-	InstallOrUpdateAirflow(ctx, form.TeamID, repo, helmClient, cryptor)
+	InstallOrUpdateAirflow(ctx, form.TeamID, a.repo, a.helmClient, a.cryptClient)
 	return nil
 }
 

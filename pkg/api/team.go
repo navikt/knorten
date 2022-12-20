@@ -85,7 +85,7 @@ func (a *API) setupTeamRoutes() {
 
 	a.router.POST("/team/:team/edit", func(c *gin.Context) {
 		teamName := c.Param("team")
-		err := team.Update(c, a.repo, a.googleClient, a.helmClient, a.cryptor)
+		err := team.Update(c, a.repo, a.googleClient, a.helmClient, a.cryptClient)
 		if err != nil {
 			session := sessions.Default(c)
 			session.AddFlash(err.Error())

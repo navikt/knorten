@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/nais/knorten/pkg/chart"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -15,7 +16,7 @@ import (
 )
 
 type API struct {
-	oauth2       *auth.Azure
+	azureClient  *auth.Azure
 	router       *gin.Engine
 	helmClient   *helm.Client
 	repo         *database.Repo
@@ -23,23 +24,33 @@ type API struct {
 	googleClient *google.Google
 	k8sClient    *k8s.Client
 	adminClient  *admin.Client
-	cryptor      *crypto.EncrypterDecrypter
+	cryptClient  *crypto.EncrypterDecrypter
 	dryRun       bool
+	charts       charts
 }
 
-func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, cryptor *crypto.EncrypterDecrypter, log *logrus.Entry, dryRun bool) (*API, error) {
-	adminClient := admin.New(repo, helmClient, cryptor)
+type charts struct {
+	Airflow    chart.AirflowClient
+	Jupyterhub chart.JupyterhubClient
+}
+
+func New(repo *database.Repo, azureClient *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, log *logrus.Entry, dryRun bool) (*API, error) {
+	adminClient := admin.New(repo, helmClient, cryptClient)
 	api := API{
-		oauth2:       oauth2,
+		azureClient:  azureClient,
 		helmClient:   helmClient,
 		router:       gin.Default(),
 		repo:         repo,
 		googleClient: googleClient,
 		k8sClient:    k8sClient,
 		adminClient:  adminClient,
-		cryptor:      cryptor,
+		cryptClient:  cryptClient,
 		log:          log,
 		dryRun:       dryRun,
+		charts: charts{
+			Airflow:    chart.NewAirflowClient(repo, googleClient, k8sClient, helmClient, cryptClient),
+			Jupyterhub: chart.NewJupyterhubClient(repo, helmClient, cryptClient),
+		},
 	}
 
 	session, err := repo.NewSessionStore()
@@ -59,6 +70,10 @@ func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googl
 }
 
 func (a *API) Run() error {
+	if a.dryRun {
+		return a.router.Run("localhost:8080")
+	}
+
 	return a.router.Run()
 }
 
@@ -76,8 +91,4 @@ func (a *API) setupAuthenticatedRoutes() {
 	a.setupUserRoutes()
 	a.setupTeamRoutes()
 	a.setupChartRoutes()
-}
-
-func (a *API) setupAuthenticatedAdminRoutes() {
-	a.setupAdminRoutes()
 }

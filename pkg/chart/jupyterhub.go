@@ -101,7 +101,7 @@ func (j JupyterhubClient) Create(c *gin.Context, slug string) error {
 		return err
 	}
 
-	return UpdateJupyterTeamValuesAndInstall(c, form, j.repo, j.helmClient, j.cryptClient)
+	return j.UpdateTeamValuesAndInstallOrUpdate(c, form)
 }
 
 func (j JupyterhubClient) Update(c *gin.Context, form JupyterForm) error {
@@ -122,51 +122,48 @@ func (j JupyterhubClient) Update(c *gin.Context, form JupyterForm) error {
 		return err
 	}
 
-	return UpdateJupyterTeamValuesAndInstall(c, form, j.repo, j.helmClient, j.cryptClient)
+	return j.UpdateTeamValuesAndInstallOrUpdate(c, form)
 }
 
-func UpdateJupyterTeamValuesAndInstall(c *gin.Context, form JupyterForm, repo *database.Repo, helmClient *helm.Client, cryptClient *crypto.EncrypterDecrypter) error {
-	if err := storeJupyterTeamValues(c, repo, form); err != nil {
+func (j JupyterhubClient) UpdateTeamValuesAndInstallOrUpdate(ctx context.Context, form JupyterForm) error {
+	if err := j.storeJupyterTeamValues(ctx, form); err != nil {
 		return err
 	}
 
-	InstallOrUpdateJupyterhub(c, form.TeamID, repo, helmClient, cryptClient)
-	return nil
-}
-
-func InstallOrUpdateJupyterhub(ctx context.Context, teamID string, repo *database.Repo, helmClient *helm.Client, cryptClient *crypto.EncrypterDecrypter) {
-	application := helmApps.NewJupyterhub(teamID, repo, cryptClient)
+	application := helmApps.NewJupyterhub(form.TeamID, j.repo, j.cryptClient)
 
 	// Release name must be unique across namespaces as the helm chart creates a clusterrole
 	// for each jupyterhub with the same name as the release name.
-	releaseName := jupyterReleaseName(k8s.NameToNamespace(teamID))
-	go helmClient.InstallOrUpgrade(ctx, releaseName, teamID, application)
+	releaseName := JupyterReleaseName(k8s.NameToNamespace(form.TeamID))
+	go j.helmClient.InstallOrUpgrade(ctx, releaseName, form.TeamID, application)
+
+	return nil
 }
 
-func DeleteJupyterhub(c context.Context, teamSlug string, repo *database.Repo, helmClient *helm.Client) error {
-	team, err := repo.TeamGet(c, teamSlug)
+func (j JupyterhubClient) Delete(c context.Context, teamSlug string) error {
+	team, err := j.repo.TeamGet(c, teamSlug)
 	if err != nil {
 		return err
 	}
 
-	if err := repo.AppDelete(c, team.ID, gensql.ChartTypeJupyterhub); err != nil {
+	if err := j.repo.AppDelete(c, team.ID, gensql.ChartTypeJupyterhub); err != nil {
 		return err
 	}
 
 	namespace := k8s.NameToNamespace(team.ID)
-	releaseName := jupyterReleaseName(namespace)
-	go helmClient.Uninstall(releaseName, namespace)
+	releaseName := JupyterReleaseName(namespace)
+	go j.helmClient.Uninstall(releaseName, namespace)
 
 	return nil
 }
 
-func storeJupyterTeamValues(c context.Context, repo *database.Repo, form JupyterForm) error {
+func (j JupyterhubClient) storeJupyterTeamValues(ctx context.Context, form JupyterForm) error {
 	chartValues, err := reflect.CreateChartValues(form.JupyterValues)
 	if err != nil {
 		return err
 	}
 
-	err = repo.TeamValuesInsert(c, gensql.ChartTypeJupyterhub, chartValues, form.TeamID)
+	err = j.repo.TeamValuesInsert(ctx, gensql.ChartTypeJupyterhub, chartValues, form.TeamID)
 	if err != nil {
 		return err
 	}
@@ -174,7 +171,7 @@ func storeJupyterTeamValues(c context.Context, repo *database.Repo, form Jupyter
 	return nil
 }
 
-func jupyterReleaseName(namespace string) string {
+func JupyterReleaseName(namespace string) string {
 	return fmt.Sprintf("%v-%v", string(gensql.ChartTypeJupyterhub), namespace)
 }
 

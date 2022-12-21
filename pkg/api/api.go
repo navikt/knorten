@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/nais/knorten/pkg/chart"
+	"github.com/nais/knorten/pkg/team"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -26,12 +27,8 @@ type API struct {
 	adminClient  *admin.Client
 	cryptClient  *crypto.EncrypterDecrypter
 	dryRun       bool
-	charts       charts
-}
-
-type charts struct {
-	Airflow    chart.AirflowClient
-	Jupyterhub chart.JupyterhubClient
+	chartClient  *chart.Client
+	teamClient   *team.Client
 }
 
 func New(repo *database.Repo, azureClient *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, log *logrus.Entry, dryRun bool) (*API, error) {
@@ -47,11 +44,13 @@ func New(repo *database.Repo, azureClient *auth.Azure, helmClient *helm.Client, 
 		cryptClient:  cryptClient,
 		log:          log,
 		dryRun:       dryRun,
-		charts: charts{
-			Airflow:    chart.NewAirflowClient(repo, googleClient, k8sClient, helmClient, cryptClient),
+		chartClient: &chart.Client{
+			Airflow:    chart.NewAirflowClient(repo, googleClient, k8sClient, helmClient, cryptClient, log),
 			Jupyterhub: chart.NewJupyterhubClient(repo, helmClient, cryptClient),
 		},
 	}
+
+	api.teamClient = team.NewClient(repo, googleClient, k8sClient, api.chartClient)
 
 	session, err := repo.NewSessionStore()
 	if err != nil {

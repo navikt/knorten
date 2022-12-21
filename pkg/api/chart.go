@@ -68,9 +68,9 @@ func (a *API) setupChartRoutes() {
 
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
-			err = a.charts.Jupyterhub.Create(c, slug)
+			err = a.chartClient.Jupyterhub.Create(c, slug)
 		case gensql.ChartTypeAirflow:
-			err = a.charts.Airflow.Create(c, slug)
+			err = a.chartClient.Airflow.Create(c, slug)
 		}
 
 		if err != nil {
@@ -151,7 +151,7 @@ func (a *API) setupChartRoutes() {
 				return
 			}
 			form.Slug = slug
-			err = a.charts.Jupyterhub.Update(c, form)
+			err = a.chartClient.Jupyterhub.Update(c, form)
 		case gensql.ChartTypeAirflow:
 			var form chart.AirflowForm
 			err = c.ShouldBindWith(&form, binding.Form)
@@ -168,7 +168,7 @@ func (a *API) setupChartRoutes() {
 				return
 			}
 			form.Slug = slug
-			err = a.charts.Airflow.Update(c, form)
+			err = a.chartClient.Airflow.Update(c, form)
 		}
 
 		if err != nil {
@@ -194,9 +194,9 @@ func (a *API) setupChartRoutes() {
 
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
-			err = chart.DeleteJupyterhub(c, slug, a.repo, a.helmClient)
+			err = a.chartClient.Jupyterhub.Delete(c, slug)
 		case gensql.ChartTypeAirflow:
-			err = chart.DeleteAirflow(c, slug, a.repo, a.helmClient, a.googleClient, a.k8sClient)
+			err = a.chartClient.Airflow.Delete(c, slug)
 		}
 
 		if err != nil {

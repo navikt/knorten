@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator/v10"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -36,6 +36,7 @@ type AirflowClient struct {
 	k8sClient    *k8s.Client
 	helmClient   *helm.Client
 	cryptClient  *crypto.EncrypterDecrypter
+	log          *logrus.Entry
 }
 
 type AirflowForm struct {
@@ -76,29 +77,31 @@ var AirflowValidateDagRepo validator.Func = func(fl validator.FieldLevel) bool {
 	return strings.HasPrefix(repo, "navikt/")
 }
 
-func NewAirflowClient(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, helmClient *helm.Client, cryptClient *crypto.EncrypterDecrypter) AirflowClient {
+func NewAirflowClient(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, helmClient *helm.Client, cryptClient *crypto.EncrypterDecrypter, log *logrus.Entry) AirflowClient {
 	return AirflowClient{
 		repo:         repo,
 		googleClient: googleClient,
 		k8sClient:    k8sClient,
 		helmClient:   helmClient,
 		cryptClient:  cryptClient,
+		log:          log.WithField("chart", "airflow"),
 	}
 }
 
-func (a AirflowClient) Create(c *gin.Context, slug string) error {
+func (a AirflowClient) Create(ctx *gin.Context, slug string) error {
 	var form AirflowForm
-	err := c.ShouldBindWith(&form, binding.Form)
+	err := ctx.ShouldBindWith(&form, binding.Form)
 	if err != nil {
 		return err
 	}
 
-	team, err := a.repo.TeamGet(c, slug)
+	team, err := a.repo.TeamGet(ctx, slug)
 	if err != nil {
 		return err
 	}
+
 	if team.PendingAirflowUpgrade {
-		log.Info("pending airflow install")
+		a.log.Info("pending airflow install")
 		return nil
 	}
 
@@ -111,19 +114,22 @@ func (a AirflowClient) Create(c *gin.Context, slug string) error {
 		return err
 	}
 
-	if err := addGeneratedAirflowConfig(c, dbPassword, &form, a.k8sClient); err != nil {
+	if err := a.addGeneratedConfig(ctx, dbPassword, &form); err != nil {
 		return err
 	}
 
-	go createAirflowDB(c, form.TeamID, dbPassword, a.googleClient, a.k8sClient)
+	go a.createDB(ctx, form.TeamID, dbPassword)
 
-	go createWebserverSecret(c, form.TeamID, a.k8sClient)
+	go a.createWebserverSecret(ctx, form.TeamID)
 
-	if err := addAirflowTeamValues(c, a.repo, form); err != nil {
+	if err := a.addAirflowTeamValues(ctx, form); err != nil {
 		return err
 	}
 
-	InstallOrUpdateAirflow(c, form.TeamID, a.repo, a.helmClient, a.cryptClient)
+	application := helmApps.NewAirflow(team.ID, a.repo, a.cryptClient)
+
+	go a.helmClient.InstallOrUpgrade(ctx, string(gensql.ChartTypeAirflow), team.ID, application)
+
 	return nil
 }
 
@@ -135,7 +141,7 @@ func (a AirflowClient) Update(ctx context.Context, form AirflowForm) error {
 		return err
 	}
 	if team.PendingAirflowUpgrade {
-		log.Info("pending airflow upgrade")
+		a.log.Info("pending airflow upgrade")
 		return nil
 	}
 
@@ -146,44 +152,41 @@ func (a AirflowClient) Update(ctx context.Context, form AirflowForm) error {
 		return err
 	}
 
-	if err := addAirflowTeamValues(ctx, a.repo, form); err != nil {
+	if err := a.addAirflowTeamValues(ctx, form); err != nil {
 		return err
 	}
 
-	InstallOrUpdateAirflow(ctx, form.TeamID, a.repo, a.helmClient, a.cryptClient)
+	application := helmApps.NewAirflow(team.ID, a.repo, a.cryptClient)
+
+	go a.helmClient.InstallOrUpgrade(ctx, string(gensql.ChartTypeAirflow), team.ID, application)
+
 	return nil
 }
 
-func DeleteAirflow(ctx context.Context, teamSlug string, repo *database.Repo, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client) error {
-	team, err := repo.TeamGet(ctx, teamSlug)
+func (a AirflowClient) Delete(ctx context.Context, teamSlug string) error {
+	team, err := a.repo.TeamGet(ctx, teamSlug)
 	if err != nil {
 		return err
 	}
 
-	if err := repo.AppDelete(ctx, team.ID, gensql.ChartTypeAirflow); err != nil {
+	if err := a.repo.AppDelete(ctx, team.ID, gensql.ChartTypeAirflow); err != nil {
 		return err
 	}
 
-	go helmClient.Uninstall(string(gensql.ChartTypeAirflow), k8s.NameToNamespace(team.ID))
+	go a.helmClient.Uninstall(string(gensql.ChartTypeAirflow), k8s.NameToNamespace(team.ID))
 
-	go removeAirflowDB(ctx, team.ID, googleClient, k8sClient)
+	go a.deleteDB(ctx, team.ID)
 
 	return nil
 }
 
-func InstallOrUpdateAirflow(ctx context.Context, teamID string, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) {
-	application := helmApps.NewAirflow(teamID, repo, cryptor)
-
-	go helmClient.InstallOrUpgrade(ctx, string(gensql.ChartTypeAirflow), teamID, application)
-}
-
-func addAirflowTeamValues(c context.Context, repo *database.Repo, form AirflowForm) error {
+func (a AirflowClient) addAirflowTeamValues(ctx context.Context, form AirflowForm) error {
 	chartValues, err := reflect.CreateChartValues(form)
 	if err != nil {
 		return err
 	}
 
-	err = repo.TeamValuesInsert(c, gensql.ChartTypeAirflow, chartValues, form.TeamID)
+	err = a.repo.TeamValuesInsert(ctx, gensql.ChartTypeAirflow, chartValues, form.TeamID)
 	if err != nil {
 		return err
 	}
@@ -191,12 +194,7 @@ func addAirflowTeamValues(c context.Context, repo *database.Repo, form AirflowFo
 	return nil
 }
 
-type airflowEnv struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
-func addGeneratedAirflowConfig(c *gin.Context, dbPassword string, values *AirflowForm, k8sClient *k8s.Client) error {
+func (a AirflowClient) addGeneratedConfig(ctx context.Context, dbPassword string, values *AirflowForm) error {
 	values.IngressHosts = fmt.Sprintf("[{\"name\":\"%v\",\"tls\":{\"enabled\":true,\"secretName\":\"%v\"}}]", values.Slug+".airflow.knada.io", "airflow-certificate")
 	values.WorkerServiceAccount = values.TeamID
 	setSynkRepoAndBranch(values)
@@ -210,7 +208,7 @@ func addGeneratedAirflowConfig(c *gin.Context, dbPassword string, values *Airflo
 	}
 
 	dbConn := fmt.Sprintf("postgresql://%v:%v@%v:5432/%v?sslmode=disable", values.TeamID, dbPassword, sqlProxyHost, values.TeamID)
-	err = k8sClient.CreateOrUpdateSecret(c, dbSecretName, k8s.NameToNamespace(values.TeamID), map[string]string{
+	err = a.k8sClient.CreateOrUpdateSecret(ctx, dbSecretName, k8s.NameToNamespace(values.TeamID), map[string]string{
 		"connection": dbConn,
 	})
 	if err != nil {
@@ -219,7 +217,7 @@ func addGeneratedAirflowConfig(c *gin.Context, dbPassword string, values *Airflo
 	values.MetadataSecretName = dbSecretName
 
 	resultDBConn := fmt.Sprintf("db+postgresql://%v:%v@%v:5432/%v?sslmode=disable", values.TeamID, dbPassword, sqlProxyHost, values.TeamID)
-	err = k8sClient.CreateOrUpdateSecret(c, resultDBSecretName, k8s.NameToNamespace(values.TeamID), map[string]string{
+	err = a.k8sClient.CreateOrUpdateSecret(ctx, resultDBSecretName, k8s.NameToNamespace(values.TeamID), map[string]string{
 		"connection": resultDBConn,
 	})
 	if err != nil {
@@ -228,6 +226,11 @@ func addGeneratedAirflowConfig(c *gin.Context, dbPassword string, values *Airflo
 	values.ResultBackendSecretName = resultDBSecretName
 
 	return nil
+}
+
+type airflowEnv struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 func setWebserverEnv(values *AirflowForm) error {
@@ -286,68 +289,74 @@ func setSynkRepoAndBranch(values *AirflowForm) {
 	values.WorkersGitSynkRepoBranch = values.DagRepoBranch
 }
 
-func createAirflowDB(ctx context.Context, teamID, dbPassword string, googleClient *google.Google, k8sClient *k8s.Client) error {
+func (a AirflowClient) createDB(ctx context.Context, teamID, dbPassword string) {
 	dbInstance := airflowDBInstance(teamID)
-	if err := googleClient.CreateCloudSQLInstance(ctx, dbInstance); err != nil {
-		return err
+	if err := a.googleClient.CreateCloudSQLInstance(ctx, dbInstance); err != nil {
+		a.log.WithError(err).Errorf("error while creating dbInstance %v for %v", dbInstance, teamID)
+		return
 	}
 
-	if err := googleClient.CreateCloudSQLDatabase(ctx, teamID, dbInstance); err != nil {
-		return err
+	if err := a.googleClient.CreateCloudSQLDatabase(ctx, teamID, dbInstance); err != nil {
+		a.log.WithError(err).Errorf("error while creating dbInstance %v for %v", dbInstance, teamID)
+		return
 	}
 
-	if err := googleClient.CreateOrUpdateCloudSQLUser(ctx, teamID, dbPassword, dbInstance); err != nil {
-		return err
+	if err := a.googleClient.CreateOrUpdateCloudSQLUser(ctx, teamID, dbPassword, dbInstance); err != nil {
+		a.log.WithError(err).Errorf("error while creating dbInstance %v for %v", dbInstance, teamID)
+		return
 	}
 
-	if err := googleClient.SetSQLClientIAMBinding(ctx, teamID); err != nil {
-		return err
+	if err := a.googleClient.SetSQLClientIAMBinding(ctx, teamID); err != nil {
+		a.log.WithError(err).Errorf("error while creating dbInstance %v for %v", dbInstance, teamID)
+		return
 	}
 
-	if err := k8sClient.CreateCloudSQLProxy(ctx, sqlProxyHost, teamID, k8s.NameToNamespace(teamID), dbInstance); err != nil {
-		return err
+	if err := a.k8sClient.CreateCloudSQLProxy(ctx, sqlProxyHost, teamID, k8s.NameToNamespace(teamID), dbInstance); err != nil {
+		a.log.WithError(err).Errorf("error while creating dbInstance %v for %v", dbInstance, teamID)
+		return
 	}
-
-	return nil
 }
 
-func createWebserverSecret(ctx context.Context, teamID string, k8sClient *k8s.Client) error {
+func (a AirflowClient) createWebserverSecret(ctx context.Context, teamID string) {
 	secretKey, err := generatePassword(32)
 	if err != nil {
-		return err
+		a.log.WithError(err).Errorf("error while generating password for %v", teamID)
+		return
 	}
 
-	if err := k8sClient.CreateOrUpdateSecret(ctx, webserverSecret, k8s.NameToNamespace(teamID), map[string]string{"webserver-secret-key": secretKey}); err != nil {
-		return err
+	if err := a.k8sClient.CreateOrUpdateSecret(ctx, webserverSecret, k8s.NameToNamespace(teamID), map[string]string{"webserver-secret-key": secretKey}); err != nil {
+		a.log.WithError(err).Errorf("error while setting secret %v for %v", webserverSecret, teamID)
+		return
 	}
-
-	return nil
 }
 
-func removeAirflowDB(ctx context.Context, teamID string, googleClient *google.Google, k8sClient *k8s.Client) error {
+func (a AirflowClient) deleteDB(ctx context.Context, teamID string) {
 	dbInstance := airflowDBInstance(teamID)
-	if err := googleClient.DeleteCloudSQLInstance(ctx, dbInstance); err != nil {
-		return err
+	if err := a.googleClient.DeleteCloudSQLInstance(ctx, dbInstance); err != nil {
+		a.log.WithError(err).Errorf("error while deleting dbInstace %v for %v", dbInstance, teamID)
+		return
 	}
 
-	if err := googleClient.RemoveSQLClientIAMBinding(ctx, teamID); err != nil {
-		return err
+	if err := a.googleClient.RemoveSQLClientIAMBinding(ctx, teamID); err != nil {
+		a.log.WithError(err).Errorf("error while deleting dbInstace %v for %v", dbInstance, teamID)
+		return
 	}
 
 	namespace := k8s.NameToNamespace(teamID)
-	if err := k8sClient.DeleteCloudSQLProxy(ctx, sqlProxyHost, namespace); err != nil {
-		return err
+	if err := a.k8sClient.DeleteCloudSQLProxy(ctx, sqlProxyHost, namespace); err != nil {
+		a.log.WithError(err).Errorf("error while deleting dbInstace %v for %v", dbInstance, teamID)
+		return
 	}
 
-	if err := k8sClient.DeleteSecret(ctx, dbSecretName, namespace); err != nil {
-		return err
+	if err := a.k8sClient.DeleteSecret(ctx, dbSecretName, namespace); err != nil {
+		a.log.WithError(err).Errorf("error while deleting dbInstace %v for %v", dbInstance, teamID)
+		return
 	}
 
-	if err := k8sClient.DeleteSecret(ctx, resultDBSecretName, namespace); err != nil {
-		return err
+	if err := a.k8sClient.DeleteSecret(ctx, resultDBSecretName, namespace); err != nil {
+		a.log.WithError(err).Errorf("error while deleting dbInstace %v for %v", dbInstance, teamID)
+		return
 	}
-
-	return nil
 }
 
 func generatePassword(length int) (string, error) {

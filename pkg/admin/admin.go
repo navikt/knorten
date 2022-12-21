@@ -3,10 +3,12 @@ package admin
 import (
 	"context"
 	"fmt"
+	"github.com/nais/knorten/pkg/chart"
+	helmApps "github.com/nais/knorten/pkg/helm/applications"
+	"github.com/nais/knorten/pkg/k8s"
 	"net/url"
 	"strings"
 
-	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/database/gensql"
@@ -73,12 +75,19 @@ func (a *Client) updateHelmReleases(ctx context.Context, chartType gensql.ChartT
 		return err
 	}
 
-	for _, t := range teams {
+	for _, team := range teams {
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
-			chart.InstallOrUpdateJupyterhub(ctx, t, a.repo, a.helmClient, a.cryptor)
+			application := helmApps.NewJupyterhub(team, a.repo, a.cryptClient)
+
+			// Release name must be unique across namespaces as the helm chart creates a clusterrole
+			// for each jupyterhub with the same name as the release name.
+			releaseName := chart.JupyterReleaseName(k8s.NameToNamespace(team))
+			go a.helmClient.InstallOrUpgrade(ctx, releaseName, team, application)
 		case gensql.ChartTypeAirflow:
-			chart.InstallOrUpdateAirflow(ctx, t, a.repo, a.helmClient, a.cryptor)
+			application := helmApps.NewAirflow(team, a.repo, a.cryptClient)
+
+			go a.helmClient.InstallOrUpgrade(ctx, string(gensql.ChartTypeAirflow), team, application)
 		default:
 			return fmt.Errorf("invalid chart type %v", chartType)
 		}

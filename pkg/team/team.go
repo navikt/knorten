@@ -13,28 +13,42 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/google"
-	"github.com/nais/knorten/pkg/helm"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/thanhpk/randstr"
 	"k8s.io/utils/strings/slices"
 )
+
+type Client struct {
+	repo         *database.Repo
+	googleClient *google.Google
+	k8sClient    *k8s.Client
+	chartClient  *chart.Client
+}
+
+func NewClient(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, chartClient *chart.Client) *Client {
+	return &Client{
+		repo:         repo,
+		googleClient: googleClient,
+		k8sClient:    k8sClient,
+		chartClient:  chartClient,
+	}
+}
 
 type Form struct {
 	Slug  string   `form:"team" binding:"required,validTeamName"`
 	Users []string `form:"users[]" binding:"required,validEmail"`
 }
 
-func Create(c *gin.Context, repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client) error {
+func (c Client) Create(ctx *gin.Context) error {
 	var form Form
-	err := c.ShouldBindWith(&form, binding.Form)
+	err := ctx.ShouldBindWith(&form, binding.Form)
 	if err != nil {
 		return err
 	}
 
-	_, err = repo.TeamGet(c, form.Slug)
+	_, err = c.repo.TeamGet(ctx, form.Slug)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			fmt.Println("Creating team", form.Slug)
@@ -45,39 +59,39 @@ func Create(c *gin.Context, repo *database.Repo, googleClient *google.Google, k8
 
 	teamID := createTeamID(form.Slug)
 
-	if err := repo.TeamCreate(c, teamID, form.Slug, removeEmptyUsers(form.Users)); err != nil {
+	if err := c.repo.TeamCreate(ctx, teamID, form.Slug, removeEmptyUsers(form.Users)); err != nil {
 		return err
 	}
 
-	go createExternalResources(c, googleClient, k8sClient, form.Slug, teamID, form.Users)
+	go c.createExternalResources(ctx, form.Slug, teamID, form.Users)
 
 	return nil
 }
 
-func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, helmClient *helm.Client, cryptClient *crypto.EncrypterDecrypter) error {
+func (c Client) Update(ctx *gin.Context) error {
 	var form Form
-	form.Slug = c.Param("team")
-	err := c.ShouldBindWith(&form, binding.Form)
+	form.Slug = ctx.Param("team")
+	err := ctx.ShouldBindWith(&form, binding.Form)
 	if err != nil {
 		return err
 	}
 
-	team, err := repo.TeamGet(c, form.Slug)
+	team, err := c.repo.TeamGet(ctx, form.Slug)
 	if err != nil {
 		return err
 	}
 
-	err = repo.TeamUpdate(c, team.ID, removeEmptyUsers(form.Users))
+	err = c.repo.TeamUpdate(ctx, team.ID, removeEmptyUsers(form.Users))
 	if err != nil {
 		return err
 	}
 
-	err = googleClient.Update(c, team.ID, form.Users)
+	err = c.googleClient.Update(ctx, team.ID, form.Users)
 	if err != nil {
 		return err
 	}
 
-	apps, err := repo.AppsForTeamGet(c, team.ID)
+	apps, err := c.repo.AppsForTeamGet(ctx, team.ID)
 	if err != nil {
 		return err
 	}
@@ -91,7 +105,7 @@ func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, he
 				AllowedUsers: form.Users,
 			},
 		}
-		err = chart.UpdateJupyterTeamValuesAndInstall(c, jupyterForm, repo, helmClient, cryptClient)
+		err = c.chartClient.Jupyterhub.UpdateTeamValuesAndInstallOrUpdate(ctx, jupyterForm)
 		if err != nil {
 			return err
 		}
@@ -103,7 +117,7 @@ func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, he
 			TeamID: team.ID,
 			Users:  form.Users,
 		}
-		err = chart.UpdateAirflow(c, airflowForm, repo, helmClient, cryptClient)
+		err = c.chartClient.Airflow.Update(ctx, airflowForm)
 		if err != nil {
 			return err
 		}
@@ -112,45 +126,45 @@ func Update(c *gin.Context, repo *database.Repo, googleClient *google.Google, he
 	return nil
 }
 
-func Delete(ctx context.Context, teamSlug string, repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client) error {
-	team, err := repo.TeamGet(ctx, teamSlug)
+func (c Client) Delete(ctx context.Context, teamSlug string) error {
+	team, err := c.repo.TeamGet(ctx, teamSlug)
 	if err != nil {
 		return err
 	}
 
-	if err := repo.TeamDelete(ctx, team.ID); err != nil {
+	if err := c.repo.TeamDelete(ctx, team.ID); err != nil {
 		return err
 	}
 
-	go deleteExternalResources(ctx, team.ID, googleClient, k8sClient)
+	go c.deleteExternalResources(ctx, team.ID)
 
 	return nil
 }
 
-func createExternalResources(c *gin.Context, googleClient *google.Google, k8sClient *k8s.Client, slug, teamID string, users []string) {
-	if err := googleClient.CreateGCPTeamResources(c, slug, teamID, users); err != nil {
+func (c Client) createExternalResources(ctx *gin.Context, slug, teamID string, users []string) {
+	if err := c.googleClient.CreateGCPTeamResources(ctx, slug, teamID, users); err != nil {
 		logrus.Error(err)
 		return
 	}
 
-	if err := k8sClient.CreateTeamNamespace(c, k8s.NameToNamespace(teamID)); err != nil {
+	if err := c.k8sClient.CreateTeamNamespace(ctx, k8s.NameToNamespace(teamID)); err != nil {
 		logrus.Error(err)
 		return
 	}
 
-	if err := k8sClient.CreateTeamServiceAccount(c, teamID, k8s.NameToNamespace(teamID)); err != nil {
+	if err := c.k8sClient.CreateTeamServiceAccount(ctx, teamID, k8s.NameToNamespace(teamID)); err != nil {
 		logrus.Error(err)
 		return
 	}
 }
 
-func deleteExternalResources(c context.Context, teamID string, googleClient *google.Google, k8sClient *k8s.Client) {
-	if err := googleClient.DeleteGCPTeamResources(c, teamID); err != nil {
+func (c Client) deleteExternalResources(ctx context.Context, teamID string) {
+	if err := c.googleClient.DeleteGCPTeamResources(ctx, teamID); err != nil {
 		logrus.Error(err)
 		return
 	}
 
-	if err := k8sClient.DeleteTeamNamespace(c, k8s.NameToNamespace(teamID)); err != nil {
+	if err := c.k8sClient.DeleteTeamNamespace(ctx, k8s.NameToNamespace(teamID)); err != nil {
 		logrus.Error(err)
 		return
 	}

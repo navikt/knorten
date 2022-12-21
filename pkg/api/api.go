@@ -1,6 +1,8 @@
 package api
 
 import (
+	"github.com/nais/knorten/pkg/chart"
+	"github.com/nais/knorten/pkg/team"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -15,7 +17,7 @@ import (
 )
 
 type API struct {
-	oauth2       *auth.Azure
+	azureClient  *auth.Azure
 	router       *gin.Engine
 	helmClient   *helm.Client
 	repo         *database.Repo
@@ -23,27 +25,36 @@ type API struct {
 	googleClient *google.Google
 	k8sClient    *k8s.Client
 	adminClient  *admin.Client
-	cryptor      *crypto.EncrypterDecrypter
+	cryptClient  *crypto.EncrypterDecrypter
+	chartClient  *chart.Client
+	teamClient   *team.Client
 }
 
-func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, cryptor *crypto.EncrypterDecrypter, log *logrus.Entry) (*API, error) {
-	adminClient := admin.New(repo, helmClient, cryptor)
+func New(repo *database.Repo, azureClient *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, log *logrus.Entry) (*API, error) {
+	adminClient := admin.New(repo, helmClient, cryptClient)
 	api := API{
-		oauth2:       oauth2,
+		azureClient:  azureClient,
 		helmClient:   helmClient,
 		router:       gin.Default(),
 		repo:         repo,
 		googleClient: googleClient,
 		k8sClient:    k8sClient,
 		adminClient:  adminClient,
-		cryptor:      cryptor,
+		cryptClient:  cryptClient,
 		log:          log,
+		chartClient: &chart.Client{
+			Airflow:    chart.NewAirflowClient(repo, googleClient, k8sClient, helmClient, cryptClient, log),
+			Jupyterhub: chart.NewJupyterhubClient(repo, helmClient, cryptClient, log),
+		},
 	}
+
+	api.teamClient = team.NewClient(repo, googleClient, helmClient, k8sClient, api.chartClient, log)
 
 	session, err := repo.NewSessionStore()
 	if err != nil {
 		return &API{}, err
 	}
+
 	api.router.Use(session)
 	api.router.Static("/assets", "./assets")
 	api.router.LoadHTMLGlob("templates/**/*")
@@ -55,8 +66,12 @@ func New(repo *database.Repo, oauth2 *auth.Azure, helmClient *helm.Client, googl
 	return &api, nil
 }
 
-func (a *API) Run() error {
-	return a.router.Run()
+func (a *API) Run(inCluster bool) error {
+	if inCluster {
+		return a.router.Run()
+	}
+
+	return a.router.Run("localhost:8080")
 }
 
 func (a *API) setupUnauthenticatedRoutes() {
@@ -73,8 +88,4 @@ func (a *API) setupAuthenticatedRoutes() {
 	a.setupUserRoutes()
 	a.setupTeamRoutes()
 	a.setupChartRoutes()
-}
-
-func (a *API) setupAuthenticatedAdminRoutes() {
-	a.setupAdminRoutes()
 }

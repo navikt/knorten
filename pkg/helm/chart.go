@@ -74,7 +74,6 @@ func addHelmRepository(url, chartName, repoFile string, settings *cli.EnvSetting
 	if err := f.WriteFile(repoFile, fs.ModeAppend); err != nil {
 		return err
 	}
-	fmt.Printf("%q has been added to your repositories\n", chartName)
 
 	return nil
 }
@@ -94,16 +93,11 @@ func updateHelmRepositories(repoFile string, settings *cli.EnvSettings) error {
 		repos = append(repos, r)
 	}
 
-	fmt.Println("Updating chart repositories")
 	for _, re := range repos {
 		if _, err := re.DownloadIndexFile(); err != nil {
 			return err
-		} else {
-			fmt.Printf("Successfully got an update from the %q chart repository\n", re.Config.Name)
 		}
 	}
-
-	fmt.Printf("Update Complete. ⎈Happy Helming!⎈")
 
 	return nil
 }

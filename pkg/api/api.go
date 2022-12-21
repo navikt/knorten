@@ -26,12 +26,11 @@ type API struct {
 	k8sClient    *k8s.Client
 	adminClient  *admin.Client
 	cryptClient  *crypto.EncrypterDecrypter
-	dryRun       bool
 	chartClient  *chart.Client
 	teamClient   *team.Client
 }
 
-func New(repo *database.Repo, azureClient *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, log *logrus.Entry, dryRun bool) (*API, error) {
+func New(repo *database.Repo, azureClient *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, log *logrus.Entry) (*API, error) {
 	adminClient := admin.New(repo, helmClient, cryptClient)
 	api := API{
 		azureClient:  azureClient,
@@ -43,7 +42,6 @@ func New(repo *database.Repo, azureClient *auth.Azure, helmClient *helm.Client, 
 		adminClient:  adminClient,
 		cryptClient:  cryptClient,
 		log:          log,
-		dryRun:       dryRun,
 		chartClient: &chart.Client{
 			Airflow:    chart.NewAirflowClient(repo, googleClient, k8sClient, helmClient, cryptClient, log),
 			Jupyterhub: chart.NewJupyterhubClient(repo, helmClient, cryptClient, log),
@@ -68,12 +66,12 @@ func New(repo *database.Repo, azureClient *auth.Azure, helmClient *helm.Client, 
 	return &api, nil
 }
 
-func (a *API) Run() error {
-	if a.dryRun {
-		return a.router.Run("localhost:8080")
+func (a *API) Run(inCluster bool) error {
+	if inCluster {
+		return a.router.Run()
 	}
 
-	return a.router.Run()
+	return a.router.Run("localhost:8080")
 }
 
 func (a *API) setupUnauthenticatedRoutes() {

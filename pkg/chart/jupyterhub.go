@@ -51,6 +51,7 @@ type JupyterValues struct {
 	ServiceAccount   string   `helm:"singleuser.serviceAccountName"`
 	OAuthCallbackURL string   `helm:"hub.config.AzureAdOAuthenticator.oauth_callback_url"`
 	KnadaTeamSecret  string   `helm:"singleuser.extraEnv.KNADA_TEAM_SECRET"`
+	ProfileList      string   `helm:"singleuser.profileList"`
 }
 
 func CreateJupyterhub(c *gin.Context, slug string, repo *database.Repo, helmClient *helm.Client, cryptor *crypto.EncrypterDecrypter) error {
@@ -109,6 +110,10 @@ func UpdateJupyterhub(c *gin.Context, form JupyterForm, repo *database.Repo, hel
 		return err
 	}
 
+	if form.ImageName != "" && form.ImageTag != "" {
+		addCustomImage(&form)
+	}
+
 	return UpdateJupyterTeamValuesAndInstall(c, form, repo, helmClient, cryptor)
 }
 
@@ -149,6 +154,9 @@ func DeleteJupyterhub(c context.Context, teamSlug string, repo *database.Repo, h
 	go helmClient.Uninstall(releaseName, namespace)
 
 	return nil
+}
+
+func addCustomImage(form *JupyterForm) {
 }
 
 func storeJupyterTeamValues(c context.Context, repo *database.Repo, form JupyterForm) error {

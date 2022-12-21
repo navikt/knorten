@@ -20,12 +20,12 @@ type Application struct {
 	chartVersion string
 	teamID       string
 	repo         *database.Repo
-	cryptor      *crypto.EncrypterDecrypter
+	cryptClient  *crypto.EncrypterDecrypter
 }
 
 // TODO: Vi bør ta inn chart-settings som config
 
-func NewAirflow(teamID string, repo *database.Repo, cryptor *crypto.EncrypterDecrypter) *Application {
+func NewAirflow(teamID string, repo *database.Repo, cryptClient *crypto.EncrypterDecrypter) *Application {
 	return &Application{
 		chartName:    "airflow",
 		chartRepo:    "apache-airflow",
@@ -33,11 +33,11 @@ func NewAirflow(teamID string, repo *database.Repo, cryptor *crypto.EncrypterDec
 		chartVersion: "1.7.0",
 		teamID:       teamID,
 		repo:         repo,
-		cryptor:      cryptor,
+		cryptClient:  cryptClient,
 	}
 }
 
-func NewJupyterhub(teamID string, repo *database.Repo, cryptor *crypto.EncrypterDecrypter) *Application {
+func NewJupyterhub(teamID string, repo *database.Repo, cryptClient *crypto.EncrypterDecrypter) *Application {
 	return &Application{
 		chartName:    "jupyterhub",
 		chartRepo:    "jupyterhub",
@@ -45,7 +45,7 @@ func NewJupyterhub(teamID string, repo *database.Repo, cryptor *crypto.Encrypter
 		chartVersion: "2.0.0",
 		teamID:       teamID,
 		repo:         repo,
-		cryptor:      cryptor,
+		cryptClient:  cryptClient,
 	}
 }
 
@@ -87,7 +87,7 @@ func (a *Application) globalValues(ctx context.Context) (map[string]any, error) 
 	values := map[string]any{}
 	for _, v := range dbValues {
 		if v.Encrypted {
-			v.Value, err = a.cryptor.DecryptValue(v.Value)
+			v.Value, err = a.cryptClient.DecryptValue(v.Value)
 			if err != nil {
 				return nil, err
 			}

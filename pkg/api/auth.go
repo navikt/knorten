@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"github.com/sirupsen/logrus"
 	"net"
 	"net/http"
 	"strings"
@@ -164,7 +163,7 @@ func (a *API) logout(c *gin.Context) (string, error) {
 
 	err = a.repo.SessionDelete(c, sessionCookie)
 	if err != nil {
-		logrus.WithError(err).Error("failed deleting session")
+		a.log.WithError(err).Error("failed deleting session")
 		return loginPage, err
 	}
 

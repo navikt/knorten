@@ -25,7 +25,7 @@ WHERE id = @id;
 -- name: TeamsGet :many
 select id, users, slug
 from teams
-ORDER BY slug DESC;
+ORDER BY slug;
 
 -- name: TeamSetPendingJupyterUpgrade :exec
 UPDATE teams

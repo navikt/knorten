@@ -199,7 +199,7 @@ func (a *API) authMiddleware(allowedUsers []string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		sessionToken, err := c.Cookie(sessionCookie)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+			c.Redirect(http.StatusFound, "/oauth2/login")
 			return
 		}
 
@@ -220,6 +220,7 @@ func (a *API) authMiddleware(allowedUsers []string) gin.HandlerFunc {
 			for _, allowedUser := range allowedUsers {
 				if user.Email == allowedUser {
 					allowed = true
+					break
 				}
 			}
 

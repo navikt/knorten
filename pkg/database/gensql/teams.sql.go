@@ -160,6 +160,7 @@ func (q *Queries) TeamsForUserGet(ctx context.Context, email string) ([]TeamsFor
 const teamsGet = `-- name: TeamsGet :many
 select id, users, slug
 from teams
+ORDER BY slug
 `
 
 type TeamsGetRow struct {

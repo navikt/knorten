@@ -2,6 +2,7 @@ package chart
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -17,10 +18,8 @@ import (
 )
 
 type JupyterForm struct {
-	TeamID    string
-	Slug      string
-	ImageName string
-	ImageTag  string
+	TeamID string
+	Slug   string
 	JupyterValues
 }
 
@@ -156,7 +155,32 @@ func DeleteJupyterhub(c context.Context, teamSlug string, repo *database.Repo, h
 	return nil
 }
 
-func addCustomImage(form *JupyterForm) {
+func addCustomImage(form *JupyterForm) error {
+	type kubespawnerOverride struct {
+		Image string `json:"image"`
+	}
+
+	type profile struct {
+		DisplayName         string              `json:"display_name"`
+		Description         string              `json:"description"`
+		KubespawnerOverride kubespawnerOverride `json:"kubespawner_override"`
+	}
+
+	profileList := []profile{{
+		DisplayName: "Custom image",
+		Description: fmt.Sprintf("Custom image for team %v", form.Slug),
+		KubespawnerOverride: kubespawnerOverride{
+			Image: fmt.Sprintf("%v:%v", form.ImageName, form.ImageTag),
+		},
+	}}
+
+	profilesBytes, err := json.Marshal(profileList)
+	if err != nil {
+		return err
+	}
+	form.ProfileList = string(profilesBytes)
+
+	return nil
 }
 
 func storeJupyterTeamValues(c context.Context, repo *database.Repo, form JupyterForm) error {

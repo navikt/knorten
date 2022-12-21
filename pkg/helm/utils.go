@@ -47,8 +47,7 @@ func ParseValue(value any) (any, error) {
 	case string:
 		value, err = ParseString(v)
 		if err != nil {
-			fmt.Println("parsing value", v)
-			return nil, err
+			return nil, fmt.Errorf("failed parsing value %v: %v", v, err)
 		}
 	default:
 		value = v

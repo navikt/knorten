@@ -46,11 +46,11 @@ func New(repo *database.Repo, azureClient *auth.Azure, helmClient *helm.Client, 
 		dryRun:       dryRun,
 		chartClient: &chart.Client{
 			Airflow:    chart.NewAirflowClient(repo, googleClient, k8sClient, helmClient, cryptClient, log),
-			Jupyterhub: chart.NewJupyterhubClient(repo, helmClient, cryptClient),
+			Jupyterhub: chart.NewJupyterhubClient(repo, helmClient, cryptClient, log),
 		},
 	}
 
-	api.teamClient = team.NewClient(repo, googleClient, k8sClient, api.chartClient)
+	api.teamClient = team.NewClient(repo, googleClient, k8sClient, api.chartClient, log)
 
 	session, err := repo.NewSessionStore()
 	if err != nil {

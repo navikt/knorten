@@ -2,8 +2,6 @@ package database
 
 import (
 	"context"
-	"fmt"
-
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
@@ -42,7 +40,6 @@ func (r *Repo) TeamSetPendingUpgrade(ctx context.Context, teamID, chartType stri
 	var err error
 	switch chartType {
 	case string(gensql.ChartTypeJupyterhub):
-		fmt.Printf("set pending upgrade for chart %v to %v (team: %v)\n", chartType, pendingUpgrade, teamID)
 		err = r.querier.TeamSetPendingJupyterUpgrade(ctx, gensql.TeamSetPendingJupyterUpgradeParams{
 			ID:                    teamID,
 			PendingJupyterUpgrade: pendingUpgrade,

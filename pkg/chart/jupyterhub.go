@@ -12,13 +12,14 @@ import (
 	helmApps "github.com/nais/knorten/pkg/helm/applications"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/reflect"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 type JupyterhubClient struct {
 	repo        *database.Repo
 	helmClient  *helm.Client
 	cryptClient *crypto.EncrypterDecrypter
+	log         *logrus.Entry
 }
 
 type JupyterForm struct {
@@ -58,11 +59,12 @@ type JupyterValues struct {
 	KnadaTeamSecret  string   `helm:"singleuser.extraEnv.KNADA_TEAM_SECRET"`
 }
 
-func NewJupyterhubClient(repo *database.Repo, helmClient *helm.Client, cryptClient *crypto.EncrypterDecrypter) JupyterhubClient {
+func NewJupyterhubClient(repo *database.Repo, helmClient *helm.Client, cryptClient *crypto.EncrypterDecrypter, log *logrus.Entry) JupyterhubClient {
 	return JupyterhubClient{
 		repo:        repo,
 		helmClient:  helmClient,
 		cryptClient: cryptClient,
+		log:         log,
 	}
 }
 
@@ -78,7 +80,7 @@ func (j JupyterhubClient) Create(c *gin.Context, slug string) error {
 		return err
 	}
 	if team.PendingJupyterUpgrade {
-		log.Info("pending jupyterhub install")
+		j.log.Info("pending jupyterhub install")
 		return nil
 	}
 
@@ -110,7 +112,7 @@ func (j JupyterhubClient) Update(c *gin.Context, form JupyterForm) error {
 		return err
 	}
 	if team.PendingJupyterUpgrade {
-		log.Info("pending jupyterhub upgrade")
+		j.log.Info("pending jupyterhub upgrade")
 		return nil
 	}
 

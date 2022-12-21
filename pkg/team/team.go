@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -25,14 +24,16 @@ type Client struct {
 	googleClient *google.Google
 	k8sClient    *k8s.Client
 	chartClient  *chart.Client
+	log          *logrus.Entry
 }
 
-func NewClient(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, chartClient *chart.Client) *Client {
+func NewClient(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, chartClient *chart.Client, log *logrus.Entry) *Client {
 	return &Client{
 		repo:         repo,
 		googleClient: googleClient,
 		k8sClient:    k8sClient,
 		chartClient:  chartClient,
+		log:          log,
 	}
 }
 
@@ -51,7 +52,7 @@ func (c Client) Create(ctx *gin.Context) error {
 	_, err = c.repo.TeamGet(ctx, form.Slug)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			fmt.Println("Creating team", form.Slug)
+			c.log.Infof("Creating team: %v", form.Slug)
 		} else {
 			return err
 		}
@@ -143,29 +144,29 @@ func (c Client) Delete(ctx context.Context, teamSlug string) error {
 
 func (c Client) createExternalResources(ctx *gin.Context, slug, teamID string, users []string) {
 	if err := c.googleClient.CreateGCPTeamResources(ctx, slug, teamID, users); err != nil {
-		logrus.Error(err)
+		c.log.WithError(err).Error("failed while creating external resources")
 		return
 	}
 
 	if err := c.k8sClient.CreateTeamNamespace(ctx, k8s.NameToNamespace(teamID)); err != nil {
-		logrus.Error(err)
+		c.log.WithError(err).Error("failed while creating external resources")
 		return
 	}
 
 	if err := c.k8sClient.CreateTeamServiceAccount(ctx, teamID, k8s.NameToNamespace(teamID)); err != nil {
-		logrus.Error(err)
+		c.log.WithError(err).Error("failed while creating external resources")
 		return
 	}
 }
 
 func (c Client) deleteExternalResources(ctx context.Context, teamID string) {
 	if err := c.googleClient.DeleteGCPTeamResources(ctx, teamID); err != nil {
-		logrus.Error(err)
+		c.log.WithError(err).Error("failed while deleting external resources")
 		return
 	}
 
 	if err := c.k8sClient.DeleteTeamNamespace(ctx, k8s.NameToNamespace(teamID)); err != nil {
-		logrus.Error(err)
+		c.log.WithError(err).Error("failed while deleting external resources")
 		return
 	}
 }

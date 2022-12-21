@@ -7,7 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"github.com/sirupsen/logrus"
 	"net"
 	"net/http"
 	"strings"
@@ -164,7 +164,7 @@ func (a *API) logout(c *gin.Context) (string, error) {
 
 	err = a.repo.SessionDelete(c, sessionCookie)
 	if err != nil {
-		fmt.Println(err)
+		logrus.WithError(err).Error("failed deleting session")
 		return loginPage, err
 	}
 
@@ -238,7 +238,6 @@ func (a *API) authMiddleware(allowedUsers []string) gin.HandlerFunc {
 func (a *API) setupAuthRoutes() {
 
 	a.router.GET("/oauth2/login", func(c *gin.Context) {
-		fmt.Println("login")
 		consentURL := a.login(c)
 		c.Redirect(http.StatusSeeOther, consentURL)
 	})

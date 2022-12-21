@@ -79,6 +79,15 @@ func (j JupyterhubClient) Create(c *gin.Context, slug string) error {
 	if err != nil {
 		return err
 	}
+
+	existing, err := j.repo.TeamValuesGet(c, gensql.ChartTypeJupyterhub, team.ID)
+	if err != nil {
+		return err
+	}
+	if len(existing) > 0 {
+		return fmt.Errorf("there already exists a jupyterhub for team '%v'", team.ID)
+	}
+
 	if team.PendingJupyterUpgrade {
 		j.log.Info("pending jupyterhub install")
 		return nil
@@ -89,19 +98,7 @@ func (j JupyterhubClient) Create(c *gin.Context, slug string) error {
 	form.AdminUsers = team.Users
 	form.AllowedUsers = team.Users
 
-	existing, err := j.repo.TeamValuesGet(c, gensql.ChartTypeJupyterhub, team.ID)
-	if err != nil {
-		return err
-	}
-	if len(existing) > 0 {
-		return fmt.Errorf("there already exists a jupyterhub for team '%v'", team.ID)
-	}
-
 	addGeneratedJupyterhubConfig(&form)
-
-	if err := form.ensureValidValues(); err != nil {
-		return err
-	}
 
 	return j.UpdateTeamValuesAndInstallOrUpdate(c, form)
 }
@@ -120,14 +117,14 @@ func (j JupyterhubClient) Update(c *gin.Context, form JupyterForm) error {
 	form.AdminUsers = team.Users
 	form.AllowedUsers = team.Users
 
-	if err := form.ensureValidValues(); err != nil {
-		return err
-	}
-
 	return j.UpdateTeamValuesAndInstallOrUpdate(c, form)
 }
 
 func (j JupyterhubClient) UpdateTeamValuesAndInstallOrUpdate(ctx context.Context, form JupyterForm) error {
+	if err := form.ensureValidValues(); err != nil {
+		return err
+	}
+
 	if err := j.storeJupyterTeamValues(ctx, form); err != nil {
 		return err
 	}

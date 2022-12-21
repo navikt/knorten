@@ -147,6 +147,10 @@ func (j JupyterhubClient) Delete(c context.Context, teamSlug string) error {
 	if err != nil {
 		return err
 	}
+	if team.PendingJupyterUpgrade {
+		j.log.Info("pending jupyterhub install")
+		return nil
+	}
 
 	if err := j.repo.AppDelete(c, team.ID, gensql.ChartTypeJupyterhub); err != nil {
 		return err

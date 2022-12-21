@@ -50,7 +50,7 @@ func New(repo *database.Repo, azureClient *auth.Azure, helmClient *helm.Client, 
 		},
 	}
 
-	api.teamClient = team.NewClient(repo, googleClient, k8sClient, api.chartClient, log)
+	api.teamClient = team.NewClient(repo, googleClient, helmClient, k8sClient, api.chartClient, log)
 
 	session, err := repo.NewSessionStore()
 	if err != nil {

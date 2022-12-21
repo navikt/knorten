@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/nais/knorten/pkg/helm"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -22,15 +23,17 @@ import (
 type Client struct {
 	repo         *database.Repo
 	googleClient *google.Google
+	helmClient   *helm.Client
 	k8sClient    *k8s.Client
 	chartClient  *chart.Client
 	log          *logrus.Entry
 }
 
-func NewClient(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, chartClient *chart.Client, log *logrus.Entry) *Client {
+func NewClient(repo *database.Repo, googleClient *google.Google, helmClient *helm.Client, k8sClient *k8s.Client, chartClient *chart.Client, log *logrus.Entry) *Client {
 	return &Client{
 		repo:         repo,
 		googleClient: googleClient,
+		helmClient:   helmClient,
 		k8sClient:    k8sClient,
 		chartClient:  chartClient,
 		log:          log,
@@ -133,11 +136,16 @@ func (c Client) Delete(ctx context.Context, teamSlug string) error {
 		return err
 	}
 
+	apps, err := c.repo.AppsForTeamGet(ctx, team.ID)
+	if err != nil {
+		return err
+	}
+
 	if err := c.repo.TeamDelete(ctx, team.ID); err != nil {
 		return err
 	}
 
-	go c.deleteExternalResources(ctx, team.ID)
+	go c.deleteExternalResources(ctx, team, apps)
 
 	return nil
 }
@@ -159,13 +167,27 @@ func (c Client) createExternalResources(ctx *gin.Context, slug, teamID string, u
 	}
 }
 
-func (c Client) deleteExternalResources(ctx context.Context, teamID string) {
-	if err := c.googleClient.DeleteGCPTeamResources(ctx, teamID); err != nil {
+func (c Client) deleteExternalResources(ctx context.Context, team gensql.TeamGetRow, apps []string) {
+	if err := c.googleClient.DeleteGCPTeamResources(ctx, team.ID); err != nil {
 		c.log.WithError(err).Error("failed while deleting external resources")
 		return
 	}
 
-	if err := c.k8sClient.DeleteTeamNamespace(ctx, k8s.NameToNamespace(teamID)); err != nil {
+	namespace := k8s.NameToNamespace(team.ID)
+
+	if slices.Contains(apps, string(gensql.ChartTypeJupyterhub)) {
+		releaseName := chart.JupyterReleaseName(namespace)
+		c.helmClient.Uninstall(releaseName, namespace)
+	}
+
+	if slices.Contains(apps, string(gensql.ChartTypeAirflow)) {
+		if err := c.googleClient.DeleteCloudSQLInstance(ctx, chart.CreateAirflowDBInstanceName(team.ID)); err != nil {
+			c.log.WithError(err).Error("failed while deleting external resources")
+			return
+		}
+	}
+
+	if err := c.k8sClient.DeleteTeamNamespace(ctx, namespace); err != nil {
 		c.log.WithError(err).Error("failed while deleting external resources")
 		return
 	}

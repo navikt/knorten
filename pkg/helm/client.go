@@ -84,6 +84,7 @@ func (c *Client) InstallOrUpgrade(ctx context.Context, releaseName, teamID strin
 		c.log.WithError(err).Errorf("install or upgrading release %v, error setting pending upgrade lock", releaseName)
 		return
 	}
+	defer c.clearPendingUpgrade(ctx, teamID, releaseName)
 
 	settings := cli.New()
 	settings.SetNamespace(namespace)
@@ -139,11 +140,6 @@ func (c *Client) InstallOrUpgrade(ctx context.Context, releaseName, teamID strin
 			return
 		}
 	}
-
-	if err := c.repo.TeamSetPendingUpgrade(ctx, teamID, releaseNameToChartType(releaseName), false); err != nil {
-		c.log.WithError(err).Errorf("install or upgrading release %v, error clearing pending upgrade lock", releaseName)
-		return
-	}
 }
 
 func (c *Client) Uninstall(releaseName, namespace string) {
@@ -178,6 +174,12 @@ func (c *Client) Uninstall(releaseName, namespace string) {
 	if err != nil {
 		c.log.WithError(err).Errorf("error while uninstalling release %v", releaseName)
 		return
+	}
+}
+
+func (c *Client) clearPendingUpgrade(ctx context.Context, teamID, releaseName string) {
+	if err := c.repo.TeamSetPendingUpgrade(ctx, teamID, releaseNameToChartType(releaseName), false); err != nil {
+		c.log.WithError(err).Errorf("install or upgrading release %v, error clearing pending upgrade lock", releaseName)
 	}
 }
 

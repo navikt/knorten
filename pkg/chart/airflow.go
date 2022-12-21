@@ -169,6 +169,11 @@ func (a AirflowClient) Delete(ctx context.Context, teamSlug string) error {
 		return err
 	}
 
+	if team.PendingAirflowUpgrade {
+		a.log.Info("pending airflow upgrade")
+		return nil
+	}
+
 	if err := a.repo.AppDelete(ctx, team.ID, gensql.ChartTypeAirflow); err != nil {
 		return err
 	}
@@ -290,7 +295,7 @@ func setSynkRepoAndBranch(values *AirflowForm) {
 }
 
 func (a AirflowClient) createDB(ctx context.Context, teamID, dbPassword string) {
-	dbInstance := airflowDBInstance(teamID)
+	dbInstance := CreateAirflowDBInstanceName(teamID)
 	if err := a.googleClient.CreateCloudSQLInstance(ctx, dbInstance); err != nil {
 		a.log.WithError(err).Errorf("error while creating dbInstance %v for %v", dbInstance, teamID)
 		return
@@ -331,7 +336,7 @@ func (a AirflowClient) createWebserverSecret(ctx context.Context, teamID string)
 }
 
 func (a AirflowClient) deleteDB(ctx context.Context, teamID string) {
-	dbInstance := airflowDBInstance(teamID)
+	dbInstance := CreateAirflowDBInstanceName(teamID)
 	if err := a.googleClient.DeleteCloudSQLInstance(ctx, dbInstance); err != nil {
 		a.log.WithError(err).Errorf("error while deleting dbInstace %v for %v", dbInstance, teamID)
 		return
@@ -367,6 +372,6 @@ func generatePassword(length int) (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-func airflowDBInstance(teamID string) string {
+func CreateAirflowDBInstanceName(teamID string) string {
 	return "airflow-" + teamID
 }

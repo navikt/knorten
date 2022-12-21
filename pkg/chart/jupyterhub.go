@@ -129,7 +129,8 @@ func (j JupyterhubClient) Update(c *gin.Context, form JupyterForm) error {
 }
 
 func (j JupyterhubClient) UpdateTeamValuesAndInstallOrUpdate(ctx context.Context, form JupyterForm) error {
-	if form.ImageName != "" && form.ImageTag == "" {
+	if form.ImageName != "" && form.ImageTag != "" {
+		fmt.Println("jeppsi")
 		j.addCustomImage(&form)
 	}
 

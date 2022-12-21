@@ -101,26 +101,32 @@ func (c Client) Update(ctx *gin.Context) error {
 	}
 
 	if slices.Contains(apps, string(gensql.ChartTypeJupyterhub)) {
-		jupyterForm := chart.JupyterForm{
-			Slug:   team.Slug,
-			TeamID: team.ID,
-			JupyterValues: chart.JupyterValues{
-				AdminUsers:   form.Users,
-				AllowedUsers: form.Users,
-			},
+		jupyterForm := chart.JupyterForm{}
+		err = c.repo.TeamConfigurableValuesGet(ctx, gensql.ChartTypeJupyterhub, team.ID, form)
+		if err != nil {
+			return err
 		}
-		err = c.chartClient.Jupyterhub.UpdateTeamValuesAndInstallOrUpdate(ctx, jupyterForm)
+
+		jupyterForm.JupyterValues = chart.JupyterValues{
+			AdminUsers:   form.Users,
+			AllowedUsers: form.Users,
+		}
+
+		err = c.chartClient.Jupyterhub.Update(ctx, jupyterForm)
 		if err != nil {
 			return err
 		}
 	}
 
 	if slices.Contains(apps, string(gensql.ChartTypeAirflow)) {
-		airflowForm := chart.AirflowForm{
-			Slug:   team.Slug,
-			TeamID: team.ID,
-			Users:  form.Users,
+		airflowForm := chart.AirflowForm{}
+		err = c.repo.TeamConfigurableValuesGet(ctx, gensql.ChartTypeAirflow, team.ID, form)
+		if err != nil {
+			return err
 		}
+
+		airflowForm.Users = form.Users
+
 		err = c.chartClient.Airflow.Update(ctx, airflowForm)
 		if err != nil {
 			return err

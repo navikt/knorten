@@ -34,9 +34,20 @@ func (a *API) setupAdminRoutes() {
 			return
 		}
 
+		teamApps := map[string][]string{}
+		for _, team := range teams {
+			apps, err := a.repo.AppsForTeamGet(c, team.ID)
+			if err != nil {
+				// TODO
+				a.log.WithError(err)
+			}
+			teamApps[team.ID] = apps
+		}
+
 		c.HTML(http.StatusOK, "admin/index", gin.H{
 			"errors": flashes,
 			"teams":  teams,
+			"apps":   teamApps,
 		})
 	})
 

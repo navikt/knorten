@@ -2,7 +2,9 @@ package chart
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/database"
@@ -23,10 +25,8 @@ type JupyterhubClient struct {
 }
 
 type JupyterForm struct {
-	TeamID    string
-	Slug      string
-	ImageName string
-	ImageTag  string
+	TeamID string
+	Slug   string
 	JupyterValues
 }
 
@@ -57,6 +57,7 @@ type JupyterValues struct {
 	ServiceAccount   string   `helm:"singleuser.serviceAccountName"`
 	OAuthCallbackURL string   `helm:"hub.config.AzureAdOAuthenticator.oauth_callback_url"`
 	KnadaTeamSecret  string   `helm:"singleuser.extraEnv.KNADA_TEAM_SECRET"`
+	ProfileList      string   `helm:"singleuser.profileList"`
 }
 
 func NewJupyterhubClient(repo *database.Repo, helmClient *helm.Client, cryptClient *crypto.EncrypterDecrypter, log *logrus.Entry) JupyterhubClient {
@@ -121,8 +122,8 @@ func (j JupyterhubClient) Update(c *gin.Context, form JupyterForm) error {
 }
 
 func (j JupyterhubClient) UpdateTeamValuesAndInstallOrUpdate(ctx context.Context, form JupyterForm) error {
-	if err := form.ensureValidValues(); err != nil {
-		return err
+	if form.ImageName != "" && form.ImageTag != "" {
+		j.addCustomImage(&form)
 	}
 
 	if err := j.storeJupyterTeamValues(ctx, form); err != nil {
@@ -159,6 +160,34 @@ func (j JupyterhubClient) Delete(c context.Context, teamSlug string) error {
 	namespace := k8s.NameToNamespace(team.ID)
 	releaseName := JupyterReleaseName(namespace)
 	go j.helmClient.Uninstall(releaseName, namespace)
+
+	return nil
+}
+
+func (j JupyterhubClient) addCustomImage(form *JupyterForm) error {
+	type kubespawnerOverride struct {
+		Image string `json:"image"`
+	}
+
+	type profile struct {
+		DisplayName         string              `json:"display_name"`
+		Description         string              `json:"description"`
+		KubespawnerOverride kubespawnerOverride `json:"kubespawner_override"`
+	}
+
+	profileList := []profile{{
+		DisplayName: "Custom image",
+		Description: fmt.Sprintf("Custom image for team %v", form.Slug),
+		KubespawnerOverride: kubespawnerOverride{
+			Image: fmt.Sprintf("%v:%v", form.ImageName, form.ImageTag),
+		},
+	}}
+
+	profilesBytes, err := json.Marshal(profileList)
+	if err != nil {
+		return err
+	}
+	form.ProfileList = string(profilesBytes)
 
 	return nil
 }

@@ -28,7 +28,7 @@ type Querier interface {
 	TeamValuesGet(ctx context.Context, arg TeamValuesGetParams) ([]ChartTeamValue, error)
 	TeamsForAppGet(ctx context.Context, chartType ChartType) ([]string, error)
 	TeamsForUserGet(ctx context.Context, email string) ([]TeamsForUserGetRow, error)
-	TeamsGet(ctx context.Context) ([]TeamsGetRow, error)
+	TeamsGet(ctx context.Context) ([]Team, error)
 }
 
 var _ Querier = (*Queries)(nil)

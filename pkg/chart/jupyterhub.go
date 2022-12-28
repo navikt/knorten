@@ -129,14 +129,17 @@ func (j JupyterhubClient) UpdateTeamValuesAndInstallOrUpdate(ctx context.Context
 		return err
 	}
 
-	application := helmApps.NewJupyterhub(form.TeamID, j.repo, j.cryptClient)
+	j.Sync(ctx, form.TeamID)
+	return nil
+}
+
+func (j JupyterhubClient) Sync(ctx context.Context, teamID string) {
+	application := helmApps.NewJupyterhub(teamID, j.repo, j.cryptClient)
 
 	// Release name must be unique across namespaces as the helm chart creates a clusterrole
 	// for each jupyterhub with the same name as the release name.
-	releaseName := JupyterReleaseName(k8s.NameToNamespace(form.TeamID))
-	go j.helmClient.InstallOrUpgrade(ctx, releaseName, form.TeamID, application)
-
-	return nil
+	releaseName := JupyterReleaseName(k8s.NameToNamespace(teamID))
+	go j.helmClient.InstallOrUpgrade(ctx, releaseName, teamID, application)
 }
 
 func (j JupyterhubClient) Delete(c context.Context, teamSlug string) error {

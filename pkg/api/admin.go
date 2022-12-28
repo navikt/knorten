@@ -3,11 +3,17 @@ package api
 import (
 	"encoding/gob"
 	"fmt"
+	"github.com/nais/knorten/pkg/database/gensql"
 	"net/http"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
+
+type teamInfo struct {
+	gensql.Team
+	Apps []string
+}
 
 func (a *API) setupAdminRoutes() {
 	a.router.GET("/admin", func(c *gin.Context) {
@@ -16,6 +22,7 @@ func (a *API) setupAdminRoutes() {
 		err := session.Save()
 		if err != nil {
 			a.log.WithError(err).Error("problem saving session")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err})
 			return
 		}
 
@@ -26,7 +33,7 @@ func (a *API) setupAdminRoutes() {
 			err = session.Save()
 			if err != nil {
 				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, "/admin")
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err})
 				return
 			}
 
@@ -34,20 +41,23 @@ func (a *API) setupAdminRoutes() {
 			return
 		}
 
-		teamApps := map[string][]string{}
+		teamApps := map[string]teamInfo{}
 		for _, team := range teams {
 			apps, err := a.repo.AppsForTeamGet(c, team.ID)
 			if err != nil {
-				// TODO
-				a.log.WithError(err)
+				a.log.WithError(err).Error("problem retrieving apps for teams")
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err})
+				return
 			}
-			teamApps[team.ID] = apps
+			teamApps[team.ID] = teamInfo{
+				Team: team,
+				Apps: apps,
+			}
 		}
 
 		c.HTML(http.StatusOK, "admin/index", gin.H{
 			"errors": flashes,
-			"teams":  teams,
-			"apps":   teamApps,
+			"teams":  teamApps,
 		})
 	})
 
@@ -74,6 +84,7 @@ func (a *API) setupAdminRoutes() {
 		err = session.Save()
 		if err != nil {
 			a.log.WithError(err).Error("problem saving session")
+			c.Redirect(http.StatusSeeOther, "/admin")
 			return
 		}
 
@@ -190,6 +201,19 @@ func (a *API) setupAdminRoutes() {
 			}
 			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v/confirm", chartType))
 			return
+		}
+
+		c.Redirect(http.StatusSeeOther, "/admin")
+	})
+
+	a.router.POST("/admin/:chart/sync", func(c *gin.Context) {
+		chartType := getChartType(c.Param("chart"))
+		team := c.PostForm("team")
+		switch chartType {
+		case gensql.ChartTypeJupyterhub:
+			a.chartClient.Jupyterhub.Sync(c, team)
+		case gensql.ChartTypeAirflow:
+			a.chartClient.Airflow.Sync(c, team)
 		}
 
 		c.Redirect(http.StatusSeeOther, "/admin")

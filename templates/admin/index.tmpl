@@ -13,14 +13,13 @@
             <h3>{{ len .teams }} team bruker Knada </h3>
             {{ range .teams }}
                 <h4>{{ .ID }}</h4>
-                {{ range index $.apps .ID }}
-                    {{ if eq . "airflow" }}
-                        <img src="/assets/img/airflow.png" width="51px" alt="Airflow logo">
-                    {{ else if eq . "jupyterhub" }}
-                        <img src="/assets/img/jupyter.svg" alt="Jupyter logo">
+                {{ template "admin/row" . }}
+                <strong>Brukere</strong>
+                <ul>
+                    {{ range .Users }}
+                        <li>{{ . }}</li>
                     {{ end }}
-                {{ end }}
-                <p>{{ .Users }}</p>
+                </ul>
             {{ end }}
         </div>
     </div>

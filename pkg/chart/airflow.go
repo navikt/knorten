@@ -126,9 +126,7 @@ func (a AirflowClient) Create(ctx *gin.Context, slug string) error {
 		return err
 	}
 
-	application := helmApps.NewAirflow(team.ID, a.repo, a.cryptClient)
-
-	go a.helmClient.InstallOrUpgrade(ctx, string(gensql.ChartTypeAirflow), team.ID, application)
+	a.Sync(ctx, team.ID)
 
 	return nil
 }
@@ -156,11 +154,15 @@ func (a AirflowClient) Update(ctx context.Context, form AirflowForm) error {
 		return err
 	}
 
-	application := helmApps.NewAirflow(team.ID, a.repo, a.cryptClient)
-
-	go a.helmClient.InstallOrUpgrade(ctx, string(gensql.ChartTypeAirflow), team.ID, application)
+	a.Sync(ctx, team.ID)
 
 	return nil
+}
+
+func (a AirflowClient) Sync(ctx context.Context, teamID string) {
+	application := helmApps.NewAirflow(teamID, a.repo, a.cryptClient)
+
+	go a.helmClient.InstallOrUpgrade(ctx, string(gensql.ChartTypeAirflow), teamID, application)
 }
 
 func (a AirflowClient) Delete(ctx context.Context, teamSlug string) error {

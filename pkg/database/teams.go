@@ -28,7 +28,7 @@ func (r *Repo) TeamDelete(ctx context.Context, team string) error {
 	return r.querier.TeamDelete(ctx, team)
 }
 
-func (r *Repo) TeamsGet(ctx context.Context) ([]gensql.TeamsGetRow, error) {
+func (r *Repo) TeamsGet(ctx context.Context) ([]gensql.Team, error) {
 	return r.querier.TeamsGet(ctx)
 }
 

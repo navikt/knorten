@@ -23,7 +23,7 @@ FROM teams
 WHERE id = @id;
 
 -- name: TeamsGet :many
-select id, users, slug
+select *
 from teams
 ORDER BY slug;
 

@@ -158,27 +158,28 @@ func (q *Queries) TeamsForUserGet(ctx context.Context, email string) ([]TeamsFor
 }
 
 const teamsGet = `-- name: TeamsGet :many
-select id, users, slug
+select id, slug, users, created, pending_jupyter_upgrade, pending_airflow_upgrade
 from teams
 ORDER BY slug
 `
 
-type TeamsGetRow struct {
-	ID    string
-	Users []string
-	Slug  string
-}
-
-func (q *Queries) TeamsGet(ctx context.Context) ([]TeamsGetRow, error) {
+func (q *Queries) TeamsGet(ctx context.Context) ([]Team, error) {
 	rows, err := q.db.QueryContext(ctx, teamsGet)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []TeamsGetRow{}
+	items := []Team{}
 	for rows.Next() {
-		var i TeamsGetRow
-		if err := rows.Scan(&i.ID, pq.Array(&i.Users), &i.Slug); err != nil {
+		var i Team
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			pq.Array(&i.Users),
+			&i.Created,
+			&i.PendingJupyterUpgrade,
+			&i.PendingAirflowUpgrade,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

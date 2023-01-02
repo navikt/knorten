@@ -44,6 +44,7 @@ type JupyterConfigurableValues struct {
 	MemoryGuarantee string `form:"memory" helm:"singleuser.memory.guarantee"`
 	ImageName       string `form:"imagename" helm:"singleuser.image.name"`
 	ImageTag        string `form:"imagetag" helm:"singleuser.image.tag"`
+	CullTimeout     string `form:"culltimeout" helm:"cull.timeout"`
 }
 
 type JupyterValues struct {

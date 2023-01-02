@@ -41,6 +41,11 @@
                         <input type="string" name="imagetag" id="imagetag" value="{{ .values.ImageTag }}" 
                                placeholder="Spesifiser image tag, velger default hvis utelatt"/>
                     </div>
+                    <div class="pure-control-group">
+                        <label for="culltimeout">Cull Timeout</label>
+                        <input type="string" name="culltimeout" id="culltimeout" value="{{ .values.CullTimeout }}" 
+                               placeholder="3600"/>
+                    </div>
                     <div class="pure-controls">
                         <button id="submit" type="submit" class="pure-button pure-button-primary">Lagre</button>
                     </div>

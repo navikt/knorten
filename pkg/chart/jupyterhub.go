@@ -10,7 +10,6 @@ import (
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/helm"
 	helmApps "github.com/nais/knorten/pkg/helm/applications"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/reflect"
@@ -19,7 +18,6 @@ import (
 
 type JupyterhubClient struct {
 	repo        *database.Repo
-	helmClient  *helm.Client
 	k8sClient   *k8s.Client
 	cryptClient *crypto.EncrypterDecrypter
 	log         *logrus.Entry
@@ -62,10 +60,9 @@ type JupyterValues struct {
 	ProfileList      string   `helm:"singleuser.profileList"`
 }
 
-func NewJupyterhubClient(repo *database.Repo, helmClient *helm.Client, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, log *logrus.Entry) JupyterhubClient {
+func NewJupyterhubClient(repo *database.Repo, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, log *logrus.Entry) JupyterhubClient {
 	return JupyterhubClient{
 		repo:        repo,
-		helmClient:  helmClient,
 		k8sClient:   k8sClient,
 		cryptClient: cryptClient,
 		log:         log,
@@ -166,7 +163,7 @@ func (j JupyterhubClient) Delete(c context.Context, teamSlug string) error {
 	namespace := k8s.NameToNamespace(team.ID)
 	releaseName := JupyterReleaseName(namespace)
 
-	return j.k8sClient.CreateHelmUninstallJob(c, team.ID, string(gensql.ChartTypeJupyterhub), releaseName)
+	return j.k8sClient.CreateHelmUninstallJob(c, team.ID, releaseName)
 }
 
 func (j JupyterhubClient) addCustomImage(form *JupyterForm) error {

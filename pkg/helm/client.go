@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -39,7 +37,7 @@ const (
 )
 
 func New(log *logrus.Entry) (*Client, error) {
-	if err := initRepositories(); err != nil {
+	if err := UpdateHelmRepositories(); err != nil {
 		return nil, err
 	}
 	return &Client{
@@ -143,39 +141,6 @@ func (c *Client) Uninstall(releaseName, namespace string) error {
 	_, err = uninstallClient.Run(releaseName)
 	if err != nil {
 		c.log.WithError(err).Errorf("error while uninstalling release %v", releaseName)
-		return err
-	}
-
-	return nil
-}
-
-func initRepositories() error {
-	// TODO: Dette burde være config, de har støtte for å laste denne fra fil
-	charts := []Chart{
-		{
-			URL:  "https://jupyterhub.github.io/helm-chart",
-			Name: "jupyterhub",
-		},
-		{
-			URL:  "https://airflow.apache.org",
-			Name: "apache-airflow",
-		},
-	}
-
-	settings := cli.New()
-	repoFile := settings.RepositoryConfig
-
-	err := os.MkdirAll(filepath.Dir(repoFile), os.ModePerm)
-	if err != nil && !os.IsExist(err) {
-		return err
-	}
-
-	for _, c := range charts {
-		if err := addHelmRepository(c.URL, c.Name, repoFile, settings); err != nil {
-			return err
-		}
-	}
-	if err := updateHelmRepositories(repoFile, settings); err != nil {
 		return err
 	}
 

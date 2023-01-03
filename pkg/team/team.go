@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"github.com/nais/knorten/pkg/helm"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -23,17 +22,15 @@ import (
 type Client struct {
 	repo         *database.Repo
 	googleClient *google.Google
-	helmClient   *helm.Client
 	k8sClient    *k8s.Client
 	chartClient  *chart.Client
 	log          *logrus.Entry
 }
 
-func NewClient(repo *database.Repo, googleClient *google.Google, helmClient *helm.Client, k8sClient *k8s.Client, chartClient *chart.Client, log *logrus.Entry) *Client {
+func NewClient(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, chartClient *chart.Client, log *logrus.Entry) *Client {
 	return &Client{
 		repo:         repo,
 		googleClient: googleClient,
-		helmClient:   helmClient,
 		k8sClient:    k8sClient,
 		chartClient:  chartClient,
 		log:          log,
@@ -183,7 +180,10 @@ func (c Client) deleteExternalResources(ctx context.Context, team gensql.TeamGet
 
 	if slices.Contains(apps, string(gensql.ChartTypeJupyterhub)) {
 		releaseName := chart.JupyterReleaseName(namespace)
-		c.helmClient.Uninstall(releaseName, namespace)
+		if err := c.k8sClient.CreateHelmUninstallJob(ctx, team.ID, releaseName); err != nil {
+			c.log.WithError(err).Error("create helm uninstall job")
+			return
+		}
 	}
 
 	if slices.Contains(apps, string(gensql.ChartTypeAirflow)) {

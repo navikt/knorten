@@ -20,10 +20,13 @@ const (
 	InstallOrUpgrade HelmAction = "install-or-upgrade"
 	Uninstall        HelmAction = "uninstall"
 
-	namespace               = "knada-system"
-	saName                  = "knorten"
-	ttlSecondsAfterFinished = 60
-	backoffLimit            = 1
+	namespace                = "knada-system"
+	saName                   = "knorten"
+	ttlSecondsAfterFinished  = 60
+	backoffLimit             = 1
+	helmRepoConfigMap        = "helm-repos"
+	helmRepoConfigMapSubPath = "repositories.yaml"
+	helmRepoConfigMountPath  = "/root/.config/helm/repositories.yaml"
 )
 
 func CreateJobPrefix(teamID, chartType, action string) string {
@@ -85,10 +88,29 @@ func (c *Client) CreateHelmUpgradeJob(ctx context.Context, teamID, releaseName s
 									Value: encValues,
 								},
 							},
+							VolumeMounts: []v1.VolumeMount{
+								{
+									Name:      "helm-repos-config",
+									MountPath: helmRepoConfigMountPath,
+									SubPath:   helmRepoConfigMapSubPath,
+								},
+							},
 						},
 					},
 					RestartPolicy:      v1.RestartPolicyNever,
 					ServiceAccountName: saName,
+					Volumes: []v1.Volume{
+						{
+							Name: "helm-repos-config",
+							VolumeSource: v1.VolumeSource{
+								ConfigMap: &v1.ConfigMapVolumeSource{
+									LocalObjectReference: v1.LocalObjectReference{
+										Name: helmRepoConfigMap,
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			TTLSecondsAfterFinished: intToInt32Ptr(ttlSecondsAfterFinished),
@@ -108,7 +130,7 @@ func (c *Client) CreateHelmUpgradeJob(ctx context.Context, teamID, releaseName s
 	return nil
 }
 
-func (c *Client) CreateHelmUninstallJob(ctx context.Context, teamID, chartType, releaseName string) error {
+func (c *Client) CreateHelmUninstallJob(ctx context.Context, teamID, releaseName string) error {
 	if c.dryRun {
 		c.log.Infof("NOOP: Running in dry run mode")
 		return nil
@@ -116,7 +138,7 @@ func (c *Client) CreateHelmUninstallJob(ctx context.Context, teamID, chartType, 
 
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: CreateJobPrefix(teamID, chartType, string(Uninstall)),
+			GenerateName: CreateJobPrefix(teamID, helm.ReleaseNameToChartType(releaseName), string(Uninstall)),
 			Namespace:    namespace,
 		},
 		Spec: batchv1.JobSpec{
@@ -132,10 +154,29 @@ func (c *Client) CreateHelmUninstallJob(ctx context.Context, teamID, chartType, 
 								fmt.Sprintf("--releasename=%v", releaseName),
 								fmt.Sprintf("--team=%v", teamID),
 							},
+							VolumeMounts: []v1.VolumeMount{
+								{
+									Name:      "helm-repos-config",
+									MountPath: helmRepoConfigMountPath,
+									SubPath:   helmRepoConfigMapSubPath,
+								},
+							},
 						},
 					},
 					RestartPolicy:      v1.RestartPolicyNever,
 					ServiceAccountName: saName,
+					Volumes: []v1.Volume{
+						{
+							Name: "helm-repos-config",
+							VolumeSource: v1.VolumeSource{
+								ConfigMap: &v1.ConfigMapVolumeSource{
+									LocalObjectReference: v1.LocalObjectReference{
+										Name: helmRepoConfigMap,
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			TTLSecondsAfterFinished: intToInt32Ptr(ttlSecondsAfterFinished),

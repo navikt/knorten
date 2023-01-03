@@ -61,7 +61,7 @@ func main() {
 		return
 	}
 
-	kApi, err := api.New(repo, azureClient, nil, googleClient, k8sClient, cryptClient, log.WithField("subsystem", "api"))
+	kApi, err := api.New(repo, azureClient, googleClient, k8sClient, cryptClient, log.WithField("subsystem", "api"))
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return

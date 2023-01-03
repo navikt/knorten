@@ -2,6 +2,9 @@ package helm
 
 import (
 	"fmt"
+	"io/fs"
+	"os"
+
 	"gopkg.in/yaml.v2"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -10,8 +13,6 @@ import (
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/repo"
-	"io/fs"
-	"os"
 )
 
 func FetchChart(repo, chartName, version string) (*chart.Chart, error) {
@@ -78,7 +79,10 @@ func addHelmRepository(url, chartName, repoFile string, settings *cli.EnvSetting
 	return nil
 }
 
-func updateHelmRepositories(repoFile string, settings *cli.EnvSettings) error {
+func UpdateHelmRepositories() error {
+	settings := cli.New()
+	repoFile := settings.RepositoryConfig
+
 	f, err := repo.LoadFile(repoFile)
 	if err != nil {
 		return err

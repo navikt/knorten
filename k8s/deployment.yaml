@@ -33,6 +33,10 @@ spec:
         envFrom:
         - secretRef:
             name: knorten
+        volumeMounts:
+          - name: helm-repos-config
+            mountPath: /root/.config/helm/repositories.yaml
+            subPath: repositories.yaml
       - name: cloudsql-proxy
         command:
         - /cloud_sql_proxy
@@ -54,3 +58,7 @@ spec:
           runAsUser: 2
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
+      volumes:
+        - name: helm-repos-config
+          configMap:
+            name: helm-repos

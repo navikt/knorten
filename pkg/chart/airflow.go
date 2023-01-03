@@ -17,7 +17,6 @@ import (
 	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/google"
-	"github.com/nais/knorten/pkg/helm"
 	helmApps "github.com/nais/knorten/pkg/helm/applications"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/reflect"
@@ -34,7 +33,6 @@ type AirflowClient struct {
 	repo         *database.Repo
 	googleClient *google.Google
 	k8sClient    *k8s.Client
-	helmClient   *helm.Client
 	cryptClient  *crypto.EncrypterDecrypter
 	log          *logrus.Entry
 }
@@ -77,12 +75,11 @@ var AirflowValidateDagRepo validator.Func = func(fl validator.FieldLevel) bool {
 	return strings.HasPrefix(repo, "navikt/")
 }
 
-func NewAirflowClient(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, helmClient *helm.Client, cryptClient *crypto.EncrypterDecrypter, log *logrus.Entry) AirflowClient {
+func NewAirflowClient(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, log *logrus.Entry) AirflowClient {
 	return AirflowClient{
 		repo:         repo,
 		googleClient: googleClient,
 		k8sClient:    k8sClient,
-		helmClient:   helmClient,
 		cryptClient:  cryptClient,
 		log:          log.WithField("chart", "airflow"),
 	}
@@ -182,11 +179,9 @@ func (a AirflowClient) Delete(ctx context.Context, teamSlug string) error {
 		return err
 	}
 
-	go a.helmClient.Uninstall(string(gensql.ChartTypeAirflow), k8s.NameToNamespace(team.ID))
-
 	go a.deleteDB(ctx, team.ID)
 
-	return nil
+	return a.k8sClient.CreateHelmUninstallJob(ctx, team.ID, string(gensql.ChartTypeAirflow))
 }
 
 func (a AirflowClient) addAirflowTeamValues(ctx context.Context, form AirflowForm) error {

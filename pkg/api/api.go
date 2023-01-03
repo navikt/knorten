@@ -12,7 +12,6 @@ import (
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/google"
-	"github.com/nais/knorten/pkg/helm"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/sirupsen/logrus"
 )
@@ -20,7 +19,6 @@ import (
 type API struct {
 	azureClient  *auth.Azure
 	router       *gin.Engine
-	helmClient   *helm.Client
 	repo         *database.Repo
 	log          *logrus.Entry
 	googleClient *google.Google
@@ -31,11 +29,15 @@ type API struct {
 	teamClient   *team.Client
 }
 
-func New(repo *database.Repo, azureClient *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, log *logrus.Entry) (*API, error) {
+func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, log *logrus.Entry) (*API, error) {
 	adminClient := admin.New(repo, k8sClient, cryptClient)
+	chartClient, err := chart.New(repo, googleClient, k8sClient, cryptClient, log)
+	if err != nil {
+		return nil, err
+	}
+
 	api := API{
 		azureClient:  azureClient,
-		helmClient:   helmClient,
 		router:       gin.Default(),
 		repo:         repo,
 		googleClient: googleClient,
@@ -43,13 +45,10 @@ func New(repo *database.Repo, azureClient *auth.Azure, helmClient *helm.Client, 
 		adminClient:  adminClient,
 		cryptClient:  cryptClient,
 		log:          log,
-		chartClient: &chart.Client{
-			Airflow:    chart.NewAirflowClient(repo, googleClient, k8sClient, helmClient, cryptClient, log),
-			Jupyterhub: chart.NewJupyterhubClient(repo, helmClient, k8sClient, cryptClient, log),
-		},
+		chartClient:  chartClient,
 	}
 
-	api.teamClient = team.NewClient(repo, googleClient, helmClient, k8sClient, api.chartClient, log)
+	api.teamClient = team.NewClient(repo, googleClient, k8sClient, api.chartClient, log)
 
 	session, err := repo.NewSessionStore()
 	if err != nil {

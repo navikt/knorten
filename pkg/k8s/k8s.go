@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/nais/knorten/pkg/database"
+	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/sirupsen/logrus"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -32,20 +34,26 @@ func NameToNamespace(name string) string {
 }
 
 type Client struct {
-	clientSet  *kubernetes.Clientset
-	dryRun     bool
-	inCluster  bool
-	gcpProject string
-	gcpRegion  string
-	log        *logrus.Entry
+	clientSet   *kubernetes.Clientset
+	dryRun      bool
+	inCluster   bool
+	gcpProject  string
+	gcpRegion   string
+	knelmImage  string
+	repo        *database.Repo
+	cryptClient *crypto.EncrypterDecrypter
+	log         *logrus.Entry
 }
 
-func New(log *logrus.Entry, dryRun, inCluster bool, gcpProject, gcpRegion string) (*Client, error) {
+func New(log *logrus.Entry, cryptClient *crypto.EncrypterDecrypter, repo *database.Repo, dryRun, inCluster bool, gcpProject, gcpRegion, knelmImage string) (*Client, error) {
 	client := &Client{
-		dryRun:     dryRun,
-		gcpProject: gcpProject,
-		gcpRegion:  gcpRegion,
-		log:        log,
+		dryRun:      dryRun,
+		gcpProject:  gcpProject,
+		gcpRegion:   gcpRegion,
+		knelmImage:  knelmImage,
+		log:         log,
+		cryptClient: cryptClient,
+		repo:        repo,
 	}
 
 	config, err := createConfig(inCluster)

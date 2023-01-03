@@ -20,6 +20,7 @@ import (
 type JupyterhubClient struct {
 	repo        *database.Repo
 	helmClient  *helm.Client
+	k8sClient   *k8s.Client
 	cryptClient *crypto.EncrypterDecrypter
 	log         *logrus.Entry
 }
@@ -61,10 +62,11 @@ type JupyterValues struct {
 	ProfileList      string   `helm:"singleuser.profileList"`
 }
 
-func NewJupyterhubClient(repo *database.Repo, helmClient *helm.Client, cryptClient *crypto.EncrypterDecrypter, log *logrus.Entry) JupyterhubClient {
+func NewJupyterhubClient(repo *database.Repo, helmClient *helm.Client, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, log *logrus.Entry) JupyterhubClient {
 	return JupyterhubClient{
 		repo:        repo,
 		helmClient:  helmClient,
+		k8sClient:   k8sClient,
 		cryptClient: cryptClient,
 		log:         log,
 	}
@@ -131,17 +133,20 @@ func (j JupyterhubClient) UpdateTeamValuesAndInstallOrUpdate(ctx context.Context
 		return err
 	}
 
-	j.Sync(ctx, form.TeamID)
-	return nil
+	return j.Sync(ctx, form.TeamID)
 }
 
-func (j JupyterhubClient) Sync(ctx context.Context, teamID string) {
+func (j JupyterhubClient) Sync(ctx context.Context, teamID string) error {
 	application := helmApps.NewJupyterhub(teamID, j.repo, j.cryptClient)
+	charty, err := application.Chart(ctx)
+	if err != nil {
+		return err
+	}
 
 	// Release name must be unique across namespaces as the helm chart creates a clusterrole
 	// for each jupyterhub with the same name as the release name.
 	releaseName := JupyterReleaseName(k8s.NameToNamespace(teamID))
-	go j.helmClient.InstallOrUpgrade(ctx, releaseName, teamID, application)
+	return j.k8sClient.CreateHelmUpgradeJob(ctx, teamID, releaseName, charty.Values)
 }
 
 func (j JupyterhubClient) Delete(c context.Context, teamSlug string) error {
@@ -160,9 +165,8 @@ func (j JupyterhubClient) Delete(c context.Context, teamSlug string) error {
 
 	namespace := k8s.NameToNamespace(team.ID)
 	releaseName := JupyterReleaseName(namespace)
-	go j.helmClient.Uninstall(releaseName, namespace)
 
-	return nil
+	return j.k8sClient.CreateHelmUninstallJob(c, team.ID, string(gensql.ChartTypeJupyterhub), releaseName)
 }
 
 func (j JupyterhubClient) addCustomImage(form *JupyterForm) error {

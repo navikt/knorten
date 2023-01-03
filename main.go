@@ -10,7 +10,6 @@ import (
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/google"
-	"github.com/nais/knorten/pkg/helm"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/sirupsen/logrus"
 )
@@ -24,6 +23,7 @@ type Config struct {
 	InCluster    bool
 	GCPProject   string
 	GCPRegion    string
+	KnelmImage   string
 }
 
 func main() {
@@ -40,6 +40,7 @@ func main() {
 	flag.BoolVar(&cfg.InCluster, "in-cluster", true, "In cluster configuration for go client")
 	flag.StringVar(&cfg.GCPProject, "project", os.Getenv("GCP_PROJECT"), "GCP project")
 	flag.StringVar(&cfg.GCPRegion, "region", os.Getenv("GCP_REGION"), "GCP region")
+	flag.StringVar(&cfg.KnelmImage, "knelm-image", os.Getenv("KNELM_IMAGE"), "Knelm image")
 	flag.Parse()
 
 	repo, err := database.New(fmt.Sprintf("%v?sslmode=disable", cfg.DBConnString), log.WithField("subsystem", "repo"))
@@ -52,21 +53,15 @@ func main() {
 
 	googleClient := google.New(log.WithField("subsystem", "google"), cfg.GCPProject, cfg.GCPRegion, cfg.DryRun)
 
-	helmClient, err := helm.New(repo, log.WithField("subsystem", "helm"), cfg.DryRun, cfg.InCluster)
-	if err != nil {
-		log.WithError(err).Fatal("setting up helm client")
-		return
-	}
+	cryptClient := crypto.New(cfg.DBEncKey)
 
-	k8sClient, err := k8s.New(log.WithField("subsystem", "k8sClient"), cfg.DryRun, cfg.InCluster, cfg.GCPProject, cfg.GCPRegion)
+	k8sClient, err := k8s.New(log.WithField("subsystem", "k8sClient"), cryptClient, repo, cfg.DryRun, cfg.InCluster, cfg.GCPProject, cfg.GCPRegion, cfg.KnelmImage)
 	if err != nil {
 		log.WithError(err).Fatal("creating k8s client")
 		return
 	}
 
-	cryptClient := crypto.New(cfg.DBEncKey)
-
-	kApi, err := api.New(repo, azureClient, helmClient, googleClient, k8sClient, cryptClient, log.WithField("subsystem", "api"))
+	kApi, err := api.New(repo, azureClient, nil, googleClient, k8sClient, cryptClient, log.WithField("subsystem", "api"))
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return

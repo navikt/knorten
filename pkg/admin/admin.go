@@ -3,21 +3,21 @@ package admin
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"strings"
+
 	"github.com/nais/knorten/pkg/chart"
 	helmApps "github.com/nais/knorten/pkg/helm/applications"
 	"github.com/nais/knorten/pkg/k8s"
-	"net/url"
-	"strings"
 
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/helm"
 )
 
 type Client struct {
 	repo        *database.Repo
-	helmClient  *helm.Client
+	k8sClient   *k8s.Client
 	cryptClient *crypto.EncrypterDecrypter
 }
 
@@ -27,10 +27,10 @@ type diffValue struct {
 	Encrypted string
 }
 
-func New(repo *database.Repo, helmClient *helm.Client, cryptClient *crypto.EncrypterDecrypter) *Client {
+func New(repo *database.Repo, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter) *Client {
 	return &Client{
 		repo:        repo,
-		helmClient:  helmClient,
+		k8sClient:   k8sClient,
 		cryptClient: cryptClient,
 	}
 }
@@ -79,15 +79,27 @@ func (a *Client) updateHelmReleases(ctx context.Context, chartType gensql.ChartT
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
 			application := helmApps.NewJupyterhub(team, a.repo, a.cryptClient)
+			charty, err := application.Chart(ctx)
+			if err != nil {
+				return err
+			}
 
 			// Release name must be unique across namespaces as the helm chart creates a clusterrole
 			// for each jupyterhub with the same name as the release name.
 			releaseName := chart.JupyterReleaseName(k8s.NameToNamespace(team))
-			go a.helmClient.InstallOrUpgrade(ctx, releaseName, team, application)
+			if err := a.k8sClient.CreateHelmUpgradeJob(ctx, team, releaseName, charty.Values); err != nil {
+				return err
+			}
 		case gensql.ChartTypeAirflow:
 			application := helmApps.NewAirflow(team, a.repo, a.cryptClient)
+			charty, err := application.Chart(ctx)
+			if err != nil {
+				return err
+			}
 
-			go a.helmClient.InstallOrUpgrade(ctx, string(gensql.ChartTypeAirflow), team, application)
+			if err := a.k8sClient.CreateHelmUpgradeJob(ctx, team, string(gensql.ChartTypeAirflow), charty.Values); err != nil {
+				return err
+			}
 		default:
 			return fmt.Errorf("invalid chart type %v", chartType)
 		}

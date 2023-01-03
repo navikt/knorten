@@ -9,13 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/yaml.v2"
-
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/release"
 
-	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/k8s"
+	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/sirupsen/logrus"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
@@ -28,7 +25,6 @@ type Application interface {
 }
 
 type Client struct {
-	repo   *database.Repo
 	log    *logrus.Entry
 	dryRun bool
 }
@@ -42,64 +38,29 @@ const (
 	helmTimeout = 30 * time.Minute
 )
 
-func New(repo *database.Repo, log *logrus.Entry, dryRun, inCluster bool) (*Client, error) {
-	if inCluster {
-		if err := initRepositories(); err != nil {
-			return nil, err
-		}
+func New(log *logrus.Entry) (*Client, error) {
+	if err := initRepositories(); err != nil {
+		return nil, err
 	}
 	return &Client{
-		repo:   repo,
-		log:    log,
-		dryRun: dryRun,
+		log: log,
 	}, nil
 }
 
-func (c *Client) InstallOrUpgrade(ctx context.Context, releaseName, teamID string, app Application) {
-	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
-		charty, err := app.Chart(context.Background())
-		if err != nil {
-			c.log.WithError(err).Errorf("error while generating chart for %v", releaseName)
-			return
-		}
-
-		out, err := yaml.Marshal(charty.Values)
-		if err != nil {
-			c.log.WithError(err).Errorf("error while marshaling chart for %v", releaseName)
-			return
-		}
-
-		err = os.WriteFile(fmt.Sprintf("%v.yaml", releaseName), out, 0o644)
-		if err != nil {
-			c.log.WithError(err).Errorf("error while writing to file %v.yaml", releaseName)
-			return
-		}
-		return
-	}
-
-	namespace := k8s.NameToNamespace(teamID)
-
-	if err := c.repo.TeamSetPendingUpgrade(ctx, teamID, releaseNameToChartType(releaseName), true); err != nil {
-		c.log.WithError(err).Errorf("install or upgrading release %v, error setting pending upgrade lock", releaseName)
-		return
-	}
-	defer c.clearPendingUpgrade(ctx, teamID, releaseName)
-
+func (c *Client) InstallOrUpgrade(ctx context.Context, releaseName, namespace string, values map[string]any) error {
 	settings := cli.New()
 	settings.SetNamespace(namespace)
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "secret", log.Printf); err != nil {
 		c.log.WithError(err).Errorf("error while init actionConfig for %v", releaseName)
-		return
+		return err
 	}
 
 	listClient := action.NewList(actionConfig)
-	listClient.Deployed = true
 	results, err := listClient.Run()
 	if err != nil {
 		c.log.WithError(err).Errorf("error while listing helm releases %v", releaseName)
-		return
+		return err
 	}
 
 	exists := false
@@ -109,11 +70,23 @@ func (c *Client) InstallOrUpgrade(ctx context.Context, releaseName, teamID strin
 		}
 	}
 
-	charty, err := app.Chart(context.Background())
-	if err != nil {
-		c.log.WithError(err).Errorf("error generating chart for %v", releaseName)
-		return
+	var charty *chart.Chart
+	switch ReleaseNameToChartType(releaseName) {
+	case string(gensql.ChartTypeJupyterhub):
+		// todo: få dette inn som felles config for både knorten og jobben
+		charty, err = FetchChart("jupyterhub", "jupyterhub", "2.0.0")
+	case string(gensql.ChartTypeAirflow):
+		// todo: få dette inn som felles config for både knorten og jobben
+		charty, err = FetchChart("apache-airflow", "airflow", "1.7.0")
+	default:
+		return fmt.Errorf("chart type for release %v is not supported", releaseName)
 	}
+	if err != nil {
+		c.log.WithError(err).Errorf("error fetching chart for %v", releaseName)
+		return err
+	}
+
+	charty.Values = values
 
 	if !exists {
 		c.log.Infof("Installing release %v", releaseName)
@@ -125,7 +98,7 @@ func (c *Client) InstallOrUpgrade(ctx context.Context, releaseName, teamID strin
 		_, err = installClient.Run(charty, charty.Values)
 		if err != nil {
 			c.log.WithError(err).Errorf("error while installing release %v", releaseName)
-			return
+			return err
 		}
 	} else {
 		c.log.Infof("Upgrading existing release %v", releaseName)
@@ -137,23 +110,20 @@ func (c *Client) InstallOrUpgrade(ctx context.Context, releaseName, teamID strin
 		_, err = upgradeClient.Run(releaseName, charty, charty.Values)
 		if err != nil {
 			c.log.WithError(err).Errorf("error while upgrading release %v", releaseName)
-			return
+			return err
 		}
 	}
+
+	return nil
 }
 
-func (c *Client) Uninstall(releaseName, namespace string) {
-	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
-		return
-	}
-
+func (c *Client) Uninstall(releaseName, namespace string) error {
 	settings := cli.New()
 	settings.SetNamespace(namespace)
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "secret", log.Printf); err != nil {
 		c.log.WithError(err).Errorf("error while init actionConfig for %v", releaseName)
-		return
+		return err
 	}
 
 	listClient := action.NewList(actionConfig)
@@ -161,26 +131,22 @@ func (c *Client) Uninstall(releaseName, namespace string) {
 	results, err := listClient.Run()
 	if err != nil {
 		c.log.WithError(err).Errorf("error while listing helm releases %v", releaseName)
-		return
+		return err
 	}
 
 	if !releaseExists(results, releaseName) {
 		c.log.Infof("release %v does not exist", releaseName)
-		return
+		return err
 	}
 
 	uninstallClient := action.NewUninstall(actionConfig)
 	_, err = uninstallClient.Run(releaseName)
 	if err != nil {
 		c.log.WithError(err).Errorf("error while uninstalling release %v", releaseName)
-		return
+		return err
 	}
-}
 
-func (c *Client) clearPendingUpgrade(ctx context.Context, teamID, releaseName string) {
-	if err := c.repo.TeamSetPendingUpgrade(ctx, teamID, releaseNameToChartType(releaseName), false); err != nil {
-		c.log.WithError(err).Errorf("install or upgrading release %v, error clearing pending upgrade lock", releaseName)
-	}
+	return nil
 }
 
 func initRepositories() error {
@@ -226,6 +192,6 @@ func releaseExists(releases []*release.Release, releaseName string) bool {
 	return false
 }
 
-func releaseNameToChartType(releaseName string) string {
+func ReleaseNameToChartType(releaseName string) string {
 	return strings.Split(releaseName, "-")[0]
 }

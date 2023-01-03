@@ -1,6 +1,7 @@
 *
 !main.go
 !pkg
+!knelm
 !assets
 !templates
 !go.mod

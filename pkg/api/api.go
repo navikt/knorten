@@ -1,9 +1,10 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/team"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nais/knorten/pkg/admin"
@@ -31,7 +32,7 @@ type API struct {
 }
 
 func New(repo *database.Repo, azureClient *auth.Azure, helmClient *helm.Client, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, log *logrus.Entry) (*API, error) {
-	adminClient := admin.New(repo, helmClient, cryptClient)
+	adminClient := admin.New(repo, k8sClient, cryptClient)
 	api := API{
 		azureClient:  azureClient,
 		helmClient:   helmClient,
@@ -44,7 +45,7 @@ func New(repo *database.Repo, azureClient *auth.Azure, helmClient *helm.Client, 
 		log:          log,
 		chartClient: &chart.Client{
 			Airflow:    chart.NewAirflowClient(repo, googleClient, k8sClient, helmClient, cryptClient, log),
-			Jupyterhub: chart.NewJupyterhubClient(repo, helmClient, cryptClient, log),
+			Jupyterhub: chart.NewJupyterhubClient(repo, helmClient, k8sClient, cryptClient, log),
 		},
 	}
 
@@ -79,6 +80,18 @@ func (a *API) setupUnauthenticatedRoutes() {
 		c.HTML(http.StatusOK, "index", gin.H{
 			"current": "home",
 		})
+	})
+
+	a.router.POST("/status/:team/:chart", func(c *gin.Context) {
+		teamID := c.Param("team")
+		chartType := c.Param("chart")
+
+		a.log.Infof("clearing flag for %v, chart %v", teamID, chartType)
+		if err := a.repo.TeamSetPendingUpgrade(c, teamID, chartType, false); err != nil {
+			a.log.WithError(err).Error("clearing pending upgrade flag in database")
+		}
+
+		c.JSON(http.StatusOK, map[string]any{"status": "ok"})
 	})
 
 	a.setupAuthRoutes()

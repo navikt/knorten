@@ -154,15 +154,17 @@ func (a AirflowClient) Update(ctx context.Context, form AirflowForm) error {
 		return err
 	}
 
-	a.Sync(ctx, team.ID)
-
-	return nil
+	return a.Sync(ctx, team.ID)
 }
 
-func (a AirflowClient) Sync(ctx context.Context, teamID string) {
+func (a AirflowClient) Sync(ctx context.Context, teamID string) error {
 	application := helmApps.NewAirflow(teamID, a.repo, a.cryptClient)
+	charty, err := application.Chart(ctx)
+	if err != nil {
+		return err
+	}
 
-	go a.helmClient.InstallOrUpgrade(ctx, string(gensql.ChartTypeAirflow), teamID, application)
+	return a.k8sClient.CreateHelmUpgradeJob(ctx, teamID, string(gensql.ChartTypeAirflow), charty.Values)
 }
 
 func (a AirflowClient) Delete(ctx context.Context, teamSlug string) error {

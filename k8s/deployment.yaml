@@ -28,6 +28,8 @@ spec:
             value: "knorten.knada.io"
           - name: "KNELM_IMAGE"
             value: europe-west1-docker.pkg.dev/knada-gcp/knorten/knelm:v8
+          - name: "GIN_MODE"
+            value: "release"
         envFrom:
         - secretRef:
             name: knorten

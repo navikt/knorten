@@ -87,7 +87,9 @@ func (a *Client) updateHelmReleases(ctx context.Context, chartType gensql.ChartT
 			// Release name must be unique across namespaces as the helm chart creates a clusterrole
 			// for each jupyterhub with the same name as the release name.
 			releaseName := chart.JupyterReleaseName(k8s.NameToNamespace(team))
-			a.k8sClient.CreateHelmUpgradeJob(ctx, team, releaseName, charty.Values)
+			if err := a.k8sClient.CreateHelmUpgradeJob(ctx, team, releaseName, charty.Values); err != nil {
+				return err
+			}
 		case gensql.ChartTypeAirflow:
 			application := helmApps.NewAirflow(team, a.repo, a.cryptClient)
 			charty, err := application.Chart(ctx)
@@ -95,7 +97,9 @@ func (a *Client) updateHelmReleases(ctx context.Context, chartType gensql.ChartT
 				return err
 			}
 
-			a.k8sClient.CreateHelmUpgradeJob(ctx, team, string(gensql.ChartTypeAirflow), charty.Values)
+			if err := a.k8sClient.CreateHelmUpgradeJob(ctx, team, string(gensql.ChartTypeAirflow), charty.Values); err != nil {
+				return err
+			}
 		default:
 			return fmt.Errorf("invalid chart type %v", chartType)
 		}

@@ -26,7 +26,7 @@ local:
 	  --region=$(GCP_REGION) \
 	  --db-enc-key=$(DB_ENC_KEY) \
 	  --in-cluster=false \
-	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knorten/knelm:v8 \
+	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knorten/knelm:v9 \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten
 
 local-offline:
@@ -40,7 +40,7 @@ local-offline:
 	  --db-enc-key=$(DB_ENC_KEY) \
 	  --dry-run \
 	  --in-cluster=false \
-	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knorten/knelm:v8 \
+	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knorten/knelm:v9 \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten
 
 generate-sql:

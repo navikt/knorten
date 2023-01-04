@@ -27,7 +27,7 @@ spec:
           - name: "HOSTNAME"
             value: "knorten.knada.io"
           - name: "KNELM_IMAGE"
-            value: europe-west1-docker.pkg.dev/knada-gcp/knorten/knelm:v8
+            value: europe-west1-docker.pkg.dev/knada-gcp/knorten/knelm:v9
           - name: "GIN_MODE"
             value: "release"
         envFrom:

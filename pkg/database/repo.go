@@ -46,17 +46,11 @@ func New(dbConnDSN string, log *logrus.Entry) (*Repo, error) {
 		return nil, fmt.Errorf("goose up: %w", err)
 	}
 
-	r := &Repo{
+	return &Repo{
 		querier: gensql.New(db),
 		db:      db,
 		log:     log,
-	}
-
-	if err := r.querier.ClearPendingUpgradeLocks(context.Background()); err != nil {
-		return nil, err
-	}
-
-	return r, nil
+	}, nil
 }
 
 func (r *Repo) NewSessionStore() (gin.HandlerFunc, error) {

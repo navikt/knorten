@@ -87,10 +87,7 @@ func (c Client) Update(ctx *gin.Context) error {
 		return err
 	}
 
-	err = c.googleClient.Update(ctx, team.ID, form.Users)
-	if err != nil {
-		return err
-	}
+	go c.updateExternalResources(ctx, team.ID, form.Users)
 
 	apps, err := c.repo.AppsForTeamGet(ctx, team.ID)
 	if err != nil {
@@ -155,6 +152,13 @@ func (c Client) createExternalResources(ctx *gin.Context, slug, teamID string, u
 
 	if err := c.k8sClient.CreateTeamServiceAccount(ctx, teamID, k8s.NameToNamespace(teamID)); err != nil {
 		c.log.WithError(err).Error("failed while creating external resources")
+		return
+	}
+}
+
+func (c Client) updateExternalResources(ctx context.Context, teamID string, users []string) {
+	if err := c.googleClient.Update(ctx, teamID, users); err != nil {
+		c.log.WithError(err).Error("failed while deleting external resources")
 		return
 	}
 }

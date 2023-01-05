@@ -158,7 +158,7 @@ func (c Client) createExternalResources(ctx *gin.Context, slug, teamID string, u
 
 func (c Client) updateExternalResources(ctx context.Context, teamID string, users []string) {
 	if err := c.googleClient.Update(ctx, teamID, users); err != nil {
-		c.log.WithError(err).Error("failed while deleting external resources")
+		c.log.WithError(err).Error("failed while updating google resources")
 		return
 	}
 }

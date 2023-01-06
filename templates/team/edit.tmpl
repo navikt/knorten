@@ -10,7 +10,12 @@
             <form class="pure-form pure-form-stacked" action="delete" method="POST">
                 <fieldset>
                     <div class="pure-controls">
-                        <button type="submit" class="pure-button button-error">Slett {{ .team }}</button>
+                        <button type="submit" 
+                            onclick="return confirm('Er du sikker på at du vil slette teamet? Dette vil samtidig slette teamets jupyterhub og airflow dersom det er satt opp og vil ikke kunne gjenopprettes senere.')" 
+                            class="pure-button button-error"
+                        >
+                            Slett {{ .team }}
+                        </button>
                     </div>
                 </fieldset>
             </form>

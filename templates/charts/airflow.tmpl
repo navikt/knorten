@@ -14,7 +14,12 @@
             <form class="pure-form pure-form-stacked" action="delete" method="POST">
                 <fieldset>
                     <div class="pure-controls">
-                        <button type="submit" class="pure-button button-error">Slett Airflow</button>
+                    <button type="submit" 
+                        onclick="return confirm('Er du sikker på at du vil slette airflow? Det er ikke mulig å gjenopprette denne senere')" 
+                        class="pure-button button-error"
+                    >
+                        Slett Airflow
+                    </button>
                     </div>
                 </fieldset>
             </form>

@@ -32,12 +32,12 @@ spec:
             value: "release"
           - name: AIRFLOW_CHART_VERSION
             valueFrom:
-              configMapRef:
+              configMapKeyRef:
                 name: helm-repos
                 key: airflow_chart_version
           - name: JUPYTER_CHART_VERSION
             valueFrom:
-              configMapRef:
+              configMapKeyRef:
                 name: helm-repos
                 key: jupyter_chart_version
         envFrom:

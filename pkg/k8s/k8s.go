@@ -34,26 +34,30 @@ func NameToNamespace(name string) string {
 }
 
 type Client struct {
-	clientSet   *kubernetes.Clientset
-	dryRun      bool
-	inCluster   bool
-	gcpProject  string
-	gcpRegion   string
-	knelmImage  string
-	repo        *database.Repo
-	cryptClient *crypto.EncrypterDecrypter
-	log         *logrus.Entry
+	clientSet           *kubernetes.Clientset
+	dryRun              bool
+	inCluster           bool
+	gcpProject          string
+	gcpRegion           string
+	knelmImage          string
+	airflowChartVersion string
+	jupyterChartVersion string
+	repo                *database.Repo
+	cryptClient         *crypto.EncrypterDecrypter
+	log                 *logrus.Entry
 }
 
-func New(log *logrus.Entry, cryptClient *crypto.EncrypterDecrypter, repo *database.Repo, dryRun, inCluster bool, gcpProject, gcpRegion, knelmImage string) (*Client, error) {
+func New(log *logrus.Entry, cryptClient *crypto.EncrypterDecrypter, repo *database.Repo, dryRun, inCluster bool, gcpProject, gcpRegion, knelmImage, airflowChartVersion, jupyterChartVersion string) (*Client, error) {
 	client := &Client{
-		dryRun:      dryRun,
-		gcpProject:  gcpProject,
-		gcpRegion:   gcpRegion,
-		knelmImage:  knelmImage,
-		log:         log,
-		cryptClient: cryptClient,
-		repo:        repo,
+		dryRun:              dryRun,
+		gcpProject:          gcpProject,
+		gcpRegion:           gcpRegion,
+		knelmImage:          knelmImage,
+		airflowChartVersion: airflowChartVersion,
+		jupyterChartVersion: jupyterChartVersion,
+		log:                 log,
+		cryptClient:         cryptClient,
+		repo:                repo,
 	}
 
 	config, err := createConfig(inCluster)

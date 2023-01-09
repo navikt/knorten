@@ -17,13 +17,15 @@ import (
 type Config struct {
 	auth.OauthConfig
 
-	DBConnString string
-	DBEncKey     string
-	DryRun       bool
-	InCluster    bool
-	GCPProject   string
-	GCPRegion    string
-	KnelmImage   string
+	DBConnString        string
+	DBEncKey            string
+	DryRun              bool
+	InCluster           bool
+	GCPProject          string
+	GCPRegion           string
+	KnelmImage          string
+	AirflowChartVersion string
+	JupyterChartVersion string
 }
 
 func main() {
@@ -41,6 +43,8 @@ func main() {
 	flag.StringVar(&cfg.GCPProject, "project", os.Getenv("GCP_PROJECT"), "GCP project")
 	flag.StringVar(&cfg.GCPRegion, "region", os.Getenv("GCP_REGION"), "GCP region")
 	flag.StringVar(&cfg.KnelmImage, "knelm-image", os.Getenv("KNELM_IMAGE"), "Knelm image")
+	flag.StringVar(&cfg.AirflowChartVersion, "airflow-chart-version", os.Getenv("AIRFLOW_CHART_VERSION"), "The chart version for airflow")
+	flag.StringVar(&cfg.JupyterChartVersion, "jupyter-chart-version", os.Getenv("JUPYTER_CHART_VERSION"), "The chart version for jupyter")
 	flag.Parse()
 
 	repo, err := database.New(fmt.Sprintf("%v?sslmode=disable", cfg.DBConnString), log.WithField("subsystem", "repo"))
@@ -55,13 +59,13 @@ func main() {
 
 	cryptClient := crypto.New(cfg.DBEncKey)
 
-	k8sClient, err := k8s.New(log.WithField("subsystem", "k8sClient"), cryptClient, repo, cfg.DryRun, cfg.InCluster, cfg.GCPProject, cfg.GCPRegion, cfg.KnelmImage)
+	k8sClient, err := k8s.New(log.WithField("subsystem", "k8sClient"), cryptClient, repo, cfg.DryRun, cfg.InCluster, cfg.GCPProject, cfg.GCPRegion, cfg.KnelmImage, cfg.AirflowChartVersion, cfg.JupyterChartVersion)
 	if err != nil {
 		log.WithError(err).Fatal("creating k8s client")
 		return
 	}
 
-	kApi, err := api.New(repo, azureClient, googleClient, k8sClient, cryptClient, log.WithField("subsystem", "api"))
+	kApi, err := api.New(repo, azureClient, googleClient, k8sClient, cryptClient, cfg.AirflowChartVersion, cfg.JupyterChartVersion, log.WithField("subsystem", "api"))
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return

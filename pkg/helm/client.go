@@ -45,7 +45,7 @@ func New(log *logrus.Entry) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) InstallOrUpgrade(ctx context.Context, releaseName, namespace string, values map[string]any) error {
+func (c *Client) InstallOrUpgrade(ctx context.Context, releaseName, chartVersion, namespace string, values map[string]any) error {
 	settings := cli.New()
 	settings.SetNamespace(namespace)
 	actionConfig := new(action.Configuration)
@@ -71,11 +71,9 @@ func (c *Client) InstallOrUpgrade(ctx context.Context, releaseName, namespace st
 	var charty *chart.Chart
 	switch ReleaseNameToChartType(releaseName) {
 	case string(gensql.ChartTypeJupyterhub):
-		// todo: få dette inn som felles config for både knorten og jobben
-		charty, err = FetchChart("jupyterhub", "jupyterhub", "2.0.0")
+		charty, err = FetchChart("jupyterhub", "jupyterhub", chartVersion)
 	case string(gensql.ChartTypeAirflow):
-		// todo: få dette inn som felles config for både knorten og jobben
-		charty, err = FetchChart("apache-airflow", "airflow", "1.7.0")
+		charty, err = FetchChart("apache-airflow", "airflow", chartVersion)
 	default:
 		return fmt.Errorf("chart type for release %v is not supported", releaseName)
 	}

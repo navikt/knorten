@@ -34,6 +34,7 @@ type AirflowClient struct {
 	googleClient *google.Google
 	k8sClient    *k8s.Client
 	cryptClient  *crypto.EncrypterDecrypter
+	chartVersion string
 	log          *logrus.Entry
 }
 
@@ -75,12 +76,13 @@ var AirflowValidateDagRepo validator.Func = func(fl validator.FieldLevel) bool {
 	return strings.HasPrefix(repo, "navikt/")
 }
 
-func NewAirflowClient(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, log *logrus.Entry) AirflowClient {
+func NewAirflowClient(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, chartVersion string, log *logrus.Entry) AirflowClient {
 	return AirflowClient{
 		repo:         repo,
 		googleClient: googleClient,
 		k8sClient:    k8sClient,
 		cryptClient:  cryptClient,
+		chartVersion: chartVersion,
 		log:          log.WithField("chart", "airflow"),
 	}
 }
@@ -155,7 +157,7 @@ func (a AirflowClient) Update(ctx context.Context, form AirflowForm) error {
 }
 
 func (a AirflowClient) Sync(ctx context.Context, teamID string) error {
-	application := helmApps.NewAirflow(teamID, a.repo, a.cryptClient)
+	application := helmApps.NewAirflow(teamID, a.repo, a.cryptClient, a.chartVersion)
 	charty, err := application.Chart(ctx)
 	if err != nil {
 		return err

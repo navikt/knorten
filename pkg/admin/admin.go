@@ -16,9 +16,11 @@ import (
 )
 
 type Client struct {
-	repo        *database.Repo
-	k8sClient   *k8s.Client
-	cryptClient *crypto.EncrypterDecrypter
+	repo                *database.Repo
+	k8sClient           *k8s.Client
+	airflowChartVersion string
+	jupyterChartVersion string
+	cryptClient         *crypto.EncrypterDecrypter
 }
 
 type diffValue struct {
@@ -27,11 +29,13 @@ type diffValue struct {
 	Encrypted string
 }
 
-func New(repo *database.Repo, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter) *Client {
+func New(repo *database.Repo, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, airflowChartVersion, jupyterChartVersion string) *Client {
 	return &Client{
-		repo:        repo,
-		k8sClient:   k8sClient,
-		cryptClient: cryptClient,
+		repo:                repo,
+		k8sClient:           k8sClient,
+		cryptClient:         cryptClient,
+		airflowChartVersion: airflowChartVersion,
+		jupyterChartVersion: jupyterChartVersion,
 	}
 }
 
@@ -78,7 +82,7 @@ func (a *Client) updateHelmReleases(ctx context.Context, chartType gensql.ChartT
 	for _, team := range teams {
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
-			application := helmApps.NewJupyterhub(team, a.repo, a.cryptClient)
+			application := helmApps.NewJupyterhub(team, a.repo, a.cryptClient, a.jupyterChartVersion)
 			charty, err := application.Chart(ctx)
 			if err != nil {
 				return err
@@ -91,7 +95,7 @@ func (a *Client) updateHelmReleases(ctx context.Context, chartType gensql.ChartT
 				return err
 			}
 		case gensql.ChartTypeAirflow:
-			application := helmApps.NewAirflow(team, a.repo, a.cryptClient)
+			application := helmApps.NewAirflow(team, a.repo, a.cryptClient, a.airflowChartVersion)
 			charty, err := application.Chart(ctx)
 			if err != nil {
 				return err

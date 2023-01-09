@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/helm"
 	"gopkg.in/yaml.v2"
 	batchv1 "k8s.io/api/batch/v1"
@@ -55,9 +56,15 @@ func (c *Client) CreateHelmUpgradeJob(ctx context.Context, teamID, releaseName s
 		return err
 	}
 
+	chartType := helm.ReleaseNameToChartType(releaseName)
+	chartVersion, err := c.versionForChart(chartType)
+	if err != nil {
+		return err
+	}
+
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: CreateJobPrefix(teamID, helm.ReleaseNameToChartType(releaseName), string(InstallOrUpgrade)),
+			GenerateName: CreateJobPrefix(teamID, chartType, string(InstallOrUpgrade)),
 			Namespace:    namespace,
 		},
 		Spec: batchv1.JobSpec{
@@ -86,6 +93,10 @@ func (c *Client) CreateHelmUpgradeJob(ctx context.Context, teamID, releaseName s
 								{
 									Name:  "HELM_VALUES",
 									Value: encValues,
+								},
+								{
+									Name:  "CHART_VERSION",
+									Value: chartVersion,
 								},
 							},
 							VolumeMounts: []v1.VolumeMount{
@@ -200,6 +211,17 @@ func (c *Client) encryptValues(values map[string]any) (string, error) {
 
 	valuesEncoded := base64.StdEncoding.EncodeToString(data)
 	return c.cryptClient.EncryptValue(valuesEncoded)
+}
+
+func (c *Client) versionForChart(chartType string) (string, error) {
+	switch chartType {
+	case string(gensql.ChartTypeAirflow):
+		return c.airflowChartVersion, nil
+	case string(gensql.ChartTypeJupyterhub):
+		return c.jupyterChartVersion, nil
+	default:
+		return "", fmt.Errorf("chart type %v does not exist", chartType)
+	}
 }
 
 func intToInt32Ptr(val int) *int32 {

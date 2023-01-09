@@ -25,24 +25,24 @@ type Application struct {
 
 // TODO: Vi bør ta inn chart-settings som config
 
-func NewAirflow(teamID string, repo *database.Repo, cryptClient *crypto.EncrypterDecrypter) *Application {
+func NewAirflow(teamID string, repo *database.Repo, cryptClient *crypto.EncrypterDecrypter, chartVersion string) *Application {
 	return &Application{
 		chartName:    "airflow",
 		chartRepo:    "apache-airflow",
 		chartType:    gensql.ChartTypeAirflow,
-		chartVersion: "1.7.0",
+		chartVersion: chartVersion,
 		teamID:       teamID,
 		repo:         repo,
 		cryptClient:  cryptClient,
 	}
 }
 
-func NewJupyterhub(teamID string, repo *database.Repo, cryptClient *crypto.EncrypterDecrypter) *Application {
+func NewJupyterhub(teamID string, repo *database.Repo, cryptClient *crypto.EncrypterDecrypter, chartVersion string) *Application {
 	return &Application{
 		chartName:    "jupyterhub",
 		chartRepo:    "jupyterhub",
 		chartType:    gensql.ChartTypeJupyterhub,
-		chartVersion: "2.0.0",
+		chartVersion: chartVersion,
 		teamID:       teamID,
 		repo:         repo,
 		cryptClient:  cryptClient,

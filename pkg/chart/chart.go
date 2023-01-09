@@ -14,13 +14,13 @@ type Client struct {
 	Jupyterhub JupyterhubClient
 }
 
-func New(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, log *logrus.Entry) (*Client, error) {
+func New(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, airflowChartVersion, jupyterChartVersion string, log *logrus.Entry) (*Client, error) {
 	if err := helm.UpdateHelmRepositories(); err != nil {
 		return nil, err
 	}
 
 	return &Client{
-		Airflow:    NewAirflowClient(repo, googleClient, k8sClient, cryptClient, log),
-		Jupyterhub: NewJupyterhubClient(repo, k8sClient, cryptClient, log),
+		Airflow:    NewAirflowClient(repo, googleClient, k8sClient, cryptClient, airflowChartVersion, log),
+		Jupyterhub: NewJupyterhubClient(repo, k8sClient, cryptClient, jupyterChartVersion, log),
 	}, nil
 }

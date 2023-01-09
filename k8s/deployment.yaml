@@ -30,6 +30,16 @@ spec:
             value: europe-west1-docker.pkg.dev/knada-gcp/knorten/knelm:v9
           - name: "GIN_MODE"
             value: "release"
+          - name: AIRFLOW_CHART_VERSION
+            valueFrom:
+              configMapRef:
+                name: helm-repos-config
+                key: airflow_chart_version
+          - name: JUPYTER_CHART_VERSION
+            valueFrom:
+              configMapRef:
+                name: helm-repos-config
+                key: jupyter_chart_version
         envFrom:
         - secretRef:
             name: knorten

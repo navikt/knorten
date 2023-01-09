@@ -17,21 +17,23 @@ import (
 )
 
 type API struct {
-	azureClient  *auth.Azure
-	router       *gin.Engine
-	repo         *database.Repo
-	log          *logrus.Entry
-	googleClient *google.Google
-	k8sClient    *k8s.Client
-	adminClient  *admin.Client
-	cryptClient  *crypto.EncrypterDecrypter
-	chartClient  *chart.Client
-	teamClient   *team.Client
+	azureClient         *auth.Azure
+	router              *gin.Engine
+	repo                *database.Repo
+	log                 *logrus.Entry
+	googleClient        *google.Google
+	k8sClient           *k8s.Client
+	adminClient         *admin.Client
+	cryptClient         *crypto.EncrypterDecrypter
+	chartClient         *chart.Client
+	teamClient          *team.Client
+	jupyterChartVersion string
+	airflowChartVersion string
 }
 
-func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, log *logrus.Entry) (*API, error) {
-	adminClient := admin.New(repo, k8sClient, cryptClient)
-	chartClient, err := chart.New(repo, googleClient, k8sClient, cryptClient, log)
+func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, airflowChartVersion, jupyterChartVersion string, log *logrus.Entry) (*API, error) {
+	adminClient := admin.New(repo, k8sClient, cryptClient, airflowChartVersion, jupyterChartVersion)
+	chartClient, err := chart.New(repo, googleClient, k8sClient, cryptClient, airflowChartVersion, jupyterChartVersion, log)
 	if err != nil {
 		return nil, err
 	}

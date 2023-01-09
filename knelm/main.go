@@ -36,6 +36,7 @@ func main() {
 	flag.StringVar(&cfg.TeamID, "team", os.Getenv("TEAM_ID"), "Team id for helm release")
 	flag.StringVar(&cfg.Action, "action", os.Getenv("HELM_ACTION"), "Helm action")
 	flag.StringVar(&cfg.KnortenURL, "url", os.Getenv("KNORTEN_URL"), "URL for knorten")
+	flag.StringVar(&cfg.ChartVersion, "chart-version", os.Getenv("CHART_VERSION"), "Version for helm chart")
 	flag.Parse()
 
 	helmClient, err := helm.New(log.WithField("subsystem", "helm"))
@@ -78,7 +79,7 @@ func installOrUpgrade(ctx context.Context, cfg Config, helmClient *helm.Client) 
 		return err
 	}
 
-	if err := helmClient.InstallOrUpgrade(ctx, cfg.ReleaseName, k8s.NameToNamespace(cfg.TeamID), values); err != nil {
+	if err := helmClient.InstallOrUpgrade(ctx, cfg.ReleaseName, cfg.ChartVersion, k8s.NameToNamespace(cfg.TeamID), values); err != nil {
 		return err
 	}
 

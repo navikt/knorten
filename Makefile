@@ -25,6 +25,8 @@ local:
 	  --project=$(GCP_PROJECT) \
 	  --region=$(GCP_REGION) \
 	  --db-enc-key=$(DB_ENC_KEY) \
+	  --airflow-chart-version=1.7.0 \
+	  --jupyter-chart-version=2.0.0 \
 	  --in-cluster=false \
 	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knorten/knelm:v9 \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten
@@ -38,6 +40,8 @@ local-offline:
 	  --project=$(GCP_PROJECT) \
 	  --region=$(GCP_REGION) \
 	  --db-enc-key=$(DB_ENC_KEY) \
+	  --airflow-chart-version=1.7.0 \
+	  --jupyter-chart-version=2.0.0 \
 	  --dry-run \
 	  --in-cluster=false \
 	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knorten/knelm:v9 \

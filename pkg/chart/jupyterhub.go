@@ -17,10 +17,11 @@ import (
 )
 
 type JupyterhubClient struct {
-	repo        *database.Repo
-	k8sClient   *k8s.Client
-	cryptClient *crypto.EncrypterDecrypter
-	log         *logrus.Entry
+	repo         *database.Repo
+	k8sClient    *k8s.Client
+	cryptClient  *crypto.EncrypterDecrypter
+	chartVersion string
+	log          *logrus.Entry
 }
 
 type JupyterForm struct {
@@ -60,12 +61,13 @@ type JupyterValues struct {
 	ProfileList      string   `helm:"singleuser.profileList"`
 }
 
-func NewJupyterhubClient(repo *database.Repo, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, log *logrus.Entry) JupyterhubClient {
+func NewJupyterhubClient(repo *database.Repo, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, chartVersion string, log *logrus.Entry) JupyterhubClient {
 	return JupyterhubClient{
-		repo:        repo,
-		k8sClient:   k8sClient,
-		cryptClient: cryptClient,
-		log:         log,
+		repo:         repo,
+		k8sClient:    k8sClient,
+		cryptClient:  cryptClient,
+		chartVersion: chartVersion,
+		log:          log,
 	}
 }
 
@@ -134,7 +136,7 @@ func (j JupyterhubClient) UpdateTeamValuesAndInstallOrUpdate(ctx context.Context
 }
 
 func (j JupyterhubClient) Sync(ctx context.Context, teamID string) error {
-	application := helmApps.NewJupyterhub(teamID, j.repo, j.cryptClient)
+	application := helmApps.NewJupyterhub(teamID, j.repo, j.cryptClient, j.chartVersion)
 	charty, err := application.Chart(ctx)
 	if err != nil {
 		return err

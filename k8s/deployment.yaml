@@ -33,12 +33,12 @@ spec:
           - name: AIRFLOW_CHART_VERSION
             valueFrom:
               configMapRef:
-                name: helm-repos-config
+                name: helm-repos
                 key: airflow_chart_version
           - name: JUPYTER_CHART_VERSION
             valueFrom:
               configMapRef:
-                name: helm-repos-config
+                name: helm-repos
                 key: jupyter_chart_version
         envFrom:
         - secretRef:

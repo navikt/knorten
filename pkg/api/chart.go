@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"net/http"
@@ -23,15 +24,18 @@ func getChartType(chartType string) gensql.ChartType {
 	}
 }
 
-func (a *API) setupChartRoutes() {
-	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-		err := v.RegisterValidation("validDagRepo", chart.AirflowValidateDagRepo)
-		if err != nil {
-			a.log.WithError(err).Error("can't register validator")
-			return
-		}
+func airflowMessageForTag(fe validator.FieldError) string {
+	switch fe.Tag() {
+	case "required":
+		return fmt.Sprintf("%v er et påkrevd felt", fe.Field())
+	case "startswith":
+		return fmt.Sprintf("%v må starte med 'navikt/'", fe.Field())
+	default:
+		return fe.Error()
 	}
+}
 
+func (a *API) setupChartRoutes() {
 	a.router.GET("/team/:team/:chart/new", func(c *gin.Context) {
 		team := c.Param("team")
 		chartType := getChartType(c.Param("chart"))
@@ -74,7 +78,19 @@ func (a *API) setupChartRoutes() {
 
 		if err != nil {
 			session := sessions.Default(c)
-			session.AddFlash(err.Error())
+			var ve validator.ValidationErrors
+			if errors.As(err, &ve) {
+				for _, fe := range ve {
+					switch chartType {
+					case gensql.ChartTypeJupyterhub:
+					case gensql.ChartTypeAirflow:
+						session.AddFlash(airflowMessageForTag(fe))
+					}
+				}
+			} else {
+				session.AddFlash(err.Error())
+			}
+
 			err := session.Save()
 			if err != nil {
 				a.log.WithError(err).Error("problem saving session")
@@ -156,7 +172,15 @@ func (a *API) setupChartRoutes() {
 			err = c.ShouldBindWith(&form, binding.Form)
 			if err != nil {
 				session := sessions.Default(c)
-				session.AddFlash(err.Error())
+				var ve validator.ValidationErrors
+				if errors.As(err, &ve) {
+					for _, fe := range ve {
+						session.AddFlash(airflowMessageForTag(fe))
+					}
+				} else {
+					session.AddFlash(err.Error())
+				}
+
 				err := session.Save()
 				if err != nil {
 					a.log.WithError(err).Error("problem saving session")

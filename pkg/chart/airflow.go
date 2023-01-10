@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
@@ -47,8 +46,8 @@ type AirflowForm struct {
 }
 
 type AirflowConfigurableValues struct {
-	DagRepo       string `form:"repo" binding:"validDagRepo,required" helm:"webserver.extraContainers.[0].args.[0]"`
-	DagRepoBranch string `form:"branch" helm:"webserver.extraContainers.[0].args.[1]"`
+	DagRepo       string `form:"dagrepo" binding:"required,startswith=navikt/" helm:"webserver.extraContainers.[0].args.[0]"`
+	DagRepoBranch string `form:"dagrepobranch" helm:"webserver.extraContainers.[0].args.[1]"`
 }
 
 type AirflowValues struct {
@@ -69,11 +68,6 @@ type AirflowValues struct {
 	ExtraEnvs                  string `helm:"env"`
 	MetadataSecretName         string `helm:"data.metadataSecretName"`
 	ResultBackendSecretName    string `helm:"data.resultBackendSecretName"`
-}
-
-var AirflowValidateDagRepo validator.Func = func(fl validator.FieldLevel) bool {
-	repo := fl.Field().String()
-	return strings.HasPrefix(repo, "navikt/")
 }
 
 func NewAirflowClient(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, chartVersion string, log *logrus.Entry) AirflowClient {

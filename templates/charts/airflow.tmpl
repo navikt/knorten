@@ -26,13 +26,13 @@
             <form class="pure-form pure-form-stacked" action="" method="POST">
                 <fieldset>
                     <div class="pure-control-group">
-                        <label for="repo">DAG's repo</label>
-                        <input type="text" name="repo" id="repo" value="{{ .values.DagRepo }}"
-                               placeholder="navikt/dags"/>
+                        <label for="dagrepo">DAG's repo</label>
+                        <input type="text" name="dagrepo" id="dagrepo" value="{{ .values.DagRepo }}"
+                               placeholder="navikt/dags" required/>
                     </div>
                     <div class="pure-control-group">
-                        <label for="branch">DAG's repo branch</label>
-                        <input type="text" name="branch" id="branch" value="{{ .values.DagRepoBranch }}"
+                        <label for="dagrepobranch">DAG's repo branch</label>
+                        <input type="text" name="dagrepobranch" id="dagrepobranch" value="{{ .values.DagRepoBranch }}"
                                placeholder="main"/>
                     </div>
 

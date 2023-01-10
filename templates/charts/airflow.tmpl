@@ -62,6 +62,7 @@
             const currentDiv = document.getElementById("users");
             currentDiv.appendChild(input);
         }
+
         document.getElementById("submit").disabled = {{ .pending_airflow }};
     </script>
     {{ template "footer" }}

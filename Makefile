@@ -29,7 +29,8 @@ local:
 	  --jupyter-chart-version=2.0.0 \
 	  --in-cluster=false \
 	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knorten/knelm:v9 \
-	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten
+	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
+	  --session-key online-session
 
 local-offline:
 	go run . \
@@ -45,7 +46,8 @@ local-offline:
 	  --dry-run \
 	  --in-cluster=false \
 	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knorten/knelm:v9 \
-	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten
+	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
+	  --session-key offline-session
 
 generate-sql:
 	$(GOBIN)/sqlc generate

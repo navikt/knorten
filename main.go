@@ -26,6 +26,7 @@ type Config struct {
 	KnelmImage          string
 	AirflowChartVersion string
 	JupyterChartVersion string
+	SessionKey          string
 }
 
 func main() {
@@ -45,6 +46,7 @@ func main() {
 	flag.StringVar(&cfg.KnelmImage, "knelm-image", os.Getenv("KNELM_IMAGE"), "Knelm image")
 	flag.StringVar(&cfg.AirflowChartVersion, "airflow-chart-version", os.Getenv("AIRFLOW_CHART_VERSION"), "The chart version for airflow")
 	flag.StringVar(&cfg.JupyterChartVersion, "jupyter-chart-version", os.Getenv("JUPYTER_CHART_VERSION"), "The chart version for jupyter")
+	flag.StringVar(&cfg.SessionKey, "session-key", os.Getenv("SESSION_KEY"), "The session key for Knorten")
 	flag.Parse()
 
 	repo, err := database.New(fmt.Sprintf("%v?sslmode=disable", cfg.DBConnString), log.WithField("subsystem", "repo"))
@@ -65,7 +67,7 @@ func main() {
 		return
 	}
 
-	kApi, err := api.New(repo, azureClient, googleClient, k8sClient, cryptClient, cfg.AirflowChartVersion, cfg.JupyterChartVersion, log.WithField("subsystem", "api"))
+	kApi, err := api.New(repo, azureClient, googleClient, k8sClient, cryptClient, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.SessionKey, log.WithField("subsystem", "api"))
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return

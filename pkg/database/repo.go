@@ -53,9 +53,8 @@ func New(dbConnDSN string, log *logrus.Entry) (*Repo, error) {
 	}, nil
 }
 
-func (r *Repo) NewSessionStore() (gin.HandlerFunc, error) {
-	// TODO: Create session key
-	store, err := postgres.NewStore(r.db, []byte("securecookie.GenerateRandomKey(32)"))
+func (r *Repo) NewSessionStore(key string) (gin.HandlerFunc, error) {
+	store, err := postgres.NewStore(r.db, []byte(key))
 	if err != nil {
 		return nil, err
 	}

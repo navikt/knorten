@@ -2,6 +2,10 @@
     {{ template "head" . }}
     <div class="box container">
         <div id="content">
+            {{ with .errors }}
+                {{ . }}
+            {{ end }}
+
             {{ range .services }}
                 <section>
                     <h2>

@@ -7,6 +7,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/gin-contrib/sessions"
 	"net"
 	"net/http"
 	"strings"
@@ -225,7 +227,15 @@ func (a *API) authMiddleware(allowedUsers []string) gin.HandlerFunc {
 			}
 
 			if !allowed {
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+				session := sessions.Default(c)
+				session.AddFlash(fmt.Errorf("%v is not authorized", user.Email))
+				err := session.Save()
+				if err != nil {
+					a.log.WithError(err).Error("problem saving session")
+					c.Redirect(http.StatusSeeOther, "/")
+					return
+				}
+				c.Redirect(http.StatusUnauthorized, "/")
 				return
 			}
 		}
@@ -236,7 +246,6 @@ func (a *API) authMiddleware(allowedUsers []string) gin.HandlerFunc {
 }
 
 func (a *API) setupAuthRoutes() {
-
 	a.router.GET("/oauth2/login", func(c *gin.Context) {
 		consentURL := a.login(c)
 		c.Redirect(http.StatusSeeOther, consentURL)
@@ -245,7 +254,16 @@ func (a *API) setupAuthRoutes() {
 	a.router.GET("/oauth2/callback", func(c *gin.Context) {
 		redirectURL, err := a.callback(c)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			session := sessions.Default(c)
+			session.AddFlash(err.Error())
+			err := session.Save()
+			if err != nil {
+				a.log.WithError(err).Error("problem saving session")
+				c.Redirect(http.StatusSeeOther, "/")
+				return
+			}
+			c.Redirect(http.StatusSeeOther, "/")
+			return
 		}
 
 		c.Redirect(http.StatusSeeOther, redirectURL)
@@ -254,7 +272,16 @@ func (a *API) setupAuthRoutes() {
 	a.router.GET("/oauth2/logout", func(c *gin.Context) {
 		redirectURL, err := a.logout(c)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			session := sessions.Default(c)
+			session.AddFlash(err.Error())
+			err := session.Save()
+			if err != nil {
+				a.log.WithError(err).Error("problem saving session")
+				c.Redirect(http.StatusSeeOther, "/")
+				return
+			}
+			c.Redirect(http.StatusSeeOther, "/")
+			return
 		}
 		c.Redirect(http.StatusSeeOther, redirectURL)
 	})

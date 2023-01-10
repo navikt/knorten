@@ -110,7 +110,15 @@ func (a *API) setupChartRoutes() {
 
 		team, err := a.repo.TeamGet(c, slug)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			session := sessions.Default(c)
+			session.AddFlash(err.Error())
+			err := session.Save()
+			if err != nil {
+				a.log.WithError(err).Error("problem saving session")
+				c.Redirect(http.StatusSeeOther, "/user")
+				return
+			}
+			c.Redirect(http.StatusSeeOther, "/user")
 			return
 		}
 
@@ -124,7 +132,15 @@ func (a *API) setupChartRoutes() {
 
 		err = a.repo.TeamConfigurableValuesGet(c, chartType, team.ID, form)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			session := sessions.Default(c)
+			session.AddFlash(err.Error())
+			err := session.Save()
+			if err != nil {
+				a.log.WithError(err).Error("problem saving session")
+				c.Redirect(http.StatusSeeOther, "/user")
+				return
+			}
+			c.Redirect(http.StatusSeeOther, "/user")
 			return
 		}
 

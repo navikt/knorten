@@ -15,12 +15,8 @@ func (a *API) setupUserRoutes() {
 		}
 
 		services, err := a.repo.ServicesForUser(c, user.Email)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-
 		c.HTML(http.StatusOK, "user/index", gin.H{
+			"errors":   err,
 			"services": services,
 		})
 	})

@@ -76,6 +76,20 @@ func (a *API) Run(inCluster bool) error {
 	return a.router.Run("localhost:8080")
 }
 
+func (a *API) setupAPIEndpoints() {
+	api := a.router.Group("/api")
+	api.POST("/status/:team/:chart", func(c *gin.Context) {
+		teamID := c.Param("team")
+		chartType := c.Param("chart")
+
+		if err := a.repo.TeamSetPendingUpgrade(c, teamID, chartType, false); err != nil {
+			a.log.WithError(err).Error("clearing pending upgrade flag in database")
+		}
+
+		c.JSON(http.StatusOK, map[string]any{"status": "ok"})
+	})
+}
+
 func (a *API) setupUnauthenticatedRoutes() {
 	a.router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index", gin.H{
@@ -83,18 +97,7 @@ func (a *API) setupUnauthenticatedRoutes() {
 		})
 	})
 
-	a.router.POST("/status/:team/:chart", func(c *gin.Context) {
-		teamID := c.Param("team")
-		chartType := c.Param("chart")
-
-		a.log.Infof("clearing flag for %v, chart %v", teamID, chartType)
-		if err := a.repo.TeamSetPendingUpgrade(c, teamID, chartType, false); err != nil {
-			a.log.WithError(err).Error("clearing pending upgrade flag in database")
-		}
-
-		c.JSON(http.StatusOK, map[string]any{"status": "ok"})
-	})
-
+	a.setupAPIEndpoints()
 	a.setupAuthRoutes()
 }
 

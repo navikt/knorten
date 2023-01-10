@@ -126,7 +126,6 @@ func (a *API) setupAdminRoutes() {
 			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
 			return
 		}
-		gob.Register(changedValues)
 
 		if len(changedValues) == 0 {
 			session.AddFlash("Ingen endringer lagret")
@@ -140,6 +139,7 @@ func (a *API) setupAdminRoutes() {
 			return
 		}
 
+		gob.Register(changedValues)
 		session.AddFlash(changedValues)
 		err = session.Save()
 		if err != nil {

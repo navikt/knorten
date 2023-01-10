@@ -13,6 +13,7 @@ import (
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/reflect"
 	"github.com/sirupsen/logrus"
+	"strconv"
 )
 
 type JupyterhubClient struct {
@@ -123,8 +124,16 @@ func (j JupyterhubClient) Update(c *gin.Context, form JupyterForm) error {
 }
 
 func (j JupyterhubClient) UpdateTeamValuesAndInstallOrUpdate(ctx context.Context, form JupyterForm) error {
+	err := form.formatValues()
+	if err != nil {
+		return err
+	}
+
 	if form.ImageName != "" && form.ImageTag != "" {
-		j.addCustomImage(&form)
+		err := j.addCustomImage(&form)
+		if err != nil {
+			return err
+		}
 	}
 
 	if err := j.storeJupyterTeamValues(ctx, form); err != nil {
@@ -219,4 +228,31 @@ func addGeneratedJupyterhubConfig(values *JupyterForm) {
 	values.ServiceAccount = values.TeamID
 	values.OAuthCallbackURL = fmt.Sprintf("https://%v.jupyter.knada.io/hub/oauth_callback", values.Slug)
 	values.KnadaTeamSecret = fmt.Sprintf("projects/knada-gcp/secrets/%v", values.TeamID)
+}
+func (v *JupyterConfigurableValues) formatValues() error {
+	floatVal, err := strconv.ParseFloat(v.CPUGuarantee, 64)
+	if err != nil {
+		return err
+	}
+	v.CPUGuarantee = fmt.Sprintf("%.1f", floatVal)
+
+	floatVal, err = strconv.ParseFloat(v.CPULimit, 64)
+	if err != nil {
+		return err
+	}
+	v.CPULimit = fmt.Sprintf("%.1f", floatVal)
+
+	_, err = strconv.ParseFloat(v.MemoryGuarantee, 64)
+	if err != nil {
+		return err
+	}
+	v.MemoryGuarantee = v.MemoryGuarantee + "G"
+
+	_, err = strconv.ParseFloat(v.MemoryLimit, 64)
+	if err != nil {
+		return err
+	}
+	v.MemoryLimit = v.MemoryLimit + "G"
+
+	return nil
 }

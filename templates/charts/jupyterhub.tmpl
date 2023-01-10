@@ -4,25 +4,25 @@
         <div id="content">
             {{ if .values }}
                 <h2>Rediger {{ .team }} sin Jupyter Notebook</h2>
+
+                <form class="pure-form pure-form-stacked" action="delete" method="POST">
+                    <fieldset>
+                        <div class="pure-controls">
+                            <button type="submit"
+                                    onclick="return confirm('Er du sikker på at du vil slette jupyterhubben? Det er ikke mulig å gjenopprette denne senere')"
+                                    class="pure-button button-error"
+                            >
+                                Slett Jupyterhub
+                            </button>
+                        </div>
+                    </fieldset>
+                </form>
             {{ else }}
                 <h2>Ny Jupyter Notebook for {{ .team }}</h2>
             {{ end }}
             {{ with .errors }}
                 {{ . }}
             {{ end }}
-
-            <form class="pure-form pure-form-stacked" action="delete" method="POST">
-                <fieldset>
-                    <div class="pure-controls">
-                        <button type="submit" 
-                            onclick="return confirm('Er du sikker på at du vil slette jupyterhubben? Det er ikke mulig å gjenopprette denne senere')" 
-                            class="pure-button button-error"
-                        >
-                            Slett Jupyterhub
-                        </button>
-                    </div>
-                </fieldset>
-            </form>
 
             <form class="pure-form pure-form-stacked" action="" method="POST">
                 <fieldset>

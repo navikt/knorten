@@ -3,18 +3,18 @@
         {{ if eq . "airflow" }}
             <img src="/assets/img/airflow.svg" alt="Airflow logo">
             <p>Airflow status: {{ if $.PendingAirflowUpgrade }}Upgrading{{ else }}Running{{ end }}</p>
-            <form class="pure-form pure-form-stacked" action="/admin/jupyterhub/sync" method="POST">
+            <form class="pure-form pure-form-stacked" action="/admin/airflow/sync" method="POST">
                 <div class="pure-controls">
-                    <button type="submit" class="pure-button pure-button-primary">Resync Jupyterhub for {{ $.Slug }}</button>
+                    <button type="submit" class="pure-button pure-button-primary">Resync Airflow for {{ $.Slug }}</button>
                     <input type="hidden" name="team" value="{{ $.ID }}" />
                 </div>
             </form>
         {{ else if eq . "jupyterhub" }}
             <img src="/assets/img/jupyter.svg" alt="Jupyter logo">
             <p>Jupyterhub status: {{ if $.PendingJupyterUpgrade }}Upgrading{{ else }}Running{{ end }}</p>
-            <form class="pure-form pure-form-stacked" action="/admin/airflow/sync" method="POST">
+            <form class="pure-form pure-form-stacked" action="/admin/jupyterhub/sync" method="POST">
                 <div class="pure-controls">
-                    <button type="submit" class="pure-button pure-button-primary">Resync Airflow for {{ $.Slug }}</button>
+                    <button type="submit" class="pure-button pure-button-primary">Resync Jupyterhub for {{ $.Slug }}</button>
                     <input type="hidden" name="team" value="{{ $.ID }}" />
                 </div>
             </form>

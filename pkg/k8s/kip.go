@@ -10,6 +10,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 type JupyterProfileList struct {
@@ -19,9 +20,10 @@ type JupyterProfileList struct {
 }
 
 const (
-	kipCPU          = "10m"
-	kipMemory       = "20Mi"
-	imagePullSecret = "ghcr-credentials"
+	kipCPU              = "10m"
+	kipMemory           = "20Mi"
+	kipEphemeralStorage = "10Mi"
+	imagePullSecret     = "ghcr-credentials"
 )
 
 func (c *Client) CreateOrUpdateKIPDaemonset(ctx context.Context) error {
@@ -43,6 +45,11 @@ func (c *Client) CreateOrUpdateKIPDaemonset(ctx context.Context) error {
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"daemonset": "kip"},
 			},
+			UpdateStrategy: appsv1.DaemonSetUpdateStrategy{
+				RollingUpdate: &appsv1.RollingUpdateDaemonSet{
+					MaxUnavailable: &intstr.IntOrString{IntVal: int32(5), Type: intstr.Int},
+				},
+			},
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "kip-",
@@ -57,12 +64,14 @@ func (c *Client) CreateOrUpdateKIPDaemonset(ctx context.Context) error {
 							Image: "k8s.gcr.io/pause:3.8",
 							Resources: v1.ResourceRequirements{
 								Requests: v1.ResourceList{
-									"cpu":    resource.MustParse(kipCPU),
-									"memory": resource.MustParse(kipMemory),
+									"cpu":               resource.MustParse(kipCPU),
+									"ephemeral-storage": resource.MustParse(kipEphemeralStorage),
+									"memory":            resource.MustParse(kipMemory),
 								},
 								Limits: v1.ResourceList{
-									"cpu":    resource.MustParse(kipCPU),
-									"memory": resource.MustParse(kipMemory),
+									"cpu":               resource.MustParse(kipCPU),
+									"ephemeral-storage": resource.MustParse(kipEphemeralStorage),
+									"memory":            resource.MustParse(kipMemory),
 								},
 							},
 						},
@@ -110,12 +119,14 @@ func (c *Client) createImagePullInitContainers(ctx context.Context) ([]v1.Contai
 			Command: []string{"/bin/sh", "-c", "echo pull complete"},
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
-					"cpu":    resource.MustParse(kipCPU),
-					"memory": resource.MustParse(kipMemory),
+					"cpu":               resource.MustParse(kipCPU),
+					"ephemeral-storage": resource.MustParse(kipEphemeralStorage),
+					"memory":            resource.MustParse(kipMemory),
 				},
 				Limits: v1.ResourceList{
-					"cpu":    resource.MustParse(kipCPU),
-					"memory": resource.MustParse(kipMemory),
+					"cpu":               resource.MustParse(kipCPU),
+					"ephemeral-storage": resource.MustParse(kipEphemeralStorage),
+					"memory":            resource.MustParse(kipMemory),
 				},
 			},
 		})

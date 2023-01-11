@@ -3,8 +3,9 @@ package api
 import (
 	"encoding/gob"
 	"fmt"
-	"github.com/nais/knorten/pkg/database/gensql"
 	"net/http"
+
+	"github.com/nais/knorten/pkg/database/gensql"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -214,6 +215,14 @@ func (a *API) setupAdminRoutes() {
 			a.chartClient.Jupyterhub.Sync(c, team)
 		case gensql.ChartTypeAirflow:
 			a.chartClient.Airflow.Sync(c, team)
+		}
+
+		c.Redirect(http.StatusSeeOther, "/admin")
+	})
+
+	a.router.POST("/admin/kip/deploy", func(c *gin.Context) {
+		if err := a.k8sClient.CreateOrUpdateKIPDaemonset(c); err != nil {
+			a.log.WithError(err).Error("create or update kip")
 		}
 
 		c.Redirect(http.StatusSeeOther, "/admin")

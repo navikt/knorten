@@ -6,6 +6,12 @@
             {{ with .errors }}
                 {{ . }}
             {{ end }}
+            <form class="pure-form pure-form-stacked" action="/admin/kip/deploy" method="POST">
+                <div class="pure-controls">
+                    <button type="submit" class="pure-button pure-button-primary">Sync KIP</button>
+                </div>
+            </form>
+            <br/>
             <ul>
                 <li><a href="/admin/jupyterhub">Rediger globale Jupyter verdier</a></li>
                 <li><a href="/admin/airflow">Rediger globale Airflow verdier</a></li>

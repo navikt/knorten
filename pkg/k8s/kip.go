@@ -23,6 +23,7 @@ const (
 	kipCPU              = "10m"
 	kipMemory           = "20Mi"
 	kipEphemeralStorage = "10Mi"
+	kipNamespace        = "knada-system"
 	imagePullSecret     = "ghcr-credentials"
 )
 
@@ -39,11 +40,11 @@ func (c *Client) CreateOrUpdateKIPDaemonset(ctx context.Context) error {
 	daemonset := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kip",
-			Namespace: namespace,
+			Namespace: kipNamespace,
 		},
 		Spec: appsv1.DaemonSetSpec{
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"daemonset": "kip"},
+				MatchLabels: map[string]string{"app": "kip"},
 			},
 			UpdateStrategy: appsv1.DaemonSetUpdateStrategy{
 				RollingUpdate: &appsv1.RollingUpdateDaemonSet{
@@ -53,8 +54,8 @@ func (c *Client) CreateOrUpdateKIPDaemonset(ctx context.Context) error {
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "kip-",
-					Namespace:    namespace,
-					Labels:       map[string]string{"daemonset": "kip"},
+					Namespace:    kipNamespace,
+					Labels:       map[string]string{"app": "kip"},
 				},
 				Spec: v1.PodSpec{
 					InitContainers: initContainers,
@@ -85,7 +86,7 @@ func (c *Client) CreateOrUpdateKIPDaemonset(ctx context.Context) error {
 		},
 	}
 
-	dss, err := c.clientSet.AppsV1().DaemonSets(namespace).List(ctx, metav1.ListOptions{})
+	dss, err := c.clientSet.AppsV1().DaemonSets(kipNamespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -96,7 +97,7 @@ func (c *Client) CreateOrUpdateKIPDaemonset(ctx context.Context) error {
 		}
 	}
 
-	_, err = c.clientSet.AppsV1().DaemonSets(namespace).Create(ctx, daemonset, metav1.CreateOptions{})
+	_, err = c.clientSet.AppsV1().DaemonSets(kipNamespace).Create(ctx, daemonset, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -154,7 +155,7 @@ func (c *Client) getProfiles(ctx context.Context) ([]JupyterProfileList, error) 
 }
 
 func (c *Client) updateKIPDaemonset(ctx context.Context, daemonset *appsv1.DaemonSet) error {
-	_, err := c.clientSet.AppsV1().DaemonSets(namespace).Update(ctx, daemonset, metav1.UpdateOptions{})
+	_, err := c.clientSet.AppsV1().DaemonSets(kipNamespace).Update(ctx, daemonset, metav1.UpdateOptions{})
 	return err
 }
 

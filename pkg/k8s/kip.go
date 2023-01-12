@@ -107,23 +107,7 @@ func (c *Client) CreateOrUpdateKIPDaemonset(ctx context.Context) error {
 		},
 	}
 
-	dss, err := c.clientSet.AppsV1().DaemonSets(kipNamespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-
-	for _, existing := range dss.Items {
-		if existing.Name == daemonset.Name {
-			return c.updateKIPDaemonset(ctx, daemonset)
-		}
-	}
-
-	_, err = c.clientSet.AppsV1().DaemonSets(kipNamespace).Create(ctx, daemonset, metav1.CreateOptions{})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return c.createOrUpdateKIPDaemonset(ctx, daemonset)
 }
 
 func (c *Client) getProfiles(ctx context.Context) ([]JupyterProfileList, error) {
@@ -138,8 +122,20 @@ func (c *Client) getProfiles(ctx context.Context) ([]JupyterProfileList, error) 
 	return unmarshalProfiles(profiles.Value)
 }
 
-func (c *Client) updateKIPDaemonset(ctx context.Context, daemonset *appsv1.DaemonSet) error {
-	_, err := c.clientSet.AppsV1().DaemonSets(kipNamespace).Update(ctx, daemonset, metav1.UpdateOptions{})
+func (c *Client) createOrUpdateKIPDaemonset(ctx context.Context, daemonset *appsv1.DaemonSet) error {
+	dss, err := c.clientSet.AppsV1().DaemonSets(kipNamespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	for _, existing := range dss.Items {
+		if existing.Name == daemonset.Name {
+			_, err := c.clientSet.AppsV1().DaemonSets(kipNamespace).Update(ctx, daemonset, metav1.UpdateOptions{})
+			return err
+		}
+	}
+
+	_, err = c.clientSet.AppsV1().DaemonSets(kipNamespace).Create(ctx, daemonset, metav1.CreateOptions{})
 	return err
 }
 

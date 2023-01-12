@@ -69,7 +69,6 @@ func (c *Client) CreateOrUpdateKIPDaemonset(ctx context.Context) error {
 									"memory":            resource.MustParse(kipMemory),
 								},
 								Limits: v1.ResourceList{
-									"cpu":               resource.MustParse(kipCPU),
 									"ephemeral-storage": resource.MustParse(kipEphemeralStorage),
 									"memory":            resource.MustParse(kipMemory),
 								},

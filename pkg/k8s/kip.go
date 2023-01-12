@@ -143,7 +143,7 @@ func (c *Client) getProfiles(ctx context.Context) ([]JupyterProfileList, error) 
 	var profiles []JupyterProfileList
 	for _, gv := range globVals {
 		if gv.Key == "singleuser.profileList" {
-			profiles, err = extractProfiles(gv.Value)
+			profiles, err = unmarshalProfiles(gv.Value)
 			if err != nil {
 				return nil, err
 			}
@@ -158,7 +158,7 @@ func (c *Client) updateKIPDaemonset(ctx context.Context, daemonset *appsv1.Daemo
 	return err
 }
 
-func extractProfiles(profileListString string) ([]JupyterProfileList, error) {
+func unmarshalProfiles(profileListString string) ([]JupyterProfileList, error) {
 	profiles := []JupyterProfileList{}
 
 	if err := json.Unmarshal([]byte(profileListString), &profiles); err != nil {

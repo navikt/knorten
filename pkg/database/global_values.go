@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
@@ -16,6 +17,10 @@ func (r *Repo) GlobalChartValueInsert(ctx context.Context, key, value string, en
 
 func (r *Repo) GlobalValuesGet(ctx context.Context, chartType gensql.ChartType) ([]gensql.ChartGlobalValue, error) {
 	return r.querier.GlobalValuesGet(ctx, chartType)
+}
+
+func (r *Repo) GlobalJupyterProfilesValueGet(ctx context.Context) (gensql.ChartGlobalValue, error) {
+	return r.querier.GlobalJupyterProfilesValueGet(ctx)
 }
 
 func (r *Repo) GlobalValueDelete(ctx context.Context, key string, chartType gensql.ChartType) error {

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/nais/knorten/pkg/chart"
@@ -86,6 +87,12 @@ func (a *API) setupAPIEndpoints() {
 			a.log.WithError(err).Error("clearing pending upgrade flag in database")
 		}
 
+		c.JSON(http.StatusOK, map[string]any{"status": "ok"})
+	})
+
+	api.GET("/error", func(c *gin.Context) {
+		err := errors.New("error")
+		a.log.WithError(err).Error("clearing pending upgrade flag in database")
 		c.JSON(http.StatusOK, map[string]any{"status": "ok"})
 	})
 }

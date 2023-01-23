@@ -49,6 +49,7 @@ func (c *Client) InstallOrUpgrade(releaseName, chartVersion, namespace string, v
 	settings := cli.New()
 	settings.SetNamespace(namespace)
 	actionConfig := new(action.Configuration)
+	actionConfig.Log = c.log.Printf
 	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "secret", log.Printf); err != nil {
 		c.log.WithError(err).Errorf("error while init actionConfig for %v", releaseName)
 		return err

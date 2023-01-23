@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"flag"
@@ -27,7 +26,6 @@ type Config struct {
 
 func main() {
 	log := logrus.New()
-	ctx := context.Background()
 
 	cfg := Config{}
 	flag.StringVar(&cfg.DecryptKey, "decrypt-key", os.Getenv("DECRYPT_KEY"), "Decrypt key for helm values passed by knorten")
@@ -47,7 +45,7 @@ func main() {
 
 	switch cfg.Action {
 	case string(k8s.InstallOrUpgrade):
-		if err := installOrUpgrade(ctx, cfg, helmClient); err != nil {
+		if err := installOrUpgrade(cfg, helmClient); err != nil {
 			log.WithError(err).Error("install or upgrade")
 			os.Exit(1)
 		}
@@ -62,7 +60,7 @@ func main() {
 	}
 }
 
-func installOrUpgrade(ctx context.Context, cfg Config, helmClient *helm.Client) error {
+func installOrUpgrade(cfg Config, helmClient *helm.Client) error {
 	cryptoClient := crypto.New(cfg.DecryptKey)
 	decryptedValues, err := cryptoClient.DecryptValue(cfg.Values)
 	if err != nil {

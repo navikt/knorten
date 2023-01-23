@@ -45,7 +45,7 @@ func New(log *logrus.Entry) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) InstallOrUpgrade(ctx context.Context, releaseName, chartVersion, namespace string, values map[string]any) error {
+func (c *Client) InstallOrUpgrade(releaseName, chartVersion, namespace string, values map[string]any) error {
 	settings := cli.New()
 	settings.SetNamespace(namespace)
 	actionConfig := new(action.Configuration)

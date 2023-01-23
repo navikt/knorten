@@ -79,7 +79,7 @@ func installOrUpgrade(ctx context.Context, cfg Config, helmClient *helm.Client) 
 		return err
 	}
 
-	if err := helmClient.InstallOrUpgrade(ctx, cfg.ReleaseName, cfg.ChartVersion, k8s.NameToNamespace(cfg.TeamID), values); err != nil {
+	if err := helmClient.InstallOrUpgrade(cfg.ReleaseName, cfg.ChartVersion, k8s.NameToNamespace(cfg.TeamID), values); err != nil {
 		return err
 	}
 

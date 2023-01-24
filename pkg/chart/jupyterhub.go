@@ -153,7 +153,7 @@ func (j JupyterhubClient) Sync(ctx context.Context, teamID string) error {
 	// Release name must be unique across namespaces as the helm chart creates a clusterrole
 	// for each jupyterhub with the same name as the release name.
 	releaseName := JupyterReleaseName(k8s.NameToNamespace(teamID))
-	return j.k8sClient.CreateHelmUpgradeJob(ctx, teamID, releaseName, charty.Values)
+	return j.k8sClient.CreateHelmInstallOrUpgradeJob(ctx, teamID, releaseName, charty.Values)
 }
 
 func (j JupyterhubClient) Delete(c context.Context, teamSlug string) error {

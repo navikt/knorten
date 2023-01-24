@@ -157,7 +157,7 @@ func (a AirflowClient) Sync(ctx context.Context, teamID string) error {
 		return err
 	}
 
-	return a.k8sClient.CreateHelmUpgradeJob(ctx, teamID, string(gensql.ChartTypeAirflow), charty.Values)
+	return a.k8sClient.CreateHelmInstallOrUpgradeJob(ctx, teamID, string(gensql.ChartTypeAirflow), charty.Values)
 }
 
 func (a AirflowClient) Delete(ctx context.Context, teamSlug string) error {

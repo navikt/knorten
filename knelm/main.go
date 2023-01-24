@@ -44,12 +44,12 @@ func main() {
 	}
 
 	switch cfg.Action {
-	case string(k8s.InstallOrUpgrade):
+	case string(helm.ActionInstallOrUpgrade):
 		if err := installOrUpgrade(cfg, helmClient); err != nil {
 			log.WithError(err).Error("install or upgrade")
 			os.Exit(1)
 		}
-	case string(k8s.Uninstall):
+	case string(helm.ActionUninstall):
 		if err := helmClient.Uninstall(cfg.ReleaseName, k8s.NameToNamespace(cfg.TeamID)); err != nil {
 			log.WithError(err).Error("uninstall")
 			os.Exit(1)

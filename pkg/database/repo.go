@@ -40,6 +40,7 @@ func New(dbConnDSN string, log *logrus.Entry) (*Repo, error) {
 		return nil, fmt.Errorf("open sql connection: %w", err)
 	}
 
+	goose.SetLogger(log)
 	goose.SetBaseFS(embedMigrations)
 
 	if err := goose.Up(db, "migrations"); err != nil {

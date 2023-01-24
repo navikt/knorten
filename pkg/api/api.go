@@ -50,6 +50,10 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 		chartClient:  chartClient,
 	}
 
+	api.router.Use(func(ctx *gin.Context) {
+		log.Infof("[GIN] %v %v %v", ctx.Request.Method, ctx.Request.URL.Path, ctx.Writer.Status())
+	})
+
 	api.teamClient = team.NewClient(repo, googleClient, k8sClient, api.chartClient, log)
 
 	session, err := repo.NewSessionStore(sessionKey)

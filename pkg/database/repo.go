@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
+	"time"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/postgres"
@@ -44,6 +45,20 @@ func New(dbConnDSN string, log *logrus.Entry) (*Repo, error) {
 	goose.SetBaseFS(embedMigrations)
 
 	if err := goose.Up(db, "migrations"); err != nil {
+		backoffSchedule := []time.Duration{
+			1 * time.Second,
+			3 * time.Second,
+			10 * time.Second,
+		}
+
+		for _, duration := range backoffSchedule {
+			time.Sleep(duration)
+			err := goose.Up(db, "migrations")
+			if err == nil {
+				break
+			}
+		}
+
 		return nil, fmt.Errorf("goose up: %w", err)
 	}
 

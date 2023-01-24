@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/database"
@@ -13,7 +16,6 @@ import (
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/reflect"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 type JupyterhubClient struct {
@@ -229,6 +231,7 @@ func addGeneratedJupyterhubConfig(values *JupyterForm) {
 	values.OAuthCallbackURL = fmt.Sprintf("https://%v.jupyter.knada.io/hub/oauth_callback", values.Slug)
 	values.KnadaTeamSecret = fmt.Sprintf("projects/knada-gcp/secrets/%v", values.TeamID)
 }
+
 func (v *JupyterConfigurableValues) formatValues() error {
 	floatVal, err := strconv.ParseFloat(v.CPUGuarantee, 64)
 	if err != nil {
@@ -242,17 +245,26 @@ func (v *JupyterConfigurableValues) formatValues() error {
 	}
 	v.CPULimit = fmt.Sprintf("%.1f", floatVal)
 
-	_, err = strconv.ParseFloat(v.MemoryGuarantee, 64)
+	v.MemoryGuarantee, err = parseMemory(v.MemoryGuarantee)
 	if err != nil {
 		return err
 	}
-	v.MemoryGuarantee = v.MemoryGuarantee + "G"
 
-	_, err = strconv.ParseFloat(v.MemoryLimit, 64)
+	v.MemoryLimit, err = parseMemory(v.MemoryLimit)
 	if err != nil {
 		return err
 	}
-	v.MemoryLimit = v.MemoryLimit + "G"
 
 	return nil
+}
+
+func parseMemory(memory string) (string, error) {
+	if strings.HasSuffix(memory, "G") {
+		return memory, nil
+	}
+	_, err := strconv.ParseFloat(memory, 64)
+	if err != nil {
+		return "", err
+	}
+	return memory + "G", nil
 }

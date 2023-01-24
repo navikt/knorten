@@ -95,8 +95,16 @@ func (c Client) Update(ctx *gin.Context) error {
 	}
 
 	if slices.Contains(apps, string(gensql.ChartTypeJupyterhub)) {
+		configValues := chart.JupyterConfigurableValues{}
+		if err := c.repo.TeamConfigurableValuesGet(ctx, gensql.ChartTypeJupyterhub, team.ID, &configValues); err != nil {
+			return err
+		}
+
 		jupyterForm := chart.JupyterForm{
 			Slug: form.Slug,
+			JupyterValues: chart.JupyterValues{
+				JupyterConfigurableValues: configValues,
+			},
 		}
 
 		err = c.chartClient.Jupyterhub.Update(ctx, jupyterForm)

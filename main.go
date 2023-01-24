@@ -31,8 +31,9 @@ type Config struct {
 
 func main() {
 	log := logrus.New()
-	cfg := Config{}
+	log.SetFormatter(&logrus.JSONFormatter{})
 
+	cfg := Config{}
 	flag.StringVar(&cfg.Hostname, "hostname", os.Getenv("HOSTNAME"), "Hostname the application is served from")
 	flag.StringVar(&cfg.ClientID, "oauth2-client-id", os.Getenv("AZURE_APP_CLIENT_ID"), "Client ID for azure app")
 	flag.StringVar(&cfg.ClientSecret, "oauth2-client-secret", os.Getenv("AZURE_APP_CLIENT_SECRET"), "Client secret for azure app")

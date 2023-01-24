@@ -26,6 +26,7 @@ type Config struct {
 
 func main() {
 	log := logrus.New()
+	log.SetFormatter(&logrus.JSONFormatter{})
 
 	cfg := Config{}
 	flag.StringVar(&cfg.DecryptKey, "decrypt-key", os.Getenv("DECRYPT_KEY"), "Decrypt key for helm values passed by knorten")

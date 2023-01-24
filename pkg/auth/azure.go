@@ -90,13 +90,11 @@ func (a *Azure) Verify(ctx context.Context, rawIDToken string) (*oidc.IDToken, e
 
 func (a *Azure) FetchCertificates() (map[string]CertificateList, error) {
 	discoveryURL := a.KeyDiscoveryURL()
-	logrus.Infof("Discover Microsoft signing certificates from %s", discoveryURL)
 	azureKeyDiscovery, err := DiscoverURL(discoveryURL)
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Infof("Decoding certificates for %d keys", len(azureKeyDiscovery.Keys))
 	azureCertificates, err := azureKeyDiscovery.Map()
 	if err != nil {
 		return nil, err

@@ -44,7 +44,8 @@ func New(dbConnDSN string, log *logrus.Entry) (*Repo, error) {
 	goose.SetLogger(log)
 	goose.SetBaseFS(embedMigrations)
 
-	if err := goose.Up(db, "migrations"); err != nil {
+	err = goose.Up(db, "migrations")
+	if err != nil {
 		backoffSchedule := []time.Duration{
 			5 * time.Second,
 			15 * time.Second,
@@ -52,8 +53,9 @@ func New(dbConnDSN string, log *logrus.Entry) (*Repo, error) {
 		}
 
 		for _, duration := range backoffSchedule {
+			log.Infof("Wainting %vs for CloudSql Proxy", duration)
 			time.Sleep(duration)
-			err := goose.Up(db, "migrations")
+			err = goose.Up(db, "migrations")
 			if err == nil {
 				break
 			}

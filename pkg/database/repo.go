@@ -46,9 +46,9 @@ func New(dbConnDSN string, log *logrus.Entry) (*Repo, error) {
 
 	if err := goose.Up(db, "migrations"); err != nil {
 		backoffSchedule := []time.Duration{
-			1 * time.Second,
-			3 * time.Second,
-			10 * time.Second,
+			5 * time.Second,
+			15 * time.Second,
+			30 * time.Second,
 		}
 
 		for _, duration := range backoffSchedule {

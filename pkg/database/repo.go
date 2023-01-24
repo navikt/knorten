@@ -41,26 +41,8 @@ func New(dbConnDSN string, log *logrus.Entry) (*Repo, error) {
 		return nil, fmt.Errorf("open sql connection: %w", err)
 	}
 
-	goose.SetLogger(log)
-	goose.SetBaseFS(embedMigrations)
-
-	err = goose.Up(db, "migrations")
+	err = gooseMigrationWithRetries(log, db)
 	if err != nil {
-		backoffSchedule := []time.Duration{
-			5 * time.Second,
-			15 * time.Second,
-			30 * time.Second,
-		}
-
-		for _, duration := range backoffSchedule {
-			log.Infof("Wainting %vs for CloudSql Proxy", duration)
-			time.Sleep(duration)
-			err = goose.Up(db, "migrations")
-			if err == nil {
-				break
-			}
-		}
-
 		return nil, fmt.Errorf("goose up: %w", err)
 	}
 
@@ -69,6 +51,30 @@ func New(dbConnDSN string, log *logrus.Entry) (*Repo, error) {
 		db:      db,
 		log:     log,
 	}, nil
+}
+
+func gooseMigrationWithRetries(log *logrus.Entry, db *sql.DB) error {
+	goose.SetLogger(log)
+	goose.SetBaseFS(embedMigrations)
+
+	err := goose.Up(db, "migrations")
+	if err != nil {
+		backoffSchedule := []time.Duration{
+			5 * time.Second,
+			15 * time.Second,
+			30 * time.Second,
+		}
+
+		for _, duration := range backoffSchedule {
+			time.Sleep(duration)
+			err = goose.Up(db, "migrations")
+			if err == nil {
+				return nil
+			}
+		}
+	}
+
+	return err
 }
 
 func (r *Repo) NewSessionStore(key string) (gin.HandlerFunc, error) {

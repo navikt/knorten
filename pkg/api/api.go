@@ -38,9 +38,15 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 		return nil, err
 	}
 
+	router := gin.New()
+	router.Use(gin.Recovery())
+	router.Use(func(ctx *gin.Context) {
+		log.Infof("[GIN] %v %v %v", ctx.Request.Method, ctx.Request.URL.Path, ctx.Writer.Status())
+	})
+
 	api := API{
 		azureClient:  azureClient,
-		router:       gin.Default(),
+		router:       router,
 		repo:         repo,
 		googleClient: googleClient,
 		k8sClient:    k8sClient,
@@ -49,10 +55,6 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 		log:          log,
 		chartClient:  chartClient,
 	}
-
-	api.router.Use(func(ctx *gin.Context) {
-		log.Infof("[GIN] %v %v %v", ctx.Request.Method, ctx.Request.URL.Path, ctx.Writer.Status())
-	})
 
 	api.teamClient = team.NewClient(repo, googleClient, k8sClient, api.chartClient, log)
 

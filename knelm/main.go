@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"flag"
@@ -27,7 +26,7 @@ type Config struct {
 
 func main() {
 	log := logrus.New()
-	ctx := context.Background()
+	log.SetFormatter(&logrus.JSONFormatter{})
 
 	cfg := Config{}
 	flag.StringVar(&cfg.DecryptKey, "decrypt-key", os.Getenv("DECRYPT_KEY"), "Decrypt key for helm values passed by knorten")
@@ -46,12 +45,12 @@ func main() {
 	}
 
 	switch cfg.Action {
-	case string(k8s.InstallOrUpgrade):
-		if err := installOrUpgrade(ctx, cfg, helmClient); err != nil {
+	case string(helm.ActionInstallOrUpgrade):
+		if err := installOrUpgrade(cfg, helmClient); err != nil {
 			log.WithError(err).Error("install or upgrade")
 			os.Exit(1)
 		}
-	case string(k8s.Uninstall):
+	case string(helm.ActionUninstall):
 		if err := helmClient.Uninstall(cfg.ReleaseName, k8s.NameToNamespace(cfg.TeamID)); err != nil {
 			log.WithError(err).Error("uninstall")
 			os.Exit(1)
@@ -62,7 +61,7 @@ func main() {
 	}
 }
 
-func installOrUpgrade(ctx context.Context, cfg Config, helmClient *helm.Client) error {
+func installOrUpgrade(cfg Config, helmClient *helm.Client) error {
 	cryptoClient := crypto.New(cfg.DecryptKey)
 	decryptedValues, err := cryptoClient.DecryptValue(cfg.Values)
 	if err != nil {
@@ -79,7 +78,7 @@ func installOrUpgrade(ctx context.Context, cfg Config, helmClient *helm.Client) 
 		return err
 	}
 
-	if err := helmClient.InstallOrUpgrade(ctx, cfg.ReleaseName, cfg.ChartVersion, k8s.NameToNamespace(cfg.TeamID), values); err != nil {
+	if err := helmClient.InstallOrUpgrade(cfg.ReleaseName, cfg.ChartVersion, k8s.NameToNamespace(cfg.TeamID), values); err != nil {
 		return err
 	}
 

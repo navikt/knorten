@@ -15,12 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type HelmAction string
-
 const (
-	InstallOrUpgrade HelmAction = "install-or-upgrade"
-	Uninstall        HelmAction = "uninstall"
-
 	namespace                = "knada-system"
 	saName                   = "knorten"
 	ttlSecondsAfterFinished  = 60
@@ -30,11 +25,7 @@ const (
 	helmRepoConfigMountPath  = "/root/.config/helm/repositories.yaml"
 )
 
-func CreateJobPrefix(teamID, chartType, action string) string {
-	return fmt.Sprintf("%v-%v-%v-", teamID, chartType, action)
-}
-
-func (c *Client) CreateHelmUpgradeJob(ctx context.Context, teamID, releaseName string, values map[string]any) error {
+func (c *Client) CreateHelmInstallOrUpgradeJob(ctx context.Context, teamID, releaseName string, values map[string]any) error {
 	if c.dryRun {
 		c.log.Infof("NOOP: Running in dry run mode")
 		out, err := yaml.Marshal(values)
@@ -62,72 +53,31 @@ func (c *Client) CreateHelmUpgradeJob(ctx context.Context, teamID, releaseName s
 		return err
 	}
 
-	job := &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: CreateJobPrefix(teamID, chartType, string(InstallOrUpgrade)),
-			Namespace:    namespace,
-		},
-		Spec: batchv1.JobSpec{
-			Template: v1.PodTemplateSpec{
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
-						{
-							Name:  string(InstallOrUpgrade),
-							Image: c.knelmImage,
-							Command: []string{
-								"/app/knelm",
-								fmt.Sprintf("--action=%v", string(InstallOrUpgrade)),
-								fmt.Sprintf("--releasename=%v", releaseName),
-								fmt.Sprintf("--team=%v", teamID),
-							},
-							EnvFrom: []v1.EnvFromSource{
-								{
-									SecretRef: &v1.SecretEnvSource{
-										LocalObjectReference: v1.LocalObjectReference{
-											Name: "knelm",
-										},
-									},
-								},
-							},
-							Env: []v1.EnvVar{
-								{
-									Name:  "HELM_VALUES",
-									Value: encValues,
-								},
-								{
-									Name:  "CHART_VERSION",
-									Value: chartVersion,
-								},
-							},
-							VolumeMounts: []v1.VolumeMount{
-								{
-									Name:      "helm-repos-config",
-									MountPath: helmRepoConfigMountPath,
-									SubPath:   helmRepoConfigMapSubPath,
-								},
-							},
-						},
-					},
-					RestartPolicy:      v1.RestartPolicyNever,
-					ServiceAccountName: saName,
-					Volumes: []v1.Volume{
-						{
-							Name: "helm-repos-config",
-							VolumeSource: v1.VolumeSource{
-								ConfigMap: &v1.ConfigMapVolumeSource{
-									LocalObjectReference: v1.LocalObjectReference{
-										Name: helmRepoConfigMap,
-									},
-								},
-							},
-						},
-					},
+	job := c.createJobSpec(teamID, releaseName, string(helm.ActionInstallOrUpgrade))
+
+	container := job.Spec.Template.Spec.Containers[0]
+	container.EnvFrom = []v1.EnvFromSource{
+		{
+			SecretRef: &v1.SecretEnvSource{
+				LocalObjectReference: v1.LocalObjectReference{
+					Name: "knelm",
 				},
 			},
-			TTLSecondsAfterFinished: intToInt32Ptr(ttlSecondsAfterFinished),
-			BackoffLimit:            intToInt32Ptr(backoffLimit),
 		},
 	}
+
+	container.Env = []v1.EnvVar{
+		{
+			Name:  "HELM_VALUES",
+			Value: encValues,
+		},
+		{
+			Name:  "CHART_VERSION",
+			Value: chartVersion,
+		},
+	}
+
+	job.Spec.Template.Spec.Containers[0] = container
 
 	_, err = c.clientSet.BatchV1().Jobs(namespace).Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {
@@ -147,9 +97,18 @@ func (c *Client) CreateHelmUninstallJob(ctx context.Context, teamID, releaseName
 		return nil
 	}
 
+	_, err := c.clientSet.BatchV1().Jobs(namespace).Create(ctx, c.createJobSpec(teamID, releaseName, string(helm.ActionUninstall)), metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) createJobSpec(teamID, releaseName, action string) *batchv1.Job {
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: CreateJobPrefix(teamID, helm.ReleaseNameToChartType(releaseName), string(Uninstall)),
+			GenerateName: fmt.Sprintf("%v-%v-", teamID, releaseName),
 			Namespace:    namespace,
 		},
 		Spec: batchv1.JobSpec{
@@ -157,11 +116,11 @@ func (c *Client) CreateHelmUninstallJob(ctx context.Context, teamID, releaseName
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
-							Name:  string(Uninstall),
+							Name:  "knelm",
 							Image: c.knelmImage,
 							Command: []string{
 								"/app/knelm",
-								fmt.Sprintf("--action=%v", string(Uninstall)),
+								fmt.Sprintf("--action=%v", action),
 								fmt.Sprintf("--releasename=%v", releaseName),
 								fmt.Sprintf("--team=%v", teamID),
 							},
@@ -195,12 +154,7 @@ func (c *Client) CreateHelmUninstallJob(ctx context.Context, teamID, releaseName
 		},
 	}
 
-	_, err := c.clientSet.BatchV1().Jobs(namespace).Create(ctx, job, metav1.CreateOptions{})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return job
 }
 
 func (c *Client) encryptValues(values map[string]any) (string, error) {

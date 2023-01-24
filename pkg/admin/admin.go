@@ -91,7 +91,7 @@ func (a *Client) updateHelmReleases(ctx context.Context, chartType gensql.ChartT
 			// Release name must be unique across namespaces as the helm chart creates a clusterrole
 			// for each jupyterhub with the same name as the release name.
 			releaseName := chart.JupyterReleaseName(k8s.NameToNamespace(team))
-			if err := a.k8sClient.CreateHelmUpgradeJob(ctx, team, releaseName, charty.Values); err != nil {
+			if err := a.k8sClient.CreateHelmInstallOrUpgradeJob(ctx, team, releaseName, charty.Values); err != nil {
 				return err
 			}
 		case gensql.ChartTypeAirflow:
@@ -101,7 +101,7 @@ func (a *Client) updateHelmReleases(ctx context.Context, chartType gensql.ChartT
 				return err
 			}
 
-			if err := a.k8sClient.CreateHelmUpgradeJob(ctx, team, string(gensql.ChartTypeAirflow), charty.Values); err != nil {
+			if err := a.k8sClient.CreateHelmInstallOrUpgradeJob(ctx, team, string(gensql.ChartTypeAirflow), charty.Values); err != nil {
 				return err
 			}
 		default:

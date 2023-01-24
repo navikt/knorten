@@ -7,15 +7,21 @@ import (
 	"strings"
 	"time"
 
-	"helm.sh/helm/v3/pkg/chart"
-	"helm.sh/helm/v3/pkg/release"
-
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/sirupsen/logrus"
 	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+)
+
+type Action string
+
+const (
+	timeout                       = 30 * time.Minute
+	ActionInstallOrUpgrade Action = "install-or-upgrade"
+	ActionUninstall        Action = "uninstall"
 )
 
 type Application interface {
@@ -32,10 +38,6 @@ type Chart struct {
 	Name string
 }
 
-const (
-	helmTimeout = 30 * time.Minute
-)
-
 func New(log *logrus.Entry) (*Client, error) {
 	if err := UpdateHelmRepositories(); err != nil {
 		return nil, err
@@ -45,7 +47,7 @@ func New(log *logrus.Entry) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) InstallOrUpgrade(ctx context.Context, releaseName, chartVersion, namespace string, values map[string]any) error {
+func (c *Client) InstallOrUpgrade(releaseName, chartVersion, namespace string, values map[string]any) error {
 	settings := cli.New()
 	settings.SetNamespace(namespace)
 	actionConfig := new(action.Configuration)
@@ -54,21 +56,8 @@ func (c *Client) InstallOrUpgrade(ctx context.Context, releaseName, chartVersion
 		return err
 	}
 
-	listClient := action.NewList(actionConfig)
-	results, err := listClient.Run()
-	if err != nil {
-		c.log.WithError(err).Errorf("error while listing helm releases %v", releaseName)
-		return err
-	}
-
-	exists := false
-	for _, rel := range results {
-		if rel.Name == releaseName {
-			exists = true
-		}
-	}
-
 	var charty *chart.Chart
+	var err error
 	switch ReleaseNameToChartType(releaseName) {
 	case string(gensql.ChartTypeJupyterhub):
 		charty, err = FetchChart("jupyterhub", "jupyterhub", chartVersion)
@@ -84,28 +73,30 @@ func (c *Client) InstallOrUpgrade(ctx context.Context, releaseName, chartVersion
 
 	charty.Values = values
 
-	if !exists {
-		c.log.Infof("Installing release %v", releaseName)
-		installClient := action.NewInstall(actionConfig)
-		installClient.Namespace = namespace
-		installClient.ReleaseName = releaseName
-		installClient.Timeout = helmTimeout
+	exists, err := c.releaseExists(actionConfig, releaseName)
 
-		_, err = installClient.Run(charty, charty.Values)
-		if err != nil {
-			c.log.WithError(err).Errorf("error while installing release %v", releaseName)
-			return err
-		}
-	} else {
+	if exists {
 		c.log.Infof("Upgrading existing release %v", releaseName)
 		upgradeClient := action.NewUpgrade(actionConfig)
 		upgradeClient.Namespace = namespace
 		upgradeClient.Atomic = true
-		upgradeClient.Timeout = helmTimeout
+		upgradeClient.Timeout = timeout
 
 		_, err = upgradeClient.Run(releaseName, charty, charty.Values)
 		if err != nil {
 			c.log.WithError(err).Errorf("error while upgrading release %v", releaseName)
+			return err
+		}
+	} else {
+		c.log.Infof("Installing new release %v", releaseName)
+		installClient := action.NewInstall(actionConfig)
+		installClient.Namespace = namespace
+		installClient.ReleaseName = releaseName
+		installClient.Timeout = timeout
+
+		_, err = installClient.Run(charty, charty.Values)
+		if err != nil {
+			c.log.WithError(err).Errorf("error while installing new release %v", releaseName)
 			return err
 		}
 	}
@@ -122,17 +113,14 @@ func (c *Client) Uninstall(releaseName, namespace string) error {
 		return err
 	}
 
-	listClient := action.NewList(actionConfig)
-	listClient.Deployed = true
-	results, err := listClient.Run()
+	exists, err := c.releaseExists(actionConfig, releaseName)
 	if err != nil {
-		c.log.WithError(err).Errorf("error while listing helm releases %v", releaseName)
 		return err
 	}
 
-	if !releaseExists(results, releaseName) {
+	if !exists {
 		c.log.Infof("release %v does not exist", releaseName)
-		return err
+		return nil
 	}
 
 	uninstallClient := action.NewUninstall(actionConfig)
@@ -145,14 +133,22 @@ func (c *Client) Uninstall(releaseName, namespace string) error {
 	return nil
 }
 
-func releaseExists(releases []*release.Release, releaseName string) bool {
-	for _, r := range releases {
+func (c *Client) releaseExists(actionConfig *action.Configuration, releaseName string) (bool, error) {
+	listClient := action.NewList(actionConfig)
+	listClient.Deployed = true
+	results, err := listClient.Run()
+	if err != nil {
+		c.log.WithError(err).Errorf("error while listing helm releases %v", releaseName)
+		return false, err
+	}
+
+	for _, r := range results {
 		if r.Name == releaseName {
-			return true
+			return true, nil
 		}
 	}
 
-	return false
+	return false, nil
 }
 
 func ReleaseNameToChartType(releaseName string) string {

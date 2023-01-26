@@ -278,7 +278,7 @@ func (c *Client) createCloudSQLProxyDeployment(ctx context.Context, name, namesp
 					Containers: []v1.Container{
 						{
 							Name:  "cloudsql-proxy",
-							Image: "gcr.io/cloudsql-docker/gce-proxy:1.29.0-alpine",
+							Image: "gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.0.0-alpine",
 							Ports: []v1.ContainerPort{
 								{
 									Protocol:      v1.ProtocolTCP,
@@ -287,8 +287,10 @@ func (c *Client) createCloudSQLProxyDeployment(ctx context.Context, name, namesp
 							},
 							Command: []string{
 								"/cloud_sql_proxy",
-								"-term_timeout=30s",
-								fmt.Sprintf("-instances=%v:%v:%v=tcp:0.0.0.0:%v", c.gcpProject, c.gcpRegion, dbInstance, port),
+								"--max-sigterm-delay=30s",
+								"--address=0.0.0.0",
+								fmt.Sprintf("--port=%v", port),
+								fmt.Sprintf("%v:%v:%v", c.gcpProject, c.gcpRegion, dbInstance),
 							},
 						},
 					},

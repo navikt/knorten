@@ -49,10 +49,12 @@ spec:
             subPath: repositories.yaml
       - name: cloudsql-proxy
         command:
-        - /cloud_sql_proxy
-        - -term_timeout=30s
-        - -instances=knada-gcp:europe-west1:knorten=tcp:5432
-        image: gcr.io/cloudsql-docker/gce-proxy:1.29.0-alpine
+        - /cloud-sql-proxy
+        - --max-sigterm-delay=30s
+        - --address=0.0.0.0
+        - --port=5432
+        - knada-gcp:europe-west1:knorten
+        image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.0.0-alpine
         ports:
         - containerPort: 5432
           protocol: TCP

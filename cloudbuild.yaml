@@ -1,5 +1,4 @@
 options:
-  logging: CLOUD_LOGGING_ONLY
   workerPool:
     "projects/knada-gcp/locations/europe-west1/workerPools/knada-cloudbuild-pool"
 

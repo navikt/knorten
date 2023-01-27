@@ -1,8 +1,8 @@
 options:
+  logging: CLOUD_LOGGING_ONLY
   workerPool:
     "projects/knada-gcp/locations/europe-west1/workerPools/knada-cloudbuild-pool"
 
-logsBucket: gs://knada-gcp_cloudbuild
 serviceAccount: "projects/knada-gcp/serviceAccounts/ci-knorten-cloud-build@knada-gcp.iam.gserviceaccount.com"
 
 steps:

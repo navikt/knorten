@@ -17,5 +17,6 @@ steps:
   - --image=europe-west1-docker.pkg.dev/$PROJECT_ID/knorten/knorten:$SHORT_SHA
   - --location=$_REGION
   - --cluster=$_CLUSTER
+  - --timeout=10m0s
 images:
 - "europe-west1-docker.pkg.dev/$PROJECT_ID/knorten/knorten:$SHORT_SHA"

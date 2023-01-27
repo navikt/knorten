@@ -286,7 +286,7 @@ func (c *Client) createCloudSQLProxyDeployment(ctx context.Context, name, namesp
 								},
 							},
 							Command: []string{
-								"/cloud-sql-proxy",
+								"/cloud_sql_proxy",
 								"--max-sigterm-delay=30s",
 								"--address=0.0.0.0",
 								fmt.Sprintf("--port=%v", port),

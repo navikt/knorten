@@ -63,6 +63,7 @@ func gooseMigrationWithRetries(log *logrus.Entry, db *sql.DB) error {
 			5 * time.Second,
 			15 * time.Second,
 			30 * time.Second,
+			60 * time.Second,
 		}
 
 		for _, duration := range backoffSchedule {

@@ -332,12 +332,13 @@ func (a AirflowClient) createWebserverSecret(ctx context.Context, teamID string)
 
 func (a AirflowClient) deleteDB(ctx context.Context, teamID string) {
 	dbInstance := CreateAirflowDBInstanceName(teamID)
-	if err := a.googleClient.DeleteCloudSQLInstance(ctx, dbInstance); err != nil {
+
+	if err := a.googleClient.RemoveSQLClientIAMBinding(ctx, teamID); err != nil {
 		a.log.WithError(err).Errorf("error while deleting dbInstace %v for %v", dbInstance, teamID)
 		return
 	}
 
-	if err := a.googleClient.RemoveSQLClientIAMBinding(ctx, teamID); err != nil {
+	if err := a.googleClient.DeleteCloudSQLInstance(ctx, dbInstance); err != nil {
 		a.log.WithError(err).Errorf("error while deleting dbInstace %v for %v", dbInstance, teamID)
 		return
 	}

@@ -56,14 +56,16 @@ type AirflowValues struct {
 	// Generated config
 	WebserverEnv               string `helm:"webserver.env"`
 	IngressHosts               string `helm:"ingress.web.hosts"`
+	WebserverServiceAccount    string `helm:"webserver.serviceAccount.name"`
 	WebserverGitSynkRepo       string `helm:"webserver.extraContainers.[0].args.[0]"`
 	WebserverGitSynkRepoBranch string `helm:"webserver.extraContainers.[0].args.[1]"`
 	SchedulerGitInitRepo       string `helm:"scheduler.extraInitContainers.[0].args.[0]"`
 	SchedulerGitInitRepoBranch string `helm:"scheduler.extraInitContainers.[0].args.[1]"`
 	SchedulerGitSynkRepo       string `helm:"scheduler.extraContainers.[0].args.[0]"`
 	SchedulerGitSynkRepoBranch string `helm:"scheduler.extraContainers.[0].args.[1]"`
-	WorkersGitSynkRepo         string `helm:"workers.extraContainers.[0].args.[0]"`
-	WorkersGitSynkRepoBranch   string `helm:"workers.extraContainers.[0].args.[1]"`
+	SchedulerEnvs              string `helm:"scheduler.env"`
+	WorkersGitSynkRepo         string `helm:"workers.extraInitContainers.[0].args.[0]"`
+	WorkersGitSynkRepoBranch   string `helm:"workers.extraInitContainers.[0].args.[1]"`
 	WorkerServiceAccount       string `helm:"workers.serviceAccount.name"`
 	ExtraEnvs                  string `helm:"env"`
 	MetadataSecretName         string `helm:"data.metadataSecretName"`
@@ -106,12 +108,16 @@ func (a AirflowClient) Create(ctx *gin.Context, slug string) error {
 	if err != nil {
 		return err
 	}
+	bucketName := fmt.Sprintf("airflow-logs-%v", form.TeamID)
 
-	if err := a.addGeneratedConfig(ctx, dbPassword, &form); err != nil {
+	if err := a.addGeneratedConfig(ctx, dbPassword, bucketName, &form); err != nil {
 		return err
 	}
 
+	// todo: bør ut i k8s job denne også
 	go a.createDB(ctx, form.TeamID, dbPassword)
+
+	go a.createLogBucket(ctx, form.TeamID, bucketName)
 
 	go a.createWebserverSecret(ctx, form.TeamID)
 
@@ -194,11 +200,16 @@ func (a AirflowClient) addAirflowTeamValues(ctx context.Context, form AirflowFor
 	return nil
 }
 
-func (a AirflowClient) addGeneratedConfig(ctx context.Context, dbPassword string, values *AirflowForm) error {
+func (a AirflowClient) addGeneratedConfig(ctx context.Context, dbPassword, bucketName string, values *AirflowForm) error {
 	values.IngressHosts = fmt.Sprintf("[{\"name\":\"%v\",\"tls\":{\"enabled\":true,\"secretName\":\"%v\"}}]", values.Slug+".airflow.knada.io", "airflow-certificate")
+	values.WebserverServiceAccount = values.TeamID
 	values.WorkerServiceAccount = values.TeamID
 	setSynkRepoAndBranch(values)
 	if err := setUserEnvs(values); err != nil {
+		return err
+	}
+
+	if err := setSchedulerEnvs(values, bucketName); err != nil {
 		return err
 	}
 
@@ -231,6 +242,28 @@ func (a AirflowClient) addGeneratedConfig(ctx context.Context, dbPassword string
 type airflowEnv struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
+}
+
+func setSchedulerEnvs(values *AirflowForm, bucketName string) error {
+	envs := []airflowEnv{
+		{
+			Name:  "AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER",
+			Value: fmt.Sprintf("gs://%v", bucketName),
+		},
+		{
+			Name:  "AIRFLOW__LOGGING__REMOTE_LOGGING",
+			Value: "True",
+		},
+	}
+
+	envBytes, err := json.Marshal(envs)
+	if err != nil {
+		return err
+	}
+
+	values.SchedulerEnvs = string(envBytes)
+
+	return nil
 }
 
 func setWebserverEnv(values *AirflowForm) error {
@@ -314,6 +347,16 @@ func (a AirflowClient) createDB(ctx context.Context, teamID, dbPassword string) 
 	if err := a.k8sClient.CreateCloudSQLProxy(ctx, sqlProxyHost, teamID, k8s.NameToNamespace(teamID), dbInstance); err != nil {
 		a.log.WithError(err).Errorf("error while creating dbInstance %v for %v", dbInstance, teamID)
 		return
+	}
+}
+
+func (a AirflowClient) createLogBucket(ctx context.Context, teamID, bucketName string) {
+	if err := a.googleClient.CreateBucket(ctx, teamID, bucketName); err != nil {
+		a.log.WithError(err).Error("create log bucket")
+	}
+
+	if err := a.googleClient.CreateServiceAccountObjectAdminBinding(ctx, teamID, bucketName); err != nil {
+		a.log.WithError(err).Error("create service account object admin binding to log bucket")
 	}
 }
 

@@ -74,6 +74,9 @@ func (c *Client) InstallOrUpgrade(releaseName, chartVersion, namespace string, v
 	charty.Values = values
 
 	exists, err := c.releaseExists(actionConfig, releaseName)
+	if err != nil {
+		return err
+	}
 
 	if exists {
 		c.log.Infof("Upgrading existing release %v", releaseName)

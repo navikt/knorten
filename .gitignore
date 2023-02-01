@@ -23,3 +23,5 @@ jupyterhub-*.yaml
 .tool-versions
 *.json
 *.env
+
+hack

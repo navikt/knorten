@@ -25,6 +25,8 @@ type Querier interface {
 	TeamSetPendingAirflowUpgrade(ctx context.Context, arg TeamSetPendingAirflowUpgradeParams) error
 	TeamSetPendingJupyterUpgrade(ctx context.Context, arg TeamSetPendingJupyterUpgradeParams) error
 	TeamUpdate(ctx context.Context, arg TeamUpdateParams) error
+	TeamValueDelete(ctx context.Context, arg TeamValueDeleteParams) error
+	TeamValueGet(ctx context.Context, arg TeamValueGetParams) (ChartTeamValue, error)
 	TeamValueInsert(ctx context.Context, arg TeamValueInsertParams) error
 	TeamValuesGet(ctx context.Context, arg TeamValuesGetParams) ([]ChartTeamValue, error)
 	TeamsForAppGet(ctx context.Context, chartType ChartType) ([]string, error)

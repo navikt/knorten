@@ -103,6 +103,20 @@ func (r *Repo) TeamValuesGet(ctx context.Context, chartType gensql.ChartType, te
 	})
 }
 
+func (r *Repo) TeamValueGet(ctx context.Context, key, team string) (gensql.ChartTeamValue, error) {
+	return r.querier.TeamValueGet(ctx, gensql.TeamValueGetParams{
+		Key:    key,
+		TeamID: team,
+	})
+}
+
+func (r *Repo) TeamValueDelete(ctx context.Context, key, team string) error {
+	return r.querier.TeamValueDelete(ctx, gensql.TeamValueDeleteParams{
+		Key:    key,
+		TeamID: team,
+	})
+}
+
 func (r *Repo) TeamConfigurableValuesGet(ctx context.Context, chartType gensql.ChartType, team string, obj any) error {
 	teamValues, err := r.querier.TeamValuesGet(ctx, gensql.TeamValuesGetParams{
 		ChartType: chartType,

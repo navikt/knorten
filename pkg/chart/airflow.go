@@ -63,7 +63,6 @@ type AirflowValues struct {
 	SchedulerGitInitRepoBranch string `helm:"scheduler.extraInitContainers.[0].args.[1]"`
 	SchedulerGitSynkRepo       string `helm:"scheduler.extraContainers.[0].args.[0]"`
 	SchedulerGitSynkRepoBranch string `helm:"scheduler.extraContainers.[0].args.[1]"`
-	SchedulerEnvs              string `helm:"scheduler.env"`
 	WorkersGitSynkRepo         string `helm:"workers.extraInitContainers.[0].args.[0]"`
 	WorkersGitSynkRepoBranch   string `helm:"workers.extraInitContainers.[0].args.[1]"`
 	WorkerServiceAccount       string `helm:"workers.serviceAccount.name"`
@@ -205,11 +204,7 @@ func (a AirflowClient) addGeneratedConfig(ctx context.Context, dbPassword, bucke
 	values.WebserverServiceAccount = values.TeamID
 	values.WorkerServiceAccount = values.TeamID
 	setSynkRepoAndBranch(values)
-	if err := setUserEnvs(values); err != nil {
-		return err
-	}
-
-	if err := setSchedulerEnvs(values, bucketName); err != nil {
+	if err := setUserEnvs(values, bucketName); err != nil {
 		return err
 	}
 
@@ -244,35 +239,15 @@ type airflowEnv struct {
 	Value string `json:"value"`
 }
 
-func setSchedulerEnvs(values *AirflowForm, bucketName string) error {
+func setWebserverEnv(values *AirflowForm) error {
 	envs := []airflowEnv{
 		{
-			Name:  "AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER",
-			Value: fmt.Sprintf("gs://%v", bucketName),
-		},
-		{
-			Name:  "AIRFLOW__LOGGING__REMOTE_LOGGING",
-			Value: "True",
+			Name:  "AIRFLOW_USERS",
+			Value: strings.Join(values.Users, ","),
 		},
 	}
 
 	envBytes, err := json.Marshal(envs)
-	if err != nil {
-		return err
-	}
-
-	values.SchedulerEnvs = string(envBytes)
-
-	return nil
-}
-
-func setWebserverEnv(values *AirflowForm) error {
-	env := airflowEnv{
-		Name:  "AIRFLOW_USERS",
-		Value: strings.Join(values.Users, ","),
-	}
-
-	envBytes, err := json.Marshal([]airflowEnv{env})
 	if err != nil {
 		return err
 	}
@@ -282,7 +257,7 @@ func setWebserverEnv(values *AirflowForm) error {
 	return nil
 }
 
-func setUserEnvs(values *AirflowForm) error {
+func setUserEnvs(values *AirflowForm, bucketName string) error {
 	userEnvs := []airflowEnv{
 		{
 			Name:  "KNADA_TEAM_SECRET",
@@ -295,6 +270,14 @@ func setUserEnvs(values *AirflowForm) error {
 		{
 			Name:  "NAMESPACE",
 			Value: k8s.NameToNamespace(values.TeamID),
+		},
+		{
+			Name:  "AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER",
+			Value: fmt.Sprintf("gs://%v", bucketName),
+		},
+		{
+			Name:  "AIRFLOW__LOGGING__REMOTE_LOGGING",
+			Value: "True",
 		},
 	}
 

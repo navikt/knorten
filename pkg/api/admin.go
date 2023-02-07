@@ -220,6 +220,24 @@ func (a *API) setupAdminRoutes() {
 		c.Redirect(http.StatusSeeOther, "/admin")
 	})
 
+	a.router.POST("/admin/:chart/unlock", func(c *gin.Context) {
+		session := sessions.Default(c)
+		chartType := getChartType(c.Param("chart"))
+		team := c.PostForm("team")
+
+		err := a.repo.TeamSetPendingUpgrade(c, team, string(chartType), false)
+		if err != nil {
+			a.log.WithError(err).Error("create or update kip")
+			session.AddFlash(err.Error())
+			err = session.Save()
+			if err != nil {
+				a.log.WithError(err).Error("problem saving session")
+			}
+		}
+
+		c.Redirect(http.StatusSeeOther, "/admin")
+	})
+
 	a.router.POST("/admin/kip/deploy", func(c *gin.Context) {
 		session := sessions.Default(c)
 

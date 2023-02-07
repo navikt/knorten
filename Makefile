@@ -33,7 +33,7 @@ local:
 	  --session-key online-session
 
 local-offline:
-	go run . \
+	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" go run . \
 	  --hostname=localhost \
 	  --oauth2-client-id=$(AZURE_APP_CLIENT_ID) \
 	  --oauth2-client-secret=$(AZURE_APP_CLIENT_SECRET) \

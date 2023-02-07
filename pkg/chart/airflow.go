@@ -158,12 +158,12 @@ func (a AirflowClient) Update(ctx context.Context, form AirflowForm) error {
 
 func (a AirflowClient) Sync(ctx context.Context, teamID string) error {
 	application := helmApps.NewAirflow(teamID, a.repo, a.cryptClient, a.chartVersion)
-	chart, err := application.Chart(ctx)
+	charty, err := application.Chart(ctx)
 	if err != nil {
 		return err
 	}
 
-	return a.k8sClient.CreateHelmInstallOrUpgradeJob(ctx, teamID, string(gensql.ChartTypeAirflow), chart.Values)
+	return a.k8sClient.CreateHelmInstallOrUpgradeJob(ctx, teamID, string(gensql.ChartTypeAirflow), charty.Values)
 }
 
 func (a AirflowClient) Delete(ctx context.Context, teamSlug string) error {

@@ -9,6 +9,14 @@
                     <input type="hidden" name="team" value="{{ $.ID }}" />
                 </div>
             </form>
+            {{ if $.PendingAirflowUpgrade }}
+                <form class="pure-form pure-form-stacked" action="/admin/airflow/unlock" method="POST">
+                    <div class="pure-controls">
+                        <button type="submit" class="pure-button pure-button-primary">Lås opp Airflow</button>
+                        <input type="hidden" name="team" value="{{ $.ID }}" />
+                    </div>
+                </form>
+            {{ end }}
         {{ else if eq . "jupyterhub" }}
             <img src="/assets/img/jupyter.svg" alt="Jupyter logo">
             <p>Jupyterhub status: {{ if $.PendingJupyterUpgrade }}Upgrading{{ else }}Running{{ end }}</p>
@@ -18,14 +26,14 @@
                     <input type="hidden" name="team" value="{{ $.ID }}" />
                 </div>
             </form>
+            {{ if $.PendingJupyterUpgrade }}
+                <form class="pure-form pure-form-stacked" action="/admin/jupyterhub/unlock" method="POST">
+                    <div class="pure-controls">
+                        <button type="submit" class="pure-button pure-button-primary">Lås opp Jupyterhub</button>
+                        <input type="hidden" name="team" value="{{ $.ID }}" />
+                    </div>
+                </form>
+            {{ end }}
         {{ end }}
-    {{ end }}
-    {{ $numberOfApps := .Apps | len }}
-    {{ if or $.PendingJupyterUpgrade $.PendingAirflowUpgrade }}
-        <form class="pure-form pure-form-stacked" action="" method="POST">
-            <div class="pure-controls">
-                <button type="submit" class="pure-button pure-button-primary">Lås opp</button>
-            </div>
-        </form>
     {{ end }}
 {{ end }}

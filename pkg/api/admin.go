@@ -57,8 +57,9 @@ func (a *API) setupAdminRoutes() {
 		}
 
 		c.HTML(http.StatusOK, "admin/index", gin.H{
-			"errors": flashes,
-			"teams":  teamApps,
+			"current": "admin",
+			"errors":  flashes,
+			"teams":   teamApps,
 		})
 	})
 
@@ -90,9 +91,10 @@ func (a *API) setupAdminRoutes() {
 		}
 
 		c.HTML(http.StatusOK, "admin/chart", gin.H{
-			"values": values,
-			"errors": flashes,
-			"chart":  string(chartType),
+			"current": "admin",
+			"values":  values,
+			"errors":  flashes,
+			"chart":   string(chartType),
 		})
 	})
 
@@ -163,6 +165,7 @@ func (a *API) setupAdminRoutes() {
 		}
 
 		c.HTML(http.StatusOK, "admin/confirm", gin.H{
+			"current":       "admin",
 			"changedValues": changedValues,
 			"chart":         string(chartType),
 		})
@@ -215,6 +218,24 @@ func (a *API) setupAdminRoutes() {
 			a.chartClient.Jupyterhub.Sync(c, team)
 		case gensql.ChartTypeAirflow:
 			a.chartClient.Airflow.Sync(c, team)
+		}
+
+		c.Redirect(http.StatusSeeOther, "/admin")
+	})
+
+	a.router.POST("/admin/:chart/unlock", func(c *gin.Context) {
+		session := sessions.Default(c)
+		chartType := getChartType(c.Param("chart"))
+		team := c.PostForm("team")
+
+		err := a.repo.TeamSetPendingUpgrade(c, team, string(chartType), false)
+		if err != nil {
+			a.log.WithError(err).Error("create or update kip")
+			session.AddFlash(err.Error())
+			err = session.Save()
+			if err != nil {
+				a.log.WithError(err).Error("problem saving session")
+			}
 		}
 
 		c.Redirect(http.StatusSeeOther, "/admin")

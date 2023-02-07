@@ -60,6 +60,10 @@ func New(log *logrus.Entry, cryptClient *crypto.EncrypterDecrypter, repo *databa
 		repo:                repo,
 	}
 
+	if dryRun {
+		return client, nil
+	}
+
 	config, err := createConfig(inCluster)
 	if err != nil {
 		return nil, err

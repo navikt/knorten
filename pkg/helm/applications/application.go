@@ -181,8 +181,6 @@ func findParentList(pKeys []string, values map[string]any) []any {
 	key := pKeys[0]
 
 	if len(pKeys) > 1 {
-		// fmt.Printf("pKeys: %v\n", pKeys)
-		// fmt.Printf("values: %v\n", values)
 		return findParentList(pKeys[1:], values[key].(map[string]any))
 	}
 

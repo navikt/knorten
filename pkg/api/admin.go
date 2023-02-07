@@ -57,8 +57,9 @@ func (a *API) setupAdminRoutes() {
 		}
 
 		c.HTML(http.StatusOK, "admin/index", gin.H{
-			"errors": flashes,
-			"teams":  teamApps,
+			"current": "admin",
+			"errors":  flashes,
+			"teams":   teamApps,
 		})
 	})
 
@@ -90,9 +91,10 @@ func (a *API) setupAdminRoutes() {
 		}
 
 		c.HTML(http.StatusOK, "admin/chart", gin.H{
-			"values": values,
-			"errors": flashes,
-			"chart":  string(chartType),
+			"current": "admin",
+			"values":  values,
+			"errors":  flashes,
+			"chart":   string(chartType),
 		})
 	})
 
@@ -163,6 +165,7 @@ func (a *API) setupAdminRoutes() {
 		}
 
 		c.HTML(http.StatusOK, "admin/confirm", gin.H{
+			"current":       "admin",
 			"changedValues": changedValues,
 			"chart":         string(chartType),
 		})

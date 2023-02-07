@@ -34,6 +34,9 @@
                     <ul>
                         <li {{ if eq .current "home" }}class="current"{{ end }}><a href="/">Forside</a></li>
                         <li {{ if not .current }}class="current"{{ end }}><a href="/user">teams</a></li>
+                        {{ if eq .current "admin" }}
+                            <li class="current"><a href="/admin">admin</a></li>
+                        {{ end }}
                     </ul>
                 </nav>
 

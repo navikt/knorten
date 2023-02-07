@@ -25,3 +25,4 @@ jupyterhub-*.yaml
 *.env
 
 hack
+.helm-repositories.yaml

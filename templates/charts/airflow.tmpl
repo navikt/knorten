@@ -35,6 +35,10 @@
                         <input type="text" name="dagrepobranch" id="dagrepobranch" value="{{ .values.DagRepoBranch }}"
                                placeholder="main"/>
                     </div>
+                    <div class="pure-control-group">
+                        <label for="serviceuser">Servicebruker</label>
+                        <input type="text" name="serviceuser" id="serviceuser" value="{{ .values.ServiceUser }}" />
+                    </div>
 
                     <div class="pure-controls">
                         <button id="submit" type="submit" class="pure-button pure-button-primary">Lagre</button>

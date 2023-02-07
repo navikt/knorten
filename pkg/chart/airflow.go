@@ -48,6 +48,7 @@ type AirflowForm struct {
 type AirflowConfigurableValues struct {
 	DagRepo       string `form:"dagrepo" binding:"required,startswith=navikt/" helm:"webserver.extraContainers.[0].args.[0]"`
 	DagRepoBranch string `form:"dagrepobranch" helm:"webserver.extraContainers.[0].args.[1]"`
+	ServiceUser   string `form:"serviceuser"`
 }
 
 type AirflowValues struct {
@@ -240,11 +241,27 @@ type airflowEnv struct {
 }
 
 func setWebserverEnv(values *AirflowForm) error {
-	envs := []airflowEnv{
-		{
-			Name:  "AIRFLOW_USERS",
-			Value: strings.Join(values.Users, ","),
-		},
+	var envs []airflowEnv
+
+	if values.ServiceUser != "" {
+		usersWithServiceUser := append(values.Users, values.ServiceUser)
+		envs = []airflowEnv{
+			{
+				Name:  "AIRFLOW__API__AUTH_BACKENDS",
+				Value: "airflow.api.auth.backend.basic_auth",
+			},
+			{
+				Name:  "AIRFLOW_USERS",
+				Value: strings.Join(usersWithServiceUser, ","),
+			},
+		}
+	} else {
+		envs = []airflowEnv{
+			{
+				Name:  "AIRFLOW_USERS",
+				Value: strings.Join(values.Users, ","),
+			},
+		}
 	}
 
 	envBytes, err := json.Marshal(envs)

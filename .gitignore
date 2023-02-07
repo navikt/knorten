@@ -15,8 +15,8 @@
 airflow.yaml
 jupyterhub-*.yaml
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
+# Running local needs Helm repo file (or Helm installed)
+.helm-repositories.yaml
 
 # editors
 .idea

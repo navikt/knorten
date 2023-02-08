@@ -16,7 +16,7 @@ env:
 	echo "GCP_REGION=$(shell kubectl get secret --context=knada --namespace=knada-system knorten -o jsonpath='{.data.GCP_REGION}' | base64 -d)" >> .env
 	echo "DB_ENC_KEY=$(shell kubectl get secret --context=knada --namespace=knada-system knorten -o jsonpath='{.data.DB_ENC_KEY}' | base64 -d)" >> .env
 
-local:
+local-online:
 	go run . \
 	  --hostname=localhost \
 	  --oauth2-client-id=$(AZURE_APP_CLIENT_ID) \
@@ -32,17 +32,13 @@ local:
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
 	  --session-key online-session
 
-local-offline:
-	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" go run . \
+local:
+	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" \
+    go run . \
 	  --hostname=localhost \
-	  --oauth2-client-id=$(AZURE_APP_CLIENT_ID) \
-	  --oauth2-client-secret=$(AZURE_APP_CLIENT_SECRET) \
-	  --oauth2-tenant-id=$(AZURE_APP_TENANT_ID) \
-	  --project=$(GCP_PROJECT) \
-	  --region=$(GCP_REGION) \
-	  --db-enc-key=$(DB_ENC_KEY) \
 	  --airflow-chart-version=1.7.0 \
 	  --jupyter-chart-version=2.0.0 \
+	  --db-enc-key=dummy \
 	  --dry-run \
 	  --in-cluster=false \
 	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knorten/knelm:v9 \
@@ -58,3 +54,6 @@ install-sqlc:
 # make goose cmd=status
 goose:
 	goose -dir pkg/database/migrations/ postgres "user=postgres password=postgres dbname=knorten host=localhost sslmode=disable" $(cmd)
+
+init:
+	go run local/main.go

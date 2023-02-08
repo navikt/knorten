@@ -29,9 +29,10 @@ type API struct {
 	teamClient          *team.Client
 	jupyterChartVersion string
 	airflowChartVersion string
+	dryRun              bool
 }
 
-func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, airflowChartVersion, jupyterChartVersion, sessionKey string, log *logrus.Entry) (*API, error) {
+func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, dryRun bool, airflowChartVersion, jupyterChartVersion, sessionKey string, log *logrus.Entry) (*API, error) {
 	adminClient := admin.New(repo, k8sClient, cryptClient, airflowChartVersion, jupyterChartVersion)
 	chartClient, err := chart.New(repo, googleClient, k8sClient, cryptClient, airflowChartVersion, jupyterChartVersion, log)
 	if err != nil {
@@ -54,6 +55,7 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 		cryptClient:  cryptClient,
 		log:          log,
 		chartClient:  chartClient,
+		dryRun:       dryRun,
 	}
 
 	api.teamClient = team.NewClient(repo, googleClient, k8sClient, api.chartClient, log)

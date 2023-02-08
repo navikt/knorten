@@ -56,7 +56,7 @@ func main() {
 		return
 	}
 
-	azureClient := auth.New(cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, log.WithField("subsystem", "auth"))
+	azureClient := auth.New(cfg.DryRun, cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, log.WithField("subsystem", "auth"))
 
 	googleClient := google.New(log.WithField("subsystem", "google"), cfg.GCPProject, cfg.GCPRegion, cfg.DryRun)
 
@@ -68,7 +68,7 @@ func main() {
 		return
 	}
 
-	kApi, err := api.New(repo, azureClient, googleClient, k8sClient, cryptClient, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.SessionKey, log.WithField("subsystem", "api"))
+	kApi, err := api.New(repo, azureClient, googleClient, k8sClient, cryptClient, cfg.DryRun, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.SessionKey, log.WithField("subsystem", "api"))
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return

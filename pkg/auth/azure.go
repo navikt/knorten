@@ -44,7 +44,11 @@ type User struct {
 	Expires time.Time
 }
 
-func New(clientID, clientSecret, tenantID, hostname string, log *logrus.Entry) *Azure {
+func New(dryRun bool, clientID, clientSecret, tenantID, hostname string, log *logrus.Entry) *Azure {
+	if dryRun {
+		return nil
+	}
+
 	provider, err := oidc.NewProvider(context.Background(), fmt.Sprintf("https://login.microsoftonline.com/%v/v2.0", tenantID))
 	if err != nil {
 		panic(err)

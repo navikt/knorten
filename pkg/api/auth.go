@@ -193,6 +193,18 @@ func deleteCookie(c *gin.Context, name, host string) {
 }
 
 func (a *API) authMiddleware(allowedUsers []string) gin.HandlerFunc {
+	if a.dryRun {
+		return func(c *gin.Context) {
+			user := &auth.User{
+				Name:    "dummy@nav.no",
+				Email:   "dummy@nav.no",
+				Expires: time.Time{},
+			}
+			c.Set("user", user)
+			c.Next()
+		}
+	}
+
 	certificates, err := a.azureClient.FetchCertificates()
 	if err != nil {
 		a.log.Fatalf("Fetching signing certificates from IdP: %v", err)
@@ -247,6 +259,10 @@ func (a *API) authMiddleware(allowedUsers []string) gin.HandlerFunc {
 
 func (a *API) setupAuthRoutes() {
 	a.router.GET("/oauth2/login", func(c *gin.Context) {
+		if a.dryRun {
+			c.Redirect(http.StatusSeeOther, "http://localhost:8080/user")
+		}
+
 		consentURL := a.login(c)
 		c.Redirect(http.StatusSeeOther, consentURL)
 	})

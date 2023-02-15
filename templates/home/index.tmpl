@@ -1,21 +1,21 @@
 {{ define "index" }}
-    {{ template "head" . }}
-    <div id="banner-wrapper">
-        {{ with .errors }}
+    {{- template "head" . }}
+        {{- with .errors }}
             <div id="banner" class="box container">
                 {{ . }}
             </div>
-            <br>
         {{ end }}
-        <div class="bg-white w-full md:w-[42rem] h-72 flex flex-col justify-between p-4">
+        <section class="bg-white w-full md:w-[42rem] h-72 flex flex-col justify-between p-4 rounded-md">
             <div>
-                <h2 class="text-3xl font-bold">Hei, dette er Knorten</h2>
+                <h2 class="text-3xl font-bold flex items-center gap-2">
+                    Hei, dette er Knorten
+                    <img class="w-16 h-16" src="/assets/img/knorten.svg" />
+                </h2>
                 <p class="font-bold">Kodebasert analyse i skyen!</p>
             </div>
             <div>
                 <a href="/oauth2/login" class="navds-button navds-button--primary">Logg inn</a>
             </div>
-        </div>
-    </div>
-    {{ template "footer" }}
+        </section>
+    {{- template "footer" }}
 {{ end }}

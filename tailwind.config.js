@@ -8,5 +8,5 @@ module.exports = {
     extend: {},
   },
   plugins: [],
-  presets: [require("@navikt/ds-tailwind")]
+  presets: [require("@navikt/ds-tailwind")],
 }

@@ -1,36 +1,34 @@
-{{ define "head" }}
-    <!doctype html>
-    <html lang="en">
-    <head>
-        <title>Knorten by nada</title>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-        <link rel="icon" sizes="32x32" href="/assets/img/knorten.svg">
-        <link
-            rel="preload"
-            href="https://cdn.nav.no/aksel/fonts/SourceSans3-normal.woff2"
-            as="font"
-            type="font/woff2"
-            crossorigin
-        />
-        <link rel="stylesheet" href="/assets/css/main.css" />
-    </head>
-
-    <body class="w-full flex flex-col items-center min-h-screen justify-between bg-gray-50">
-        <header class="w-full bg-[#00374F] flex justify-center">
-            <div class="max-w-2xl grow flex justify-between py-2 text-white">
-                <a href="/" class="flex gap-2 items-center">
-                    <img class="w-12 h-12" src="/assets/img/knorten.svg" />
-                    <h1 class="text-2xl font-bold">KNORTEN</h1>
-                    <span class="text-">by nada</span>
-                </a>
-                <nav class="flex items-center gap-2">
-                    <a href="/user" class="navds-button navds-button--small navds-button--secondary bg-initial">Teams</a>
-                    {{ if eq .current "admin" }}
-                        <a href="/admin" class="navds-button navds-button--small navds-button--secondary">Admin</a>
-                    {{ end }}
-                </nav>
-            </div>
-        </header>
-        <div class="max-w-screen-md flex mt-8 grow"> <!-- main container start -->
+{{ define "head" }}<!doctype html>
+<html lang="en">
+<head>
+    <title>Knorten by nada</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="icon" sizes="32x32" href="/assets/img/knorten.svg">
+    <link
+        rel="preload"
+        href="https://cdn.nav.no/aksel/fonts/SourceSans3-normal.woff2"
+        as="font"
+        type="font/woff2"
+        crossorigin
+    />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+</head>
+<body class="w-full flex flex-col items-center min-h-screen justify-between bg-gray-50">
+    <header class="w-full bg-[#00374F] flex justify-center">
+        <div class="max-w-2xl grow flex justify-between py-2 text-white">
+            <a href="/" class="flex gap-2 items-center">
+                <img class="w-12 h-12" src="/assets/img/knorten.svg" />
+                <h1 class="text-2xl font-bold">KNORTEN</h1>
+                <span class="text-">by nada</span>
+            </a>
+            <nav class="flex items-center gap-2">
+                <a href="/user" class="navds-button navds-button--small navds-button--secondary bg-initial">Teams</a>
+                {{ if eq .current "admin" }}
+                    <a href="/admin" class="navds-button navds-button--small navds-button--secondary">Admin</a>
+                {{ end }}
+            </nav>
+        </div>
+    </header>
+    <div class="max-w-screen-md flex mt-8 grow"> {{/* main container start */}}
 {{ end }}

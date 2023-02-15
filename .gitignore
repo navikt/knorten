@@ -25,3 +25,8 @@ jupyterhub-*.yaml
 *.env
 
 hack
+
+# npm
+node_modules
+!package-lock.json
+!package.json

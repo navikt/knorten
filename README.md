@@ -5,7 +5,9 @@
 ## Utvikling
 
 For å jobbe med Knorten lokalt trenger man å ha Postgres kjørende, og basen må prepouleres med litt data.
-Kjør `make init` etter du har kjørt opp Postgres.
+I tillegg benytter vi et oppsett med Tailwind og Designsystemet.
+Kjør `make init` etter du har kjørt opp Postgres for å populere databasen.
+Kjør `npm install` for å sette opp nødvendig rammeverk for Tailwind.
 
 ### Lokalt uten tredjeparter
 
@@ -14,6 +16,17 @@ Kjør `make local` for å kjøre Knorten uten kobling til noe annet enn Postgres
 ### Lokalt med tredjeparter
 
 Har man behov for å teste mot et cluster så kan man bruke `make local-online`, bare husk å kjør `make env` for å hente ned variabler som trengs.
+
+### Generering av CSS
+
+Man kan generere CSS på en av to måter.
+
+* `make css` kjører en engangsjobb som ser på template-filene og genererer CSS-klasser ut ifra det som er brukt
+* `make css-watch` kjører samme jobb som over hver gang noe endres i template-filer
+
+Idéelt sett burde man spinne opp `make css-watch` i en annen terminal samtidig som man kjører Knorten.
+
+Filen som styrer hva som genereres finner du i `local/tailwind.css`, her kan du legge inn [Tailwind-regler](https://tailwindcss.com/docs/functions-and-directives#layer) som vanlig dersom nødvendig. Designsystem-regler blir generert uansett ved hjelp av `@import`-regelen i toppen av den filen.
 
 ### Postgres
 

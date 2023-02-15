@@ -57,3 +57,9 @@ goose:
 
 init:
 	go run local/main.go
+
+css:
+	npx tailwindcss -i local/tailwind.css -o assets/css/main.css
+
+css-watch:
+	npx tailwindcss -i local/tailwind.css -o assets/css/main.css -w

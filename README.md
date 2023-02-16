@@ -24,9 +24,22 @@ Man kan generere CSS på en av to måter.
 * `make css` kjører en engangsjobb som ser på template-filene og genererer CSS-klasser ut ifra det som er brukt
 * `make css-watch` kjører samme jobb som over hver gang noe endres i template-filer
 
-Idéelt sett burde man spinne opp `make css-watch` i en annen terminal samtidig som man kjører Knorten.
+Idéelt sett kan man spinne opp `make css-watch` i en annen terminal samtidig som man kjører Knorten med f.eks. `make local-online`.
 
 Filen som styrer hva som genereres finner du i `local/tailwind.css`, her kan du legge inn [Tailwind-regler](https://tailwindcss.com/docs/functions-and-directives#layer) som vanlig dersom nødvendig. Designsystem-regler blir generert uansett ved hjelp av `@import`-regelen i toppen av den filen.
+
+### Designsystemet
+
+Bruk av designsystemet til NAV krever litt kritisk tenking og manuelt arbeid.
+Siden designsystemet i all hovedsak sikter på React-komponenter mens vi kun benytter CSS derfra, kan det være vanskelig å finne ut hvilke CSS-regler som faktisk gjelder for det vi ønsker å oppnå.
+Likevel finnes det en lur (om ikke litt kjip) måte å finne CSS-regler på.
+
+* Identifiser ønsket Designsystemkomponent i [Aksel](https://aksel.nav.no/komponenter)
+* Scroll ned til eksempler (f.eks. [Button](https://aksel.nav.no/komponenter/core/button#ha8bb240d2c68))
+* Høyreklikk på rendret eksempel og inspiser/inspect
+
+Her vil du se hvilke klasser som ligger på komponenten du ønsker å lage.
+Siden vi importerer `@navikt/ds-css` kan disse klassene brukes verbatim i koden vår.
 
 ### Postgres
 

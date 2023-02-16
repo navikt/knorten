@@ -10,10 +10,9 @@
             <form class="pure-form pure-form-stacked" action="delete" method="POST">
                 <fieldset>
                     <div class="pure-controls">
-                        <button type="submit" 
-                            onclick="return confirm('Er du sikker på at du vil slette teamet? Dette vil samtidig slette teamets jupyterhub og airflow dersom det er satt opp og vil ikke kunne gjenopprettes senere.')" 
-                            class="pure-button button-error"
-                        >
+                        <button type="submit"
+                                onclick="return confirm('Er du sikker på at du vil slette teamet? Dette vil samtidig slette teamets jupyterhub og airflow dersom det er satt opp og vil ikke kunne gjenopprettes senere.')"
+                                class="pure-button button-error">
                             Slett {{ .team }}
                         </button>
                     </div>
@@ -32,7 +31,9 @@
 
                 <fieldset>
                     <div class="pure-controls">
-                        <button id="submit" type="submit" class="pure-button pure-button-primary">Lagre</button>
+                        <button id="submit" type="submit" class="pure-button pure-button-primary"
+                                {{ if or .pending_jupyterhub .pending_airflow }}disabled{{ end }}>Lagre
+                        </button>
                     </div>
                 </fieldset>
             </form>
@@ -42,9 +43,6 @@
         {{ template "team/script" }}
         {{ range .users }}
         addElement({{ . }})
-        {{ end }}
-        {{ if or (.pending_jupyterhub) (.pending_airflow) }}
-            document.getElementById("submit").disabled = true;
         {{ end }}
     </script>
     {{ template "footer" }}

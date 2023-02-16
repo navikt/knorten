@@ -1,55 +1,57 @@
 {{ define "user/index" }}
     {{ template "head" . }}
-    <div class="box container">
-        <div id="content">
+    <section class="w-full md:w-[64rem] flex flex-col gap-4 p-4">
             {{ with .errors }}
                 {{ . }}
             {{ end }}
 
             {{ range .services }}
-                <section>
-                    <h2>
-                        {{ .Slug }} (<a href="team/{{ .Slug }}/edit">rediger</a>)
-                    </h2>
-                    <table class="">
-                        <thead>
-                        <tr>
-                            <th>App</th>
-                            <th>Adresse</th>
-                            <th>Secret</th>
-                            <th>Service Account</th>
-                            <th>Rediger</th>
+                <article class="bg-white rounded-md p-4">
+                    <div class="flex items-center gap-4 pb-4">
+                        <h2 class="text-3xl font-bold">
+                            {{ .Slug }}
+                        </h2>    
+                        <a class="navds-button--small navds-button--secondary" href="team/{{ .Slug }}/edit">Rediger</a>
+                    </div>
+                    <a class="navds-link" target="_blank"  href="{{ .Airflow.Secret }}">Secret Manager</a>
+                    <p class="pb-4 flex items-center gap-2">
+                        <b>Service account:</b> <code class="text-base p-1 bg-gray-50">{{ .Airflow.ServiceAccount }}</code>
+                    </p>
+                    <table class="navds-table navds-table--small">
+                        <thead class="navds-table__header">
+                        <tr class="navds-table__row">
+                            <th class="navds-table__header-cell navds-label navds-label--small">App</th>
+                            <th class="navds-table__header-cell navds-label navds-label--small">Adresse</th>
+                            <th class="navds-table__header-cell navds-label navds-label--small"></th>
                         </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="navds-table__body">
                         {{ with .Jupyterhub }}
                             {{ template "user/row" . }}
                         {{ else }}
-                            <tr>
-                                <td>Jupyterhub</td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td><a href="/team/{{ .Slug }}/jupyterhub/new">Installer</a></td>
+                            <tr class="navds-table__row navds-table__row--shade-on-hover">
+                                <th class="navds-table__header-cell navds-label navds-label--small">Jupyterhub</th>
+                                <td class="navds-table__data-cell navds-body-short navds-body-short--small"></td>
+                                <td class="navds-table__data-cell navds-body-short navds-body-short--small"><a class="navds-link" href="/team/{{ .Slug }}/jupyterhub/new">Installer</a></td>
                             </tr>
                         {{ end }}
                         {{ with .Airflow }}
                             {{ template "user/row" . }}
                         {{ else }}
-                            <tr>
-                                <td>Airflow</td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td><a href="/team/{{ .Slug }}/airflow/new">Installer</a></td>
+                            <tr class="navds-table__row navds-table__row--shade-on-hover">
+                                <th class="navds-table__header-cell navds-label navds-label--small">Airflow</th>
+                                <td class="navds-table__data-cell navds-body-short navds-body-short--small"></td>
+                                <td class="navds-table__data-cell navds-body-short navds-body-short--small"><a class="navds-link" href="/team/{{ .Slug }}/airflow/new">Installer</a></td>
                             </tr>
                         {{ end }}
                         </tbody>
                     </table>
-                </section>
+                </article>
             {{ end }}
-            <a href="/team/new" class="button icon solid fa-info-circle">Nytt team</a>
+            <div>
+                <a class="navds-button navds-button--secondary" href="/team/new">Legg til nytt team</a>
+            </div>
         </div>
-    </div>
+    </section>
     {{ template "footer" }}
 {{ end }}

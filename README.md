@@ -22,7 +22,7 @@ Har man behov for å teste mot et cluster så kan man bruke `make local-online`,
 
 ### Postgres
 
-Bruk enten `docker-compose up -d`, eller hvis du allerede har en Postgres-instans kjørende kan du bruke `psql -h localhost -U postgres -c 'CREATE DATABASE knorten;' før du starter Knorten.
+Bruk enten `docker-compose up -d`, eller hvis du allerede har en Postgres-instans kjørende kan du bruke `psql -h localhost -U postgres -c 'CREATE DATABASE knorten;'` før du starter Knorten.
 
 ## Tilgang til Postgres i prod
 

@@ -2,6 +2,11 @@
 
 > KNADA sin port for bestilling av tjenester
 
+## Produksjon
+
+Oppsett for Azure AD er satt opp i [navikt/aad-iac](https://github.com/navikt/aad-iac/blob/master/prod/knorten.yaml).
+Ellers blir Knorten satt opp gjennom [nais/knada-gcp](https://github.com/nais/knada-gcp/blob/main/knorten.tf).
+
 ## Utvikling
 
 For å jobbe med Knorten lokalt trenger man å ha Postgres kjørende, og basen må prepouleres med litt data.

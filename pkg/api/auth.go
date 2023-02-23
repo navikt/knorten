@@ -261,6 +261,7 @@ func (a *API) setupAuthRoutes() {
 	a.router.GET("/oauth2/login", func(c *gin.Context) {
 		if a.dryRun {
 			c.Redirect(http.StatusSeeOther, "http://localhost:8080/user")
+			return
 		}
 
 		consentURL := a.login(c)

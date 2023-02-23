@@ -46,9 +46,10 @@ type AirflowForm struct {
 }
 
 type AirflowConfigurableValues struct {
-	DagRepo       string `form:"dagrepo" binding:"required,startswith=navikt/" helm:"webserver.extraContainers.[0].args.[0]"`
-	DagRepoBranch string `form:"dagrepobranch" helm:"webserver.extraContainers.[0].args.[1]"`
-	ServiceUser   string `form:"serviceuser"`
+	DagRepo               string `form:"dagrepo" binding:"required,startswith=navikt/" helm:"webserver.extraContainers.[0].args.[0]"`
+	DagRepoBranch         string `form:"dagrepobranch" helm:"webserver.extraContainers.[0].args.[1]"`
+	ServiceUser           string `form:"serviceuser"`
+	RestrictAirflowEgress string `form:"restrictairflowegress"`
 }
 
 type AirflowValues struct {
@@ -104,6 +105,10 @@ func (a AirflowClient) Create(ctx *gin.Context, slug string) error {
 	form.TeamID = team.ID
 	form.Users = team.Users
 
+	if err := a.setRestrictAirflowEgress(ctx, form, team.ID); err != nil {
+		return err
+	}
+
 	dbPassword, err := generatePassword(40)
 	if err != nil {
 		return err
@@ -140,6 +145,10 @@ func (a AirflowClient) Update(ctx context.Context, form AirflowForm) error {
 	if team.PendingAirflowUpgrade {
 		a.log.Info("pending airflow upgrade")
 		return nil
+	}
+
+	if err := a.setRestrictAirflowEgress(ctx, form, team.ID); err != nil {
+		return err
 	}
 
 	form.TeamID = team.ID
@@ -320,6 +329,27 @@ func setSynkRepoAndBranch(values *AirflowForm) {
 	values.SchedulerGitSynkRepoBranch = values.DagRepoBranch
 	values.WorkersGitSynkRepo = values.DagRepo
 	values.WorkersGitSynkRepoBranch = values.DagRepoBranch
+}
+
+func (a AirflowClient) setRestrictAirflowEgress(ctx context.Context, form AirflowForm, teamID string) error {
+	switch form.RestrictAirflowEgress {
+	case "on":
+		if err := a.k8sClient.CreateOrUpdateDefaultEgressNetpol(ctx, k8s.NameToNamespace(teamID)); err != nil {
+			return err
+		}
+		if err := a.repo.TeamSetRestrictAirflowEgress(ctx, teamID, true); err != nil {
+			return err
+		}
+	default:
+		if err := a.k8sClient.DeleteDefaultEgressNetpol(ctx, k8s.NameToNamespace(teamID)); err != nil {
+			return err
+		}
+		if err := a.repo.TeamSetRestrictAirflowEgress(ctx, teamID, false); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (a AirflowClient) createDB(ctx context.Context, teamID, dbPassword string) {

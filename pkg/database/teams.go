@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
@@ -51,4 +52,8 @@ func (r *Repo) TeamSetPendingUpgrade(ctx context.Context, teamID, chartType stri
 		})
 	}
 	return err
+}
+
+func (r *Repo) TeamSetRestrictAirflowEgress(ctx context.Context, teamID string, restrictAirflowEgress bool) error {
+	return r.querier.TeamSetAirflowRestrictEgress(ctx, restrictAirflowEgress)
 }

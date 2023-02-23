@@ -13,7 +13,7 @@ FROM teams
 WHERE @email::TEXT = ANY ("users");
 
 -- name: TeamGet :one
-SELECT id, users, slug, pending_jupyter_upgrade, pending_airflow_upgrade
+SELECT id, users, slug, pending_jupyter_upgrade, pending_airflow_upgrade, restrict_airflow_egress
 FROM teams
 WHERE slug = @slug;
 
@@ -40,3 +40,7 @@ WHERE id = @id;
 -- name: ClearPendingUpgradeLocks :exec
 UPDATE teams
 SET pending_jupyter_upgrade = false, pending_airflow_upgrade = false;
+
+-- name: TeamSetAirflowRestrictEgress :exec
+UPDATE teams
+SET restrict_airflow_egress = @restrict_airflow_egress;

@@ -152,12 +152,14 @@ func (a *API) setupChartRoutes() {
 			a.log.WithError(err).Error("problem saving session")
 			return
 		}
+
 		c.HTML(http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
-			"team":               slug,
-			"pending_jupyterhub": team.PendingJupyterUpgrade,
-			"pending_airflow":    team.PendingAirflowUpgrade,
-			"values":             form,
-			"errors":             flashes,
+			"team":                  slug,
+			"pending_jupyterhub":    team.PendingJupyterUpgrade,
+			"pending_airflow":       team.PendingAirflowUpgrade,
+			"restrictairflowegress": team.RestrictAirflowEgress,
+			"values":                form,
+			"errors":                flashes,
 		})
 	})
 

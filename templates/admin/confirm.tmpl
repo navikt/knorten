@@ -1,26 +1,30 @@
 {{ define "admin/confirm" }}
     {{ template "head" . }}
-    <div class="box container">
-        <div id="content">
+    <section class="w-full md:w-[64rem] flex flex-col gap-4 md:p-4">
+        <article class="bg-white rounded-md p-4 flex flex-col gap-2">
             <h2>Redigerte {{ .chart }} verdier</h2>
             <p>Er du sikker på at du ønsker å endre disse verdiene?</p>
             {{ $values := index .changedValues 0 }}
-            <form class="pure-form pure-form-stacked" action="" method="POST">
-                <fieldset>
+            <form class="" action="" method="POST">
+                <fieldset class="flex flex-col gap-2 mb-2">
                     {{ range $key, $value := $values }}
-                        <div class="pure-control-group">
-                            <label for="{{ $key }}">{{ if not $value.New }}- {{ end }}{{ if not $value.Old }}+ {{ end }}{{ $key }}</label>
-                            {{ if $value.Old }}
-                                <span>- {{ $value.Old }}</span>
-                                <br>
-                            {{ end }}
+                        <div>
+                            <label 
+                                class="navds-form-field__label navds-label"
+                                for="{{ $key }}">
+                                    {{ if not $value.New }}- {{ end }}
+                                    {{ if not $value.Old }}+ {{ end }}
+                                    {{ $key }}
+                            </label>
+                            <pre class="w-[90vw] md:w-[42rem] block whitespace-nowrap overflow-scroll bg-gray-200 p-4 rounded-md">
+                                {{- if $value.Old }}<span class="text-red-500">- {{ $value.Old }}</span><br />{{ end }}
+                                {{- if $value.New }}{{- if $value.Encrypted }}<span class="text-green-500">+ encrypted value</span>{{- else }}<span class="text-green-500">+ {{ $value.New }}</span>{{ end }}
+                                {{ end }}
+                            </pre>
                             {{ if $value.New }}
                                 <input type="text" name="{{ $key }}" id="{{ $key }}" value="{{ $value.New }}" hidden/>
                                 {{ if $value.Encrypted }}
-                                    <span type="text" name="{{ $key }}" id="{{ $key }}">+ encrypted value</span>
                                     <input type="checkbox" name="{{ $key }}" id="{{ $key }}" checked hidden/>
-                                {{ else }}
-                                    <span type="text" name="{{ $key }}" id="{{ $key }}">+ {{ $value.New }}</span>
                                 {{ end }}
                             {{ else }}
                                 <input type="text" name="{{ $key }}" id="{{ $key }}" hidden/>
@@ -28,12 +32,13 @@
                         </div>
                     {{ end }}
                 </fieldset>
-
-                <div class="pure-controls">
-                    <button type="submit" class="pure-button pure-button-primary">Lagre</button>
+                <div>
+                    <button type="submit" class="navds-button navds-button--primary bg-surface-action">
+                        <span class="navds-label">Lagre</span>
+                    </button>
                 </div>
             </form>
-        </div>
-    </div>
+        </article>
+    </section>
     {{ template "footer" }}
 {{ end }}

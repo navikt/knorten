@@ -69,25 +69,6 @@
         </article>
     </section>
     <script>
-        function addElement() {
-            const newDiv = document.createElement("div");
-            newDiv.className = "pure-control-group"
-
-            const label = document.createElement("label");
-            label.setAttribute("for", "email");
-            label.appendChild(document.createTextNode("Ny bruker"));
-
-            const input = document.createElement("input");
-            input.type = "email"
-            input.name = "users[]"
-            input.id = "email"
-            input.placeholder = "E-post"
-
-            // add the newly created element and its content into the DOM
-            const currentDiv = document.getElementById("users");
-            currentDiv.appendChild(input);
-        }
-
         document.getElementById("submit").disabled = {{ .pending_jupyterhub }};
     </script>
     {{ template "footer" }}

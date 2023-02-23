@@ -5,18 +5,20 @@ import (
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
-func (r *Repo) TeamCreate(ctx context.Context, team, slug string, users []string) error {
+func (r *Repo) TeamCreate(ctx context.Context, team, slug string, users []string, apiAccess bool) error {
 	return r.querier.TeamCreate(ctx, gensql.TeamCreateParams{
-		ID:    team,
-		Users: users,
-		Slug:  slug,
+		ID:        team,
+		Users:     users,
+		Slug:      slug,
+		ApiAccess: apiAccess,
 	})
 }
 
-func (r *Repo) TeamUpdate(ctx context.Context, team string, users []string) error {
+func (r *Repo) TeamUpdate(ctx context.Context, team string, users []string, apiAccess bool) error {
 	return r.querier.TeamUpdate(ctx, gensql.TeamUpdateParams{
-		ID:    team,
-		Users: users,
+		ID:        team,
+		Users:     users,
+		ApiAccess: apiAccess,
 	})
 }
 

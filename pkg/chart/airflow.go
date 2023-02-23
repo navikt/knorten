@@ -38,9 +38,10 @@ type AirflowClient struct {
 }
 
 type AirflowForm struct {
-	TeamID string
-	Slug   string
-	Users  []string
+	TeamID    string
+	Slug      string
+	Users     []string
+	ApiAccess bool
 
 	AirflowValues
 }
@@ -48,7 +49,6 @@ type AirflowForm struct {
 type AirflowConfigurableValues struct {
 	DagRepo       string `form:"dagrepo" binding:"required,startswith=navikt/" helm:"webserver.extraContainers.[0].args.[0]"`
 	DagRepoBranch string `form:"dagrepobranch" helm:"webserver.extraContainers.[0].args.[1]"`
-	ServiceUser   string `form:"serviceuser"`
 }
 
 type AirflowValues struct {
@@ -144,6 +144,7 @@ func (a AirflowClient) Update(ctx context.Context, form AirflowForm) error {
 
 	form.TeamID = team.ID
 	form.Users = team.Users
+	form.ApiAccess = team.ApiAccess
 	err = setWebserverEnv(&form)
 	if err != nil {
 		return err
@@ -241,27 +242,18 @@ type airflowEnv struct {
 }
 
 func setWebserverEnv(values *AirflowForm) error {
-	var envs []airflowEnv
+	envs := []airflowEnv{
+		{
+			Name:  "AIRFLOW_USERS",
+			Value: strings.Join(values.Users, ","),
+		},
+	}
 
-	if values.ServiceUser != "" {
-		usersWithServiceUser := append(values.Users, values.ServiceUser)
-		envs = []airflowEnv{
-			{
-				Name:  "AIRFLOW__API__AUTH_BACKENDS",
-				Value: "airflow.api.auth.backend.basic_auth",
-			},
-			{
-				Name:  "AIRFLOW_USERS",
-				Value: strings.Join(usersWithServiceUser, ","),
-			},
-		}
-	} else {
-		envs = []airflowEnv{
-			{
-				Name:  "AIRFLOW_USERS",
-				Value: strings.Join(values.Users, ","),
-			},
-		}
+	if values.ApiAccess {
+		envs = append(envs, airflowEnv{
+			Name:  "AIRFLOW__API__AUTH_BACKENDS",
+			Value: "airflow.api.auth.backend.session,airflow.api.auth.backend.basic_auth",
+		})
 	}
 
 	envBytes, err := json.Marshal(envs)

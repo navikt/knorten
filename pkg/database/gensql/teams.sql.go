@@ -22,18 +22,24 @@ func (q *Queries) ClearPendingUpgradeLocks(ctx context.Context) error {
 }
 
 const teamCreate = `-- name: TeamCreate :exec
-INSERT INTO teams ("id", "users", "slug")
-VALUES ($1, $2, $3)
+INSERT INTO teams ("id", "users", "slug", "api_access")
+VALUES ($1, $2, $3, $4)
 `
 
 type TeamCreateParams struct {
-	ID    string
-	Users []string
-	Slug  string
+	ID        string
+	Users     []string
+	Slug      string
+	ApiAccess bool
 }
 
 func (q *Queries) TeamCreate(ctx context.Context, arg TeamCreateParams) error {
-	_, err := q.db.ExecContext(ctx, teamCreate, arg.ID, pq.Array(arg.Users), arg.Slug)
+	_, err := q.db.ExecContext(ctx, teamCreate,
+		arg.ID,
+		pq.Array(arg.Users),
+		arg.Slug,
+		arg.ApiAccess,
+	)
 	return err
 }
 
@@ -49,7 +55,7 @@ func (q *Queries) TeamDelete(ctx context.Context, id string) error {
 }
 
 const teamGet = `-- name: TeamGet :one
-SELECT id, users, slug, pending_jupyter_upgrade, pending_airflow_upgrade
+SELECT id, users, slug, pending_jupyter_upgrade, pending_airflow_upgrade, api_access
 FROM teams
 WHERE slug = $1
 `
@@ -60,6 +66,7 @@ type TeamGetRow struct {
 	Slug                  string
 	PendingJupyterUpgrade bool
 	PendingAirflowUpgrade bool
+	ApiAccess             bool
 }
 
 func (q *Queries) TeamGet(ctx context.Context, slug string) (TeamGetRow, error) {
@@ -71,6 +78,7 @@ func (q *Queries) TeamGet(ctx context.Context, slug string) (TeamGetRow, error) 
 		&i.Slug,
 		&i.PendingJupyterUpgrade,
 		&i.PendingAirflowUpgrade,
+		&i.ApiAccess,
 	)
 	return i, err
 }
@@ -109,17 +117,19 @@ func (q *Queries) TeamSetPendingJupyterUpgrade(ctx context.Context, arg TeamSetP
 
 const teamUpdate = `-- name: TeamUpdate :exec
 UPDATE teams
-SET users = $1
-WHERE id = $2
+SET users = $1,
+    api_access = $2
+WHERE id = $3
 `
 
 type TeamUpdateParams struct {
-	Users []string
-	ID    string
+	Users     []string
+	ApiAccess bool
+	ID        string
 }
 
 func (q *Queries) TeamUpdate(ctx context.Context, arg TeamUpdateParams) error {
-	_, err := q.db.ExecContext(ctx, teamUpdate, pq.Array(arg.Users), arg.ID)
+	_, err := q.db.ExecContext(ctx, teamUpdate, pq.Array(arg.Users), arg.ApiAccess, arg.ID)
 	return err
 }
 
@@ -158,7 +168,7 @@ func (q *Queries) TeamsForUserGet(ctx context.Context, email string) ([]TeamsFor
 }
 
 const teamsGet = `-- name: TeamsGet :many
-select id, slug, users, created, pending_jupyter_upgrade, pending_airflow_upgrade
+select id, slug, users, created, pending_jupyter_upgrade, pending_airflow_upgrade, api_access
 from teams
 ORDER BY slug
 `
@@ -179,6 +189,7 @@ func (q *Queries) TeamsGet(ctx context.Context) ([]Team, error) {
 			&i.Created,
 			&i.PendingJupyterUpgrade,
 			&i.PendingAirflowUpgrade,
+			&i.ApiAccess,
 		); err != nil {
 			return nil, err
 		}

@@ -1,52 +1,64 @@
 {{ define "charts/airflow" }}
     {{ template "head" }}
-    <div class="box container">
-        <div id="content">
+    <section class="w-full md:w-[64rem] flex flex-col gap-4 p-4">
+        <article class="bg-white rounded-md p-4">
             {{ if .values }}
-                <h2>Rediger {{ .team }} sin Airflow</h2>
-
-                <form class="pure-form pure-form-stacked" action="delete" method="POST">
-                    <fieldset>
-                        <div class="pure-controls">
+                <div class="flex gap-4 items-center pb-4">
+                    <h2>Rediger {{ .team }} sin Airflow</h2>
+                    <form action="delete" method="POST">
+                        <fieldset>
                             <button type="submit"
                                     onclick="return confirm('Er du sikker på at du vil slette airflow? Det er ikke mulig å gjenopprette denne senere')"
-                                    class="pure-button button-error">
-                                Slett Airflow
+                                    class="navds-button navds-button--danger navds-button--small bg-surface-danger"
+                            >
+                                <span class="navds-label">Slett Airflow</span>
                             </button>
-                        </div>
-                    </fieldset>
-                </form>
+                        </fieldset>
+                    </form>
+                </div>
             {{ else }}
-                <h2>Ny Airflow Notebook for {{ .team }}</h2>
+                <h2 class="pb-4">Ny Airflow Notebook for {{ .team }}</h2>
             {{ end }}
             {{ with .errors }}
                 {{ . }}
             {{ end }}
 
-            <form class="pure-form pure-form-stacked" action="" method="POST">
-                <fieldset>
-                    <div class="pure-control-group">
-                        <label for="dagrepo">DAG's repo</label>
+            <form class="w-80" action="" method="POST">
+                <fieldset class="flex flex-col gap-4">
+                    <div class="navds-form-field navds-form-field--medium">
+                        <label for="dagrepo" class="navds-form-field__label navds-label">DAG's repo</label>
                         <input type="text" name="dagrepo" id="dagrepo" value="{{ .values.DagRepo }}"
-                               placeholder="navikt/dags" required/>
+                            placeholder="navikt/dags" required
+                            class="navds-text-field__input navds-body-short navds-body-medium" 
+                        />
                     </div>
-                    <div class="pure-control-group">
-                        <label for="dagrepobranch">DAG's repo branch</label>
+                    <div class="navds-form-field navds-form-field--medium">
+                        <label for="dagrepobranch" class="navds-form-field__label navds-label">DAG's repo branch</label>
                         <input type="text" name="dagrepobranch" id="dagrepobranch" value="{{ .values.DagRepoBranch }}"
-                               placeholder="main"/>
+                            placeholder="main"
+                            class="navds-text-field__input navds-body-short navds-body-medium"
+                        />
                     </div>
-                    <div class="pure-control-group">
-                        <label for="serviceuser">Servicebruker</label>
-                        <input type="text" name="serviceuser" id="serviceuser" value="{{ .values.ServiceUser }}" />
+                    <div class="navds-form-field navds-form-field--medium">
+                        <label for="serviceuser" class="navds-form-field__label navds-label">Servicebruker</label>
+                        <input type="text" name="serviceuser" id="serviceuser" value="{{ .values.ServiceUser }}"
+                            class="navds-text-field__input navds-body-short navds-body-medium" 
+                        />
                     </div>
 
-                    <div class="pure-controls">
-                        <button id="submit" type="submit" class="pure-button pure-button-primary">Lagre</button>
+                    <div>
+                        <button 
+                            id="submit" 
+                            type="submit" 
+                            class="navds-button navds-button--primary bg-surface-action"
+                        >
+                            <span class="navds-label">Lagre</span>
+                        </button>
                     </div>
                 </fieldset>
             </form>
-        </div>
-    </div>
+        </article>
+    </section>
     <script>
         function addElement() {
             const newDiv = document.createElement("div");

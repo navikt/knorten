@@ -3,3 +3,6 @@
 @tailwind components;
 @tailwind utilities;
 
+h2 {
+    @apply text-3xl font-bold;
+}

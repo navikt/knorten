@@ -1,33 +1,25 @@
 {{ define "team/script" }}
     function deleteRow() {
-    const users = document.getElementById("users");
-    users.removeChild(this.parentElement)
+        const users = document.getElementById("users");
+        users.removeChild(this.parentElement)
     }
 
     function addElement(user) {
-    const newDiv = document.createElement("div");
-    newDiv.style.display = "flex"
-
-    const input = document.createElement("input");
-    input.className = "pure-input-1-2"
-    input.type = "email"
-    input.name = "users[]"
-    input.id = "email"
-    if (user) {
-    input.value = user
-    }
-    input.placeholder = "E-post"
-    newDiv.appendChild(input)
-
-    const button = document.createElement("button");
-    button.className = "pure-button pure-button-primary"
-    button.type = "button"
-    button.textContent = "Slett"
-    button.addEventListener("click", deleteRow)
-    newDiv.appendChild(button)
-
-    // add the newly created element and its content into the DOM
-    const currentDiv = document.getElementById("users");
-    currentDiv.appendChild(newDiv);
+        const target = document.getElementById("users");
+        target.insertAdjacentHTML("beforeend",
+            `<div class="flex gap-2 mb-2">
+                <input 
+                    class="navds-text-field__input navds-body-short navds-body-medium" 
+                    type="email" 
+                    name="users[]" 
+                    id="email" 
+                    value="${user ? user : ''}"
+                    placeholder="E-post" 
+                />
+                <button onclick="deleteRow()" class="navds-button navds-button--secondary">
+                    <span class="navds-label">Slett</span>
+                </button>
+            </div>` 
+        );
     }
 {{ end }}

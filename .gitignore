@@ -23,5 +23,6 @@ jupyterhub-*.yaml
 .tool-versions
 *.json
 *.env
+.default-egress-airflow-worker.yaml
 
 hack

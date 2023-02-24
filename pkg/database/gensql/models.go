@@ -90,4 +90,5 @@ type Team struct {
 	PendingJupyterUpgrade bool
 	PendingAirflowUpgrade bool
 	RestrictAirflowEgress bool
+	ApiAccess             bool
 }

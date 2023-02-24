@@ -2,7 +2,7 @@
     {{ template "head" }}
     <div class="box container">
         <div id="content">
-            <h2>Rediger {{ .team }}</h2>
+            <h2>Rediger {{ .team.Slug }}</h2>
             {{ with .errors }}
                 {{ . }}
             {{ end }}
@@ -13,7 +13,7 @@
                         <button type="submit"
                                 onclick="return confirm('Er du sikker på at du vil slette teamet? Dette vil samtidig slette teamets jupyterhub og airflow dersom det er satt opp og vil ikke kunne gjenopprettes senere.')"
                                 class="pure-button button-error">
-                            Slett {{ .team }}
+                            Slett {{ .team.Slug }}
                         </button>
                     </div>
                 </fieldset>
@@ -29,10 +29,15 @@
                     </button>
                 </fieldset>
 
+                <div class="pure-control-group">
+                    <label for="apiaccess">API-Tilgang til Airflow</label>
+                    <input type="checkbox" name="apiaccess" id="apiaccess" {{ if .team.ApiAccess }}checked{{ end }}/>
+                </div>
+
                 <fieldset>
                     <div class="pure-controls">
                         <button id="submit" type="submit" class="pure-button pure-button-primary"
-                                {{ if or .pending_jupyterhub .pending_airflow }}disabled{{ end }}>Lagre
+                                {{ if or .team.PendingJupyterUpgrade .team.PendingAirflowUpgrade }}disabled{{ end }}>Lagre
                         </button>
                     </div>
                 </fieldset>
@@ -41,7 +46,7 @@
     </div>
     <script>
         {{ template "team/script" }}
-        {{ range .users }}
+        {{ range .team.Users }}
         addElement({{ . }})
         {{ end }}
     </script>

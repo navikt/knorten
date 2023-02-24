@@ -60,7 +60,7 @@ func (a *API) setupTeamRoutes() {
 
 	a.router.GET("/team/:team/edit", func(c *gin.Context) {
 		teamName := c.Param("team")
-		get, err := a.repo.TeamGet(c, teamName)
+		team, err := a.repo.TeamGet(c, teamName)
 		if err != nil {
 			a.log.WithError(err).Errorf("problem getting team %v", teamName)
 			c.Redirect(http.StatusSeeOther, "/user")
@@ -75,11 +75,8 @@ func (a *API) setupTeamRoutes() {
 			return
 		}
 		c.HTML(http.StatusOK, "team/edit", gin.H{
-			"users":              get.Users,
-			"team":               teamName,
-			"pending_jupyterhub": get.PendingJupyterUpgrade,
-			"pending_airflow":    get.PendingAirflowUpgrade,
-			"errors":             flashes,
+			"team":   team,
+			"errors": flashes,
 		})
 	})
 

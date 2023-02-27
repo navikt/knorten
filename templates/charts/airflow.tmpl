@@ -45,17 +45,23 @@
                             class="navds-text-field__input navds-body-short navds-body-medium" 
                         />
                     </div>
-                    <div style="navds-form-field navds-form-field--medium">
-                        <label for="restrictairflowegress" class="navds-form-field__label navds-label">Begrens trafikk fra airflow workere</label>
-                        <input id="restrictairflowegress" name="restrictairflowegress" type="checkbox"
-                            class="navds-text-field__input navds-body-short navds-body-medium"
-                        />
-                        <a 
-                            class="navds-link"
-                            target="_blank" href="https://docs.knada.io/analyse/airflow/knada-airflow/#trafikk-fra-airflow-workere">
-                            Les mer om trafikk fra Airflow workere i dokumentasjonen vår
-                        </a>
-                    </div>
+                    <fieldset style="navds-checkbox-group navds-checkbox-group--medium navds-fieldset navds-fieldset--medium">
+                        <div class="navds-checkboxes">
+                            <div class="navds-checkbox navds-checkbox--medium">
+                                <input id="restrictairflowegress" name="restrictairflowegress" type="checkbox"
+                                    class="navds-checkbox__input"
+                                />
+                                <label for="restrictairflowegress" class="navds-checkbox__label">Begrens trafikk fra Airflow workere</label>                        
+                            </div>
+                        </div>
+                        <div class="navds-fieldset__description navds-body-long navds-body-long--small">
+                            <a 
+                                class="navds-link"
+                                target="_blank" href="https://docs.knada.io/analyse/airflow/knada-airflow/#trafikk-fra-airflow-workere">
+                                Les mer om trafikk fra Airflow workere i dokumentasjonen vår
+                            </a>
+                        </div>
+                    </fieldset>
 
                     <div>
                         <button 

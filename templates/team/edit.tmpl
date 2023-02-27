@@ -30,7 +30,7 @@
                 </fieldset>
                 <fieldset>
                     <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action"
-                            {{ if or .pending_jupyterhub .pending_airflow }}disabled{{ end }}
+                            {{ if or .team.PendingJupyterUpgrade .team.PendingAirflowUpgrade }}disabled{{ end }}
                     >
                         <span class="navds-label">
                             Lagre
@@ -42,7 +42,7 @@
     </section>
     <script>
         {{ template "team/script" }}
-        {{ range .users }}
+        {{ range .team.Users }}
         addElement("{{ . }}")
         {{ end }}
     </script>

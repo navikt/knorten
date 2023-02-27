@@ -71,7 +71,7 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 	api.setupUnauthenticatedRoutes()
 	api.router.Use(api.authMiddleware([]string{}))
 	api.setupAuthenticatedRoutes()
-	api.router.Use(api.authMiddleware([]string{"kyrre.havik@nav.no", "erik.vattekar@nav.no"}))
+	api.router.Use(api.authMiddleware([]string{"kyrre.havik@nav.no", "erik.vattekar@nav.no", "kent.daleng@nav.no"}))
 	api.setupAdminRoutes()
 	return &api, nil
 }

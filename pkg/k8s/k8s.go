@@ -13,14 +13,20 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	networkingV1 "k8s.io/api/networking/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/kubectl/pkg/scheme"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+)
+
+const (
+	airflowDefaultEgressNetpol = "default-egress-airflow-worker"
 )
 
 func NameToNamespace(name string) string {
@@ -42,12 +48,13 @@ type Client struct {
 	knelmImage          string
 	airflowChartVersion string
 	jupyterChartVersion string
+	airflowEgressNetPol string
 	repo                *database.Repo
 	cryptClient         *crypto.EncrypterDecrypter
 	log                 *logrus.Entry
 }
 
-func New(log *logrus.Entry, cryptClient *crypto.EncrypterDecrypter, repo *database.Repo, dryRun, inCluster bool, gcpProject, gcpRegion, knelmImage, airflowChartVersion, jupyterChartVersion string) (*Client, error) {
+func New(log *logrus.Entry, cryptClient *crypto.EncrypterDecrypter, repo *database.Repo, dryRun, inCluster bool, gcpProject, gcpRegion, knelmImage, airflowChartVersion, jupyterChartVersion, airflowEgressNetPol string) (*Client, error) {
 	client := &Client{
 		dryRun:              dryRun,
 		gcpProject:          gcpProject,
@@ -57,6 +64,7 @@ func New(log *logrus.Entry, cryptClient *crypto.EncrypterDecrypter, repo *databa
 		jupyterChartVersion: jupyterChartVersion,
 		log:                 log,
 		cryptClient:         cryptClient,
+		airflowEgressNetPol: airflowEgressNetPol,
 		repo:                repo,
 	}
 
@@ -247,6 +255,70 @@ func (c *Client) DeleteSecret(ctx context.Context, name, namespace string) error
 	}
 
 	return nil
+}
+
+func (c *Client) CreateOrUpdateDefaultEgressNetpol(ctx context.Context, namespace string) error {
+	if c.dryRun {
+		c.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
+	netpolBytes, err := os.ReadFile(c.airflowEgressNetPol)
+	if err != nil {
+		return err
+	}
+
+	decoder := scheme.Codecs.UniversalDeserializer()
+	obj, _, err := decoder.Decode(netpolBytes, nil, nil)
+	if err != nil {
+		return err
+	}
+
+	switch o := obj.(type) {
+	case *networkingV1.NetworkPolicy:
+		if err := c.createOrUpdateEgressNetpol(ctx, o, namespace); err != nil {
+			return err
+		}
+	default:
+		c.log.Infof("create of update egress netpol: invalid netpol resource")
+	}
+
+	return nil
+}
+
+func (c *Client) DeleteDefaultEgressNetpol(ctx context.Context, namespace string) error {
+	if c.dryRun {
+		c.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
+	_, err := c.clientSet.NetworkingV1().NetworkPolicies(namespace).Get(ctx, airflowDefaultEgressNetpol, metav1.GetOptions{})
+	if err != nil {
+		if k8sErrors.IsNotFound(err) {
+			c.log.Infof("delete default egress network policy: netpol %v in namespace %v does not exist", airflowDefaultEgressNetpol, namespace)
+			return nil
+		}
+		return err
+	}
+
+	return c.clientSet.NetworkingV1().NetworkPolicies(namespace).Delete(ctx, airflowDefaultEgressNetpol, metav1.DeleteOptions{})
+}
+
+func (c *Client) createOrUpdateEgressNetpol(ctx context.Context, netpol *networkingV1.NetworkPolicy, namespace string) error {
+	_, err := c.clientSet.NetworkingV1().NetworkPolicies(namespace).Get(ctx, airflowDefaultEgressNetpol, metav1.GetOptions{})
+	if err != nil {
+		if k8sErrors.IsNotFound(err) {
+			_, err = c.clientSet.NetworkingV1().NetworkPolicies(namespace).Create(ctx, netpol, metav1.CreateOptions{})
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+		return err
+	}
+
+	_, err = c.clientSet.NetworkingV1().NetworkPolicies(namespace).Update(ctx, netpol, metav1.UpdateOptions{})
+	return err
 }
 
 func (c *Client) createSecret(ctx context.Context, secret *v1.Secret) error {

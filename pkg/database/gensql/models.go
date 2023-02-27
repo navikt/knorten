@@ -89,4 +89,6 @@ type Team struct {
 	Created               sql.NullTime
 	PendingJupyterUpgrade bool
 	PendingAirflowUpgrade bool
+	RestrictAirflowEgress bool
+	ApiAccess             bool
 }

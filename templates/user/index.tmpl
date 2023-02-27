@@ -4,6 +4,9 @@
             {{ with .errors }}
                 {{ . }}
             {{ end }}
+            {{ with .flashes }}
+                {{ . }}
+            {{ end }}
 
             {{ range .services }}
                 <article class="bg-white rounded-md p-4">

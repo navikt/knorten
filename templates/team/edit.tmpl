@@ -3,7 +3,7 @@
     <section class="w-full md:w-[64rem] flex flex-col gap-4 p-4">
         <article class="bg-white rounded-md p-4">
             <div class="flex gap-4 items-center pb-4">
-                <h2>Rediger {{ .team }}</h2>
+                <h2>Rediger {{ .team.Slug }}</h2>
                 <form action="delete" method="POST">
                     <fieldset>
                             <button type="submit"
@@ -11,7 +11,7 @@
                                     class="navds-button navds-button--danger navds-button--small bg-surface-danger"
                             >
                                 <span class="navds-label">
-                                    Slett {{ .team }}
+                                    Slett {{ .team.Slug }}
                                 </span>
                             </button>
                     </fieldset>

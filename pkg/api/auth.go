@@ -271,8 +271,6 @@ func (a *API) adminAuthMiddleware() gin.HandlerFunc {
 		value, _ = c.Get("token")
 		token, pass := value.(string)
 		userGroups, err := a.azureClient.GroupsForUser(token, user.Email)
-		fmt.Println(*user)
-		fmt.Println(userGroups)
 		if err != nil {
 			a.log.WithError(err).Error("problem getting team")
 			c.Redirect(http.StatusSeeOther, "/")

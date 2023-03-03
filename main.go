@@ -70,13 +70,11 @@ func main() {
 		return
 	}
 
-	fmt.Println("k8s created")
 	kApi, err := api.New(repo, azureClient, googleClient, k8sClient, cryptClient, cfg.DryRun, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.SessionKey, log.WithField("subsystem", "api"))
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return
 	}
-	fmt.Println("kApi created")
 
 	err = kApi.Run(cfg.InCluster)
 	if err != nil {

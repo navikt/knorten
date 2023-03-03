@@ -147,15 +147,11 @@ func (a *Azure) ValidateUser(certificates map[string]CertificateList, token stri
 }
 
 func (a *Azure) GroupsForUser(token, email string) (Groups, error) {
-	fmt.Println(token)
-	fmt.Println(email)
-	fmt.Println(AzureGraphMemberOfEndpoint)
 	bearerToken, err := a.getBearerTokenOnBehalfOfUser(token)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println(bearerToken)
 	req, err := http.NewRequest(http.MethodGet, AzureGraphMemberOfEndpoint, nil)
 	if err != nil {
 		return nil, err
@@ -168,7 +164,6 @@ func (a *Azure) GroupsForUser(token, email string) (Groups, error) {
 
 	var body []byte
 	response.Body.Read(body)
-	fmt.Println(string(body))
 
 	var memberOfResponse MemberOfResponse
 	if err := json.NewDecoder(response.Body).Decode(&memberOfResponse); err != nil {

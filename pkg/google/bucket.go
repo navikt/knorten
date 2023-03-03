@@ -12,6 +12,11 @@ import (
 )
 
 func (g *Google) CreateBucket(ctx context.Context, teamID, bucketName string) error {
+	if g.dryRun {
+		g.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
 	client, err := storage.NewClient(ctx)
 	if err != nil {
 		return err

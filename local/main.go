@@ -65,10 +65,10 @@ func main() {
 
 	fmt.Println("Time to insert dummy data for local development")
 	rows := [][]interface{}{
-		{"airflow", "scheduler.extraContainers", `[{"name":"dummy","image":"navikt/dummy:aaa15ba",args":["","","/dags","60"]}]`},
-		{"airflow", "scheduler.extraInitContainers", `[{"name":"dummy","image":"navikt/dummy:aaa15ba",args":["","","/dags","60"]}]`},
-		{"airflow", "webserver.extraContainers", `[{"name":"dummy","image":"navikt/dummy:aaa15ba",args":["","","/dags","60"]}]`},
-		{"airflow", "workers.extraInitContainers", `[{"name":"dummy","image":"navikt/dummy:aaa15ba",args":["","","/dags","60"]}]`},
+		{"airflow", "scheduler.extraContainers", `[{"name":"dummy","image":"navikt/dummy:aaa15ba","args":["","","/dags","60"]}]`},
+		{"airflow", "scheduler.extraInitContainers", `[{"name":"dummy","image":"navikt/dummy:aaa15ba","args":["","","/dags","60"]}]`},
+		{"airflow", "webserver.extraContainers", `[{"name":"dummy","image":"navikt/dummy:aaa15ba","args":["","","/dags","60"]}]`},
+		{"airflow", "workers.extraInitContainers", `[{"name":"dummy","image":"navikt/dummy:aaa15ba","args":["","","/dags","60"]}]`},
 	}
 	_, err = db.CopyFrom(ctx,
 		pgx.Identifier{"chart_global_values"},

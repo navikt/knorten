@@ -26,6 +26,7 @@ type Config struct {
 	KnelmImage          string
 	AirflowChartVersion string
 	JupyterChartVersion string
+	AirflowEgressNetPol string
 	SessionKey          string
 }
 
@@ -47,6 +48,7 @@ func main() {
 	flag.StringVar(&cfg.KnelmImage, "knelm-image", os.Getenv("KNELM_IMAGE"), "Knelm image")
 	flag.StringVar(&cfg.AirflowChartVersion, "airflow-chart-version", os.Getenv("AIRFLOW_CHART_VERSION"), "The chart version for airflow")
 	flag.StringVar(&cfg.JupyterChartVersion, "jupyter-chart-version", os.Getenv("JUPYTER_CHART_VERSION"), "The chart version for jupyter")
+	flag.StringVar(&cfg.AirflowEgressNetPol, "airflow-egress-netpol", os.Getenv("AIRFLOW_EGRESS_NETPOL"), "Path to the Airflow default egress netpol")
 	flag.StringVar(&cfg.SessionKey, "session-key", os.Getenv("SESSION_KEY"), "The session key for Knorten")
 	flag.Parse()
 
@@ -62,8 +64,7 @@ func main() {
 
 	cryptClient := crypto.New(cfg.DBEncKey)
 
-	//k8sClient, err := k8s.New(log.WithField("subsystem", "k8sClient"), cryptClient, repo, cfg.DryRun, cfg.InCluster, cfg.GCPProject, cfg.GCPRegion, cfg.KnelmImage, cfg.AirflowChartVersion, cfg.JupyterChartVersion)
-	k8sClient := &k8s.Client{}
+	k8sClient, err := k8s.New(log.WithField("subsystem", "k8sClient"), cryptClient, repo, cfg.DryRun, cfg.InCluster, cfg.GCPProject, cfg.GCPRegion, cfg.KnelmImage, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.AirflowEgressNetPol)
 	if err != nil {
 		log.WithError(err).Fatal("creating k8s client")
 		return

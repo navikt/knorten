@@ -40,6 +40,8 @@ spec:
               configMapKeyRef:
                 name: helm-repos
                 key: jupyter_chart_version
+          - name: AIRFLOW_EGRESS_NETPOL
+            value: /root/.config/netpol/default-egress-airflow-worker.yaml
         envFrom:
         - secretRef:
             name: knorten
@@ -47,6 +49,9 @@ spec:
           - name: helm-repos-config
             mountPath: /root/.config/helm/repositories.yaml
             subPath: repositories.yaml
+          - name: airflow-network-policy
+            mountPath: /root/.config/netpol/default-egress-airflow-worker.yaml
+            subPath: default-egress-airflow-worker.yaml
       - name: cloudsql-proxy
         command:
         - /cloud-sql-proxy
@@ -74,3 +79,6 @@ spec:
         - name: helm-repos-config
           configMap:
             name: helm-repos
+        - name: airflow-network-policy
+          configMap:
+            name: airflow-network-policy

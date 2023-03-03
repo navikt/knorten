@@ -38,17 +38,19 @@ type AirflowClient struct {
 }
 
 type AirflowForm struct {
-	TeamID string
-	Slug   string
-	Users  []string
+	TeamID    string
+	Slug      string
+	Users     []string
+	ApiAccess bool
 
 	AirflowValues
 }
 
 type AirflowConfigurableValues struct {
-	DagRepo       string `form:"dagrepo" binding:"required,startswith=navikt/" helm:"webserver.extraContainers.[0].args.[0]"`
-	DagRepoBranch string `form:"dagrepobranch" helm:"webserver.extraContainers.[0].args.[1]"`
-	ServiceUser   string `form:"serviceuser"`
+	DagRepo               string `form:"dagrepo" binding:"required,startswith=navikt/" helm:"webserver.extraContainers.[0].args.[0]"`
+	DagRepoBranch         string `form:"dagrepobranch" helm:"webserver.extraContainers.[0].args.[1]"`
+	ServiceUser           string `form:"serviceuser"`
+	RestrictAirflowEgress string `form:"restrictairflowegress"`
 }
 
 type AirflowValues struct {
@@ -104,6 +106,10 @@ func (a AirflowClient) Create(ctx *gin.Context, slug string) error {
 	form.TeamID = team.ID
 	form.Users = team.Users
 
+	if err := a.setRestrictAirflowEgress(ctx, form, team.ID); err != nil {
+		return err
+	}
+
 	dbPassword, err := generatePassword(40)
 	if err != nil {
 		return err
@@ -142,8 +148,13 @@ func (a AirflowClient) Update(ctx context.Context, form AirflowForm) error {
 		return nil
 	}
 
+	if err := a.setRestrictAirflowEgress(ctx, form, team.ID); err != nil {
+		return err
+	}
+
 	form.TeamID = team.ID
 	form.Users = team.Users
+	form.ApiAccess = team.ApiAccess
 	err = setWebserverEnv(&form)
 	if err != nil {
 		return err
@@ -241,27 +252,18 @@ type airflowEnv struct {
 }
 
 func setWebserverEnv(values *AirflowForm) error {
-	var envs []airflowEnv
+	envs := []airflowEnv{
+		{
+			Name:  "AIRFLOW_USERS",
+			Value: strings.Join(values.Users, ","),
+		},
+	}
 
-	if values.ServiceUser != "" {
-		usersWithServiceUser := append(values.Users, values.ServiceUser)
-		envs = []airflowEnv{
-			{
-				Name:  "AIRFLOW__API__AUTH_BACKENDS",
-				Value: "airflow.api.auth.backend.basic_auth",
-			},
-			{
-				Name:  "AIRFLOW_USERS",
-				Value: strings.Join(usersWithServiceUser, ","),
-			},
-		}
-	} else {
-		envs = []airflowEnv{
-			{
-				Name:  "AIRFLOW_USERS",
-				Value: strings.Join(values.Users, ","),
-			},
-		}
+	if values.ApiAccess {
+		envs = append(envs, airflowEnv{
+			Name:  "AIRFLOW__API__AUTH_BACKENDS",
+			Value: "airflow.api.auth.backend.session,airflow.api.auth.backend.basic_auth",
+		})
 	}
 
 	envBytes, err := json.Marshal(envs)
@@ -320,6 +322,27 @@ func setSynkRepoAndBranch(values *AirflowForm) {
 	values.SchedulerGitSynkRepoBranch = values.DagRepoBranch
 	values.WorkersGitSynkRepo = values.DagRepo
 	values.WorkersGitSynkRepoBranch = values.DagRepoBranch
+}
+
+func (a AirflowClient) setRestrictAirflowEgress(ctx context.Context, form AirflowForm, teamID string) error {
+	switch form.RestrictAirflowEgress {
+	case "on":
+		if err := a.k8sClient.CreateOrUpdateDefaultEgressNetpol(ctx, k8s.NameToNamespace(teamID)); err != nil {
+			return err
+		}
+		if err := a.repo.TeamSetRestrictAirflowEgress(ctx, teamID, true); err != nil {
+			return err
+		}
+	default:
+		if err := a.k8sClient.DeleteDefaultEgressNetpol(ctx, k8s.NameToNamespace(teamID)); err != nil {
+			return err
+		}
+		if err := a.repo.TeamSetRestrictAirflowEgress(ctx, teamID, false); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (a AirflowClient) createDB(ctx context.Context, teamID, dbPassword string) {

@@ -80,6 +80,7 @@ func addHelmRepository(url, chartName, repoFile string, settings *cli.EnvSetting
 }
 
 func UpdateHelmRepositories() error {
+	return nil
 	settings := cli.New()
 	repoFile := settings.RepositoryConfig
 

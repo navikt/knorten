@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/nais/knorten/pkg/chart"
@@ -34,16 +35,21 @@ type API struct {
 
 func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, dryRun bool, airflowChartVersion, jupyterChartVersion, sessionKey string, log *logrus.Entry) (*API, error) {
 	adminClient := admin.New(repo, k8sClient, cryptClient, airflowChartVersion, jupyterChartVersion)
+	fmt.Println("admin created")
 	chartClient, err := chart.New(repo, googleClient, k8sClient, cryptClient, airflowChartVersion, jupyterChartVersion, log)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("chart created")
 
 	router := gin.New()
+	fmt.Println("router created")
+
 	router.Use(gin.Recovery())
 	router.Use(func(ctx *gin.Context) {
 		log.Infof("[GIN] %v %v %v", ctx.Request.Method, ctx.Request.URL.Path, ctx.Writer.Status())
 	})
+	fmt.Println("router init")
 
 	api := API{
 		azureClient:  azureClient,
@@ -59,11 +65,13 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 	}
 
 	api.teamClient = team.NewClient(repo, googleClient, k8sClient, api.chartClient, log)
+	fmt.Println("team created")
 
 	session, err := repo.NewSessionStore(sessionKey)
 	if err != nil {
 		return &API{}, err
 	}
+	fmt.Println("repo created")
 
 	api.router.Use(session)
 	api.router.Static("/assets", "./assets")
@@ -71,7 +79,7 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 	api.setupUnauthenticatedRoutes()
 	api.router.Use(api.authMiddleware([]string{}))
 	api.setupAuthenticatedRoutes()
-	api.router.Use(api.authMiddleware([]string{"kyrre.havik@nav.no", "erik.vattekar@nav.no"}))
+	api.router.Use(api.authMiddleware([]string{}), api.adminAuthMiddleware())
 	api.setupAdminRoutes()
 	return &api, nil
 }

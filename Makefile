@@ -30,7 +30,7 @@ local-online:
 	  --in-cluster=false \
 	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knorten/knelm:v9 \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
-	  --session-key online-session
+	  --session-key online-session 
 
 local:
 	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" \

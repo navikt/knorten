@@ -8,11 +8,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gin-contrib/sessions"
 	"net"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/gin-contrib/sessions"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -253,6 +254,34 @@ func (a *API) authMiddleware(allowedUsers []string) gin.HandlerFunc {
 		}
 
 		c.Set("user", user)
+		c.Set("token", session.AccessToken)
+		c.Next()
+	}
+}
+
+func (a *API) adminAuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		value, _ := c.Get("user")
+		user, pass := value.(*auth.User)
+		if !pass {
+			a.log.Error("User info missing")
+			c.Redirect(http.StatusSeeOther, "/")
+			return
+		}
+		value, _ = c.Get("token")
+		token, pass := value.(string)
+		userGroups, err := a.azureClient.GroupsForUser(token, user.Email)
+		fmt.Println(*user)
+		fmt.Println(userGroups)
+		if err != nil {
+			a.log.WithError(err).Error("problem getting team")
+			c.Redirect(http.StatusSeeOther, "/")
+			return
+		}
+		if !userGroups.Contains("nada@nav.no") {
+			c.Redirect(http.StatusSeeOther, "/")
+			return
+		}
 		c.Next()
 	}
 }

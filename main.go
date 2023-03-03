@@ -62,17 +62,20 @@ func main() {
 
 	cryptClient := crypto.New(cfg.DBEncKey)
 
-	k8sClient, err := k8s.New(log.WithField("subsystem", "k8sClient"), cryptClient, repo, cfg.DryRun, cfg.InCluster, cfg.GCPProject, cfg.GCPRegion, cfg.KnelmImage, cfg.AirflowChartVersion, cfg.JupyterChartVersion)
+	//k8sClient, err := k8s.New(log.WithField("subsystem", "k8sClient"), cryptClient, repo, cfg.DryRun, cfg.InCluster, cfg.GCPProject, cfg.GCPRegion, cfg.KnelmImage, cfg.AirflowChartVersion, cfg.JupyterChartVersion)
+	k8sClient := &k8s.Client{}
 	if err != nil {
 		log.WithError(err).Fatal("creating k8s client")
 		return
 	}
 
+	fmt.Println("k8s created")
 	kApi, err := api.New(repo, azureClient, googleClient, k8sClient, cryptClient, cfg.DryRun, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.SessionKey, log.WithField("subsystem", "api"))
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return
 	}
+	fmt.Println("kApi created")
 
 	err = kApi.Run(cfg.InCluster)
 	if err != nil {

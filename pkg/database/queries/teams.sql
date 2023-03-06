@@ -48,3 +48,7 @@ UPDATE teams
 SET restrict_airflow_egress = @restrict_airflow_egress
 WHERE id = @id;
 
+-- name: TeamSetApiAccess :exec
+UPDATE teams
+SET api_access = @api_access
+WHERE id = @id;

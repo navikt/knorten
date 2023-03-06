@@ -43,7 +43,7 @@
                             class="navds-checkbox-group navds-checkbox-group--medium navds-fieldset navds-fieldset--medium">
                         <div class="navds-checkbox">
                             <input type="checkbox" name="apiaccess" id="apiaccess" class="navds-checkbox__input"/>
-                            <label class="navds-checkbox__label" for="apiaccess">
+                            <label class="navds-checkbox__label" for="apiaccess" disabled="{{ .apiaccess }}">
                                 <span class="navds-checkbox__content">API-tilgang</span>
                             </label>
                             <div class="navds-checkbox navds-checkbox--medium">
@@ -54,10 +54,8 @@
                             </div>
                         </div>
                         <div class="navds-fieldset__description navds-body-long navds-body-long--small">
-                            <a
-                                    class="navds-link"
-                                    target="_blank"
-                                    href="https://docs.knada.io/analyse/airflow/knada-airflow/#trafikk-fra-airflow-workere">
+                            <a class="navds-link" target="_blank"
+                               href="https://docs.knada.io/analyse/airflow/knada-airflow/#trafikk-fra-airflow-workere">
                                 Les mer om trafikk fra Airflow workere i dokumentasjonen vår
                             </a>
                         </div>

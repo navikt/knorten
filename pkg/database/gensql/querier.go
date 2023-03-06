@@ -23,6 +23,7 @@ type Querier interface {
 	TeamDelete(ctx context.Context, id string) error
 	TeamGet(ctx context.Context, slug string) (TeamGetRow, error)
 	TeamSetAirflowRestrictEgress(ctx context.Context, arg TeamSetAirflowRestrictEgressParams) error
+	TeamSetApiAccess(ctx context.Context, arg TeamSetApiAccessParams) error
 	TeamSetPendingAirflowUpgrade(ctx context.Context, arg TeamSetPendingAirflowUpgradeParams) error
 	TeamSetPendingJupyterUpgrade(ctx context.Context, arg TeamSetPendingJupyterUpgradeParams) error
 	TeamUpdate(ctx context.Context, arg TeamUpdateParams) error

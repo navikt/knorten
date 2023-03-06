@@ -63,4 +63,9 @@ func (r *Repo) TeamSetRestrictAirflowEgress(ctx context.Context, teamID string, 
 	})
 }
 
+func (r *Repo) TeamSetApiAccess(ctx context.Context, teamID string, apiAccess bool) error {
+	return r.querier.TeamSetApiAccess(ctx, gensql.TeamSetApiAccessParams{
+		ApiAccess: apiAccess,
+		ID:        teamID,
+	})
 }

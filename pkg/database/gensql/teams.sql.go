@@ -102,10 +102,19 @@ func (q *Queries) TeamSetAirflowRestrictEgress(ctx context.Context, arg TeamSetA
 	return err
 }
 
+const teamSetApiAccess = `-- name: TeamSetApiAccess :exec
+UPDATE teams
+SET api_access = $1
+WHERE id = $2
 `
 
-func (q *Queries) TeamSetAirflowRestrictEgress(ctx context.Context, restrictAirflowEgress bool) error {
-	_, err := q.db.ExecContext(ctx, teamSetAirflowRestrictEgress, restrictAirflowEgress)
+type TeamSetApiAccessParams struct {
+	ApiAccess bool
+	ID        string
+}
+
+func (q *Queries) TeamSetApiAccess(ctx context.Context, arg TeamSetApiAccessParams) error {
+	_, err := q.db.ExecContext(ctx, teamSetApiAccess, arg.ApiAccess, arg.ID)
 	return err
 }
 
@@ -143,7 +152,7 @@ func (q *Queries) TeamSetPendingJupyterUpgrade(ctx context.Context, arg TeamSetP
 
 const teamUpdate = `-- name: TeamUpdate :exec
 UPDATE teams
-SET users = $1,
+SET users      = $1,
     api_access = $2
 WHERE id = $3
 `

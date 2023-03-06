@@ -28,46 +28,46 @@
                     <div class="navds-form-field navds-form-field--medium">
                         <label for="dagrepo" class="navds-form-field__label navds-label">DAG's repo</label>
                         <input type="text" name="dagrepo" id="dagrepo" value="{{ .values.DagRepo }}"
-                            placeholder="navikt/dags" required
-                            class="navds-text-field__input navds-body-short navds-body-medium" 
+                               placeholder="navikt/dags" required
+                               class="navds-text-field__input navds-body-short navds-body-medium"
                         />
                     </div>
                     <div class="navds-form-field navds-form-field--medium">
                         <label for="dagrepobranch" class="navds-form-field__label navds-label">DAG's repo branch</label>
                         <input type="text" name="dagrepobranch" id="dagrepobranch" value="{{ .values.DagRepoBranch }}"
-                            placeholder="main"
-                            class="navds-text-field__input navds-body-short navds-body-medium"
+                               placeholder="main"
+                               class="navds-text-field__input navds-body-short navds-body-medium"
                         />
                     </div>
-                    <div class="navds-form-field navds-form-field--medium">
-                        <label for="serviceuser" class="navds-form-field__label navds-label">Servicebruker</label>
-                        <input type="text" name="serviceuser" id="serviceuser" value="{{ .values.ServiceUser }}"
-                            class="navds-text-field__input navds-body-short navds-body-medium" 
-                        />
-                    </div>
-                    <fieldset class="navds-checkbox-group navds-checkbox-group--medium navds-fieldset navds-fieldset--medium">
-                        <div class="navds-checkboxes">
+                    <fieldset
+                            class="navds-checkbox-group navds-checkbox-group--medium navds-fieldset navds-fieldset--medium">
+                        <div class="navds-checkbox">
+                            <input type="checkbox" name="apiaccess" id="apiaccess" class="navds-checkbox__input"/>
+                            <label class="navds-checkbox__label" for="apiaccess">
+                                <span class="navds-checkbox__content">API-tilgang</span>
+                            </label>
                             <div class="navds-checkbox navds-checkbox--medium">
                                 <input id="restrictairflowegress" name="restrictairflowegress" type="checkbox"
-                                    class="navds-checkbox__input"
-                                />
-                                <label for="restrictairflowegress" class="navds-checkbox__label">Begrens trafikk fra Airflow workere</label>                        
+                                       class="navds-checkbox__input"/>
+                                <label for="restrictairflowegress" class="navds-checkbox__label">Begrens trafikk fra
+                                    Airflow workere</label>
                             </div>
                         </div>
                         <div class="navds-fieldset__description navds-body-long navds-body-long--small">
-                            <a 
-                                class="navds-link"
-                                target="_blank" href="https://docs.knada.io/analyse/airflow/knada-airflow/#trafikk-fra-airflow-workere">
+                            <a
+                                    class="navds-link"
+                                    target="_blank"
+                                    href="https://docs.knada.io/analyse/airflow/knada-airflow/#trafikk-fra-airflow-workere">
                                 Les mer om trafikk fra Airflow workere i dokumentasjonen vår
                             </a>
                         </div>
                     </fieldset>
 
                     <div>
-                        <button 
-                            id="submit" 
-                            type="submit" 
-                            class="navds-button navds-button--primary bg-surface-action"
+                        <button
+                                id="submit"
+                                type="submit"
+                                class="navds-button navds-button--primary bg-surface-action"
                         >
                             <span class="navds-label">Lagre</span>
                         </button>

@@ -21,23 +21,6 @@
                     </button>
                 </fieldset>
 
-                <div class="navds-checkbox">
-                    <input
-                        type="checkbox"
-                        name="apiaccess"
-                        id="apiaccess"
-                        class="navds-checkbox__input"
-                    />
-                    <label
-                        class="navds-checkbox__label"
-                        for="apiaccess"
-                    >
-                        <span class="navds-checkbox__content">
-                            API-tilgang
-                        </span>
-                    </label>
-                </div>
-
                 <fieldset>
                     <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action"
                             {{ if or .pending_jupyterhub .pending_airflow }}disabled{{ end }}

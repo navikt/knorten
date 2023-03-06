@@ -106,7 +106,9 @@ func (a AirflowClient) Create(ctx *gin.Context, slug string) error {
 	form.TeamID = team.ID
 	form.Users = team.Users
 
-	if err := a.setRestrictAirflowEgress(ctx, form, team.ID); err != nil {
+	if err := a.setRestrictAirflowEgress(ctx, form.RestrictAirflowEgress, team.ID); err != nil {
+		return err
+	}
 		return err
 	}
 
@@ -148,7 +150,9 @@ func (a AirflowClient) Update(ctx context.Context, form AirflowForm) error {
 		return nil
 	}
 
-	if err := a.setRestrictAirflowEgress(ctx, form, team.ID); err != nil {
+	if err := a.setRestrictAirflowEgress(ctx, form.RestrictAirflowEgress, team.ID); err != nil {
+		return err
+	}
 		return err
 	}
 

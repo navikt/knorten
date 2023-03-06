@@ -13,7 +13,8 @@ import (
 
 const clearPendingUpgradeLocks = `-- name: ClearPendingUpgradeLocks :exec
 UPDATE teams
-SET pending_jupyter_upgrade = false, pending_airflow_upgrade = false
+SET pending_jupyter_upgrade = false,
+    pending_airflow_upgrade = false
 `
 
 func (q *Queries) ClearPendingUpgradeLocks(ctx context.Context) error {
@@ -88,6 +89,19 @@ func (q *Queries) TeamGet(ctx context.Context, slug string) (TeamGetRow, error) 
 const teamSetAirflowRestrictEgress = `-- name: TeamSetAirflowRestrictEgress :exec
 UPDATE teams
 SET restrict_airflow_egress = $1
+WHERE id = $2
+`
+
+type TeamSetAirflowRestrictEgressParams struct {
+	RestrictAirflowEgress bool
+	ID                    string
+}
+
+func (q *Queries) TeamSetAirflowRestrictEgress(ctx context.Context, arg TeamSetAirflowRestrictEgressParams) error {
+	_, err := q.db.ExecContext(ctx, teamSetAirflowRestrictEgress, arg.RestrictAirflowEgress, arg.ID)
+	return err
+}
+
 `
 
 func (q *Queries) TeamSetAirflowRestrictEgress(ctx context.Context, restrictAirflowEgress bool) error {

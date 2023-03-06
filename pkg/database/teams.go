@@ -57,5 +57,10 @@ func (r *Repo) TeamSetPendingUpgrade(ctx context.Context, teamID, chartType stri
 }
 
 func (r *Repo) TeamSetRestrictAirflowEgress(ctx context.Context, teamID string, restrictAirflowEgress bool) error {
-	return r.querier.TeamSetAirflowRestrictEgress(ctx, restrictAirflowEgress)
+	return r.querier.TeamSetAirflowRestrictEgress(ctx, gensql.TeamSetAirflowRestrictEgressParams{
+		RestrictAirflowEgress: restrictAirflowEgress,
+		ID:                    teamID,
+	})
+}
+
 }

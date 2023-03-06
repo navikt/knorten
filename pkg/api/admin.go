@@ -190,7 +190,15 @@ func (a *API) setupAdminRoutes() {
 		}
 
 		if err := a.adminClient.UpdateGlobalValues(c, c.Request.PostForm, chartType); err != nil {
-			c.Redirect(http.StatusSeeOther, "/admin")
+			a.log.WithError(err)
+			session.AddFlash(err.Error())
+			err = session.Save()
+			if err != nil {
+				a.log.WithError(err).Error("problem saving session")
+				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
+				return
+			}
+			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
 			return
 		}
 

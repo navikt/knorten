@@ -56,11 +56,8 @@
                                class="navds-text-field__input navds-body-short navds-body-medium" />
                     </div>
                     <div>
-                        <button 
-                            id="submit" 
-                            type="submit" 
-                            class="navds-button navds-button--primary bg-surface-action"
-                        >
+                        <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action"
+                                disabled="{{ .pending_jupyterhub }}">
                             <span class="navds-label">Lagre</span>
                         </button>
                     </div>
@@ -68,8 +65,5 @@
             </form>
         </article>
     </section>
-    <script>
-        document.getElementById("submit").disabled = {{ .pending_jupyterhub }};
-    </script>
     {{ template "footer" }}
 {{ end }}

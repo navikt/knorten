@@ -64,11 +64,8 @@
                     </fieldset>
 
                     <div>
-                        <button
-                                id="submit"
-                                type="submit"
-                                class="navds-button navds-button--primary bg-surface-action"
-                        >
+                        <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action"
+                                disabled="{{ .pending_airflow }}">
                             <span class="navds-label">Lagre</span>
                         </button>
                     </div>
@@ -76,8 +73,5 @@
             </form>
         </article>
     </section>
-    <script>
-        document.getElementById("submit").disabled = {{ .pending_airflow }};
-    </script>
     {{ template "footer" }}
 {{ end }}

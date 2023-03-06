@@ -6,14 +6,14 @@
                 <h2>Rediger {{ .team.Slug }}</h2>
                 <form action="delete" method="POST">
                     <fieldset>
-                            <button type="submit"
-                                    onclick="return confirm('Er du sikker på at du vil slette teamet? Dette vil samtidig slette teamets jupyterhub og airflow dersom det er satt opp og vil ikke kunne gjenopprettes senere.')"
-                                    class="navds-button navds-button--danger navds-button--small bg-surface-danger"
-                            >
+                        <button type="submit"
+                                onclick="return confirm('Er du sikker på at du vil slette teamet? Dette vil samtidig slette teamets jupyterhub og airflow dersom det er satt opp og vil ikke kunne gjenopprettes senere.')"
+                                class="navds-button navds-button--danger navds-button--small bg-surface-danger"
+                        >
                                 <span class="navds-label">
                                     Slett {{ .team.Slug }}
                                 </span>
-                            </button>
+                        </button>
                     </fieldset>
                 </form>
             </div>
@@ -24,10 +24,32 @@
             <form action="" method="POST" class="flex flex-col gap-4 w-80">
                 <fieldset id="users">
                     <legend class="navds-form-field__label navds-label">Brukere</legend>
-                    <button type="button" class="mb-4 navds-button navds-button--secondary navds-button--small" onClick="addElement()">
+                    <button type="button" class="mb-4 navds-button navds-button--secondary navds-button--small"
+                            onClick="addElement()">
                         Legg til flere brukere
                     </button>
                 </fieldset>
+
+                <fieldset
+                        class="navds-checkbox-group navds-checkbox-group--medium navds-fieldset navds-fieldset--medium">
+                    <div class="navds-checkbox">
+                        <input
+                                type="checkbox"
+                                name="apiaccess"
+                                id="apiaccess"
+                                class="navds-checkbox__input"
+                        />
+                        <label
+                                class="navds-checkbox__label"
+                                for="apiaccess"
+                        >
+                        <span class="navds-checkbox__content">
+                            API-tilgang
+                        </span>
+                        </label>
+                    </div>
+                </fieldset>
+
                 <fieldset>
                     <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action"
                             {{ if or .team.PendingJupyterUpgrade .team.PendingAirflowUpgrade }}disabled{{ end }}

@@ -63,6 +63,7 @@ func (a *Client) UpdateGlobalValues(ctx context.Context, formValues url.Values, 
 			if err != nil {
 				return err
 			}
+
 			err = a.repo.GlobalChartValueInsert(ctx, key, value, encrypted, chartType)
 			if err != nil {
 				return err

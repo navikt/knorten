@@ -1,86 +1,75 @@
 {{ define "charts/airflow" }}
     {{ template "head" }}
-    <div class="box container">
-        <div id="content">
+    <section class="w-full md:w-[64rem] flex flex-col gap-4 p-4">
+        <article class="bg-white rounded-md p-4">
             {{ if .values }}
-                <h2>Rediger {{ .team }} sin Airflow</h2>
-
-                <form class="pure-form pure-form-stacked" action="delete" method="POST">
-                    <fieldset>
-                        <div class="pure-controls">
+                <div class="flex gap-4 items-center pb-4">
+                    <h2>Rediger {{ .team }} sin Airflow</h2>
+                    <form action="delete" method="POST">
+                        <fieldset>
                             <button type="submit"
                                     onclick="return confirm('Er du sikker på at du vil slette airflow? Det er ikke mulig å gjenopprette denne senere')"
-                                    class="pure-button button-error">
-                                Slett Airflow
+                                    class="navds-button navds-button--danger navds-button--small bg-surface-danger"
+                            >
+                                <span class="navds-label">Slett Airflow</span>
                             </button>
-                        </div>
-                    </fieldset>
-                </form>
+                        </fieldset>
+                    </form>
+                </div>
             {{ else }}
-                <h2>Ny Airflow Notebook for {{ .team }}</h2>
+                <h2 class="pb-4">Ny Airflow Notebook for {{ .team }}</h2>
             {{ end }}
             {{ with .errors }}
                 {{ . }}
             {{ end }}
 
-            <form class="pure-form pure-form-stacked" action="" method="POST">
-                <fieldset>
-                    <div class="pure-control-group">
-                        <label for="dagrepo">DAG's repo</label>
+            <form class="w-80" action="" method="POST">
+                <fieldset class="flex flex-col gap-4">
+                    <div class="navds-form-field navds-form-field--medium">
+                        <label for="dagrepo" class="navds-form-field__label navds-label">DAG's repo</label>
                         <input type="text" name="dagrepo" id="dagrepo" value="{{ .values.DagRepo }}"
-                               placeholder="navikt/dags" required/>
+                               placeholder="navikt/dags" required
+                               class="navds-text-field__input navds-body-short navds-body-medium"
+                        />
                     </div>
-                    <div class="pure-control-group">
-                        <label for="dagrepobranch">DAG's repo branch</label>
+                    <div class="navds-form-field navds-form-field--medium">
+                        <label for="dagrepobranch" class="navds-form-field__label navds-label">DAG's repo branch</label>
                         <input type="text" name="dagrepobranch" id="dagrepobranch" value="{{ .values.DagRepoBranch }}"
-                               placeholder="main"/>
+                               placeholder="main"
+                               class="navds-text-field__input navds-body-short navds-body-medium"
+                        />
                     </div>
-                    <div class="pure-control-group">
-                        <label for="serviceuser">Servicebruker</label>
-                        <input type="text" name="serviceuser" id="serviceuser" value="{{ .values.ServiceUser }}" />
-                    </div>
-                    <div style="display: flex">
-                        Begrens trafikk fra airflow workere
-                        <input id="restrictairflowegress" name="restrictairflowegress" type="checkbox"></input>
-                        For mer informasjon, se <a style="cursor: pointer" target="_blank" href="https://docs.knada.io/analyse/airflow/knada-airflow/#trafikk-fra-airflow-workere">her</a>
-                    </div>
+                    <fieldset
+                            class="navds-checkbox-group navds-checkbox-group--medium navds-fieldset navds-fieldset--medium">
+                        <div class="navds-checkbox">
+                            <input type="checkbox" name="apiaccess" id="apiaccess" class="navds-checkbox__input"/>
+                            <label class="navds-checkbox__label" for="apiaccess" disabled="{{ .apiaccess }}">
+                                <span class="navds-checkbox__content">API-tilgang</span>
+                            </label>
+                            <div class="navds-checkbox navds-checkbox--medium">
+                                <input id="restrictairflowegress" name="restrictairflowegress" type="checkbox"
+                                       class="navds-checkbox__input" disabled="{{ .restrictairflowegress }}"/>
+                                <label for="restrictairflowegress" class="navds-checkbox__label">Begrens trafikk fra
+                                    Airflow workere</label>
+                            </div>
+                        </div>
+                        <div class="navds-fieldset__description navds-body-long navds-body-long--small">
+                            <a class="navds-link" target="_blank"
+                               href="https://docs.knada.io/analyse/airflow/knada-airflow/#trafikk-fra-airflow-workere">
+                                Les mer om trafikk fra Airflow workere i dokumentasjonen vår
+                            </a>
+                        </div>
+                    </fieldset>
 
-                    <div class="pure-controls">
-                        <button id="submit" type="submit" class="pure-button pure-button-primary">Lagre</button>
+                    <div>
+                        <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action"
+                                disabled="{{ .pending_airflow }}">
+                            <span class="navds-label">Lagre</span>
+                        </button>
                     </div>
                 </fieldset>
             </form>
-        </div>
-    </div>
-    <script>
-        function addElement() {
-            const newDiv = document.createElement("div");
-            newDiv.className = "pure-control-group"
-
-            const label = document.createElement("label");
-            label.setAttribute("for", "email");
-            label.appendChild(document.createTextNode("Ny bruker"));
-
-            const input = document.createElement("input");
-            input.type = "email"
-            input.name = "users[]"
-            input.id = "email"
-            input.placeholder = "E-post"
-
-            const checkboxInput = document.createElement("input");
-            checkboxInput.type = "checkbox"
-            checkboxInput.name = "restrictairflowegress"
-            checkboxInput.id = "restrictairflowegress"
-            checkboxInput.value = "restrictairflowegress"
-            innerDiv.appendChild(checkboxInput)
-
-            // add the newly created element and its content into the DOM
-            const currentDiv = document.getElementById("users");
-            currentDiv.appendChild(input);
-        }
-
-        document.getElementById("restrictairflowegress").checked = {{ .restrictairflowegress }};
-        document.getElementById("submit").disabled = {{ .pending_airflow }};
-    </script>
+        </article>
+    </section>
     {{ template "footer" }}
 {{ end }}

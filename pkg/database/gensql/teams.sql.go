@@ -13,7 +13,8 @@ import (
 
 const clearPendingUpgradeLocks = `-- name: ClearPendingUpgradeLocks :exec
 UPDATE teams
-SET pending_jupyter_upgrade = false, pending_airflow_upgrade = false
+SET pending_jupyter_upgrade = false,
+    pending_airflow_upgrade = false
 `
 
 func (q *Queries) ClearPendingUpgradeLocks(ctx context.Context) error {
@@ -88,10 +89,32 @@ func (q *Queries) TeamGet(ctx context.Context, slug string) (TeamGetRow, error) 
 const teamSetAirflowRestrictEgress = `-- name: TeamSetAirflowRestrictEgress :exec
 UPDATE teams
 SET restrict_airflow_egress = $1
+WHERE id = $2
 `
 
-func (q *Queries) TeamSetAirflowRestrictEgress(ctx context.Context, restrictAirflowEgress bool) error {
-	_, err := q.db.ExecContext(ctx, teamSetAirflowRestrictEgress, restrictAirflowEgress)
+type TeamSetAirflowRestrictEgressParams struct {
+	RestrictAirflowEgress bool
+	ID                    string
+}
+
+func (q *Queries) TeamSetAirflowRestrictEgress(ctx context.Context, arg TeamSetAirflowRestrictEgressParams) error {
+	_, err := q.db.ExecContext(ctx, teamSetAirflowRestrictEgress, arg.RestrictAirflowEgress, arg.ID)
+	return err
+}
+
+const teamSetApiAccess = `-- name: TeamSetApiAccess :exec
+UPDATE teams
+SET api_access = $1
+WHERE id = $2
+`
+
+type TeamSetApiAccessParams struct {
+	ApiAccess bool
+	ID        string
+}
+
+func (q *Queries) TeamSetApiAccess(ctx context.Context, arg TeamSetApiAccessParams) error {
+	_, err := q.db.ExecContext(ctx, teamSetApiAccess, arg.ApiAccess, arg.ID)
 	return err
 }
 
@@ -129,7 +152,7 @@ func (q *Queries) TeamSetPendingJupyterUpgrade(ctx context.Context, arg TeamSetP
 
 const teamUpdate = `-- name: TeamUpdate :exec
 UPDATE teams
-SET users = $1,
+SET users      = $1,
     api_access = $2
 WHERE id = $3
 `

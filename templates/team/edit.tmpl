@@ -1,53 +1,50 @@
 {{ define "team/edit" }}
     {{ template "head" }}
-    <div class="box container">
-        <div id="content">
-            <h2>Rediger {{ .team.Slug }}</h2>
+    <section class="w-full md:w-[64rem] flex flex-col gap-4 p-4">
+        <article class="bg-white rounded-md p-4">
+            <div class="flex gap-4 items-center pb-4">
+                <h2>Rediger {{ .team.Slug }}</h2>
+                <form action="delete" method="POST">
+                    <fieldset>
+                        <button type="submit"
+                                onclick="return confirm('Er du sikker på at du vil slette teamet? Dette vil samtidig slette teamets jupyterhub og airflow dersom det er satt opp og vil ikke kunne gjenopprettes senere.')"
+                                class="navds-button navds-button--danger navds-button--small bg-surface-danger"
+                        >
+                                <span class="navds-label">
+                                    Slett {{ .team.Slug }}
+                                </span>
+                        </button>
+                    </fieldset>
+                </form>
+            </div>
             {{ with .errors }}
                 {{ . }}
             {{ end }}
 
-            <form class="pure-form pure-form-stacked" action="delete" method="POST">
-                <fieldset>
-                    <div class="pure-controls">
-                        <button type="submit"
-                                onclick="return confirm('Er du sikker på at du vil slette teamet? Dette vil samtidig slette teamets jupyterhub og airflow dersom det er satt opp og vil ikke kunne gjenopprettes senere.')"
-                                class="pure-button button-error">
-                            Slett {{ .team.Slug }}
-                        </button>
-                    </div>
-                </fieldset>
-            </form>
-
-            <form class="pure-form pure-form-stacked" action="" method="POST">
-                <fieldset class="pure-group" id="users">
-                    <legend>Brukere</legend>
-                    <button type="button" class="pure-button pure-button-primary" onClick="addElement()">Legg
-                        til
-                        flere
-                        bruker
+            <form action="" method="POST" class="flex flex-col gap-4 w-80">
+                <fieldset id="users">
+                    <legend class="navds-form-field__label navds-label">Brukere</legend>
+                    <button type="button" class="mb-4 navds-button navds-button--secondary navds-button--small"
+                            onClick="addElement()">
+                        Legg til flere brukere
                     </button>
                 </fieldset>
-
-                <div class="pure-control-group">
-                    <label for="apiaccess">API-Tilgang til Airflow</label>
-                    <input type="checkbox" name="apiaccess" id="apiaccess" {{ if .team.ApiAccess }}checked{{ end }}/>
-                </div>
-
                 <fieldset>
-                    <div class="pure-controls">
-                        <button id="submit" type="submit" class="pure-button pure-button-primary"
-                                {{ if or .team.PendingJupyterUpgrade .team.PendingAirflowUpgrade }}disabled{{ end }}>Lagre
-                        </button>
-                    </div>
+                    <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action"
+                            {{ if or .team.PendingJupyterUpgrade .team.PendingAirflowUpgrade }}disabled{{ end }}
+                    >
+                        <span class="navds-label">
+                            Lagre
+                        </span>
+                    </button>
                 </fieldset>
             </form>
-        </div>
-    </div>
+        </article>
+    </section>
     <script>
         {{ template "team/script" }}
         {{ range .team.Users }}
-        addElement({{ . }})
+        addElement("{{ . }}")
         {{ end }}
     </script>
     {{ template "footer" }}

@@ -1,40 +1,38 @@
 {{ define "team/new" }}
     {{ template "head" }}
-    <div class="box container">
-        <div id="content">
-            <h2>Nytt team</h2>
+    <section class="w-full md:w-[64rem] flex flex-col gap-4 p-4">
+        <article class="bg-white rounded-md p-4">
+            <h2 class="pb-4">Nytt team</h2>
             {{ with .errors }}
                 {{ . }}
             {{ end }}
-            <form class="pure-form pure-form-stacked" action="" method="POST">
-                <div class="pure-control-group">
-                    <label for="team">Teamnavn</label>
+            <form class="flex flex-col gap-4 w-80" action="" method="POST">
+                <div class="">
+                    <label for="team" class="navds-form-field__label navds-label">Teamnavn</label>
                     <input type="text" name="team" id="team" value="{{ .team }}"
-                           placeholder="Små bokstaver med bindestrek"/>
+                           placeholder="Små bokstaver med bindestrek"
+                           class="navds-text-field__input navds-body-short navds-body-medium"
+                    />
                 </div>
-
-                <fieldset class="pure-group" id="users">
-                    <legend>Brukere
-                        <button type="button" class="pure-button pure-button-primary" onClick="addElement()">Legg til
-                            flere
-                            bruker
-                        </button>
-                    </legend>
+                <fieldset id="users">
+                    <legend class="navds-form-field__label navds-label">Brukere</legend>
+                    <button type="button" class="mb-4 navds-button navds-button--secondary navds-button--small" onClick="addElement()">
+                        Legg til flere brukere
+                    </button>
                 </fieldset>
-
-                <div class="pure-control-group">
-                    <label for="apiaccess">API-Tilgang</label>
-                    <input type="checkbox" name="apiaccess" id="apiaccess" />
-                </div>
 
                 <fieldset>
-                    <div class="pure-controls">
-                        <button type="submit" class="pure-button pure-button-primary">Lagre</button>
-                    </div>
+                    <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action"
+                            {{ if or .pending_jupyterhub .pending_airflow }}disabled{{ end }}
+                    >
+                        <span class="navds-label">
+                            Lagre
+                        </span>
+                    </button>
                 </fieldset>
             </form>
-        </div>
-    </div>
+        </article>
+    </section>
     <script>
         {{ template "team/script" }}
         addElement()

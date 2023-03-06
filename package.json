@@ -1,0 +1,30 @@
+{
+  "name": "knorten",
+  "version": "1.0.0",
+  "description": "> KNADA sin port for bestilling av tjenester",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nais/knorten.git"
+  },
+  "scripts": {
+    "build:css": "postcss local/tailwind.css -o assets/css/main.css"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nais/knorten/issues"
+  },
+  "homepage": "https://github.com/nais/knorten#readme",
+  "devDependencies": {
+    "@fullhuman/postcss-purgecss": "^5.0.0",
+    "autoprefixer": "^10.4.13",
+    "cssnano": "^5.1.14",
+    "postcss": "^8.4.21",
+    "postcss-import": "^15.1.0",
+    "tailwindcss": "^3.2.6"
+  },
+  "dependencies": {
+    "@navikt/ds-css": "^2.1.7",
+    "@navikt/ds-tailwind": "^2.1.7"
+  }
+}

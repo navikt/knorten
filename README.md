@@ -10,7 +10,9 @@ Ellers blir Knorten satt opp gjennom [nais/knada-gcp](https://github.com/nais/kn
 ## Utvikling
 
 For å jobbe med Knorten lokalt trenger man å ha Postgres kjørende, og basen må prepouleres med litt data.
-Kjør `make init` etter du har kjørt opp Postgres.
+I tillegg benytter vi et oppsett med Tailwind og Designsystemet.
+Kjør `make init` etter du har kjørt opp Postgres for å populere databasen.
+Kjør `npm install` for å sette opp nødvendig rammeverk for Tailwind.
 
 ### Lokalt uten tredjeparter
 
@@ -19,6 +21,30 @@ Kjør `make local` for å kjøre Knorten uten kobling til noe annet enn Postgres
 ### Lokalt med tredjeparter
 
 Har man behov for å teste mot et cluster så kan man bruke `make local-online`, bare husk å kjør `make env` for å hente ned variabler som trengs.
+
+### Generering av CSS
+
+Man kan generere CSS på en av to måter.
+
+* `make css` kjører en engangsjobb som ser på template-filene og genererer CSS-klasser ut ifra det som er brukt
+* `make css-watch` kjører samme jobb som over hver gang noe endres i template-filer
+
+Idéelt sett kan man spinne opp `make css-watch` i en annen terminal samtidig som man kjører Knorten med f.eks. `make local-online`.
+
+Filen som styrer hva som genereres finner du i `local/tailwind.css`, her kan du legge inn [Tailwind-regler](https://tailwindcss.com/docs/functions-and-directives#layer) som vanlig dersom nødvendig. Designsystem-regler blir generert uansett ved hjelp av `@import`-regelen i toppen av den filen.
+
+### Designsystemet
+
+Bruk av designsystemet til NAV krever litt kritisk tenking og manuelt arbeid.
+Siden designsystemet i all hovedsak sikter på React-komponenter mens vi kun benytter CSS derfra, kan det være vanskelig å finne ut hvilke CSS-regler som faktisk gjelder for det vi ønsker å oppnå.
+Likevel finnes det en lur (om ikke litt kjip) måte å finne CSS-regler på.
+
+* Identifiser ønsket Designsystemkomponent i [Aksel](https://aksel.nav.no/komponenter)
+* Scroll ned til eksempler (f.eks. [Button](https://aksel.nav.no/komponenter/core/button#ha8bb240d2c68))
+* Høyreklikk på rendret eksempel og inspiser/inspect
+
+Her vil du se hvilke klasser som ligger på komponenten du ønsker å lage.
+Siden vi importerer `@navikt/ds-css` kan disse klassene brukes verbatim i koden vår.
 
 ### Postgres
 

@@ -4,7 +4,7 @@ VALUES (@id, @users, @slug, @api_access);
 
 -- name: TeamUpdate :exec
 UPDATE teams
-SET users = @users,
+SET users      = @users,
     api_access = @api_access
 WHERE id = @id;
 
@@ -40,8 +40,15 @@ WHERE id = @id;
 
 -- name: ClearPendingUpgradeLocks :exec
 UPDATE teams
-SET pending_jupyter_upgrade = false, pending_airflow_upgrade = false;
+SET pending_jupyter_upgrade = false,
+    pending_airflow_upgrade = false;
 
 -- name: TeamSetAirflowRestrictEgress :exec
 UPDATE teams
-SET restrict_airflow_egress = @restrict_airflow_egress;
+SET restrict_airflow_egress = @restrict_airflow_egress
+WHERE id = @id;
+
+-- name: TeamSetApiAccess :exec
+UPDATE teams
+SET api_access = @api_access
+WHERE id = @id;

@@ -16,9 +16,9 @@
                         </h2>    
                         <a class="navds-button--small navds-button--secondary" href="team/{{ .Slug }}/edit">Rediger</a>
                     </div>
-                    <a class="navds-link" target="_blank"  href="{{ .Airflow.Secret }}">Secret Manager</a>
+                    <a class="navds-link" target="_blank"  href="{{ .Secret }}">Secret Manager</a>
                     <p class="pb-4 flex items-center gap-2">
-                        <b>Service account:</b> <code class="text-base p-1 bg-gray-50">{{ .Airflow.ServiceAccount }}</code>
+                        <b>Service account:</b> <code class="text-base p-1 bg-gray-50">{{ .ServiceAccount }}</code>
                     </p>
                     <table class="navds-table navds-table--small">
                         <thead class="navds-table__header">

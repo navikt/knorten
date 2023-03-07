@@ -255,7 +255,7 @@ func (a *API) setupAdminRoutes() {
 
 		err := a.repo.TeamSetPendingUpgrade(c, team, string(chartType), false)
 		if err != nil {
-			a.log.WithError(err).Error("create or update kip")
+			a.log.WithError(err).Errorf("unlocking %v", chartType)
 			session.AddFlash(err.Error())
 			err = session.Save()
 			if err != nil {

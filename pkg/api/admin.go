@@ -265,19 +265,4 @@ func (a *API) setupAdminRoutes() {
 
 		c.Redirect(http.StatusSeeOther, "/admin")
 	})
-
-	a.router.POST("/admin/kip/deploy", func(c *gin.Context) {
-		session := sessions.Default(c)
-
-		if err := a.k8sClient.CreateOrUpdateKIPDaemonset(c); err != nil {
-			a.log.WithError(err).Error("create or update kip")
-			session.AddFlash(err.Error())
-			err = session.Save()
-			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-			}
-		}
-
-		c.Redirect(http.StatusSeeOther, "/admin")
-	})
 }

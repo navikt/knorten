@@ -219,13 +219,30 @@ func (a *API) setupAdminRoutes() {
 	})
 
 	a.router.POST("/admin/:chart/sync", func(c *gin.Context) {
+		session := sessions.Default(c)
 		chartType := getChartType(c.Param("chart"))
 		team := c.PostForm("team")
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
-			a.chartClient.Jupyterhub.Sync(c, team)
+			err := a.chartClient.Jupyterhub.Sync(c, team)
+			if err != nil {
+				a.log.WithError(err).Error("syncing Jupyterhub")
+				session.AddFlash(err.Error())
+				err = session.Save()
+				if err != nil {
+					a.log.WithError(err).Error("problem saving session")
+				}
+			}
 		case gensql.ChartTypeAirflow:
-			a.chartClient.Airflow.Sync(c, team)
+			err := a.chartClient.Airflow.Sync(c, team)
+			if err != nil {
+				a.log.WithError(err).Error("syncing Airflow")
+				session.AddFlash(err.Error())
+				err = session.Save()
+				if err != nil {
+					a.log.WithError(err).Error("problem saving session")
+				}
+			}
 		}
 
 		c.Redirect(http.StatusSeeOther, "/admin")

@@ -42,13 +42,14 @@
                     <fieldset
                             class="navds-checkbox-group navds-checkbox-group--medium navds-fieldset navds-fieldset--medium">
                         <div class="navds-checkbox">
-                            <input type="checkbox" name="apiaccess" id="apiaccess" class="navds-checkbox__input"/>
-                            <label class="navds-checkbox__label" for="apiaccess" disabled="{{ .apiaccess }}">
+                            <input type="checkbox" name="apiaccess" id="apiaccess" class="navds-checkbox__input"
+                                   {{ if .apiaccess }}disabled{{ end }}/>
+                            <label class="navds-checkbox__label" for="apiaccess">
                                 <span class="navds-checkbox__content">API-tilgang</span>
                             </label>
                             <div class="navds-checkbox navds-checkbox--medium">
                                 <input id="restrictairflowegress" name="restrictairflowegress" type="checkbox"
-                                       class="navds-checkbox__input" disabled="{{ .restrictairflowegress }}"/>
+                                       class="navds-checkbox__input" {{ if .restrictairflowegress }}disabled{{ end }}/>
                                 <label for="restrictairflowegress" class="navds-checkbox__label">Begrens trafikk fra
                                     Airflow workere</label>
                             </div>
@@ -63,7 +64,7 @@
 
                     <div>
                         <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action"
-                                disabled="{{ .pending_airflow }}">
+                                {{ if .pending_airflow }}disabled{{ end }}>
                             <span class="navds-label">Lagre</span>
                         </button>
                     </div>

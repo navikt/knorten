@@ -57,7 +57,7 @@
                     </div>
                     <div>
                         <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action"
-                                disabled="{{ .pending_jupyterhub }}">
+                                {{ if .pending_jupyterhub }}disabled{{ end }}>
                             <span class="navds-label">Lagre</span>
                         </button>
                     </div>

@@ -211,7 +211,8 @@ func (g *Google) RemoveSQLClientIAMBinding(ctx context.Context, teamID string) e
 		g.project,
 		"--member",
 		fmt.Sprintf("serviceAccount:%v@%v.iam.gserviceaccount.com", teamID, g.project),
-		"--role=roles/cloudsql.client")
+		"--role=roles/cloudsql.client",
+		"--condition=None")
 
 	buf := &bytes.Buffer{}
 	cmd.Stdout = buf

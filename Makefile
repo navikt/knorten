@@ -42,7 +42,7 @@ local:
 	  --hostname=localhost \
 	  --airflow-chart-version=1.7.0 \
 	  --jupyter-chart-version=2.0.0 \
-	  --db-enc-key=dummy \
+	  --db-enc-key=jegersekstentegn \
 	  --dry-run \
 	  --in-cluster=false \
 	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knorten/knelm:v9 \
@@ -61,3 +61,9 @@ goose:
 
 init:
 	go run local/main.go
+
+css:
+	npx tailwindcss --postcss -i local/tailwind.css -o assets/css/main.css
+
+css-watch:
+	npx tailwindcss --postcss -i local/tailwind.css -o assets/css/main.css -w

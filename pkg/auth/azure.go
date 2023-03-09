@@ -64,7 +64,7 @@ type MemberOfGroup struct {
 }
 
 const (
-	AzureGraphMemberOfEndpoint = "https://graph.microsoft.com/v1.0/me/memberOf/microsoft.graph.group?$select=mail,groupTypes,displayName"
+	AzureGraphMemberOfEndpoint = "https://graph.microsoft.com/v1.0/me/memberOf/microsoft.graph.group?$select=mail"
 )
 
 func New(dryRun bool, clientID, clientSecret, tenantID, hostname string, log *logrus.Entry) *Azure {
@@ -146,7 +146,7 @@ func (a *Azure) ValidateUser(certificates map[string]CertificateList, token stri
 	}, nil
 }
 
-func (a *Azure) GroupsForUser(token, email string) (Groups, error) {
+func (a *Azure) GroupsForUser(token, email string) ([]MemberOfGroup, error) {
 	bearerToken, err := a.getBearerTokenOnBehalfOfUser(token)
 	if err != nil {
 		return nil, err
@@ -169,21 +169,25 @@ func (a *Azure) GroupsForUser(token, email string) (Groups, error) {
 	if err := json.NewDecoder(response.Body).Decode(&memberOfResponse); err != nil {
 		return nil, err
 	}
+	return memberOfResponse.Groups, nil
+}
 
-	var groups Groups
-
-	for _, entry := range memberOfResponse.Groups {
-		mail := strings.ToLower(entry.Mail)
-		if !contains("Unified", entry.GroupTypes) || !strings.HasSuffix(mail, "@nav.no") {
-			continue
+func contains(groups []MemberOfGroup, email string) bool {
+	for _, group := range groups {
+		if strings.ToLower(group.Mail) == strings.ToLower(email) {
+			return true
 		}
-		groups = append(groups, Group{
-			Name:  entry.DisplayName,
-			Email: mail,
-		})
+	}
+	return false
+}
+
+func (a *Azure) UserInGroup(token string, userEmail, groupEmail string) (bool, error) {
+	groups, err := a.GroupsForUser(token, userEmail)
+	if err != nil {
+		return false, err
 	}
 
-	return groups, nil
+	return contains(groups, groupEmail), nil
 }
 
 func (a *Azure) getBearerTokenOnBehalfOfUser(token string) (string, error) {
@@ -200,7 +204,11 @@ func (a *Azure) getBearerTokenOnBehalfOfUser(token string) (string, error) {
 		return "", err
 	}
 
-	response, err := http.DefaultClient.Do(req)
+	var httpClient = &http.Client{
+		Timeout: time.Second * 10,
+	}
+
+	response, err := httpClient.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -212,13 +220,4 @@ func (a *Azure) getBearerTokenOnBehalfOfUser(token string) (string, error) {
 
 	log.Debugf("Successfully retrieved on-behalf-of token: %v...", tokenResponse.AccessToken[:5])
 	return tokenResponse.AccessToken, nil
-}
-
-func contains(elem string, list []string) bool {
-	for _, entry := range list {
-		if entry == elem {
-			return true
-		}
-	}
-	return false
 }

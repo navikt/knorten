@@ -12,6 +12,7 @@ $$ LANGUAGE 'plpgsql';
 -- +goose StatementEnd
 
 -- +goose Down
+-- +goose StatementBegin
 DO
 $$
     BEGIN
@@ -21,3 +22,4 @@ $$
         END IF;
     END
 $$ LANGUAGE 'plpgsql';
+-- +goose StatementEnd

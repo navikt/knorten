@@ -8,18 +8,18 @@ import (
 )
 
 type Service struct {
-	App            string
-	Ingress        string
-	Slug           string
-	Secret         string
-	ServiceAccount string
+	App     string
+	Ingress string
+	Slug    string
 }
 
 type TeamServices struct {
-	TeamID     string
-	Slug       string
-	Jupyterhub *Service
-	Airflow    *Service
+	TeamID         string
+	Slug           string
+	Secret         string
+	ServiceAccount string
+	Jupyterhub     *Service
+	Airflow        *Service
 }
 
 func createIngress(team string, chartType gensql.ChartType) string {
@@ -33,13 +33,11 @@ func createIngress(team string, chartType gensql.ChartType) string {
 	return ""
 }
 
-func createService(teamID, slug string, chartType gensql.ChartType) *Service {
+func createService(slug string, chartType gensql.ChartType) *Service {
 	return &Service{
-		App:            string(chartType),
-		Ingress:        createIngress(slug, chartType),
-		Slug:           slug,
-		Secret:         fmt.Sprintf("https://console.cloud.google.com/security/secret-manager/secret/%v/versions?project=knada-gcp", teamID),
-		ServiceAccount: fmt.Sprintf("%v@knada-gcp.iam.gserviceaccount.com", teamID),
+		App:     string(chartType),
+		Ingress: createIngress(slug, chartType),
+		Slug:    slug,
 	}
 }
 
@@ -78,16 +76,18 @@ func (r *Repo) ServicesForUser(ctx context.Context, email string) ([]TeamService
 		}
 
 		teamServices := TeamServices{
-			TeamID: team.ID,
-			Slug:   team.Slug,
+			TeamID:         team.ID,
+			Slug:           team.Slug,
+			Secret:         fmt.Sprintf("https://console.cloud.google.com/security/secret-manager/secret/%v/versions?project=knada-gcp", team.ID),
+			ServiceAccount: fmt.Sprintf("%v@knada-gcp.iam.gserviceaccount.com", team.ID),
 		}
 
 		for _, app := range apps {
 			switch app {
 			case gensql.ChartTypeJupyterhub:
-				teamServices.Jupyterhub = createService(team.ID, team.Slug, app)
+				teamServices.Jupyterhub = createService(team.Slug, app)
 			case gensql.ChartTypeAirflow:
-				teamServices.Airflow = createService(team.ID, team.Slug, app)
+				teamServices.Airflow = createService(team.Slug, app)
 			}
 		}
 

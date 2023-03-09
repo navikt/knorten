@@ -190,7 +190,15 @@ func (a *API) setupAdminRoutes() {
 		}
 
 		if err := a.adminClient.UpdateGlobalValues(c, c.Request.PostForm, chartType); err != nil {
-			c.Redirect(http.StatusSeeOther, "/admin")
+			a.log.WithError(err)
+			session.AddFlash(err.Error())
+			err = session.Save()
+			if err != nil {
+				a.log.WithError(err).Error("problem saving session")
+				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
+				return
+			}
+			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
 			return
 		}
 
@@ -211,13 +219,30 @@ func (a *API) setupAdminRoutes() {
 	})
 
 	a.router.POST("/admin/:chart/sync", func(c *gin.Context) {
+		session := sessions.Default(c)
 		chartType := getChartType(c.Param("chart"))
 		team := c.PostForm("team")
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
-			a.chartClient.Jupyterhub.Sync(c, team)
+			err := a.chartClient.Jupyterhub.Sync(c, team)
+			if err != nil {
+				a.log.WithError(err).Error("syncing Jupyterhub")
+				session.AddFlash(err.Error())
+				err = session.Save()
+				if err != nil {
+					a.log.WithError(err).Error("problem saving session")
+				}
+			}
 		case gensql.ChartTypeAirflow:
-			a.chartClient.Airflow.Sync(c, team)
+			err := a.chartClient.Airflow.Sync(c, team)
+			if err != nil {
+				a.log.WithError(err).Error("syncing Airflow")
+				session.AddFlash(err.Error())
+				err = session.Save()
+				if err != nil {
+					a.log.WithError(err).Error("problem saving session")
+				}
+			}
 		}
 
 		c.Redirect(http.StatusSeeOther, "/admin")
@@ -230,22 +255,7 @@ func (a *API) setupAdminRoutes() {
 
 		err := a.repo.TeamSetPendingUpgrade(c, team, string(chartType), false)
 		if err != nil {
-			a.log.WithError(err).Error("create or update kip")
-			session.AddFlash(err.Error())
-			err = session.Save()
-			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-			}
-		}
-
-		c.Redirect(http.StatusSeeOther, "/admin")
-	})
-
-	a.router.POST("/admin/kip/deploy", func(c *gin.Context) {
-		session := sessions.Default(c)
-
-		if err := a.k8sClient.CreateOrUpdateKIPDaemonset(c); err != nil {
-			a.log.WithError(err).Error("create or update kip")
+			a.log.WithError(err).Errorf("unlocking %v", chartType)
 			session.AddFlash(err.Error())
 			err = session.Save()
 			if err != nil {

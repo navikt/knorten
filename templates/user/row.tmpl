@@ -1,9 +1,11 @@
 {{ define "user/row" }}
-    <tr>
-        <td style="text-transform: capitalize;">{{ .App }}</td>
-        <td><a target="_blank" href="{{ .Ingress }}">{{ .Ingress }}</a></td>
-        <td><a target="_blank"  href="{{ .Secret }}">Secret Manager</a></td>
-        <td>{{ .ServiceAccount }}</td>
-        <td><a href="/team/{{ .Slug }}/{{ .App }}/edit">Rediger</a></td>
+    <tr class="navds-table__row navds-table__row--shade-on-hover">
+        <th class="navds-table__header-cell navds-label navds-label--small" style="text-transform: capitalize;">{{ .App }}</th>
+        <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+            <a class="navds-link" target="_blank" href="{{ .Ingress }}">{{ .Ingress }}</a>
+        </td>
+        <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+            <a class="navds-link" href="/team/{{ .Slug }}/{{ .App }}/edit">Rediger</a>
+        </td>
     </tr>
 {{ end }}

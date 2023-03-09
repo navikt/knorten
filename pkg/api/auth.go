@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/gin-contrib/sessions"
-
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/nais/knorten/pkg/auth"
@@ -264,24 +263,33 @@ func (a *API) adminAuthMiddleware() gin.HandlerFunc {
 		value, _ := c.Get("user")
 		user, pass := value.(*auth.User)
 		if !pass {
-			a.log.Error("User info missing")
 			c.Redirect(http.StatusSeeOther, "/")
 			return
 		}
 		value, _ = c.Get("token")
 		token, pass := value.(string)
-		userGroups, err := a.azureClient.GroupsForUser(token, user.Email)
-		if err != nil {
-			a.log.WithError(err).Error("problem getting team")
+		if !pass {
+			a.log.Error("Illegal user token")
 			c.Redirect(http.StatusSeeOther, "/")
 			return
 		}
-		if !userGroups.Contains("nada@nav.no") {
-			c.Redirect(http.StatusSeeOther, "/")
+
+		if a.isUserInAdminGroup(token, user.Email) {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
 		}
+
 		c.Next()
 	}
+}
+
+func (a *API) isUserInAdminGroup(token string, email string) bool {
+	inGroup, err := a.azureClient.UserInGroup(token, email, "nada@nav.no")
+	if err != nil {
+		a.log.WithError(err).Error("problem verifying user group")
+		return false
+	}
+	return inGroup
 }
 
 func (a *API) setupAuthRoutes() {

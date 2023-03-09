@@ -72,7 +72,7 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 	api.setupUnauthenticatedRoutes()
 	api.router.Use(api.authMiddleware([]string{}))
 	api.setupAuthenticatedRoutes()
-	api.router.Use(api.authMiddleware([]string{}), api.adminAuthMiddleware())
+	api.router.Use(api.adminAuthMiddleware())
 	api.setupAdminRoutes()
 	return &api, nil
 }

@@ -1,34 +1,36 @@
 {{ define "admin/index" }}
     {{ template "head" . }}
-    <div class="box container">
-        <div id="content">
-            <h2>Adminpanel</h2>
+    <section class="w-full md:w-[64rem] flex flex-col gap-4 p-4">
+        <article class="bg-white rounded-md p-4 flex flex-col gap-2">
+            <h2 class="mb-2">Adminpanel</h2>
             {{ with .errors }}
                 {{ . }}
             {{ end }}
-            <form class="pure-form pure-form-stacked" action="/admin/kip/deploy" method="POST">
-                <div class="pure-controls">
-                    <button type="submit" class="pure-button pure-button-primary">Sync KIP</button>
-                </div>
-            </form>
-            <br/>
-            <ul>
-                <li><a href="/admin/jupyterhub">Rediger globale Jupyter verdier</a></li>
-                <li><a href="/admin/airflow">Rediger globale Airflow verdier</a></li>
+            <ul class="list-disc ml-4">
+                <li><a 
+                    class="navds-link"
+                    href="/admin/jupyterhub">Rediger globale Jupyter verdier</a></li>
+                <li><a 
+                    class="navds-link"
+                    href="/admin/airflow">Rediger globale Airflow verdier</a></li>
             </ul>
-            <h3>{{ len .teams }} team bruker Knada </h3>
+            <h3 class="text-2xl font-bold">{{ len .teams }} team bruker Knada </h3>
+            <div class="divide-y divide-border-divider divide-solid">
             {{ range .teams }}
-                <h4>{{ .ID }}</h4>
-                {{ template "admin/row" . }}
-                <strong>Brukere</strong>
-                <ul>
-                    {{ range .Users }}
-                        <li>{{ . }}</li>
-                    {{ end }}
-                </ul>
+                <div class="p-4">
+                    <h4 class="text-xl font-bold">{{ .ID }}</h4>
+                    {{ template "admin/row" . }}
+                    <h5 class="font-bold">Brukere</h5>
+                    <ul class="list-disc ml-4">
+                        {{ range .Users }}
+                            <li>{{ . }}</li>
+                        {{ end }}
+                    </ul>
+                </div>
             {{ end }}
-        </div>
-    </div>
+            </div>
+        </article>
+    </section>
 
     {{ template "footer" }}
 {{ end }}

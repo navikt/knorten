@@ -64,9 +64,6 @@ func main() {
 		return
 	}
 
-	imageUpdater := imageupdater.New(repo, log.WithField("subsystem", "imageupdater"))
-	go imageUpdater.Run(imageUpdaterFrequency)
-
 	azureClient := auth.New(cfg.DryRun, cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, log.WithField("subsystem", "auth"))
 
 	googleClient := google.New(log.WithField("subsystem", "google"), cfg.GCPProject, cfg.GCPRegion, cfg.DryRun)
@@ -78,6 +75,9 @@ func main() {
 		log.WithError(err).Fatal("creating k8s client")
 		return
 	}
+
+	imageUpdater := imageupdater.New(repo, k8sClient, cryptClient, cfg.JupyterChartVersion, log.WithField("subsystem", "imageupdater"))
+	go imageUpdater.Run(imageUpdaterFrequency)
 
 	kApi, err := api.New(repo, azureClient, googleClient, k8sClient, cryptClient, cfg.DryRun, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.SessionKey, log.WithField("subsystem", "api"))
 	if err != nil {

@@ -11,8 +11,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database"
+	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/k8s"
 	"github.com/sirupsen/logrus"
 )
 
@@ -21,8 +24,9 @@ const (
 )
 
 type ImageUpdater struct {
-	repo *database.Repo
-	log  *logrus.Entry
+	repo          *database.Repo
+	jupyterClient *chart.JupyterhubClient
+	log           *logrus.Entry
 }
 
 type garImage struct {
@@ -38,10 +42,12 @@ type profile struct {
 	} `json:"kubespawner_override"`
 }
 
-func New(repo *database.Repo, log *logrus.Entry) *ImageUpdater {
+func New(repo *database.Repo, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, jupyterChartVersion string, log *logrus.Entry) *ImageUpdater {
+	jupyterClient := chart.NewJupyterhubClient(repo, k8sClient, cryptClient, jupyterChartVersion, log.WithField("subsystem", "jupyterClient"))
 	return &ImageUpdater{
-		repo: repo,
-		log:  log,
+		repo:          repo,
+		jupyterClient: &jupyterClient,
+		log:           log,
 	}
 }
 
@@ -94,7 +100,17 @@ func (d *ImageUpdater) run(ctx context.Context) {
 			return
 		}
 
-		// trigger helm upgrade
+		teams, err := d.repo.TeamsForAppGet(ctx, gensql.ChartTypeJupyterhub)
+		if err != nil {
+			d.log.WithError(err).Error("reading jupyterhub teams from db")
+			return
+		}
+
+		for _, t := range teams {
+			if err := d.jupyterClient.Sync(ctx, t); err != nil {
+				d.log.WithError(err).Error("error syncing jupyterhub for team %v", t)
+			}
+		}
 	}
 }
 

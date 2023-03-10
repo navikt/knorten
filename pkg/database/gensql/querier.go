@@ -14,6 +14,7 @@ type Querier interface {
 	ClearPendingUpgradeLocks(ctx context.Context) error
 	GlobalJupyterProfilesValueGet(ctx context.Context) (ChartGlobalValue, error)
 	GlobalValueDelete(ctx context.Context, arg GlobalValueDeleteParams) error
+	GlobalValueGet(ctx context.Context, arg GlobalValueGetParams) (ChartGlobalValue, error)
 	GlobalValueInsert(ctx context.Context, arg GlobalValueInsertParams) error
 	GlobalValuesGet(ctx context.Context, chartType ChartType) ([]ChartGlobalValue, error)
 	SessionCreate(ctx context.Context, arg SessionCreateParams) error

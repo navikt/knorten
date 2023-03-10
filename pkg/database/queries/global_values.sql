@@ -17,6 +17,12 @@ FROM chart_global_values
 WHERE chart_type = @chart_type
 ORDER BY "key", "created" DESC;
 
+-- name: GlobalValueGet :one
+SELECT DISTINCT ON ("key") *
+FROM chart_global_values
+WHERE chart_type = @chart_type AND "key" = @key
+ORDER BY "key", "created" DESC;
+
 -- name: GlobalJupyterProfilesValueGet :one
 SELECT DISTINCT ON ("key") *
 FROM chart_global_values

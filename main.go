@@ -4,14 +4,20 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/nais/knorten/pkg/api"
 	"github.com/nais/knorten/pkg/auth"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/google"
+	"github.com/nais/knorten/pkg/imageupdater"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/sirupsen/logrus"
+)
+
+const (
+	imageUpdaterFrequency = 24 * time.Hour
 )
 
 type Config struct {
@@ -57,6 +63,9 @@ func main() {
 		log.WithError(err).Fatal("setting up database")
 		return
 	}
+
+	imageUpdater := imageupdater.New(repo, log.WithField("subsystem", "imageupdater"))
+	go imageUpdater.Run(imageUpdaterFrequency)
 
 	azureClient := auth.New(cfg.DryRun, cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, log.WithField("subsystem", "auth"))
 

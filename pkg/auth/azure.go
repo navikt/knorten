@@ -49,10 +49,6 @@ type User struct {
 	Expires time.Time
 }
 
-type TokenResponse struct {
-	AccessToken string `json:"access_token"`
-}
-
 type MemberOfResponse struct {
 	Groups []MemberOfGroup `json:"value"`
 }
@@ -157,7 +153,12 @@ func (a *Azure) GroupsForUser(token, email string) ([]MemberOfGroup, error) {
 		return nil, err
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", bearerToken))
-	response, err := http.DefaultClient.Do(req)
+
+	var httpClient = &http.Client{
+		Timeout: time.Second * 10,
+	}
+
+	response, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -191,6 +192,10 @@ func (a *Azure) UserInGroup(token string, userEmail, groupEmail string) (bool, e
 }
 
 func (a *Azure) getBearerTokenOnBehalfOfUser(token string) (string, error) {
+	type TokenResponse struct {
+		AccessToken string `json:"access_token"`
+	}
+
 	form := url.Values{}
 	form.Add("client_id", a.clientID)
 	form.Add("client_secret", a.clientSecret)
@@ -218,6 +223,6 @@ func (a *Azure) getBearerTokenOnBehalfOfUser(token string) (string, error) {
 		return "", err
 	}
 
-	log.Debugf("Successfully retrieved on-behalf-of token: %v...", tokenResponse.AccessToken[:5])
+	log.Debugf("Successfully retrieved on-behalf-of token")
 	return tokenResponse.AccessToken, nil
 }

@@ -9,27 +9,6 @@ import (
 	"context"
 )
 
-const globalJupyterProfilesValueGet = `-- name: GlobalJupyterProfilesValueGet :one
-SELECT DISTINCT ON ("key") id, created, key, value, chart_type, encrypted
-FROM chart_global_values
-WHERE "key" = 'singleuser.profileList'
-ORDER BY "key", "created" DESC
-`
-
-func (q *Queries) GlobalJupyterProfilesValueGet(ctx context.Context) (ChartGlobalValue, error) {
-	row := q.db.QueryRowContext(ctx, globalJupyterProfilesValueGet)
-	var i ChartGlobalValue
-	err := row.Scan(
-		&i.ID,
-		&i.Created,
-		&i.Key,
-		&i.Value,
-		&i.ChartType,
-		&i.Encrypted,
-	)
-	return i, err
-}
-
 const globalValueDelete = `-- name: GlobalValueDelete :exec
 DELETE
 FROM chart_global_values
@@ -51,7 +30,7 @@ const globalValueGet = `-- name: GlobalValueGet :one
 SELECT DISTINCT ON ("key") id, created, key, value, chart_type, encrypted
 FROM chart_global_values
 WHERE chart_type = $1 AND "key" = $2
-ORDER BY "key", "created" DESC
+ORDER BY "created" DESC
 `
 
 type GlobalValueGetParams struct {

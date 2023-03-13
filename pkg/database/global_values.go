@@ -26,10 +26,6 @@ func (r *Repo) GlobalValueGet(ctx context.Context, chartType gensql.ChartType, k
 	})
 }
 
-func (r *Repo) GlobalJupyterProfilesValueGet(ctx context.Context) (gensql.ChartGlobalValue, error) {
-	return r.querier.GlobalJupyterProfilesValueGet(ctx)
-}
-
 func (r *Repo) GlobalValueDelete(ctx context.Context, key string, chartType gensql.ChartType) error {
 	return r.querier.GlobalValueDelete(ctx, gensql.GlobalValueDeleteParams{
 		Key:       key,

@@ -21,7 +21,7 @@ ORDER BY "key", "created" DESC;
 SELECT DISTINCT ON ("key") *
 FROM chart_global_values
 WHERE chart_type = @chart_type AND "key" = @key
-ORDER BY "key", "created" DESC;
+ORDER BY "created" DESC;
 
 -- name: GlobalJupyterProfilesValueGet :one
 SELECT DISTINCT ON ("key") *

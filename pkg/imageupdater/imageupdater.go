@@ -89,13 +89,13 @@ func (d *ImageUpdater) run(ctx context.Context) {
 	}
 
 	if hasUpdates(profilesStatus) {
-		profilesB, err := json.Marshal(profiles)
+		profilesBytes, err := json.Marshal(profiles)
 		if err != nil {
 			d.log.WithError(err).Error("marshalling updated profiles")
 			return
 		}
 
-		if err := d.repo.GlobalChartValueInsert(ctx, profileListHelmKey, string(profilesB), false, gensql.ChartTypeJupyterhub); err != nil {
+		if err := d.repo.GlobalChartValueInsert(ctx, profileListHelmKey, string(profilesBytes), false, gensql.ChartTypeJupyterhub); err != nil {
 			d.log.WithError(err).Error("inserting updated profile list in db")
 			return
 		}

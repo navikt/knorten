@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Knorten by nada</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="icon" sizes="32x32" href="/assets/img/knorten.svg">
+    <link
+        rel="preload"
+        href="https://cdn.nav.no/aksel/fonts/SourceSans3-normal.woff2"
+        as="font"
+        type="font/woff2"
+        crossorigin
+    />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+</head>
+<body class="w-full flex flex-col items-center min-h-screen bg-gradient-to-br from-purple-500 via-red-200 to-orange-500">
+    <header class="w-full bg-[#00374F] flex justify-center">
+        <div class="max-w-2xl grow flex justify-between py-2 text-white">
+            <a href="/" class="flex gap-2 items-center">
+                <img class="hover:animate-spin w-12 h-12" src="/assets/img/knorten.svg" />
+                <h1 class="text-2xl font-bold">KNORTEN</h1>
+                <span class="text-">by nada</span>
+            </a>
+            <nav class="flex items-center gap-2">
+                <a href="/user" class="navds-button navds-button--small navds-button--secondary bg-initial">Teams</a>
+                
+            </nav>
+        </div>
+    </header>
+    <div class="max-w-screen-md flex my-8 grow"> 
+
+    <section class="w-full md:w-[64rem] flex flex-col gap-4 p-4">
+        <article class="bg-white rounded-md p-4">
+            
+                <h2 class="pb-4">Ny Airflow Notebook for chartteam</h2>
+            
+            
+
+            <form class="w-80" action="" method="POST">
+                <fieldset class="flex flex-col gap-4">
+                    <div class="navds-form-field navds-form-field--medium">
+                        <label for="dagrepo" class="navds-form-field__label navds-label">DAG's repo</label>
+                        <input type="text" name="dagrepo" id="dagrepo" value=""
+                               placeholder="navikt/dags" required
+                               class="navds-text-field__input navds-body-short navds-body-medium"
+                        />
+                    </div>
+                    <div class="navds-form-field navds-form-field--medium">
+                        <label for="dagrepobranch" class="navds-form-field__label navds-label">DAG's repo branch</label>
+                        <input type="text" name="dagrepobranch" id="dagrepobranch" value=""
+                               placeholder="main"
+                               class="navds-text-field__input navds-body-short navds-body-medium"
+                        />
+                    </div>
+                    <fieldset
+                            class="navds-checkbox-group navds-checkbox-group--medium navds-fieldset navds-fieldset--medium">
+                        <div class="navds-checkbox">
+                            <input type="checkbox" name="apiaccess" id="apiaccess" class="navds-checkbox__input"
+                                   />
+                            <label class="navds-checkbox__label" for="apiaccess">
+                                <span class="navds-checkbox__content">API-tilgang</span>
+                            </label>
+                            <div class="navds-checkbox navds-checkbox--medium">
+                                <input id="restrictairflowegress" name="restrictairflowegress" type="checkbox"
+                                       class="navds-checkbox__input" />
+                                <label for="restrictairflowegress" class="navds-checkbox__label">Begrens trafikk fra
+                                    Airflow workere</label>
+                            </div>
+                        </div>
+                        <div class="navds-fieldset__description navds-body-long navds-body-long--small">
+                            <a class="navds-link" target="_blank"
+                               href="https://docs.knada.io/analyse/airflow/knada-airflow/#trafikk-fra-airflow-workere">
+                                Les mer om trafikk fra Airflow workere i dokumentasjonen vår
+                            </a>
+                        </div>
+                    </fieldset>
+
+                    <div>
+                        <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action"
+                                >
+                            <span class="navds-label">Lagre</span>
+                        </button>
+                    </div>
+                </fieldset>
+            </form>
+        </article>
+    </section>
+    
+    </div> 
+    <footer class="mb-8 flex divide-x-2 divide-border-divider divide-solid">
+        <p class="px-2">&copy; NADA. All analytics reserved</p>
+        <a href="https://docs.knada.io" class="navds-link px-2">Dokumentasjon</a>
+    </footer>
+    </body>
+    </html>

@@ -28,15 +28,16 @@ const (
 func (c *Client) CreateHelmInstallOrUpgradeJob(ctx context.Context, teamID, releaseName string, values map[string]any) error {
 	if c.dryRun {
 		c.log.Infof("NOOP: Running in dry run mode")
+		chartType := helm.ReleaseNameToChartType(releaseName)
 		out, err := yaml.Marshal(values)
 		if err != nil {
-			c.log.WithError(err).Errorf("error while marshaling chart for %v", releaseName)
+			c.log.WithError(err).Errorf("error while marshaling chart for %v", chartType)
 			return err
 		}
 
-		err = os.WriteFile(fmt.Sprintf("%v.yaml", releaseName), out, 0o644)
+		err = os.WriteFile(fmt.Sprintf("%v.yaml", chartType), out, 0o644)
 		if err != nil {
-			c.log.WithError(err).Errorf("error while writing to file %v.yaml", releaseName)
+			c.log.WithError(err).Errorf("error while writing to file %v.yaml", chartType)
 			return err
 		}
 		return nil

@@ -1,8 +1,11 @@
 package api
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -62,6 +65,13 @@ func (a *API) setupTeamRoutes() {
 		teamName := c.Param("team")
 		team, err := a.repo.TeamGet(c, teamName)
 		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				c.JSON(http.StatusNotFound, map[string]string{
+					"status":  strconv.Itoa(http.StatusNotFound),
+					"message": fmt.Sprintf("team %v does not exist", teamName),
+				})
+				return
+			}
 			a.log.WithError(err).Errorf("problem getting team %v", teamName)
 			c.Redirect(http.StatusSeeOther, "/user")
 			return
@@ -99,6 +109,7 @@ func (a *API) setupTeamRoutes() {
 
 	a.router.POST("/team/:team/delete", func(c *gin.Context) {
 		teamName := c.Param("team")
+
 		err := a.teamClient.Delete(c, teamName)
 		if err != nil {
 			session := sessions.Default(c)

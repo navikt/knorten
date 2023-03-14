@@ -32,7 +32,7 @@ type API struct {
 	dryRun              bool
 }
 
-func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, dryRun bool, airflowChartVersion, jupyterChartVersion, sessionKey string, log *logrus.Entry) (*API, error) {
+func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, dryRun bool, airflowChartVersion, jupyterChartVersion, sessionKey string, log *logrus.Entry) (*gin.Engine, error) {
 	adminClient := admin.New(repo, k8sClient, cryptClient, airflowChartVersion, jupyterChartVersion)
 	chartClient, err := chart.New(repo, googleClient, k8sClient, cryptClient, airflowChartVersion, jupyterChartVersion, log)
 	if err != nil {
@@ -62,7 +62,7 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 
 	session, err := repo.NewSessionStore(sessionKey)
 	if err != nil {
-		return &API{}, err
+		return nil, err
 	}
 
 	api.router.Use(session)
@@ -73,15 +73,15 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 	api.setupAuthenticatedRoutes()
 	api.router.Use(api.authMiddleware([]string{"kyrre.havik@nav.no", "erik.vattekar@nav.no", "kent.daleng@nav.no"}))
 	api.setupAdminRoutes()
-	return &api, nil
+	return router, nil
 }
 
-func (a *API) Run(inCluster bool) error {
+func Run(router *gin.Engine, inCluster bool) error {
 	if inCluster {
-		return a.router.Run()
+		return router.Run()
 	}
 
-	return a.router.Run("localhost:8080")
+	return router.Run("localhost:8080")
 }
 
 func (a *API) setupAPIEndpoints() {

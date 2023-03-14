@@ -70,13 +70,13 @@ func main() {
 		return
 	}
 
-	kApi, err := api.New(repo, azureClient, googleClient, k8sClient, cryptClient, cfg.DryRun, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.SessionKey, log.WithField("subsystem", "api"))
+	router, err := api.New(repo, azureClient, googleClient, k8sClient, cryptClient, cfg.DryRun, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.SessionKey, log.WithField("subsystem", "api"))
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return
 	}
 
-	err = kApi.Run(cfg.InCluster)
+	err = api.Run(router, cfg.InCluster)
 	if err != nil {
 		return
 	}

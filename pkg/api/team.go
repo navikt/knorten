@@ -55,7 +55,7 @@ func (a *API) setupTeamRoutes() {
 			c.Redirect(http.StatusSeeOther, "/team/new")
 			return
 		}
-		c.Redirect(http.StatusSeeOther, "/user")
+		c.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 
 	a.router.GET("/team/:team/edit", func(c *gin.Context) {
@@ -63,7 +63,7 @@ func (a *API) setupTeamRoutes() {
 		team, err := a.repo.TeamGet(c, teamName)
 		if err != nil {
 			a.log.WithError(err).Errorf("problem getting team %v", teamName)
-			c.Redirect(http.StatusSeeOther, "/user")
+			c.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
 
@@ -94,7 +94,7 @@ func (a *API) setupTeamRoutes() {
 			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/edit", teamName))
 			return
 		}
-		c.Redirect(http.StatusSeeOther, "/user")
+		c.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 
 	a.router.POST("/team/:team/delete", func(c *gin.Context) {
@@ -108,9 +108,9 @@ func (a *API) setupTeamRoutes() {
 				a.log.WithError(err).Error("problem saving session")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, "/user")
+			c.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
-		c.Redirect(http.StatusSeeOther, "/user")
+		c.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 }

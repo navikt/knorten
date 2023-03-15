@@ -63,7 +63,7 @@ func (a *API) callback(c *gin.Context) (string, error) {
 	if err != nil {
 		host = c.Request.Host
 	}
-	loginPage := "/user"
+	loginPage := "/oversikt"
 
 	redirectURI, _ := c.Cookie(RedirectURICookie)
 	if redirectURI != "" {
@@ -295,7 +295,7 @@ func (a *API) isUserInAdminGroup(token string, email string) bool {
 func (a *API) setupAuthRoutes() {
 	a.router.GET("/oauth2/login", func(c *gin.Context) {
 		if a.dryRun {
-			c.Redirect(http.StatusSeeOther, "http://localhost:8080/user")
+			c.Redirect(http.StatusSeeOther, "http://localhost:8080/oversikt")
 			return
 		}
 

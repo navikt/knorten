@@ -1,6 +1,4 @@
-FROM golang:1.19-alpine as builder
-
-ENV CGO_ENABLED=0
+FROM golang:1.20-alpine as builder
 
 WORKDIR /src
 COPY go.sum go.sum

@@ -274,7 +274,7 @@ func (a *API) adminAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		if a.isUserInAdminGroup(token, user.Email) {
+		if !a.isUserInAdminGroup(token, user.Email) {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
 		}

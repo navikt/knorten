@@ -1,14 +1,15 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/nais/knorten/pkg/auth"
-	"net/http"
 )
 
 func (a *API) setupUserRoutes() {
-	a.router.GET("/user", func(c *gin.Context) {
+	a.router.GET("/oversikt", func(c *gin.Context) {
 		var user *auth.User
 		anyUser, exists := c.Get("user")
 		if exists {
@@ -24,7 +25,7 @@ func (a *API) setupUserRoutes() {
 		}
 
 		services, err := a.repo.ServicesForUser(c, user.Email)
-		c.HTML(http.StatusOK, "user/index", gin.H{
+		c.HTML(http.StatusOK, "oversikt/index", gin.H{
 			"errors":   err,
 			"flashes":  flashes,
 			"services": services,

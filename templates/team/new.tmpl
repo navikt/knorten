@@ -21,7 +21,7 @@
                     </button>
                 </fieldset>
 
-                <fieldset>
+                <fieldset class="flex gap-2 items-center">
                     <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action"
                             {{ if or .pending_jupyterhub .pending_airflow }}disabled{{ end }}
                     >
@@ -29,6 +29,7 @@
                             Lagre
                         </span>
                     </button>
+                    <a href="/oversikt" class="navds-link">Avbryt</a>
                 </fieldset>
             </form>
         </article>

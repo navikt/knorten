@@ -118,7 +118,7 @@ func (a *API) setupChartRoutes() {
 			return
 		}
 
-		c.Redirect(http.StatusSeeOther, "/user")
+		c.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 
 	a.router.GET("/team/:team/:chart/edit", func(c *gin.Context) {
@@ -132,10 +132,10 @@ func (a *API) setupChartRoutes() {
 			err := session.Save()
 			if err != nil {
 				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, "/user")
+				c.Redirect(http.StatusSeeOther, "/oversikt")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, "/user")
+			c.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
 
@@ -160,10 +160,10 @@ func (a *API) setupChartRoutes() {
 			err := session.Save()
 			if err != nil {
 				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, "/user")
+				c.Redirect(http.StatusSeeOther, "/oversikt")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, "/user")
+			c.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
 
@@ -254,7 +254,7 @@ func (a *API) setupChartRoutes() {
 			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", slug, chartType))
 			return
 		}
-		c.Redirect(http.StatusSeeOther, "/user")
+		c.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 
 	a.router.POST("/team/:team/:chart/delete", func(c *gin.Context) {
@@ -282,12 +282,12 @@ func (a *API) setupChartRoutes() {
 			err := session.Save()
 			if err != nil {
 				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, "/user")
+				c.Redirect(http.StatusSeeOther, "/oversikt")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, "/user")
+			c.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
-		c.Redirect(http.StatusSeeOther, "/user")
+		c.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 }

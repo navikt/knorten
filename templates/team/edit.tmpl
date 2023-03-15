@@ -29,13 +29,14 @@
                         Legg til flere brukere
                     </button>
                 </fieldset>
-                <fieldset>
+                <fieldset class="flex gap-2 items-center">
                     <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action"
                             {{ if or .team.PendingJupyterUpgrade .team.PendingAirflowUpgrade }}disabled{{ end }}>
                         <span class="navds-label">
                             Lagre
                         </span>
                     </button>
+                    <a href="/oversikt" class="navds-link">Avbryt</a>
                 </fieldset>
             </form>
         </article>

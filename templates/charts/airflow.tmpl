@@ -62,11 +62,12 @@
                         </div>
                     </fieldset>
 
-                    <div>
+                    <div class="flex gap-2 items-center">
                         <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action"
                                 {{ if .pending_airflow }}disabled{{ end }}>
                             <span class="navds-label">Lagre</span>
                         </button>
+                        <a href="/oversikt" class="navds-link">Avbryt</a>
                     </div>
                 </fieldset>
             </form>

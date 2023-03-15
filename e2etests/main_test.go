@@ -1,6 +1,7 @@
 package e2etests
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"net/http/httptest"
@@ -9,6 +10,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/nais/knorten/local/dbsetup"
 	"github.com/nais/knorten/pkg/api"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/crypto"
@@ -21,6 +23,7 @@ import (
 )
 
 var (
+	dbPort string
 	repo   *database.Repo
 	server *httptest.Server
 )
@@ -50,17 +53,18 @@ func TestMain(m *testing.M) {
 	}
 
 	// pulls an image, creates a container based on it and runs it
-	resource, err := pool.Run("postgres", "12", []string{"POSTGRES_PASSWORD=postgres", "POSTGRES_DB=nada"})
+	resource, err := pool.Run("postgres", "12", []string{"POSTGRES_PASSWORD=postgres", "POSTGRES_DB=knorten"})
 	if err != nil {
 		log.Fatalf("Could not start resource: %s", err)
 	}
 	resource.Expire(120) // setting resource timeout as postgres container is not terminated automatically
+	dbPort = resource.GetPort("5432/tcp")
 
 	var dbString string
 	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
 	if err := pool.Retry(func() error {
 		var err error
-		dbString = "user=postgres dbname=nada sslmode=disable password=postgres host=localhost port=" + resource.GetPort("5432/tcp")
+		dbString = "user=postgres dbname=knorten sslmode=disable password=postgres host=localhost port=" + dbPort
 		db, err := sql.Open("postgres", dbString)
 		if err != nil {
 			return err
@@ -73,6 +77,10 @@ func TestMain(m *testing.M) {
 	repo, err = database.New(dbString, logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if err := dbsetup.SetupDB(context.Background(), "postgres://postgres:postgres@localhost:"+dbPort, "knorten"); err != nil {
+		log.Fatalf("setting up knorten db: %v", err)
 	}
 
 	cryptoClient := crypto.New("jegersekstentegn")

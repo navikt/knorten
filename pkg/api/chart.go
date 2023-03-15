@@ -145,6 +145,12 @@ func (a *API) setupChartRoutes() {
 			form = &chart.JupyterConfigurableValues{}
 		case gensql.ChartTypeAirflow:
 			form = &chart.AirflowConfigurableValues{}
+		default:
+			c.JSON(http.StatusBadRequest, map[string]string{
+				"status":  strconv.Itoa(http.StatusBadRequest),
+				"message": fmt.Sprintf("Chart type %v is not supported", chartType),
+			})
+			return
 		}
 
 		err = a.repo.TeamConfigurableValuesGet(c, chartType, team.ID, form)
@@ -227,6 +233,12 @@ func (a *API) setupChartRoutes() {
 			}
 			form.Slug = slug
 			err = a.chartClient.Airflow.Update(c, form)
+		default:
+			c.JSON(http.StatusBadRequest, map[string]string{
+				"status":  strconv.Itoa(http.StatusBadRequest),
+				"message": fmt.Sprintf("Chart type %v is not supported", chartType),
+			})
+			return
 		}
 
 		if err != nil {
@@ -255,6 +267,12 @@ func (a *API) setupChartRoutes() {
 			err = a.chartClient.Jupyterhub.Delete(c, slug)
 		case gensql.ChartTypeAirflow:
 			err = a.chartClient.Airflow.Delete(c, slug)
+		default:
+			c.JSON(http.StatusBadRequest, map[string]string{
+				"status":  strconv.Itoa(http.StatusBadRequest),
+				"message": fmt.Sprintf("Chart type %v is not supported", chartType),
+			})
+			return
 		}
 
 		if err != nil {

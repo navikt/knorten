@@ -40,6 +40,7 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 	}
 
 	router := gin.New()
+
 	router.Use(gin.Recovery())
 	router.Use(func(ctx *gin.Context) {
 		log.Infof("[GIN] %v %v %v", ctx.Request.Method, ctx.Request.URL.Path, ctx.Writer.Status())
@@ -71,7 +72,7 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 	api.setupUnauthenticatedRoutes()
 	api.router.Use(api.authMiddleware([]string{}))
 	api.setupAuthenticatedRoutes()
-	api.router.Use(api.authMiddleware([]string{"kyrre.havik@nav.no", "erik.vattekar@nav.no", "kent.daleng@nav.no"}))
+	api.router.Use(api.adminAuthMiddleware())
 	api.setupAdminRoutes()
 	return router, nil
 }

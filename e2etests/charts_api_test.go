@@ -14,12 +14,6 @@ import (
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
-const (
-	htmlContentType = "text/html; charset=utf-8"
-	jsonContentType = "application/json; charset=utf-8"
-	formContentType = "application/x-www-form-urlencoded"
-)
-
 func TestChartsAPI(t *testing.T) {
 	ctx := context.Background()
 	testTeam := "chartteam"

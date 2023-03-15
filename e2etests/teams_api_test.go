@@ -252,7 +252,7 @@ func TestTeamsAPI(t *testing.T) {
 			t.Fatalf("team %v is not removed from db", testTeam)
 		}
 
-		jupyterValues, err := repo.TeamValuesGet(ctx, gensql.ChartTypeJupyterhub, testTeam)
+		jupyterValues, err := repo.TeamValuesGet(ctx, gensql.ChartTypeJupyterhub, team.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -261,7 +261,7 @@ func TestTeamsAPI(t *testing.T) {
 			t.Fatalf("jupyter team values are not removed from db when team %v is deleted", testTeam)
 		}
 
-		airflowValues, err := repo.TeamValuesGet(ctx, gensql.ChartTypeAirflow, testTeam)
+		airflowValues, err := repo.TeamValuesGet(ctx, gensql.ChartTypeAirflow, team.ID)
 		if err != nil {
 			t.Fatal(err)
 		}

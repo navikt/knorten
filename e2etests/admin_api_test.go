@@ -4,16 +4,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"testing"
 )
 
 func TestAdminAPI(t *testing.T) {
 	teamName := "admintest"
-
-	if err := createTeamAndApps(teamName); err != nil {
-		t.Fatal(err)
-	}
 
 	t.Run("get admin html", func(t *testing.T) {
 		resp, err := server.Client().Get(fmt.Sprintf("%v/admin", server.URL))
@@ -39,23 +34,26 @@ func TestAdminAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		expected, err := os.ReadFile("e2etests/testdata/html/get_admin.html")
+		expected, err := createExpectedHTML("admin/index", map[string]any{
+			"current": "admin",
+			"teams":   map[string]any{},
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
-		expectedMinimized, err := minimizeHTML(string(expected))
-		if err != nil {
-			t.Fatal(err)
-		}
-		expectedBytes, err := replaceGeneratedValues([]byte(expectedMinimized), teamName)
+		expectedMinimized, err := minimizeHTML(expected)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if receivedMinimized != string(expectedBytes) {
+		if receivedMinimized != string(expectedMinimized) {
 			t.Fatal("Received and expected HTML response are different")
 		}
 	})
+
+	if err := createTeamAndApps(teamName); err != nil {
+		t.Fatal(err)
+	}
 
 	if err := cleanupTeamAndApps(teamName); err != nil {
 		t.Fatal(err)

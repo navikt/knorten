@@ -8,9 +8,9 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"testing"
 
+	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
@@ -45,7 +45,9 @@ func TestChartsAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		expected, err := os.ReadFile("e2etests/testdata/html/get_new_jupyterhub.html")
+		expected, err := createExpectedHTML("charts/jupyterhub", map[string]any{
+			"team": testTeam,
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -118,10 +120,22 @@ func TestChartsAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		expected, err := os.ReadFile("e2etests/testdata/html/get_edit_jupyterhub.html")
+		expected, err := createExpectedHTML("charts/jupyterhub", map[string]any{
+			"team": testTeam,
+			"values": &chart.JupyterConfigurableValues{
+				CPULimit:        cpu,
+				CPUGuarantee:    cpu,
+				MemoryLimit:     memory,
+				MemoryGuarantee: memory,
+				ImageName:       "",
+				ImageTag:        "",
+				CullTimeout:     culltimeout,
+			},
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		expectedMinimized, err := minimizeHTML(string(expected))
 		if err != nil {
 			t.Fatal(err)
@@ -215,7 +229,9 @@ func TestChartsAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		expected, err := os.ReadFile("e2etests/testdata/html/get_new_airflow.html")
+		expected, err := createExpectedHTML("charts/airflow", map[string]any{
+			"team": testTeam,
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -302,10 +318,19 @@ func TestChartsAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		expected, err := os.ReadFile("e2etests/testdata/html/get_edit_airflow.html")
+		expected, err := createExpectedHTML("charts/airflow", map[string]any{
+			"team": testTeam,
+			"values": chart.AirflowConfigurableValues{
+				DagRepo:       dagRepo,
+				DagRepoBranch: dagRepoBranch,
+			},
+			"restrictairflowegress": true,
+			"apiaccess":             false,
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		expectedMinimized, err := minimizeHTML(string(expected))
 		if err != nil {
 			t.Fatal(err)

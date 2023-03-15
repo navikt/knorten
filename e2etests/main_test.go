@@ -1,9 +1,11 @@
 package e2etests
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +15,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"text/template"
 
 	"github.com/nais/knorten/local/dbsetup"
 	"github.com/nais/knorten/pkg/api"
@@ -194,4 +197,22 @@ func cleanupTeamAndApps(teamName string) error {
 	}
 
 	return nil
+}
+
+func createExpectedHTML(t string, values map[string]any) (string, error) {
+	buff := &bytes.Buffer{}
+	tmpl, err := template.ParseGlob("templates/**/*")
+	if err != nil {
+		return "", err
+	}
+	if err := tmpl.ExecuteTemplate(buff, t, values); err != nil {
+		return "", err
+	}
+
+	dataBytes, err := ioutil.ReadAll(buff)
+	if err != nil {
+		panic(err)
+	}
+
+	return string(dataBytes), nil
 }

@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"testing"
 
@@ -45,7 +44,7 @@ func TestTeamsAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		expected, err := os.ReadFile("e2etests/testdata/html/get_new_team.html")
+		expected, err := createExpectedHTML("team/new", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -146,7 +145,18 @@ func TestTeamsAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		expected, err := os.ReadFile("e2etests/testdata/html/get_edit_team.html")
+		team, err := repo.TeamGet(ctx, testTeam)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expected, err := createExpectedHTML("team/edit", map[string]any{
+			"team": gensql.TeamGetRow{
+				ID:    team.ID,
+				Slug:  testTeam,
+				Users: escape(teamMembers),
+			},
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -270,4 +280,15 @@ func TestTeamsAPI(t *testing.T) {
 			t.Fatalf("airflow team values are not removed from db when team %v is deleted", testTeam)
 		}
 	})
+}
+
+// hvorfor må eposter i listen av brukere escape '.'?
+func escape(teamMembers []string) []string {
+	out := []string{}
+
+	for _, t := range teamMembers {
+		out = append(out, strings.ReplaceAll(t, ".", `\.`))
+	}
+
+	return out
 }

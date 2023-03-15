@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/nais/knorten/pkg/database/gensql"
@@ -62,7 +61,7 @@ func TestChartsAPI(t *testing.T) {
 		}
 
 		if receivedMinimized != expectedMinimized {
-			t.Fatal("Received and expected HTML response differs")
+			t.Fatal("Received and expected HTML response are different")
 		}
 	})
 
@@ -135,7 +134,7 @@ func TestChartsAPI(t *testing.T) {
 		}
 
 		if receivedMinimized != expectedMinimized {
-			t.Fatal("Received and expected HTML response differs")
+			t.Fatal("Received and expected HTML response are different")
 		}
 	})
 
@@ -232,7 +231,7 @@ func TestChartsAPI(t *testing.T) {
 		}
 
 		if receivedMinimized != expectedMinimized {
-			t.Fatal("Received and expected HTML response differs")
+			t.Fatal("Received and expected HTML response are different")
 		}
 	})
 
@@ -319,7 +318,7 @@ func TestChartsAPI(t *testing.T) {
 		}
 
 		if receivedMinimized != expectedMinimized {
-			t.Fatal("Received and expected HTML response differs")
+			t.Fatal("Received and expected HTML response are different")
 		}
 	})
 
@@ -486,14 +485,4 @@ func prepareChartTests(ctx context.Context, teamName string) error {
 	}
 
 	return nil
-}
-
-func replaceGeneratedValues(expected []byte, teamName string) ([]byte, error) {
-	team, err := repo.TeamGet(context.Background(), teamName)
-	if err != nil {
-		return nil, err
-	}
-
-	updated := strings.ReplaceAll(string(expected), "${TEAM_ID}", team.ID)
-	return []byte(updated), nil
 }

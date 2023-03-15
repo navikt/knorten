@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/nais/knorten/pkg/database/gensql"
 	"golang.org/x/exp/slices"
 )
 
@@ -54,7 +55,7 @@ func TestTeamsAPI(t *testing.T) {
 		}
 
 		if receivedMinimized != expectedMinimized {
-			t.Fatal("Received and expected HTML response differs")
+			t.Fatal("Received and expected HTML response are different")
 		}
 	})
 
@@ -155,7 +156,7 @@ func TestTeamsAPI(t *testing.T) {
 		}
 
 		if receivedMinimized != expectedMinimized {
-			t.Fatal("Received and expected HTML response differs")
+			t.Fatal("Received and expected HTML response are different")
 		}
 	})
 
@@ -223,6 +224,50 @@ func TestTeamsAPI(t *testing.T) {
 
 		if team.Slug == testTeam {
 			t.Fatalf("team %v is not removed from db", testTeam)
+		}
+	})
+
+	if err := createTeamAndApps(testTeam); err != nil {
+		t.Fatalf("creating team and apps: %v", err)
+	}
+
+	t.Run("delete team verify team chart values are removed", func(t *testing.T) {
+		resp, err := server.Client().Post(fmt.Sprintf("%v/team/%v/delete", server.URL, testTeam), jsonContentType, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
+		}
+
+		team, err := repo.TeamGet(ctx, testTeam)
+		if err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				t.Fatal(err)
+			}
+		}
+
+		if team.Slug == testTeam {
+			t.Fatalf("team %v is not removed from db", testTeam)
+		}
+
+		jupyterValues, err := repo.TeamValuesGet(ctx, gensql.ChartTypeJupyterhub, testTeam)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(jupyterValues) != 0 {
+			t.Fatalf("jupyter team values are not removed from db when team %v is deleted", testTeam)
+		}
+
+		airflowValues, err := repo.TeamValuesGet(ctx, gensql.ChartTypeAirflow, testTeam)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(airflowValues) != 0 {
+			t.Fatalf("airflow team values are not removed from db when team %v is deleted", testTeam)
 		}
 	})
 }

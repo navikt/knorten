@@ -1,8 +1,11 @@
 package api
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -55,15 +58,22 @@ func (a *API) setupTeamRoutes() {
 			c.Redirect(http.StatusSeeOther, "/team/new")
 			return
 		}
-		c.Redirect(http.StatusSeeOther, "/user")
+		c.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 
 	a.router.GET("/team/:team/edit", func(c *gin.Context) {
 		teamName := c.Param("team")
 		team, err := a.repo.TeamGet(c, teamName)
 		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				c.JSON(http.StatusNotFound, map[string]string{
+					"status":  strconv.Itoa(http.StatusNotFound),
+					"message": fmt.Sprintf("team %v does not exist", teamName),
+				})
+				return
+			}
 			a.log.WithError(err).Errorf("problem getting team %v", teamName)
-			c.Redirect(http.StatusSeeOther, "/user")
+			c.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
 
@@ -94,11 +104,12 @@ func (a *API) setupTeamRoutes() {
 			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/edit", teamName))
 			return
 		}
-		c.Redirect(http.StatusSeeOther, "/user")
+		c.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 
 	a.router.POST("/team/:team/delete", func(c *gin.Context) {
 		teamName := c.Param("team")
+
 		err := a.teamClient.Delete(c, teamName)
 		if err != nil {
 			session := sessions.Default(c)
@@ -108,9 +119,9 @@ func (a *API) setupTeamRoutes() {
 				a.log.WithError(err).Error("problem saving session")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, "/user")
+			c.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
-		c.Redirect(http.StatusSeeOther, "/user")
+		c.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 }

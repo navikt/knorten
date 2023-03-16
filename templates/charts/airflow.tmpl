@@ -27,14 +27,14 @@
                 <fieldset class="flex flex-col gap-4">
                     <div class="navds-form-field navds-form-field--medium">
                         <label for="dagrepo" class="navds-form-field__label navds-label">DAG's repo</label>
-                        <input type="text" name="dagrepo" id="dagrepo" value="{{ .values.DagRepo }}"
+                        <input type="text" name="dagrepo" id="dagrepo" value="{{ or .values.DagRepo "" }}"
                                placeholder="navikt/dags" required
                                class="navds-text-field__input navds-body-short navds-body-medium"
                         />
                     </div>
                     <div class="navds-form-field navds-form-field--medium">
                         <label for="dagrepobranch" class="navds-form-field__label navds-label">DAG's repo branch</label>
-                        <input type="text" name="dagrepobranch" id="dagrepobranch" value="{{ .values.DagRepoBranch }}"
+                        <input type="text" name="dagrepobranch" id="dagrepobranch" value="{{ or .values.DagRepoBranch "" }}"
                                placeholder="main"
                                class="navds-text-field__input navds-body-short navds-body-medium"
                         />
@@ -62,11 +62,12 @@
                         </div>
                     </fieldset>
 
-                    <div>
+                    <div class="flex gap-2 items-center">
                         <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action"
                                 {{ if .pending_airflow }}disabled{{ end }}>
                             <span class="navds-label">Lagre</span>
                         </button>
+                        <a href="/oversikt" class="navds-link">Avbryt</a>
                     </div>
                 </fieldset>
             </form>

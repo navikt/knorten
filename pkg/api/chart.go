@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/go-playground/validator/v10"
 
@@ -42,12 +43,17 @@ func (a *API) setupChartRoutes() {
 		chartType := getChartType(c.Param("chart"))
 
 		var form any
-
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
 			form = chart.JupyterForm{}
 		case gensql.ChartTypeAirflow:
 			form = chart.AirflowForm{}
+		default:
+			c.JSON(http.StatusBadRequest, map[string]string{
+				"status":  strconv.Itoa(http.StatusBadRequest),
+				"message": fmt.Sprintf("Chart type %v is not supported", chartType),
+			})
+			return
 		}
 
 		session := sessions.Default(c)
@@ -55,6 +61,10 @@ func (a *API) setupChartRoutes() {
 		err := session.Save()
 		if err != nil {
 			a.log.WithError(err).Error("problem saving session")
+			c.JSON(http.StatusInternalServerError, map[string]string{
+				"status":  strconv.Itoa(http.StatusInternalServerError),
+				"message": "Internal server error",
+			})
 			return
 		}
 
@@ -75,6 +85,12 @@ func (a *API) setupChartRoutes() {
 			err = a.chartClient.Jupyterhub.Create(c, slug)
 		case gensql.ChartTypeAirflow:
 			err = a.chartClient.Airflow.Create(c, slug)
+		default:
+			c.JSON(http.StatusBadRequest, map[string]string{
+				"status":  strconv.Itoa(http.StatusBadRequest),
+				"message": fmt.Sprintf("Chart type %v is not supported", chartType),
+			})
+			return
 		}
 
 		if err != nil {
@@ -102,7 +118,7 @@ func (a *API) setupChartRoutes() {
 			return
 		}
 
-		c.Redirect(http.StatusSeeOther, "/user")
+		c.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 
 	a.router.GET("/team/:team/:chart/edit", func(c *gin.Context) {
@@ -116,10 +132,10 @@ func (a *API) setupChartRoutes() {
 			err := session.Save()
 			if err != nil {
 				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, "/user")
+				c.Redirect(http.StatusSeeOther, "/oversikt")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, "/user")
+			c.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
 
@@ -129,6 +145,12 @@ func (a *API) setupChartRoutes() {
 			form = &chart.JupyterConfigurableValues{}
 		case gensql.ChartTypeAirflow:
 			form = &chart.AirflowConfigurableValues{}
+		default:
+			c.JSON(http.StatusBadRequest, map[string]string{
+				"status":  strconv.Itoa(http.StatusBadRequest),
+				"message": fmt.Sprintf("Chart type %v is not supported", chartType),
+			})
+			return
 		}
 
 		err = a.repo.TeamConfigurableValuesGet(c, chartType, team.ID, form)
@@ -138,10 +160,10 @@ func (a *API) setupChartRoutes() {
 			err := session.Save()
 			if err != nil {
 				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, "/user")
+				c.Redirect(http.StatusSeeOther, "/oversikt")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, "/user")
+			c.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
 
@@ -211,6 +233,12 @@ func (a *API) setupChartRoutes() {
 			}
 			form.Slug = slug
 			err = a.chartClient.Airflow.Update(c, form)
+		default:
+			c.JSON(http.StatusBadRequest, map[string]string{
+				"status":  strconv.Itoa(http.StatusBadRequest),
+				"message": fmt.Sprintf("Chart type %v is not supported", chartType),
+			})
+			return
 		}
 
 		if err != nil {
@@ -226,7 +254,7 @@ func (a *API) setupChartRoutes() {
 			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", slug, chartType))
 			return
 		}
-		c.Redirect(http.StatusSeeOther, "/user")
+		c.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 
 	a.router.POST("/team/:team/:chart/delete", func(c *gin.Context) {
@@ -239,6 +267,12 @@ func (a *API) setupChartRoutes() {
 			err = a.chartClient.Jupyterhub.Delete(c, slug)
 		case gensql.ChartTypeAirflow:
 			err = a.chartClient.Airflow.Delete(c, slug)
+		default:
+			c.JSON(http.StatusBadRequest, map[string]string{
+				"status":  strconv.Itoa(http.StatusBadRequest),
+				"message": fmt.Sprintf("Chart type %v is not supported", chartType),
+			})
+			return
 		}
 
 		if err != nil {
@@ -248,12 +282,12 @@ func (a *API) setupChartRoutes() {
 			err := session.Save()
 			if err != nil {
 				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, "/user")
+				c.Redirect(http.StatusSeeOther, "/oversikt")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, "/user")
+			c.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
-		c.Redirect(http.StatusSeeOther, "/user")
+		c.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 }

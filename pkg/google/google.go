@@ -71,6 +71,11 @@ func (g *Google) Update(c context.Context, secret string, users []string) error 
 }
 
 func (g *Google) DeleteGCPTeamResources(c context.Context, teamID string) error {
+	if g.dryRun {
+		g.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
 	if err := g.deleteIAMServiceAccount(c, teamID); err != nil {
 		g.log.WithError(err).Errorf("deleting iam service account %v", teamID)
 		return err

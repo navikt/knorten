@@ -8,12 +8,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gin-contrib/sessions"
 	"net"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/nais/knorten/pkg/auth"
@@ -63,7 +63,7 @@ func (a *API) callback(c *gin.Context) (string, error) {
 	if err != nil {
 		host = c.Request.Host
 	}
-	loginPage := "/user"
+	loginPage := "/oversikt"
 
 	redirectURI, _ := c.Cookie(RedirectURICookie)
 	if redirectURI != "" {
@@ -253,14 +253,60 @@ func (a *API) authMiddleware(allowedUsers []string) gin.HandlerFunc {
 		}
 
 		c.Set("user", user)
+		c.Set("token", session.AccessToken)
 		c.Next()
 	}
+}
+
+func (a *API) adminAuthMiddleware() gin.HandlerFunc {
+	if a.dryRun {
+		return func(c *gin.Context) {
+			user := &auth.User{
+				Name:    "dummy@nav.no",
+				Email:   "dummy@nav.no",
+				Expires: time.Time{},
+			}
+			c.Set("user", user)
+			c.Next()
+		}
+	}
+	return func(c *gin.Context) {
+		value, _ := c.Get("user")
+		user, pass := value.(*auth.User)
+		if !pass {
+			c.Redirect(http.StatusSeeOther, "/")
+			return
+		}
+		value, _ = c.Get("token")
+		token, pass := value.(string)
+		if !pass {
+			a.log.Error("Illegal user token")
+			c.Redirect(http.StatusSeeOther, "/")
+			return
+		}
+
+		if !a.isUserInAdminGroup(token, user.Email) {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
+		}
+
+		c.Next()
+	}
+}
+
+func (a *API) isUserInAdminGroup(token string, email string) bool {
+	inGroup, err := a.azureClient.UserInGroup(token, email, "nada@nav.no")
+	if err != nil {
+		a.log.WithError(err).Error("problem verifying user group")
+		return false
+	}
+	return inGroup
 }
 
 func (a *API) setupAuthRoutes() {
 	a.router.GET("/oauth2/login", func(c *gin.Context) {
 		if a.dryRun {
-			c.Redirect(http.StatusSeeOther, "http://localhost:8080/user")
+			c.Redirect(http.StatusSeeOther, "http://localhost:8080/oversikt")
 			return
 		}
 

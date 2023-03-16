@@ -108,7 +108,7 @@ func (d *ImageUpdater) run(ctx context.Context) {
 
 		for _, t := range teams {
 			if err := d.jupyterClient.Sync(ctx, t); err != nil {
-				d.log.WithError(err).Error("error syncing jupyterhub for team %v", t)
+				d.log.WithError(err).Errorf("error syncing jupyterhub for team %v", t)
 			}
 		}
 	}

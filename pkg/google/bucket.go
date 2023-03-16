@@ -54,6 +54,11 @@ func (g *Google) CreateBucket(ctx context.Context, teamID, bucketName string) er
 }
 
 func (g *Google) CreateServiceAccountObjectAdminBinding(ctx context.Context, teamID, bucketName string) error {
+	if g.dryRun {
+		g.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
 	sa := fmt.Sprintf("serviceAccount:%v@%v.iam.gserviceaccount.com", teamID, g.project)
 	role := iam.RoleName("roles/storage.objectAdmin")
 

@@ -4,14 +4,20 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/nais/knorten/pkg/api"
 	"github.com/nais/knorten/pkg/auth"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/google"
+	"github.com/nais/knorten/pkg/imageupdater"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/sirupsen/logrus"
+)
+
+const (
+	imageUpdaterFrequency = 24 * time.Hour
 )
 
 type Config struct {
@@ -69,6 +75,9 @@ func main() {
 		log.WithError(err).Fatal("creating k8s client")
 		return
 	}
+
+	imageUpdater := imageupdater.New(repo, k8sClient, cryptClient, cfg.JupyterChartVersion, log.WithField("subsystem", "imageupdater"))
+	go imageUpdater.Run(imageUpdaterFrequency)
 
 	router, err := api.New(repo, azureClient, googleClient, k8sClient, cryptClient, cfg.DryRun, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.SessionKey, log.WithField("subsystem", "api"))
 	if err != nil {

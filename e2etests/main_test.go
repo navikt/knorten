@@ -16,6 +16,7 @@ import (
 	"strings"
 	"testing"
 	"text/template"
+	"time"
 
 	"github.com/nais/knorten/local/dbsetup"
 	"github.com/nais/knorten/pkg/api"
@@ -30,7 +31,6 @@ import (
 )
 
 var (
-	dbPort string
 	repo   *database.Repo
 	server *httptest.Server
 )
@@ -51,48 +51,48 @@ func init() {
 }
 
 func TestMain(m *testing.M) {
-	dockerHost := os.Getenv("HOME") + "/.colima/docker.sock"
-	_, err := os.Stat(dockerHost)
-	if err != nil {
-		// uses a sensible default on windows (tcp/http) and linux/osx (socket)
-		dockerHost = ""
-	} else {
-		dockerHost = "unix://" + dockerHost
-	}
+	dbPort := "5432"
+	dbHost := "db"
+	dbString := "user=postgres dbname=knorten sslmode=disable password=postgres host=db port=5432"
 
-	pool, err := dockertest.NewPool(dockerHost)
-	if err != nil {
-		log.Fatalf("Could not connect to docker: %s", err)
-	}
-
-	// pulls an image, creates a container based on it and runs it
-	resource, err := pool.Run("postgres", "12", []string{"POSTGRES_PASSWORD=postgres", "POSTGRES_DB=knorten"})
-	if err != nil {
-		log.Fatalf("Could not start resource: %s", err)
-	}
-	resource.Expire(120) // setting resource timeout as postgres container is not terminated automatically
-	dbPort = resource.GetPort("5432/tcp")
-
-	var dbString string
-	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
-	if err := pool.Retry(func() error {
-		var err error
-		dbString = "user=postgres dbname=knorten sslmode=disable password=postgres host=localhost port=" + dbPort
-		db, err := sql.Open("postgres", dbString)
+	if os.Getenv("CI") != "true" {
+		dockerHost := os.Getenv("HOME") + "/.colima/docker.sock"
+		_, err := os.Stat(dockerHost)
 		if err != nil {
-			return err
+			// uses a sensible default on windows (tcp/http) and linux/osx (socket)
+			dockerHost = ""
+		} else {
+			dockerHost = "unix://" + dockerHost
 		}
-		return db.Ping()
-	}); err != nil {
-		log.Fatalf("Could not connect to docker: %s", err)
+
+		pool, err := dockertest.NewPool(dockerHost)
+		if err != nil {
+			log.Fatalf("Could not connect to docker: %s", err)
+		}
+
+		// pulls an image, creates a container based on it and runs it
+		resource, err := pool.Run("postgres", "12", []string{"POSTGRES_PASSWORD=postgres", "POSTGRES_DB=knorten"})
+		if err != nil {
+			log.Fatalf("Could not start resource: %s", err)
+		}
+		resource.Expire(120) // setting resource timeout as postgres container is not terminated automatically
+		dbPort = resource.GetPort("5432/tcp")
+		dbHost = "localhost"
+		dbString = fmt.Sprintf("user=postgres dbname=knorten sslmode=disable password=postgres host=localhost port=%v", dbPort)
 	}
 
+	if err := waitForDB(dbString); err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+
+	var err error
 	repo, err = database.New(dbString, logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err := dbsetup.SetupDB(context.Background(), "postgres://postgres:postgres@localhost:"+dbPort, "knorten"); err != nil {
+	if err := dbsetup.SetupDB(context.Background(), fmt.Sprintf("postgres://postgres:postgres@%v:%v", dbHost, dbPort), "knorten"); err != nil {
 		log.Fatalf("setting up knorten db: %v", err)
 	}
 
@@ -122,12 +122,25 @@ func TestMain(m *testing.M) {
 
 	code := m.Run()
 
-	// You can't defer this because os.Exit doesn't care for defer
-	if err := pool.Purge(resource); err != nil {
-		log.Fatalf("Could not purge resource: %s", err)
+	os.Exit(code)
+}
+
+func waitForDB(dbString string) error {
+	sleepDuration := 1 * time.Second
+	numRetries := 60
+	for i := 0; i < numRetries; i++ {
+		time.Sleep(sleepDuration)
+		db, err := sql.Open("postgres", dbString)
+		if err != nil {
+			return err
+		}
+
+		if err := db.Ping(); err == nil {
+			return nil
+		}
 	}
 
-	os.Exit(code)
+	return fmt.Errorf("unable to connect to db in %v seconds", int(sleepDuration)*numRetries/1000000000)
 }
 
 func minimizeHTML(in string) (string, error) {

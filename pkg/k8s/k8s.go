@@ -250,7 +250,7 @@ func (c *Client) DeleteSecret(ctx context.Context, name, namespace string) error
 			c.log.Infof("delete secret: secret %v in namespace %v does not exist", name, namespace)
 			return nil
 		}
-		c.log.WithError(err).Error("deleting secret %v in namespace %v", name, namespace)
+		c.log.WithError(err).Errorf("deleting secret %v in namespace %v", name, namespace)
 		return err
 	}
 

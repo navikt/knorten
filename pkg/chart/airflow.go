@@ -48,7 +48,6 @@ type AirflowForm struct {
 type AirflowConfigurableValues struct {
 	DagRepo               string `form:"dagrepo" binding:"required,startswith=navikt/" helm:"webserver.extraContainers.[0].args.[0]"`
 	DagRepoBranch         string `form:"dagrepobranch" helm:"webserver.extraContainers.[0].args.[1]"`
-	ServiceUser           string `form:"serviceuser"`
 	ApiAccess             string `form:"apiaccess"`
 	RestrictAirflowEgress string `form:"restrictairflowegress"`
 }

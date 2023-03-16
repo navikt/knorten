@@ -6,11 +6,26 @@ options:
 serviceAccount: "projects/knada-gcp/serviceAccounts/ci-knorten-cloud-build@knada-gcp.iam.gserviceaccount.com"
 
 steps:
+- name: "docker/compose"
+  id: "compose-up"
+  args: ["-f", "docker-compose.ci.yaml", "up", "-d"]
+- name: "golang:1.20"
+  id: "run-tests"
+  env:
+    - "CI=true"
+    - "HELM_REPOSITORY_CONFIG=./.helm-repositories.yaml"
+  script: make test
+- name: 'docker/compose'
+  id: 'compose-down'
+  args: [ '-f', 'docker-compose.ci.yaml', 'down' ]
 - name: "gcr.io/cloud-builders/docker"
+  id: "build-image"
   args: ["build", "-t", "europe-west1-docker.pkg.dev/$PROJECT_ID/knada/knorten:$SHORT_SHA", "." ]
 - name: "gcr.io/cloud-builders/docker"
+  id: "push image"
   args: ["push", "europe-west1-docker.pkg.dev/$PROJECT_ID/knada/knorten:$SHORT_SHA"]
 - name: "gcr.io/cloud-builders/gke-deploy"
+  id: "deploy"
   args:
   - run
   - --filename=k8s

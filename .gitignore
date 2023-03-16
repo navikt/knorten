@@ -15,7 +15,7 @@
 
 # Dry run creates vaules for helm charts
 airflow.yaml
-jupyterhub-*.yaml
+jupyterhub.yaml
 
 # Running local needs Helm repo file (or Helm installed)
 .helm-repositories.yaml
@@ -33,3 +33,5 @@ hack
 node_modules
 !package-lock.json
 !package.json
+
+.DS_Store

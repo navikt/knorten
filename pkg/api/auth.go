@@ -259,6 +259,17 @@ func (a *API) authMiddleware(allowedUsers []string) gin.HandlerFunc {
 }
 
 func (a *API) adminAuthMiddleware() gin.HandlerFunc {
+	if a.dryRun {
+		return func(c *gin.Context) {
+			user := &auth.User{
+				Name:    "dummy@nav.no",
+				Email:   "dummy@nav.no",
+				Expires: time.Time{},
+			}
+			c.Set("user", user)
+			c.Next()
+		}
+	}
 	return func(c *gin.Context) {
 		value, _ := c.Get("user")
 		user, pass := value.(*auth.User)

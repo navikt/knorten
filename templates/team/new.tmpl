@@ -9,7 +9,7 @@
             <form class="flex flex-col gap-4 w-80" action="" method="POST">
                 <div class="">
                     <label for="team" class="navds-form-field__label navds-label">Teamnavn</label>
-                    <input type="text" name="team" id="team" value="{{ .team }}"
+                    <input type="text" name="team" id="team" value="{{ or .team "" }}"
                            placeholder="Små bokstaver med bindestrek"
                            class="navds-text-field__input navds-body-short navds-body-medium"
                     />

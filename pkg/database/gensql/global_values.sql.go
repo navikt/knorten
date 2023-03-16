@@ -30,7 +30,7 @@ const globalValueGet = `-- name: GlobalValueGet :one
 SELECT DISTINCT ON ("key") id, created, key, value, chart_type, encrypted
 FROM chart_global_values
 WHERE chart_type = $1 AND "key" = $2
-ORDER BY "created" DESC
+ORDER BY "key", "created" DESC
 `
 
 type GlobalValueGetParams struct {

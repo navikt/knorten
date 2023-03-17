@@ -76,8 +76,10 @@ func main() {
 		return
 	}
 
-	imageUpdater := imageupdater.New(repo, k8sClient, cryptClient, cfg.JupyterChartVersion, log.WithField("subsystem", "imageupdater"))
-	go imageUpdater.Run(imageUpdaterFrequency)
+	if !cfg.DryRun {
+		imageUpdater := imageupdater.New(repo, k8sClient, cryptClient, cfg.JupyterChartVersion, log.WithField("subsystem", "imageupdater"))
+		go imageUpdater.Run(imageUpdaterFrequency)
+	}
 
 	router, err := api.New(repo, azureClient, googleClient, k8sClient, cryptClient, cfg.DryRun, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.SessionKey, log.WithField("subsystem", "api"))
 	if err != nil {

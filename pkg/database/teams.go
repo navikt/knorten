@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"strings"
 
 	"github.com/nais/knorten/pkg/database/gensql"
 )
@@ -9,7 +10,7 @@ import (
 func (r *Repo) TeamCreate(ctx context.Context, team, slug string, users []string, apiAccess bool) error {
 	return r.querier.TeamCreate(ctx, gensql.TeamCreateParams{
 		ID:        team,
-		Users:     users,
+		Users:     stringSliceToLower(users),
 		Slug:      slug,
 		ApiAccess: apiAccess,
 	})
@@ -18,7 +19,7 @@ func (r *Repo) TeamCreate(ctx context.Context, team, slug string, users []string
 func (r *Repo) TeamUpdate(ctx context.Context, team string, users []string, apiAccess bool) error {
 	return r.querier.TeamUpdate(ctx, gensql.TeamUpdateParams{
 		ID:        team,
-		Users:     users,
+		Users:     stringSliceToLower(users),
 		ApiAccess: apiAccess,
 	})
 }
@@ -68,4 +69,13 @@ func (r *Repo) TeamSetApiAccess(ctx context.Context, teamID string, apiAccess bo
 		ApiAccess: apiAccess,
 		ID:        teamID,
 	})
+}
+
+func stringSliceToLower(vals []string) []string {
+	out := []string{}
+	for _, v := range vals {
+		out = append(out, strings.ToLower(v))
+	}
+
+	return out
 }

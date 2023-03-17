@@ -48,7 +48,7 @@ func TestTeamsAPI(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		expectedMinimized, err := minimizeHTML(string(expected))
+		expectedMinimized, err := minimizeHTML(expected)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -160,7 +160,7 @@ func TestTeamsAPI(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		expectedMinimized, err := minimizeHTML(string(expected))
+		expectedMinimized, err := minimizeHTML(expected)
 		if err != nil {
 			t.Fatal(err)
 		}

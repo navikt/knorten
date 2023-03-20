@@ -25,8 +25,7 @@ func (a *API) setupUserRoutes() {
 		}
 
 		services, err := a.repo.ServicesForUser(c, user.Email)
-		c.HTML(http.StatusOK, "oversikt/index", gin.H{
-			"loggedIn": a.isLoggedIn(c),
+		a.htmlResponseWrapper(c, http.StatusOK, "oversikt/index", gin.H{
 			"errors":   err,
 			"flashes":  flashes,
 			"services": services,

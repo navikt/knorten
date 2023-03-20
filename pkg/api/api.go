@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"errors"
 	"net/http"
 
@@ -30,10 +31,11 @@ type API struct {
 	teamClient          *team.Client
 	jupyterChartVersion string
 	airflowChartVersion string
+	adminGroup          string
 	dryRun              bool
 }
 
-func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, dryRun bool, airflowChartVersion, jupyterChartVersion, sessionKey string, log *logrus.Entry) (*gin.Engine, error) {
+func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, dryRun bool, airflowChartVersion, jupyterChartVersion, sessionKey, adminGroup string, log *logrus.Entry) (*gin.Engine, error) {
 	adminClient := admin.New(repo, k8sClient, cryptClient, airflowChartVersion, jupyterChartVersion)
 	chartClient, err := chart.New(repo, googleClient, k8sClient, cryptClient, airflowChartVersion, jupyterChartVersion, log)
 	if err != nil {
@@ -57,6 +59,7 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 		cryptClient:  cryptClient,
 		log:          log,
 		chartClient:  chartClient,
+		adminGroup:   adminGroup,
 		dryRun:       dryRun,
 	}
 
@@ -102,10 +105,7 @@ func (a *API) setupAPIEndpoints() {
 
 func (a *API) setupUnauthenticatedRoutes() {
 	a.router.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index", gin.H{
-			"loggedIn": a.isLoggedIn(c),
-			"current":  "home",
-		})
+		a.htmlResponseWrapper(c, http.StatusOK, "index", gin.H{})
 	})
 
 	a.setupAPIEndpoints()
@@ -116,6 +116,13 @@ func (a *API) setupAuthenticatedRoutes() {
 	a.setupUserRoutes()
 	a.setupTeamRoutes()
 	a.setupChartRoutes()
+}
+
+func (a *API) htmlResponseWrapper(c *gin.Context, status int, tmplName string, values gin.H) {
+	values["loggedIn"] = a.isLoggedIn(c)
+	values["isAdmin"] = a.isAdmin(c)
+
+	c.HTML(status, tmplName, values)
 }
 
 func (a *API) isLoggedIn(c *gin.Context) bool {
@@ -129,4 +136,26 @@ func (a *API) isLoggedIn(c *gin.Context) bool {
 	}
 
 	return cookie != ""
+}
+
+func (a *API) isAdmin(c *gin.Context) bool {
+	cookie, err := c.Cookie(sessionCookie)
+	if err != nil {
+		if errors.Is(err, http.ErrNoCookie) {
+			return false
+		}
+		a.log.WithError(err).Error("reading session cookie")
+		return false
+	}
+
+	session, err := a.repo.SessionGet(c, cookie)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false
+		}
+		a.log.WithError(err).Error("retrieving session from db")
+		return false
+	}
+
+	return session.IsAdmin
 }

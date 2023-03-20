@@ -42,6 +42,8 @@ spec:
             value: /root/.config/netpol/default-egress-airflow-worker.yaml
           - name: "KNELM_IMAGE"
             value: europe-west1-docker.pkg.dev/knada-gcp/knada/knelm:2023-03-15-3c6e024
+          - name: ADMIN_GROUP
+            value: nada@nav.no
         envFrom:
         - secretRef:
             name: knorten

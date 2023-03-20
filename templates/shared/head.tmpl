@@ -23,11 +23,11 @@
                 <span class="text-">by nada</span>
             </a>
             <nav class="flex items-center gap-2">
-                <a href="/oversikt" class="navds-button navds-button--small navds-button--secondary bg-initial">Teams</a>
-                {{ if eq .current "admin" }}
+                {{ if .isAdmin }}
                     <a href="/admin" class="navds-button navds-button--small navds-button--secondary">Admin</a>
                 {{ end }}
                 {{ if .loggedIn }}
+                    <a href="/oversikt" class="navds-button navds-button--small navds-button--secondary bg-initial">Teams</a>
                     <a href="/oauth2/logout" class="navds-button navds-button--small navds-button--secondary bg-initial">Logg ut</a>
                 {{ else }}
                     <a href="/oauth2/login" class="navds-button navds-button--small navds-button--secondary bg-initial">Logg inn</a>

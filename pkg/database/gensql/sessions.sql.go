@@ -16,13 +16,15 @@ INSERT INTO "sessions" (
     "email",
     "token",
     "access_token",
-    "expires"
+    "expires",
+    "is_admin"
 ) VALUES (
     $1,
     $2,
     $3,
     $4,
-    $5
+    $5,
+    $6
 )
 `
 
@@ -32,6 +34,7 @@ type SessionCreateParams struct {
 	Token       string
 	AccessToken string
 	Expires     time.Time
+	IsAdmin     bool
 }
 
 func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) error {
@@ -41,6 +44,7 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) er
 		arg.Token,
 		arg.AccessToken,
 		arg.Expires,
+		arg.IsAdmin,
 	)
 	return err
 }
@@ -57,7 +61,7 @@ func (q *Queries) SessionDelete(ctx context.Context, token string) error {
 }
 
 const sessionGet = `-- name: SessionGet :one
-SELECT token, access_token, email, name, created, expires
+SELECT token, access_token, email, name, created, expires, is_admin
 FROM "sessions"
 WHERE token = $1
 AND expires > now()
@@ -73,6 +77,7 @@ func (q *Queries) SessionGet(ctx context.Context, token string) (Session, error)
 		&i.Name,
 		&i.Created,
 		&i.Expires,
+		&i.IsAdmin,
 	)
 	return i, err
 }

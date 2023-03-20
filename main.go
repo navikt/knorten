@@ -33,6 +33,7 @@ type Config struct {
 	AirflowChartVersion string
 	JupyterChartVersion string
 	AirflowEgressNetPol string
+	AdminGroup          string
 	SessionKey          string
 }
 
@@ -54,6 +55,7 @@ func main() {
 	flag.StringVar(&cfg.KnelmImage, "knelm-image", os.Getenv("KNELM_IMAGE"), "Knelm image")
 	flag.StringVar(&cfg.AirflowChartVersion, "airflow-chart-version", os.Getenv("AIRFLOW_CHART_VERSION"), "The chart version for airflow")
 	flag.StringVar(&cfg.JupyterChartVersion, "jupyter-chart-version", os.Getenv("JUPYTER_CHART_VERSION"), "The chart version for jupyter")
+	flag.StringVar(&cfg.AdminGroup, "admin-group", os.Getenv("ADMIN_GROUP"), "Email of admin group used to authenticate Knorten administrators")
 	flag.StringVar(&cfg.AirflowEgressNetPol, "airflow-egress-netpol", os.Getenv("AIRFLOW_EGRESS_NETPOL"), "Path to the Airflow default egress netpol")
 	flag.StringVar(&cfg.SessionKey, "session-key", os.Getenv("SESSION_KEY"), "The session key for Knorten")
 	flag.Parse()
@@ -81,7 +83,7 @@ func main() {
 		go imageUpdater.Run(imageUpdaterFrequency)
 	}
 
-	router, err := api.New(repo, azureClient, googleClient, k8sClient, cryptClient, cfg.DryRun, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.SessionKey, log.WithField("subsystem", "api"))
+	router, err := api.New(repo, azureClient, googleClient, k8sClient, cryptClient, cfg.DryRun, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.SessionKey, cfg.AdminGroup, log.WithField("subsystem", "api"))
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return

@@ -2,7 +2,6 @@ package api
 
 import (
 	"crypto/rand"
-	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -130,6 +129,8 @@ func (a *API) callback(c *gin.Context) (string, error) {
 		return loginPage + "?error=unauthenticated", errors.New("unauthenticated")
 	}
 
+	session.IsAdmin = a.isUserInAdminGroup(session.AccessToken, session.Email)
+
 	if err := a.repo.SessionCreate(c, session); err != nil {
 		a.log.WithError(err).Error("unable to create session")
 		return loginPage + "?error=internal-server-error", errors.New("unable to create session")
@@ -218,7 +219,7 @@ func (a *API) authMiddleware(allowedUsers []string) gin.HandlerFunc {
 		}
 
 		session, err := a.repo.SessionGet(c, sessionToken)
-		if err != nil || errors.Is(err, sql.ErrNoRows) {
+		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
 		}
@@ -253,7 +254,6 @@ func (a *API) authMiddleware(allowedUsers []string) gin.HandlerFunc {
 		}
 
 		c.Set("user", user)
-		c.Set("token", session.AccessToken)
 		c.Next()
 	}
 }
@@ -271,23 +271,8 @@ func (a *API) adminAuthMiddleware() gin.HandlerFunc {
 		}
 	}
 	return func(c *gin.Context) {
-		value, _ := c.Get("user")
-		user, pass := value.(*auth.User)
-		if !pass {
-			c.Redirect(http.StatusSeeOther, "/")
-			return
-		}
-		value, _ = c.Get("token")
-		token, pass := value.(string)
-		if !pass {
-			a.log.Error("Illegal user token")
-			c.Redirect(http.StatusSeeOther, "/")
-			return
-		}
-
-		if !a.isUserInAdminGroup(token, user.Email) {
+		if !a.isAdmin(c) {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-			return
 		}
 
 		c.Next()
@@ -295,7 +280,7 @@ func (a *API) adminAuthMiddleware() gin.HandlerFunc {
 }
 
 func (a *API) isUserInAdminGroup(token string, email string) bool {
-	inGroup, err := a.azureClient.UserInGroup(token, email, "nada@nav.no")
+	inGroup, err := a.azureClient.UserInGroup(token, email, a.adminGroup)
 	if err != nil {
 		a.log.WithError(err).Error("problem verifying user group")
 		return false

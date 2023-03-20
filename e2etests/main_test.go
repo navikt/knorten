@@ -112,6 +112,7 @@ func TestMain(m *testing.M) {
 		true,
 		"1.8.0",
 		"2.0.0",
+		"nada@nav.no",
 		"session",
 		logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {

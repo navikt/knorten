@@ -12,9 +12,11 @@
                 </h2>
                 <p class="font-bold">Kodebasert analyse i skyen!</p>
             </div>
-            <div>
-                <a href="/oauth2/login" class="navds-button navds-button--primary">Logg inn</a>
-            </div>
+            {{ if not .loggedIn }}
+                <div>
+                    <a href="/oauth2/login" class="navds-button navds-button--primary">Logg inn</a>
+                </div>
+            {{ end }}
         </section>
     {{- template "footer" }}
 {{ end }}

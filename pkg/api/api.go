@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/nais/knorten/pkg/chart"
@@ -102,7 +103,8 @@ func (a *API) setupAPIEndpoints() {
 func (a *API) setupUnauthenticatedRoutes() {
 	a.router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index", gin.H{
-			"current": "home",
+			"loggedIn": a.isLoggedIn(c),
+			"current":  "home",
 		})
 	})
 
@@ -114,4 +116,17 @@ func (a *API) setupAuthenticatedRoutes() {
 	a.setupUserRoutes()
 	a.setupTeamRoutes()
 	a.setupChartRoutes()
+}
+
+func (a *API) isLoggedIn(c *gin.Context) bool {
+	cookie, err := c.Cookie(sessionCookie)
+	if err != nil {
+		if errors.Is(err, http.ErrNoCookie) {
+			return false
+		}
+		a.log.WithError(err).Error("reading session cookie")
+		return false
+	}
+
+	return cookie != ""
 }

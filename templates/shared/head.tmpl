@@ -27,6 +27,11 @@
                 {{ if eq .current "admin" }}
                     <a href="/admin" class="navds-button navds-button--small navds-button--secondary">Admin</a>
                 {{ end }}
+                {{ if .loggedIn }}
+                    <a href="/oauth2/logout" class="navds-button navds-button--small navds-button--secondary bg-initial">Logg ut</a>
+                {{ else }}
+                    <a href="/oauth2/login" class="navds-button navds-button--small navds-button--secondary bg-initial">Logg inn</a>
+                {{ end }}
             </nav>
         </div>
     </header>

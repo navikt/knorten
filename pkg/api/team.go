@@ -40,8 +40,9 @@ func (a *API) setupTeamRoutes() {
 		}
 
 		c.HTML(http.StatusOK, "team/new", gin.H{
-			"form":   form,
-			"errors": flashes,
+			"loggedIn": a.isLoggedIn(c),
+			"form":     form,
+			"errors":   flashes,
 		})
 	})
 
@@ -85,8 +86,9 @@ func (a *API) setupTeamRoutes() {
 			return
 		}
 		c.HTML(http.StatusOK, "team/edit", gin.H{
-			"team":   team,
-			"errors": flashes,
+			"loggedIn": a.isLoggedIn(c),
+			"team":     team,
+			"errors":   flashes,
 		})
 	})
 

@@ -24,8 +24,8 @@ const (
 	helmRepoConfigMap        = "helm-repos"
 	helmRepoConfigMapSubPath = "repositories.yaml"
 	helmRepoConfigMountPath  = "/root/.config/helm/repositories.yaml"
-	cpuRequests              = "200m"
-	memoryRequests           = "128Mi"
+	cpuRequests              = "250m"
+	memoryRequests           = "512Mi"
 	ephemeralStorageRequests = "64Mi"
 )
 
@@ -137,11 +137,6 @@ func (c *Client) createJobSpec(teamID, releaseName, action string) *batchv1.Job 
 								},
 							},
 							Resources: v1.ResourceRequirements{
-								Limits: v1.ResourceList{
-									"cpu":               resource.MustParse(cpuRequests),
-									"memory":            resource.MustParse(memoryRequests),
-									"ephemeral-storage": resource.MustParse(ephemeralStorageRequests),
-								},
 								Requests: v1.ResourceList{
 									"cpu":               resource.MustParse(cpuRequests),
 									"memory":            resource.MustParse(memoryRequests),

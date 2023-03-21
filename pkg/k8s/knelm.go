@@ -12,6 +12,7 @@ import (
 	"gopkg.in/yaml.v2"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -23,6 +24,9 @@ const (
 	helmRepoConfigMap        = "helm-repos"
 	helmRepoConfigMapSubPath = "repositories.yaml"
 	helmRepoConfigMountPath  = "/root/.config/helm/repositories.yaml"
+	cpuRequests              = "200m"
+	memoryRequests           = "128Mi"
+	ephemeralStorageRequests = "64Mi"
 )
 
 func (c *Client) CreateHelmInstallOrUpgradeJob(ctx context.Context, teamID, releaseName string, values map[string]any) error {
@@ -130,6 +134,18 @@ func (c *Client) createJobSpec(teamID, releaseName, action string) *batchv1.Job 
 									Name:      "helm-repos-config",
 									MountPath: helmRepoConfigMountPath,
 									SubPath:   helmRepoConfigMapSubPath,
+								},
+							},
+							Resources: v1.ResourceRequirements{
+								Limits: v1.ResourceList{
+									"cpu":               resource.MustParse(cpuRequests),
+									"memory":            resource.MustParse(memoryRequests),
+									"ephemeral-storage": resource.MustParse(ephemeralStorageRequests),
+								},
+								Requests: v1.ResourceList{
+									"cpu":               resource.MustParse(cpuRequests),
+									"memory":            resource.MustParse(memoryRequests),
+									"ephemeral-storage": resource.MustParse(ephemeralStorageRequests),
 								},
 							},
 						},

@@ -30,6 +30,7 @@ type Session struct {
 	AccessToken string
 	Token       string
 	Expires     time.Time
+	IsAdmin     bool
 }
 
 type Azure struct {
@@ -154,7 +155,7 @@ func (a *Azure) GroupsForUser(token, email string) ([]MemberOfGroup, error) {
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", bearerToken))
 
-	var httpClient = &http.Client{
+	httpClient := &http.Client{
 		Timeout: time.Second * 10,
 	}
 
@@ -209,7 +210,7 @@ func (a *Azure) getBearerTokenOnBehalfOfUser(token string) (string, error) {
 		return "", err
 	}
 
-	var httpClient = &http.Client{
+	httpClient := &http.Client{
 		Timeout: time.Second * 10,
 	}
 

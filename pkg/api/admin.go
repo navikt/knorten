@@ -56,11 +56,9 @@ func (a *API) setupAdminRoutes() {
 			}
 		}
 
-		c.HTML(http.StatusOK, "admin/index", gin.H{
-			"loggedIn": a.isLoggedIn(c),
-			"current":  "admin",
-			"errors":   flashes,
-			"teams":    teamApps,
+		a.htmlResponseWrapper(c, http.StatusOK, "admin/index", gin.H{
+			"errors": flashes,
+			"teams":  teamApps,
 		})
 	})
 
@@ -91,12 +89,10 @@ func (a *API) setupAdminRoutes() {
 			return
 		}
 
-		c.HTML(http.StatusOK, "admin/chart", gin.H{
-			"loggedIn": a.isLoggedIn(c),
-			"current":  "admin",
-			"values":   values,
-			"errors":   flashes,
-			"chart":    string(chartType),
+		a.htmlResponseWrapper(c, http.StatusOK, "admin/chart", gin.H{
+			"values": values,
+			"errors": flashes,
+			"chart":  string(chartType),
 		})
 	})
 
@@ -166,9 +162,7 @@ func (a *API) setupAdminRoutes() {
 			return
 		}
 
-		c.HTML(http.StatusOK, "admin/confirm", gin.H{
-			"loggedIn":      a.isLoggedIn(c),
-			"current":       "admin",
+		a.htmlResponseWrapper(c, http.StatusOK, "admin/confirm", gin.H{
 			"changedValues": changedValues,
 			"chart":         string(chartType),
 		})

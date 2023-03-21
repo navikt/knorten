@@ -68,11 +68,10 @@ func (a *API) setupChartRoutes() {
 			return
 		}
 
-		c.HTML(http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
-			"loggedIn": a.isLoggedIn(c),
-			"team":     team,
-			"form":     form,
-			"errors":   flashes,
+		a.htmlResponseWrapper(c, http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
+			"team":   team,
+			"form":   form,
+			"errors": flashes,
 		})
 	})
 
@@ -176,8 +175,7 @@ func (a *API) setupChartRoutes() {
 			return
 		}
 
-		c.HTML(http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
-			"loggedIn":              a.isLoggedIn(c),
+		a.htmlResponseWrapper(c, http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
 			"team":                  slug,
 			"pending_jupyterhub":    team.PendingJupyterUpgrade,
 			"pending_airflow":       team.PendingAirflowUpgrade,

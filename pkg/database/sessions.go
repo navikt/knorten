@@ -17,6 +17,7 @@ func (r *Repo) SessionCreate(ctx context.Context, session *auth.Session) error {
 		Token:       session.Token,
 		AccessToken: session.AccessToken,
 		Expires:     session.Expires,
+		IsAdmin:     session.IsAdmin,
 	})
 }
 
@@ -32,6 +33,7 @@ func (r *Repo) SessionGet(ctx context.Context, token string) (*auth.Session, err
 		AccessToken: dbSession.AccessToken,
 		Token:       dbSession.Token,
 		Expires:     dbSession.Expires,
+		IsAdmin:     dbSession.IsAdmin,
 	}, nil
 }
 

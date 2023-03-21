@@ -4,13 +4,15 @@ INSERT INTO "sessions" (
     "email",
     "token",
     "access_token",
-    "expires"
+    "expires",
+    "is_admin"
 ) VALUES (
     @name,
     @email,
     @token,
     @access_token,
-    @expires
+    @expires,
+    @is_admin
 );
 
 -- name: SessionGet :one

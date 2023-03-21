@@ -80,6 +80,7 @@ type Session struct {
 	Name        string
 	Created     time.Time
 	Expires     time.Time
+	IsAdmin     bool
 }
 
 type Team struct {

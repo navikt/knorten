@@ -60,6 +60,8 @@ type MemberOfGroup struct {
 	GroupTypes  []string `json:"groupTypes"`
 }
 
+var ErrAzureTokenExpired = fmt.Errorf("token expired")
+
 const (
 	AzureGraphMemberOfEndpoint = "https://graph.microsoft.com/v1.0/me/memberOf/microsoft.graph.group?$select=mail"
 )
@@ -131,9 +133,12 @@ func (a *Azure) ValidateUser(certificates map[string]CertificateList, token stri
 
 	jwtValidator := JWTValidator(certificates, a.clientID)
 
-	_, err := jwt.ParseWithClaims(token, &claims, jwtValidator)
+	azureToken, err := jwt.ParseWithClaims(token, &claims, jwtValidator)
 	if err != nil {
 		return nil, err
+	}
+	if !azureToken.Valid {
+		return nil, ErrAzureTokenExpired
 	}
 
 	return &User{

@@ -24,7 +24,7 @@ const (
 	OAuthStateCookie  = "oauthstate"
 	sessionCookie     = "knorten_session"
 	tokenLength       = 32
-	sessionLength     = 7 * time.Hour
+	sessionLength     = 1 * time.Hour
 )
 
 func (a *API) login(c *gin.Context) string {
@@ -231,7 +231,11 @@ func (a *API) authMiddleware(allowedUsers []string) gin.HandlerFunc {
 
 		user, err := a.azureClient.ValidateUser(certificates, session.AccessToken)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			if errors.Is(err, auth.ErrAzureTokenExpired) {
+				c.Redirect(http.StatusSeeOther, "/oauth2/login")
+				return
+			}
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized validate user"})
 			return
 		}
 

@@ -218,7 +218,10 @@ func (a *API) authMiddleware(allowedUsers []string) gin.HandlerFunc {
 		}
 
 		session, err := a.repo.SessionGet(c, sessionToken)
-		if err != nil || errors.Is(err, sql.ErrNoRows) {
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				c.Redirect(http.StatusFound, "/oauth2/login")
+			}
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
 		}

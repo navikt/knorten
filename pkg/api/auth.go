@@ -213,14 +213,14 @@ func (a *API) authMiddleware(allowedUsers []string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		sessionToken, err := c.Cookie(sessionCookie)
 		if err != nil {
-			c.Redirect(http.StatusFound, "/oauth2/login")
+			c.Redirect(http.StatusUnauthorized, "/oauth2/login")
 			return
 		}
 
 		session, err := a.repo.SessionGet(c, sessionToken)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				c.Redirect(http.StatusFound, "/oauth2/login")
+				c.Redirect(http.StatusUnauthorized, "/oauth2/login")
 			}
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return

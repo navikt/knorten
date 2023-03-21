@@ -221,6 +221,7 @@ func (a *API) authMiddleware(allowedUsers []string) gin.HandlerFunc {
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				c.Redirect(http.StatusSeeOther, "/oauth2/login")
+				return
 			}
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return

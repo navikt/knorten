@@ -20,7 +20,8 @@
                     <p class="pb-4 flex items-center gap-2">
                         <b>Service account:</b> <code class="text-base p-1 bg-gray-50">{{ .ServiceAccount }}</code>
                     </p>
-                    <table class="navds-table navds-table--small">
+                    <label for="machine_types" class="navds-form-field__label navds-label">Apper</label>
+                    <table class="navds-table navds-table--small" name="Apper">
                         <thead class="navds-table__header">
                         <tr class="navds-table__row">
                             <th class="navds-table__header-cell navds-label navds-label--small">App</th>
@@ -49,6 +50,34 @@
                         {{ end }}
                         </tbody>
                     </table>
+                    <br/>
+                    <label for="machine_types" class="navds-form-field__label navds-label">Compute</label>
+                    <br/>
+                    {{ with .Compute }}
+                        <table class="navds-table navds-table--small">
+                            <thead class="navds-table__header">
+                            <tr class="navds-table__row">
+                                <th class="navds-table__header-cell navds-label navds-label--small">Instans</th>
+                                <th class="navds-table__header-cell navds-label navds-label--small"></th>
+                            </tr>
+                            </thead>
+                            <tbody class="navds-table__body">
+                                <tr class="navds-table__row navds-table__row--shade-on-hover">
+                                    <th class="navds-table__header-cell navds-label navds-label--small">
+                                    <a class="navds-link" target="_blank" 
+                                    href="https://console.cloud.google.com/compute/instancesDetail/zones/europe-west1-b/instances/{{ .Name }}?project=knada-gcp">
+                                        {{ .Name }}
+                                    </a>
+                                    </th>
+                                    <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+                                        <a class="navds-link" href="/team/{{ .Slug }}/compute/edit">Rediger</a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    {{ else }}
+                        <a class="navds-link" href="/team/{{ .Slug }}/compute/new">Opprett</a>
+                    {{ end }}
                 </article>
             {{ end }}
             <div>

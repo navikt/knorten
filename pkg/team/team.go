@@ -88,7 +88,7 @@ func (c Client) Update(ctx *gin.Context) error {
 		return err
 	}
 
-	go c.updateExternalResources(ctx, team.ID, form.Users)
+	go c.updateExternalResources(ctx, team.Slug)
 
 	apps, err := c.repo.AppsForTeamGet(ctx, team.ID)
 	if err != nil {
@@ -139,11 +139,16 @@ func (c Client) Delete(ctx context.Context, teamSlug string) error {
 		return err
 	}
 
+	instance, err := c.repo.ComputeInstanceGet(ctx, team.ID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+
 	if err := c.repo.TeamDelete(ctx, team.ID); err != nil {
 		return err
 	}
 
-	go c.deleteExternalResources(ctx, team, apps)
+	go c.deleteExternalResources(ctx, team, apps, instance)
 
 	return nil
 }
@@ -165,15 +170,15 @@ func (c Client) createExternalResources(ctx *gin.Context, slug, teamID string, u
 	}
 }
 
-func (c Client) updateExternalResources(ctx context.Context, teamID string, users []string) {
-	if err := c.googleClient.Update(ctx, teamID, users); err != nil {
+func (c Client) updateExternalResources(ctx context.Context, teamSlug string) {
+	if err := c.googleClient.Update(ctx, teamSlug); err != nil {
 		c.log.WithError(err).Error("failed while updating google resources")
 		return
 	}
 }
 
-func (c Client) deleteExternalResources(ctx context.Context, team gensql.TeamGetRow, apps []string) {
-	if err := c.googleClient.DeleteGCPTeamResources(ctx, team.ID); err != nil {
+func (c Client) deleteExternalResources(ctx context.Context, team gensql.TeamGetRow, apps []string, instance gensql.ComputeInstance) {
+	if err := c.googleClient.DeleteGCPTeamResources(ctx, team.ID, instance); err != nil {
 		c.log.WithError(err).Error("failed while deleting external resources")
 		return
 	}

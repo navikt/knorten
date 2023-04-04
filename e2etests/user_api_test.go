@@ -85,6 +85,12 @@ func TestOverviewAPI(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		instance, err := repo.ComputeInstanceGet(ctx, team.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		expected, err := createExpectedHTML("oversikt/index", map[string]any{
 			"services": []database.TeamServices{
 				{
@@ -92,15 +98,20 @@ func TestOverviewAPI(t *testing.T) {
 					TeamID:         team.ID,
 					Secret:         fmt.Sprintf("https://console.cloud.google.com/security/secret-manager/secret/%v/versions?project=knada-gcp", team.ID),
 					ServiceAccount: fmt.Sprintf("%v@knada-gcp.iam.gserviceaccount.com", team.ID),
-					Jupyterhub: &database.Service{
+					Jupyterhub: &database.AppService{
 						App:     string(gensql.ChartTypeJupyterhub),
 						Ingress: "https://" + teamName + ".jupyter.knada.io",
 						Slug:    teamName,
 					},
-					Airflow: &database.Service{
+					Airflow: &database.AppService{
 						App:     string(gensql.ChartTypeAirflow),
 						Ingress: "https://" + teamName + ".airflow.knada.io",
 						Slug:    teamName,
+					},
+					Compute: &database.ComputeService{
+						Name:        instance.InstanceName,
+						MachineType: string(gensql.ComputeMachineTypeC2Standard4),
+						Slug:        teamName,
 					},
 				},
 			},

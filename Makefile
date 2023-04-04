@@ -15,6 +15,7 @@ env:
 	echo "GCP_PROJECT=$(shell kubectl get secret --context=knada --namespace=knada-system knorten -o jsonpath='{.data.GCP_PROJECT}' | base64 -d)" >> .env
 	echo "GCP_REGION=$(shell kubectl get secret --context=knada --namespace=knada-system knorten -o jsonpath='{.data.GCP_REGION}' | base64 -d)" >> .env
 	echo "DB_ENC_KEY=$(shell kubectl get secret --context=knada --namespace=knada-system knorten -o jsonpath='{.data.DB_ENC_KEY}' | base64 -d)" >> .env
+	echo "VM_NETWORK_CONFIG"=$(shell kubectl get secret --context=knada --namespace=knada-system knorten -o jsonpath='{.data.VM_NETWORK_CONFIG}' | base64 -d) >> .env
 
 netpol:
 	$(shell kubectl get --context=knada --namespace=knada-system configmap/airflow-network-policy -o json | jq -r '.data."default-egress-airflow-worker.yaml"' > .default-egress-airflow-worker.yaml)
@@ -35,6 +36,7 @@ local-online:
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
 	  --airflow-egress-netpol=./.default-egress-airflow-worker.yaml\
 	  --admin-group=nada@nav.no \
+	  --vm-network-config=$(VM_NETWORK_CONFIG) \
 	  --session-key online-session
 
 local:

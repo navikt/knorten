@@ -2,8 +2,12 @@ package google
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
+	"github.com/nais/knorten/pkg/database"
+	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/api/googleapi"
@@ -15,18 +19,22 @@ const (
 )
 
 type Google struct {
-	dryRun  bool
-	log     *logrus.Entry
-	project string
-	region  string
+	dryRun          bool
+	log             *logrus.Entry
+	repo            *database.Repo
+	project         string
+	region          string
+	vmNetworkConfig string
 }
 
-func New(log *logrus.Entry, gcpProject, gcpRegion string, dryRun bool) *Google {
+func New(log *logrus.Entry, repo *database.Repo, gcpProject, gcpRegion, vmNetworkConfig string, dryRun bool) *Google {
 	return &Google{
-		log:     log,
-		project: gcpProject,
-		region:  gcpRegion,
-		dryRun:  dryRun,
+		log:             log,
+		repo:            repo,
+		project:         gcpProject,
+		region:          gcpRegion,
+		vmNetworkConfig: vmNetworkConfig,
+		dryRun:          dryRun,
 	}
 }
 
@@ -61,16 +69,33 @@ func (g *Google) CreateGCPTeamResources(c context.Context, slug, teamID string, 
 	return nil
 }
 
-func (g *Google) Update(c context.Context, secret string, users []string) error {
+func (g *Google) Update(c context.Context, teamSlug string) error {
 	if g.dryRun {
 		g.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
 
-	return g.setUsersSecretOwnerBinding(c, users, fmt.Sprintf("projects/%v/secrets/%v", g.project, secret))
+	team, err := g.repo.TeamGet(c, teamSlug)
+	if err != nil {
+		return err
+	}
+
+	instance, err := g.repo.ComputeInstanceGet(c, team.ID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil
+		}
+		return err
+	}
+
+	if err := g.UpdateComputeInstanceOwners(c, instance.InstanceName, team.Slug); err != nil {
+		return err
+	}
+
+	return g.setUsersSecretOwnerBinding(c, team.Users, fmt.Sprintf("projects/%v/secrets/%v", g.project, team.ID))
 }
 
-func (g *Google) DeleteGCPTeamResources(c context.Context, teamID string) error {
+func (g *Google) DeleteGCPTeamResources(c context.Context, teamID string, instance gensql.ComputeInstance) error {
 	if g.dryRun {
 		g.log.Infof("NOOP: Running in dry run mode")
 		return nil
@@ -84,6 +109,13 @@ func (g *Google) DeleteGCPTeamResources(c context.Context, teamID string) error 
 	if err := g.deleteSecret(c, teamID); err != nil {
 		g.log.WithError(err).Errorf("deleting gsm secret %v", teamID)
 		return err
+	}
+
+	if instance.InstanceName != "" {
+		if err := g.deleteComputeInstance(c, instance.InstanceName); err != nil {
+			g.log.WithError(err).Errorf("deleting compute instance %v", instance.InstanceName)
+			return err
+		}
 	}
 
 	return nil

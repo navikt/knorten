@@ -33,6 +33,7 @@ type Config struct {
 	AirflowChartVersion string
 	JupyterChartVersion string
 	AirflowEgressNetPol string
+	VMNetworkConfig     string
 	AdminGroup          string
 	SessionKey          string
 }
@@ -57,6 +58,7 @@ func main() {
 	flag.StringVar(&cfg.JupyterChartVersion, "jupyter-chart-version", os.Getenv("JUPYTER_CHART_VERSION"), "The chart version for jupyter")
 	flag.StringVar(&cfg.AdminGroup, "admin-group", os.Getenv("ADMIN_GROUP"), "Email of admin group used to authenticate Knorten administrators")
 	flag.StringVar(&cfg.AirflowEgressNetPol, "airflow-egress-netpol", os.Getenv("AIRFLOW_EGRESS_NETPOL"), "Path to the Airflow default egress netpol")
+	flag.StringVar(&cfg.VMNetworkConfig, "vm-network-config", os.Getenv("VM_NETWORK_CONFIG"), "Network configuration for compute instances created by knorten")
 	flag.StringVar(&cfg.SessionKey, "session-key", os.Getenv("SESSION_KEY"), "The session key for Knorten")
 	flag.Parse()
 
@@ -68,7 +70,7 @@ func main() {
 
 	azureClient := auth.New(cfg.DryRun, cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, log.WithField("subsystem", "auth"))
 
-	googleClient := google.New(log.WithField("subsystem", "google"), cfg.GCPProject, cfg.GCPRegion, cfg.DryRun)
+	googleClient := google.New(log.WithField("subsystem", "google"), repo, cfg.GCPProject, cfg.GCPRegion, cfg.VMNetworkConfig, cfg.DryRun)
 
 	cryptClient := crypto.New(cfg.DBEncKey)
 

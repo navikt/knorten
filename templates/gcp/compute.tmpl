@@ -1,0 +1,57 @@
+{{ define "gcp/compute" }}
+    {{ template "head" . }}
+    <section class="w-full md:w-[64rem] flex flex-col gap-4 p-4">
+        <article class="bg-white rounded-md p-4">
+            {{ if .values }}
+                <div class="flex gap-4 items-center pb-4">
+                    <h2>Rediger {{ .team }} sin Compute instance</h2>
+                    <form action="delete" method="POST">
+                        <fieldset>
+                            <button type="submit"
+                                    onclick="return confirm('Er du sikker på at du vil slette compute instansen? Det er ikke mulig å gjenopprette denne senere')"
+                                    class="navds-button navds-button--danger navds-button--small bg-surface-danger"
+                            >
+                                <span class="navds-label">Slett Compute instance</span>
+                            </button>
+                        </fieldset>
+                    </form>
+                </div>
+            {{ else }}
+                <h2 class="pb-4">Ny Compute Instance for {{ .team }}</h2>
+            {{ end }}
+            <form class="w-80" action="" method="POST">
+                <fieldset class="flex flex-col gap-4">
+                    <div class="navds-form-field navds-form-field--medium">
+                        <label for="machine_types" class="navds-form-field__label navds-label">Maskintype</label>
+                        <select {{ if .values }}disabled{{ end }} name="machine_type" class="navds-body-short navds-body-medium" id="machine_types">
+                            {{ range $type := .machine_types }}
+                                <option {{ if eq $.values.MachineType $type }}selected{{ end }} value="{{ $type }}">{{ $type }}</option>
+                            {{ end }}
+                        </select>
+                        {{ if .values }}
+                            <a class="navds-link" target="_blank"
+                            href="https://console.cloud.google.com/compute/instancesDetail/zones/europe-west1-b/instances/{{ $.values.Name }}?project=knada-gcp">
+                                Endre Compute Instance
+                            <a/>
+                        {{ else }}
+                            <a class="navds-link" target="_blank" href="https://cloud.google.com/compute/docs/machine-resource#recommendations_for_machine_types">
+                                Les om maskintyper her
+                            <a/>
+                        {{ end }}
+                    <div/>
+                <fieldset/>
+                <div class="flex gap-2 items-center">
+                        {{ if .values }}
+                            <a href="/oversikt" class="navds-link">Tilbake</a>
+                        {{ else }}
+                            <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action">
+                                <span class="navds-label">Lagre</span>
+                            </button>
+                            <a href="/oversikt" class="navds-link">Avbryt</a>
+                        {{ end }}
+                </div>
+            <form/>
+        <article/>
+    </section>
+    {{ template "footer" }}
+{{ end }}

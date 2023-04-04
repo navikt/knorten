@@ -2,15 +2,23 @@ package database
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
-type Service struct {
+type AppService struct {
 	App     string
 	Ingress string
 	Slug    string
+}
+
+type ComputeService struct {
+	Name        string
+	MachineType string
+	Slug        string
 }
 
 type TeamServices struct {
@@ -18,8 +26,9 @@ type TeamServices struct {
 	Slug           string
 	Secret         string
 	ServiceAccount string
-	Jupyterhub     *Service
-	Airflow        *Service
+	Jupyterhub     *AppService
+	Airflow        *AppService
+	Compute        *ComputeService
 }
 
 func createIngress(team string, chartType gensql.ChartType) string {
@@ -33,8 +42,8 @@ func createIngress(team string, chartType gensql.ChartType) string {
 	return ""
 }
 
-func createService(slug string, chartType gensql.ChartType) *Service {
-	return &Service{
+func createAppService(slug string, chartType gensql.ChartType) *AppService {
+	return &AppService{
 		App:     string(chartType),
 		Ingress: createIngress(slug, chartType),
 		Slug:    slug,
@@ -85,9 +94,23 @@ func (r *Repo) ServicesForUser(ctx context.Context, email string) ([]TeamService
 		for _, app := range apps {
 			switch app {
 			case gensql.ChartTypeJupyterhub:
-				teamServices.Jupyterhub = createService(team.Slug, app)
+				teamServices.Jupyterhub = createAppService(team.Slug, app)
 			case gensql.ChartTypeAirflow:
-				teamServices.Airflow = createService(team.Slug, app)
+				teamServices.Airflow = createAppService(team.Slug, app)
+			}
+		}
+
+		compute, err := r.querier.ComputeInstanceGet(ctx, team.ID)
+		if err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				return nil, err
+			}
+		}
+		if compute.TeamID != "" {
+			teamServices.Compute = &ComputeService{
+				Name:        compute.InstanceName,
+				MachineType: string(compute.MachineType),
+				Slug:        team.Slug,
 			}
 		}
 

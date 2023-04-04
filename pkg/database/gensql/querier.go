@@ -12,6 +12,9 @@ type Querier interface {
 	AppDelete(ctx context.Context, arg AppDeleteParams) error
 	AppsForTeamGet(ctx context.Context, teamID string) ([]ChartType, error)
 	ClearPendingUpgradeLocks(ctx context.Context) error
+	ComputeInstanceCreate(ctx context.Context, arg ComputeInstanceCreateParams) error
+	ComputeInstanceDelete(ctx context.Context, teamID string) error
+	ComputeInstanceGet(ctx context.Context, teamID string) (ComputeInstance, error)
 	GlobalValueDelete(ctx context.Context, arg GlobalValueDeleteParams) error
 	GlobalValueGet(ctx context.Context, arg GlobalValueGetParams) (ChartGlobalValue, error)
 	GlobalValueInsert(ctx context.Context, arg GlobalValueInsertParams) error
@@ -19,6 +22,7 @@ type Querier interface {
 	SessionCreate(ctx context.Context, arg SessionCreateParams) error
 	SessionDelete(ctx context.Context, token string) error
 	SessionGet(ctx context.Context, token string) (Session, error)
+	SupportedComputeMachineTypes(ctx context.Context) ([]string, error)
 	TeamCreate(ctx context.Context, arg TeamCreateParams) error
 	TeamDelete(ctx context.Context, id string) error
 	TeamGet(ctx context.Context, slug string) (TeamGetRow, error)

@@ -106,7 +106,7 @@ func TestMain(m *testing.M) {
 	srv, err := api.New(
 		repo,
 		nil,
-		google.New(logrus.NewEntry(logrus.StandardLogger()), "", "", true),
+		google.New(logrus.NewEntry(logrus.StandardLogger()), repo, "", "", "", true),
 		k8sClient,
 		cryptoClient,
 		true,

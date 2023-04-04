@@ -115,6 +115,7 @@ func (a *API) setupUnauthenticatedRoutes() {
 func (a *API) setupAuthenticatedRoutes() {
 	a.setupUserRoutes()
 	a.setupTeamRoutes()
+	a.setupComputeRoutes()
 	a.setupChartRoutes()
 }
 

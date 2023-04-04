@@ -125,6 +125,17 @@ func (c Client) Update(ctx *gin.Context) error {
 		}
 	}
 
+	instance, err := c.repo.ComputeInstanceGet(ctx, team.ID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil
+		}
+		return err
+	}
+	if err := c.googleClient.UpdateComputeInstanceOwners(ctx, instance.InstanceName, team.Slug); err != nil {
+		return err
+	}
+
 	return nil
 }
 

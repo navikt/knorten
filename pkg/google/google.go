@@ -3,7 +3,9 @@ package google
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/api/googleapi"
@@ -15,18 +17,24 @@ const (
 )
 
 type Google struct {
-	dryRun  bool
-	log     *logrus.Entry
-	project string
-	region  string
+	dryRun              bool
+	log                 *logrus.Entry
+	repo                *database.Repo
+	project             string
+	region              string
+	computeMachineTypes []string
+	vmNetworkConfig     string
 }
 
-func New(log *logrus.Entry, gcpProject, gcpRegion string, dryRun bool) *Google {
+func New(log *logrus.Entry, repo *database.Repo, gcpProject, gcpRegion, computeMachineTypes, vmNetworkConfig string, dryRun bool) *Google {
 	return &Google{
-		log:     log,
-		project: gcpProject,
-		region:  gcpRegion,
-		dryRun:  dryRun,
+		log:                 log,
+		repo:                repo,
+		project:             gcpProject,
+		region:              gcpRegion,
+		computeMachineTypes: strings.Split(computeMachineTypes, ","),
+		vmNetworkConfig:     vmNetworkConfig,
+		dryRun:              dryRun,
 	}
 }
 

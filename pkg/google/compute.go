@@ -20,6 +20,7 @@ const (
 )
 
 type ComputeForm struct {
+	Name        string `form:"name"`
 	MachineType string `form:"machine_type"`
 }
 
@@ -28,11 +29,6 @@ type computeInstance struct {
 }
 
 func (g *Google) CreateComputeInstance(c *gin.Context, slug string) error {
-	if g.dryRun {
-		g.log.Infof("NOOP: Running in dry run mode")
-		return nil
-	}
-
 	var form ComputeForm
 	err := c.ShouldBindWith(&form, binding.Form)
 	if err != nil {
@@ -46,24 +42,7 @@ func (g *Google) CreateComputeInstance(c *gin.Context, slug string) error {
 
 	computeInstance := TeamToComputeInstanceName(team.ID)
 
-	exists, err := g.computeInstanceExists(c, computeInstance)
-	if err != nil {
-		return err
-	}
-	if exists {
-		g.log.Infof("create compute instance: compute instance %v already exists", computeInstance)
-		return nil
-	}
-
-	if err := g.createComputeInstance(c, slug, computeInstance, form.MachineType); err != nil {
-		return err
-	}
-
-	for _, u := range team.Users {
-		if err := g.addOwnerBinding(c, computeInstance, u); err != nil {
-			return err
-		}
-	}
+	go g.createComputeInstance(c, team.Users, slug, computeInstance, form.MachineType)
 
 	if err := g.repo.ComputeInstanceCreate(c, team.ID, computeInstance, form.MachineType); err != nil {
 		return err
@@ -73,6 +52,11 @@ func (g *Google) CreateComputeInstance(c *gin.Context, slug string) error {
 }
 
 func (g *Google) UpdateComputeInstanceOwners(ctx context.Context, instance, slug string) error {
+	if g.dryRun {
+		g.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
 	team, err := g.repo.TeamGet(ctx, slug)
 	if err != nil {
 		return err
@@ -134,15 +118,59 @@ func (g *Google) DeleteComputeInstance(ctx context.Context, slug string) error {
 		return err
 	}
 
-	if err := g.deleteComputeInstance(ctx, instance.InstanceName); err != nil {
-		return err
-	}
+	go g.deleteComputeInstance(ctx, instance.InstanceName)
 
 	if err := g.repo.ComputeInstanceDelete(ctx, team.ID); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (g *Google) createComputeInstance(ctx context.Context, users []string, teamSlug, name, machineType string) {
+	if g.dryRun {
+		g.log.Infof("NOOP: Running in dry run mode")
+		return
+	}
+
+	exists, err := g.computeInstanceExists(ctx, name)
+	if err != nil {
+		g.log.WithError(err).Errorf("create compute instance %v", name)
+		return
+	}
+	if exists {
+		g.log.Infof("create compute instance: compute instance %v already exists", name)
+		return
+	}
+
+	cmd := exec.CommandContext(
+		ctx,
+		"gcloud",
+		"compute",
+		"instances",
+		"create",
+		name,
+		fmt.Sprintf("--zone=%v", computeZone),
+		fmt.Sprintf("--machine-type=%v", machineType),
+		fmt.Sprintf("--network-interface=%v", g.vmNetworkConfig),
+		fmt.Sprintf("--labels=created-by=knorten,team=%v", teamSlug),
+	)
+
+	buf := &bytes.Buffer{}
+	cmd.Stdout = buf
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		io.Copy(os.Stdout, buf)
+		g.log.WithError(err).Errorf("create compute instance %v", name)
+		return
+	}
+
+	for _, u := range users {
+		if err := g.addOwnerBinding(ctx, name, u); err != nil {
+			g.log.WithError(err).Errorf("create compute instance %v, add owner binding for user %v", name, u)
+			return
+		}
+	}
 }
 
 func (g *Google) computeInstanceExists(ctx context.Context, computeInstance string) (bool, error) {
@@ -174,7 +202,7 @@ func (g *Google) listComputeInstances(ctx context.Context) ([]*computeInstance, 
 	listCmd.Stderr = os.Stderr
 	if err := listCmd.Run(); err != nil {
 		io.Copy(os.Stdout, buf)
-		g.log.WithError(err).Error("list db instances")
+		g.log.WithError(err).Error("list compute instances")
 		return nil, err
 	}
 
@@ -184,31 +212,6 @@ func (g *Google) listComputeInstances(ctx context.Context) ([]*computeInstance, 
 	}
 
 	return computeInstances, nil
-}
-
-func (g *Google) createComputeInstance(ctx context.Context, teamSlug, name, machineType string) error {
-	cmd := exec.CommandContext(
-		ctx,
-		"gcloud",
-		"compute",
-		"instances",
-		"create",
-		name,
-		fmt.Sprintf("--zone=%v", computeZone),
-		fmt.Sprintf("--machine-type=%v", machineType),
-		fmt.Sprintf("--network-interface=%v", g.vmNetworkConfig),
-		fmt.Sprintf("--labels=created-by=knorten,team=%v", teamSlug),
-	)
-
-	buf := &bytes.Buffer{}
-	cmd.Stdout = buf
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		io.Copy(os.Stdout, buf)
-		g.log.WithError(err).Errorf("create compute instance %v", name)
-		return err
-	}
-	return nil
 }
 
 func (g *Google) updateOwners(ctx context.Context, instance string, current, new []string) error {
@@ -230,6 +233,11 @@ func (g *Google) updateOwners(ctx context.Context, instance string, current, new
 }
 
 func (g *Google) addOwnerBinding(ctx context.Context, instance, user string) error {
+	if g.dryRun {
+		g.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
 	addCmd := exec.CommandContext(
 		ctx,
 		"gcloud",
@@ -279,7 +287,12 @@ func (g *Google) removeOwnerBinding(ctx context.Context, instance, user string) 
 	return nil
 }
 
-func (g *Google) deleteComputeInstance(ctx context.Context, instance string) error {
+func (g *Google) deleteComputeInstance(ctx context.Context, instance string) {
+	if g.dryRun {
+		g.log.Infof("NOOP: Running in dry run mode")
+		return
+	}
+
 	cmd := exec.CommandContext(
 		ctx,
 		"gcloud",
@@ -296,9 +309,8 @@ func (g *Google) deleteComputeInstance(ctx context.Context, instance string) err
 	if err := cmd.Run(); err != nil {
 		io.Copy(os.Stdout, buf)
 		g.log.WithError(err).Errorf("delete compute instance %v", instance)
-		return err
+		return
 	}
-	return nil
 }
 
 func containsUser(users []string, user string) bool {

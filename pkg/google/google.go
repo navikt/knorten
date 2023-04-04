@@ -2,6 +2,8 @@ package google
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -69,13 +71,30 @@ func (g *Google) CreateGCPTeamResources(c context.Context, slug, teamID string, 
 	return nil
 }
 
-func (g *Google) Update(c context.Context, secret string, users []string) error {
+func (g *Google) Update(c context.Context, teamSlug string) error {
 	if g.dryRun {
 		g.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
 
-	return g.setUsersSecretOwnerBinding(c, users, fmt.Sprintf("projects/%v/secrets/%v", g.project, secret))
+	team, err := g.repo.TeamGet(c, teamSlug)
+	if err != nil {
+		return err
+	}
+
+	instance, err := g.repo.ComputeInstanceGet(c, team.ID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil
+		}
+		return err
+	}
+
+	if err := g.UpdateComputeInstanceOwners(c, instance.InstanceName, team.Slug); err != nil {
+		return err
+	}
+
+	return g.setUsersSecretOwnerBinding(c, team.Users, fmt.Sprintf("projects/%v/secrets/%v", g.project, team.ID))
 }
 
 func (g *Google) DeleteGCPTeamResources(c context.Context, teamID string) error {

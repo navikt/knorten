@@ -58,7 +58,6 @@
                             <thead class="navds-table__header">
                             <tr class="navds-table__row">
                                 <th class="navds-table__header-cell navds-label navds-label--small">Instans</th>
-                                <th class="navds-table__header-cell navds-label navds-label--small">SSH</th>
                                 <th class="navds-table__header-cell navds-label navds-label--small"></th>
                             </tr>
                             </thead>
@@ -67,12 +66,9 @@
                                     <th class="navds-table__header-cell navds-label navds-label--small">
                                     <a class="navds-link" target="_blank" 
                                     href="https://console.cloud.google.com/compute/instancesDetail/zones/europe-west1-b/instances/{{ .Name }}?project=knada-gcp">
-                                    {{ .Name }}
+                                        {{ .Name }}
                                     </a>
                                     </th>
-                                    <td class="navds-table__data-cell navds-body-short navds-body-short--small">
-                                        
-                                    </td>
                                     <td class="navds-table__data-cell navds-body-short navds-body-short--small">
                                         <a class="navds-link" href="/team/{{ .Slug }}/compute/edit">Rediger</a>
                                     </td>

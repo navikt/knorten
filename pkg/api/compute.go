@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/nais/knorten/pkg/google"
 )
 
 func (a *API) setupComputeRoutes() {
@@ -103,9 +104,14 @@ func (a *API) setupComputeRoutes() {
 			return
 		}
 
+		values := &google.ComputeForm{
+			Name:        instance.InstanceName,
+			MachineType: string(instance.MachineType),
+		}
+
 		a.htmlResponseWrapper(c, http.StatusOK, "gcp/compute", gin.H{
 			"team":          slug,
-			"current":       string(instance.MachineType),
+			"values":        values,
 			"machine_types": machineTypes,
 			"errors":        flashes,
 		})

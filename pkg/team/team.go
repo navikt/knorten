@@ -88,7 +88,7 @@ func (c Client) Update(ctx *gin.Context) error {
 		return err
 	}
 
-	go c.updateExternalResources(ctx, team.ID, form.Users)
+	go c.updateExternalResources(ctx, team.Slug)
 
 	apps, err := c.repo.AppsForTeamGet(ctx, team.ID)
 	if err != nil {
@@ -123,17 +123,6 @@ func (c Client) Update(ctx *gin.Context) error {
 		if err != nil {
 			return err
 		}
-	}
-
-	instance, err := c.repo.ComputeInstanceGet(ctx, team.ID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil
-		}
-		return err
-	}
-	if err := c.googleClient.UpdateComputeInstanceOwners(ctx, instance.InstanceName, team.Slug); err != nil {
-		return err
 	}
 
 	return nil
@@ -176,8 +165,8 @@ func (c Client) createExternalResources(ctx *gin.Context, slug, teamID string, u
 	}
 }
 
-func (c Client) updateExternalResources(ctx context.Context, teamID string, users []string) {
-	if err := c.googleClient.Update(ctx, teamID, users); err != nil {
+func (c Client) updateExternalResources(ctx context.Context, teamSlug string) {
+	if err := c.googleClient.Update(ctx, teamSlug); err != nil {
 		c.log.WithError(err).Error("failed while updating google resources")
 		return
 	}
@@ -207,6 +196,11 @@ func (c Client) deleteExternalResources(ctx context.Context, team gensql.TeamGet
 	}
 
 	if err := c.k8sClient.DeleteTeamNamespace(ctx, namespace); err != nil {
+		c.log.WithError(err).Error("failed while deleting external resources")
+		return
+	}
+
+	if err := c.googleClient.DeleteComputeInstance(ctx, team.Slug); err != nil {
 		c.log.WithError(err).Error("failed while deleting external resources")
 		return
 	}

@@ -22,6 +22,7 @@ import (
 	"github.com/nais/knorten/pkg/api"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/crypto"
+	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/google"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/ory/dockertest/v3"
@@ -106,7 +107,7 @@ func TestMain(m *testing.M) {
 	srv, err := api.New(
 		repo,
 		nil,
-		google.New(logrus.NewEntry(logrus.StandardLogger()), repo, "", "", "", true),
+		google.New(logrus.NewEntry(logrus.StandardLogger()), repo, "", "", "", "", true),
 		k8sClient,
 		cryptoClient,
 		true,
@@ -195,6 +196,16 @@ func createTeamAndApps(teamName string) error {
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("creating airflow for team %v returned status code: %v", teamName, resp.StatusCode)
+	}
+
+	data = url.Values{"machine_type": {string(gensql.ComputeMachineTypeC2Standard4)}}
+	resp, err = server.Client().PostForm(fmt.Sprintf("%v/team/%v/compute/new", server.URL, teamName), data)
+	if err != nil {
+		return fmt.Errorf("creating compute instance for team %v: %v", teamName, err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("creating airflow for team %v returned status code %v", teamName, resp.StatusCode)
 	}
 
 	return nil

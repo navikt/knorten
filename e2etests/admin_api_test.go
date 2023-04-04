@@ -147,10 +147,6 @@ func TestAdminAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		fmt.Println(string(received))
-		fmt.Println("-------------------------")
-		fmt.Println(expected)
-
 		if receivedMinimized != string(expectedMinimized) {
 			t.Fatal("Received and expected HTML response are different")
 		}

@@ -287,10 +287,10 @@ func (g *Google) removeOwnerBinding(ctx context.Context, instance, user string) 
 	return nil
 }
 
-func (g *Google) deleteComputeInstance(ctx context.Context, instance string) {
+func (g *Google) deleteComputeInstance(ctx context.Context, instance string) error {
 	if g.dryRun {
 		g.log.Infof("NOOP: Running in dry run mode")
-		return
+		return nil
 	}
 
 	cmd := exec.CommandContext(
@@ -309,8 +309,10 @@ func (g *Google) deleteComputeInstance(ctx context.Context, instance string) {
 	if err := cmd.Run(); err != nil {
 		io.Copy(os.Stdout, buf)
 		g.log.WithError(err).Errorf("delete compute instance %v", instance)
-		return
+		return err
 	}
+
+	return nil
 }
 
 func containsUser(users []string, user string) bool {

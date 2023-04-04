@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/nais/knorten/pkg/database"
+	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/api/googleapi"
@@ -97,7 +98,7 @@ func (g *Google) Update(c context.Context, teamSlug string) error {
 	return g.setUsersSecretOwnerBinding(c, team.Users, fmt.Sprintf("projects/%v/secrets/%v", g.project, team.ID))
 }
 
-func (g *Google) DeleteGCPTeamResources(c context.Context, teamID string) error {
+func (g *Google) DeleteGCPTeamResources(c context.Context, teamID string, instance gensql.ComputeInstance) error {
 	if g.dryRun {
 		g.log.Infof("NOOP: Running in dry run mode")
 		return nil
@@ -111,6 +112,13 @@ func (g *Google) DeleteGCPTeamResources(c context.Context, teamID string) error 
 	if err := g.deleteSecret(c, teamID); err != nil {
 		g.log.WithError(err).Errorf("deleting gsm secret %v", teamID)
 		return err
+	}
+
+	if instance.InstanceName != "" {
+		if err := g.deleteComputeInstance(c, instance.InstanceName); err != nil {
+			g.log.WithError(err).Errorf("deleting compute instance %v", instance.InstanceName)
+			return err
+		}
 	}
 
 	return nil

@@ -8,8 +8,8 @@
                 {{ . }}
             {{ end }}
 
-            <article class="bg-white rounded-md p-4">
-                {{ range .services }}
+            {{ range .services }}
+                <article class="bg-white rounded-md p-4">
                     <div class="flex items-center gap-4 pb-4">
                         <h2>
                             {{ .Slug }}
@@ -78,8 +78,8 @@
                     {{ else }}
                         <a class="navds-link" href="/team/{{ .Slug }}/compute/new">Opprett</a>
                     {{ end }}
-                {{ end }}
-            </article>
+                </article>
+            {{ end }}
             <div>
                 <a class="navds-button navds-button--secondary" href="/team/new">Legg til nytt team</a>
             </div>

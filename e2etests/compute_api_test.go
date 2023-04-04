@@ -143,7 +143,7 @@ func TestComputeAPI(t *testing.T) {
 		}
 	})
 
-	if err := repo.TeamDelete(ctx, testTeam+"1234"); err != nil {
+	if err := repo.TeamDelete(ctx, testTeam+"-1234"); err != nil {
 		t.Fatal(err)
 	}
 }

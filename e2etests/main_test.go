@@ -205,7 +205,7 @@ func createTeamAndApps(teamName string) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("creating airflow for team %v returned status code %v", teamName, resp.StatusCode)
+		return fmt.Errorf("creating compute instance for team %v returned status code %v", teamName, resp.StatusCode)
 	}
 
 	return nil

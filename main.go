@@ -36,7 +36,6 @@ type Config struct {
 	VMNetworkConfig     string
 	AdminGroup          string
 	SessionKey          string
-	ComputeMachineTypes string
 }
 
 func main() {
@@ -71,7 +70,7 @@ func main() {
 
 	azureClient := auth.New(cfg.DryRun, cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, log.WithField("subsystem", "auth"))
 
-	googleClient := google.New(log.WithField("subsystem", "google"), repo, cfg.GCPProject, cfg.GCPRegion, cfg.ComputeMachineTypes, cfg.VMNetworkConfig, cfg.DryRun)
+	googleClient := google.New(log.WithField("subsystem", "google"), repo, cfg.GCPProject, cfg.GCPRegion, cfg.VMNetworkConfig, cfg.DryRun)
 
 	cryptClient := crypto.New(cfg.DBEncKey)
 

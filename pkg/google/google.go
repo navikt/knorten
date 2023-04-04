@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
@@ -20,24 +19,22 @@ const (
 )
 
 type Google struct {
-	dryRun              bool
-	log                 *logrus.Entry
-	repo                *database.Repo
-	project             string
-	region              string
-	computeMachineTypes []string
-	vmNetworkConfig     string
+	dryRun          bool
+	log             *logrus.Entry
+	repo            *database.Repo
+	project         string
+	region          string
+	vmNetworkConfig string
 }
 
-func New(log *logrus.Entry, repo *database.Repo, gcpProject, gcpRegion, computeMachineTypes, vmNetworkConfig string, dryRun bool) *Google {
+func New(log *logrus.Entry, repo *database.Repo, gcpProject, gcpRegion, vmNetworkConfig string, dryRun bool) *Google {
 	return &Google{
-		log:                 log,
-		repo:                repo,
-		project:             gcpProject,
-		region:              gcpRegion,
-		computeMachineTypes: strings.Split(computeMachineTypes, ","),
-		vmNetworkConfig:     vmNetworkConfig,
-		dryRun:              dryRun,
+		log:             log,
+		repo:            repo,
+		project:         gcpProject,
+		region:          gcpRegion,
+		vmNetworkConfig: vmNetworkConfig,
+		dryRun:          dryRun,
 	}
 }
 

@@ -31,9 +31,10 @@
                         {{ if .values }}
                             <a class="navds-link" target="_blank"
                             href="https://console.cloud.google.com/compute/instancesDetail/zones/europe-west1-b/instances/{{ $.values.Name }}?project=knada-gcp">
-                                Endre Compute Instance
+                                Se her for å endre den virtuelle maskinen
                             <a/>
                         {{ else }}
+                            Maskintypen kan ved behov endres senere
                             <a class="navds-link" target="_blank" href="https://cloud.google.com/compute/docs/machine-resource#recommendations_for_machine_types">
                                 Les om maskintyper her
                             <a/>

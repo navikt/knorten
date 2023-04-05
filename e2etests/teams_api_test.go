@@ -166,9 +166,9 @@ func TestTeamsAPI(t *testing.T) {
 		}
 
 		fmt.Println("received:")
-		fmt.Println(string(received))
+		fmt.Println(receivedMinimized)
 		fmt.Println("expected:")
-		fmt.Println(expected)
+		fmt.Println(expectedMinimized)
 
 		if receivedMinimized != expectedMinimized {
 			t.Fatal("Received and expected HTML response are different")

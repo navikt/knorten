@@ -72,7 +72,7 @@ func TestMain(m *testing.M) {
 		}
 
 		// pulls an image, creates a container based on it and runs it
-		resource, err := pool.Run("postgres", "12", []string{"POSTGRES_PASSWORD=postgres", "POSTGRES_DB=knorten"})
+		resource, err := pool.Run("postgres", "14", []string{"POSTGRES_PASSWORD=postgres", "POSTGRES_DB=knorten"})
 		if err != nil {
 			log.Fatalf("Could not start resource: %s", err)
 		}

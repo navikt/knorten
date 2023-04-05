@@ -154,7 +154,7 @@ func TestTeamsAPI(t *testing.T) {
 			"team": gensql.TeamGetRow{
 				ID:    team.ID,
 				Slug:  testTeam,
-				Users: escape(teamMembers),
+				Users: teamMembers,
 			},
 		})
 		if err != nil {
@@ -164,11 +164,6 @@ func TestTeamsAPI(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-
-		fmt.Println("received:")
-		fmt.Println(receivedMinimized)
-		fmt.Println("expected:")
-		fmt.Println(expectedMinimized)
 
 		if receivedMinimized != expectedMinimized {
 			t.Fatal("Received and expected HTML response are different")
@@ -285,15 +280,4 @@ func TestTeamsAPI(t *testing.T) {
 			t.Fatalf("airflow team values are not removed from db when team %v is deleted", testTeam)
 		}
 	})
-}
-
-// hvorfor må eposter i listen av brukere escape '.'?
-func escape(teamMembers []string) []string {
-	out := []string{}
-
-	for _, t := range teamMembers {
-		out = append(out, strings.ReplaceAll(t, ".", `\.`))
-	}
-
-	return out
 }

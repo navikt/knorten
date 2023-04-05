@@ -1,6 +1,6 @@
 module github.com/nais/knorten
 
-go 1.19
+go 1.20
 
 require (
 	cloud.google.com/go/iam v0.11.0

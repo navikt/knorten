@@ -82,21 +82,38 @@
         }
 
         function addElement(key, value) {
-            const valuesDiv = document.getElementById("values");
-            valuesDiv.insertAdjacentHTML("beforeend", 
-                `<div class="mb-4">
-                    <label for="${key}" class="navds-form-field__label navds-label">
-                        ${key}
-                    </label>
-                    <div class="flex gap-2">
-                        <input
-                            class="navds-text-field__input navds-body-short navds-body-medium" 
-                            type="text" name="${key}" id="${key}" value='${value}' />
-                        <button type="button" onclick="deleteRow(event)" class="navds-button navds-button--secondary">
-                            <span class="navds-label">Slett</span>
-                        </button>
-                    </div>
-                </div>`);
+            const valuesDiv = document.getElementById("values")
+            const keyValueDiv = document.createElement("div");
+            keyValueDiv.setAttribute("class", "mb-4")
+
+            const label = document.createElement("label");
+            label.setAttribute("class", "navds-form-field__label navds-label")
+            label.innerText = key;
+            keyValueDiv.appendChild(label);
+
+            const valueDiv = document.createElement("div");
+            valueDiv.setAttribute("class", "flex gap-2");
+            
+            var valueInput = document.createElement("input");
+            valueInput.setAttribute("class", "navds-text-field__input navds-body-short navds-body-medium");
+            valueInput.setAttribute("type", "text");
+            valueInput.setAttribute("name", key);
+            valueInput.setAttribute("id", key);
+            valueInput.setAttribute("value", value);
+            valueDiv.appendChild(valueInput);
+
+            const delButton = document.createElement("button");
+            delButton.setAttribute("class", "navds-button navds-button--secondary");
+            delButton.setAttribute("type", "button");
+            delButton.setAttribute("onclick", "deleteRow(event)");
+            const delLabel = document.createElement("span");
+            delLabel.setAttribute("class", "navds-label");
+            delLabel.innerText = "Slett";
+            delButton.appendChild(delLabel);
+
+            valueDiv.appendChild(delButton);
+            keyValueDiv.appendChild(valueDiv);
+            valuesDiv.appendChild(keyValueDiv);
         }
 
         {{ range .values }}

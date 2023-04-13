@@ -38,8 +38,8 @@ func (g *Google) CreateCloudSQLInstance(ctx context.Context, dbInstance string) 
 		fmt.Sprintf("--project=%v", g.project),
 		fmt.Sprintf("--region=%v", g.region),
 		"--database-version=POSTGRES_14",
-		"--cpu=2",
-		"--memory=8GiB",
+		"--cpu=1",
+		"--memory=3.75GB",
 		"--require-ssl")
 
 	buf := &bytes.Buffer{}

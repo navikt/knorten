@@ -12,7 +12,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	"github.com/nais/knorten/pkg/database/gensql"
 )
 
 const (
@@ -43,7 +42,7 @@ func (g *Google) CreateComputeInstance(c *gin.Context, slug string) error {
 
 	computeInstance := TeamToComputeInstanceName(team.ID)
 
-	go g.createComputeInstance(c, team, slug, computeInstance, form.MachineType)
+	go g.createComputeInstance(c, team.Users, slug, computeInstance, form.MachineType)
 
 	if err := g.repo.ComputeInstanceCreate(c, team.ID, computeInstance, form.MachineType); err != nil {
 		return err
@@ -128,7 +127,7 @@ func (g *Google) DeleteComputeInstance(ctx context.Context, slug string) error {
 	return nil
 }
 
-func (g *Google) createComputeInstance(ctx context.Context, team gensql.TeamGetRow, teamSlug, name, machineType string) {
+func (g *Google) createComputeInstance(ctx context.Context, users []string, teamSlug, name, machineType string) {
 	if g.dryRun {
 		g.log.Infof("NOOP: Running in dry run mode")
 		return
@@ -155,7 +154,7 @@ func (g *Google) createComputeInstance(ctx context.Context, team gensql.TeamGetR
 		fmt.Sprintf("--machine-type=%v", machineType),
 		fmt.Sprintf("--network-interface=%v", g.vmNetworkConfig),
 		fmt.Sprintf("--labels=created-by=knorten,team=%v", teamSlug),
-		fmt.Sprintf("--service-account=%v@%v.iam.gserviceaccount.com", team.ID, g.project),
+		"--no-service-account",
 	)
 
 	buf := &bytes.Buffer{}
@@ -167,7 +166,7 @@ func (g *Google) createComputeInstance(ctx context.Context, team gensql.TeamGetR
 		return
 	}
 
-	for _, u := range team.Users {
+	for _, u := range users {
 		if err := g.addOwnerBinding(ctx, name, u); err != nil {
 			g.log.WithError(err).Errorf("create compute instance %v, add owner binding for user %v", name, u)
 			return

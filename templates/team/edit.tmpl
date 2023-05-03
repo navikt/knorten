@@ -22,6 +22,13 @@
             {{ end }}
 
             <form action="" method="POST" class="flex flex-col gap-4 w-80">
+                <div class="">
+                    <label for="owner" class="navds-form-field__label navds-label">Eier</label>
+                    <input style="background-color:#AAAFB4" readonly type="text" name="owner" id="owner" value="{{ .owner }}"
+                           placeholder="Eieren av teamet"
+                           class="navds-text-field__input navds-body-short navds-body-medium"
+                    />
+                </div>
                 <fieldset id="users">
                     <legend class="navds-form-field__label navds-label">Brukere</legend>
                     <button type="button" class="mb-4 navds-button navds-button--secondary navds-button--small"

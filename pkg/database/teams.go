@@ -7,12 +7,13 @@ import (
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
-func (r *Repo) TeamCreate(ctx context.Context, team, slug string, users []string, apiAccess bool) error {
+func (r *Repo) TeamCreate(ctx context.Context, team, slug, owner string, users []string, apiAccess bool) error {
 	return r.querier.TeamCreate(ctx, gensql.TeamCreateParams{
 		ID:        team,
 		Users:     stringSliceToLower(users),
 		Slug:      slug,
 		ApiAccess: apiAccess,
+		Owner:     owner,
 	})
 }
 

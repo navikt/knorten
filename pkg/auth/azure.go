@@ -12,7 +12,6 @@ import (
 	"github.com/coreos/go-oidc"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/endpoints"
 )
@@ -181,7 +180,7 @@ func (a *Azure) GroupsForUser(token, email string) ([]MemberOfGroup, error) {
 
 func contains(groups []MemberOfGroup, email string) bool {
 	for _, group := range groups {
-		if strings.ToLower(group.Mail) == strings.ToLower(email) {
+		if strings.EqualFold(group.Mail, email) {
 			return true
 		}
 	}
@@ -229,6 +228,6 @@ func (a *Azure) getBearerTokenOnBehalfOfUser(token string) (string, error) {
 		return "", err
 	}
 
-	log.Debugf("Successfully retrieved on-behalf-of token")
+	logrus.Debugf("Successfully retrieved on-behalf-of token")
 	return tokenResponse.AccessToken, nil
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
+	"github.com/nais/knorten/pkg/auth"
 	"github.com/nais/knorten/pkg/team"
 )
 
@@ -39,8 +40,22 @@ func (a *API) setupTeamRoutes() {
 			return
 		}
 
+		user, exists := c.Get("user")
+		if !exists {
+			a.log.Errorf("unable to identify logged in user when creating team")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "unable to identify logged in user when creating team"})
+			return
+		}
+		owner, ok := user.(*auth.User)
+		if !ok {
+			a.log.Errorf("unable to identify logged in user when creating team, user object %v", user)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "unable to identify logged in user when creating team"})
+			return
+		}
+
 		a.htmlResponseWrapper(c, http.StatusOK, "team/new", gin.H{
 			"form":   form,
+			"owner":  owner.Email,
 			"errors": flashes,
 		})
 	})
@@ -77,6 +92,19 @@ func (a *API) setupTeamRoutes() {
 			return
 		}
 
+		user, exists := c.Get("user")
+		if !exists {
+			a.log.Errorf("unable to identify logged in user when creating team")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "unable to identify logged in user when creating team"})
+			return
+		}
+		owner, ok := user.(*auth.User)
+		if !ok {
+			a.log.Errorf("unable to identify logged in user when creating team, user object %v", user)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "unable to identify logged in user when creating team"})
+			return
+		}
+
 		session := sessions.Default(c)
 		flashes := session.Flashes()
 		err = session.Save()
@@ -86,6 +114,7 @@ func (a *API) setupTeamRoutes() {
 		}
 		a.htmlResponseWrapper(c, http.StatusOK, "team/edit", gin.H{
 			"team":   team,
+			"owner":  owner.Email,
 			"errors": flashes,
 		})
 	})

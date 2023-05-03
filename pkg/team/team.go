@@ -39,7 +39,8 @@ func NewClient(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.
 
 type Form struct {
 	Slug      string   `form:"team" binding:"required,validTeamName"`
-	Users     []string `form:"users[]" binding:"required,validEmail"`
+	Owner     string   `form:"owner" binding:"required"`
+	Users     []string `form:"users[]" binding:"validEmail"`
 	APIAccess string   `form:"apiaccess"`
 }
 
@@ -61,7 +62,7 @@ func (c Client) Create(ctx *gin.Context) error {
 
 	teamID := createTeamID(form.Slug)
 
-	if err := c.repo.TeamCreate(ctx, teamID, form.Slug, removeEmptyUsers(form.Users), form.APIAccess == "on"); err != nil {
+	if err := c.repo.TeamCreate(ctx, teamID, form.Slug, form.Owner, removeEmptyUsers(form.Users), form.APIAccess == "on"); err != nil {
 		return err
 	}
 

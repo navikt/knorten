@@ -4,12 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	"github.com/nais/knorten/pkg/auth"
 	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
@@ -24,15 +26,19 @@ type Client struct {
 	googleClient *google.Google
 	k8sClient    *k8s.Client
 	chartClient  *chart.Client
+	azureClient  *auth.Azure
+	dryRun       bool
 	log          *logrus.Entry
 }
 
-func NewClient(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, chartClient *chart.Client, log *logrus.Entry) *Client {
+func NewClient(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, chartClient *chart.Client, azureClient *auth.Azure, dryRun bool, log *logrus.Entry) *Client {
 	return &Client{
 		repo:         repo,
 		googleClient: googleClient,
 		k8sClient:    k8sClient,
 		chartClient:  chartClient,
+		azureClient:  azureClient,
+		dryRun:       dryRun,
 		log:          log,
 	}
 }
@@ -51,18 +57,24 @@ func (c Client) Create(ctx *gin.Context) error {
 		return err
 	}
 
-	_, err = c.repo.TeamGet(ctx, form.Slug)
+	team, err := c.repo.TeamGet(ctx, form.Slug)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			c.log.Infof("Creating team: %v", form.Slug)
-		} else {
+		if !errors.Is(err, sql.ErrNoRows) {
 			return err
 		}
 	}
+	if team.Slug == form.Slug {
+		return fmt.Errorf("there already exists a team with name %v", form.Slug)
+	}
 
+	c.log.Infof("Creating team: %v", form.Slug)
 	teamID := createTeamID(form.Slug)
+	users := removeEmptyUsers(form.Users)
+	if err := c.ensureUsersExists(users); err != nil {
+		return err
+	}
 
-	if err := c.repo.TeamCreate(ctx, teamID, form.Slug, form.Owner, removeEmptyUsers(form.Users), form.APIAccess == "on"); err != nil {
+	if err := c.repo.TeamCreate(ctx, teamID, form.Slug, form.Owner, users, form.APIAccess == "on"); err != nil {
 		return err
 	}
 
@@ -83,8 +95,12 @@ func (c Client) Update(ctx *gin.Context) error {
 	if err != nil {
 		return err
 	}
+	users := removeEmptyUsers(form.Users)
+	if err := c.ensureUsersExists(users); err != nil {
+		return err
+	}
 
-	err = c.repo.TeamUpdate(ctx, team.ID, removeEmptyUsers(form.Users), form.APIAccess == "on")
+	err = c.repo.TeamUpdate(ctx, team.ID, users, form.APIAccess == "on")
 	if err != nil {
 		return err
 	}
@@ -205,6 +221,21 @@ func (c Client) deleteExternalResources(ctx context.Context, team gensql.TeamGet
 		c.log.WithError(err).Error("failed while deleting external resources")
 		return
 	}
+}
+
+func (c Client) ensureUsersExists(users []string) error {
+	if c.dryRun {
+		c.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
+	for _, u := range users {
+		if err := c.azureClient.UserExistsInAzureAD(u); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func removeEmptyUsers(formUsers []string) []string {

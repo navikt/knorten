@@ -63,7 +63,7 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 		dryRun:       dryRun,
 	}
 
-	api.teamClient = team.NewClient(repo, googleClient, k8sClient, api.chartClient, log)
+	api.teamClient = team.NewClient(repo, googleClient, k8sClient, api.chartClient, azureClient, dryRun, log.WithField("subsystem", "teamClient"))
 
 	session, err := repo.NewSessionStore(sessionKey)
 	if err != nil {

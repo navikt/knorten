@@ -13,6 +13,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/nais/knorten/pkg/auth"
 	"github.com/nais/knorten/pkg/team"
+	"k8s.io/utils/strings/slices"
 )
 
 func (a *API) setupTeamRoutes() {
@@ -92,18 +93,10 @@ func (a *API) setupTeamRoutes() {
 			return
 		}
 
-		user, exists := c.Get("user")
-		if !exists {
-			a.log.Errorf("unable to identify logged in user when creating team")
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "unable to identify logged in user when creating team"})
-			return
-		}
-		owner, ok := user.(*auth.User)
-		if !ok {
-			a.log.Errorf("unable to identify logged in user when creating team, user object %v", user)
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "unable to identify logged in user when creating team"})
-			return
-		}
+		// Remove owner from user slice for edit team form
+		team.Users = slices.Filter(nil, team.Users, func(s string) bool {
+			return s != team.Owner
+		})
 
 		session := sessions.Default(c)
 		flashes := session.Flashes()
@@ -114,7 +107,6 @@ func (a *API) setupTeamRoutes() {
 		}
 		a.htmlResponseWrapper(c, http.StatusOK, "team/edit", gin.H{
 			"team":   team,
-			"owner":  owner.Email,
 			"errors": flashes,
 		})
 	})

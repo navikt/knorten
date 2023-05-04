@@ -44,7 +44,9 @@ func TestTeamsAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		expected, err := createExpectedHTML("team/new", nil)
+		expected, err := createExpectedHTML("team/new", map[string]any{
+			"owner": "dummy@nav.no",
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -60,7 +62,7 @@ func TestTeamsAPI(t *testing.T) {
 
 	teamMembers := []string{"first.sirname@nav.no", "second.sirname@nav.no"}
 	t.Run("create new team", func(t *testing.T) {
-		data := url.Values{"team": {testTeam}, "users[]": teamMembers, "apiaccess": {""}}
+		data := url.Values{"team": {testTeam}, "owner": {"dummy@nav.no"}, "users[]": teamMembers, "apiaccess": {""}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/new", server.URL), data)
 		if err != nil {
 			t.Fatal(err)
@@ -100,7 +102,7 @@ func TestTeamsAPI(t *testing.T) {
 
 	t.Run("create new team with api access", func(t *testing.T) {
 		apiAccessTeam := "apiteam"
-		data := url.Values{"team": {apiAccessTeam}, "users[]": teamMembers, "apiaccess": {"on"}}
+		data := url.Values{"team": {apiAccessTeam}, "owner": {"dummy@nav.no"}, "users[]": teamMembers, "apiaccess": {"on"}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/new", server.URL), data)
 		if err != nil {
 			t.Fatal(err)
@@ -117,6 +119,10 @@ func TestTeamsAPI(t *testing.T) {
 
 		if !team.ApiAccess {
 			t.Fatalf("team api access should be %v, got %v", true, team.ApiAccess)
+		}
+
+		if err := cleanupTeamAndApps(apiAccessTeam); err != nil {
+			t.Fatal(err)
 		}
 	})
 
@@ -154,6 +160,7 @@ func TestTeamsAPI(t *testing.T) {
 			"team": gensql.TeamGetRow{
 				ID:    team.ID,
 				Slug:  testTeam,
+				Owner: "dummy@nav.no",
 				Users: teamMembers,
 			},
 		})
@@ -189,7 +196,7 @@ func TestTeamsAPI(t *testing.T) {
 	teamMembers = append(teamMembers, "third.sirname@nav.no")
 
 	t.Run("update team", func(t *testing.T) {
-		data := url.Values{"team": {testTeam}, "users[]": teamMembers, "apiaccess": {"on"}}
+		data := url.Values{"team": {testTeam}, "owner": {"dummy@nav.no"}, "users[]": teamMembers, "apiaccess": {"on"}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/%v/edit", server.URL, testTeam), data)
 		if err != nil {
 			t.Fatal(err)

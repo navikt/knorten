@@ -26,8 +26,10 @@ hub:
     Authenticator:
       admin_users:
       - user.userson@nav.no
+      - dummy@nav.no
       allowed_users:
       - user.userson@nav.no
+      - dummy@nav.no
     AzureAdOAuthenticator:
       oauth_callback_url: https://chartteam.jupyter.knada.io/hub/oauth_callback
     JupyterHub:

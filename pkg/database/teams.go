@@ -26,7 +26,12 @@ func (r *Repo) TeamUpdate(ctx context.Context, team string, users []string, apiA
 }
 
 func (r *Repo) TeamGet(ctx context.Context, slug string) (gensql.TeamGetRow, error) {
-	return r.querier.TeamGet(ctx, slug)
+	team, err := r.querier.TeamGet(ctx, slug)
+	if err != nil {
+		return gensql.TeamGetRow{}, err
+	}
+	team.Users = append(team.Users, team.Owner)
+	return team, nil
 }
 
 func (r *Repo) TeamDelete(ctx context.Context, team string) error {

@@ -94,6 +94,7 @@ func (c *Client) CreateTeamNamespace(ctx context.Context, name string) error {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 			Labels: map[string]string{
+				"team-namespace":             "include",
 				"cert-secret-jupyterhub":     "include",
 				"cert-secret-airflow":        "include",
 				"azureadapp-secret":          "include",

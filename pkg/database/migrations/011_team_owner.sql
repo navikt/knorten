@@ -4,4 +4,5 @@ UPDATE teams t SET owner = (SELECT users[1] FROM teams where id = t.id), users =
 ALTER TABLE teams ALTER COLUMN "owner" SET NOT NULL;
 
 -- +goose Down
+UPDATE teams t SET users = array_prepend(t.owner, t.users);
 ALTER TABLE teams DROP COLUMN "owner";

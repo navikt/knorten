@@ -11,7 +11,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
+	"github.com/nais/knorten/pkg/auth"
 	"github.com/nais/knorten/pkg/team"
+	"k8s.io/utils/strings/slices"
 )
 
 func (a *API) setupTeamRoutes() {
@@ -39,8 +41,22 @@ func (a *API) setupTeamRoutes() {
 			return
 		}
 
+		user, exists := c.Get("user")
+		if !exists {
+			a.log.Errorf("unable to identify logged in user when creating team")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "unable to identify logged in user when creating team"})
+			return
+		}
+		owner, ok := user.(*auth.User)
+		if !ok {
+			a.log.Errorf("unable to identify logged in user when creating team, user object %v", user)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "unable to identify logged in user when creating team"})
+			return
+		}
+
 		a.htmlResponseWrapper(c, http.StatusOK, "team/new", gin.H{
 			"form":   form,
+			"owner":  owner.Email,
 			"errors": flashes,
 		})
 	})
@@ -76,6 +92,11 @@ func (a *API) setupTeamRoutes() {
 			c.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
+
+		// Avoid duplicating owner as a user in edit form
+		team.Users = slices.Filter(nil, team.Users, func(s string) bool {
+			return s != team.Owner
+		})
 
 		session := sessions.Default(c)
 		flashes := session.Flashes()

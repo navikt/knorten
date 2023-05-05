@@ -20,6 +20,10 @@
                 <div class="p-4">
                     <h4 class="text-xl font-bold">{{ .ID }}</h4>
                     {{ template "admin/row" . }}
+                    <h5 class="font-bold">Eier</h5>
+                    <ul class="list-disc ml-4">
+                        {{ .Owner }}
+                    </ul>
                     <h5 class="font-bold">Brukere</h5>
                     <ul class="list-disc ml-4">
                         {{ range .Users }}

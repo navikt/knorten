@@ -23,8 +23,8 @@ func (q *Queries) ClearPendingUpgradeLocks(ctx context.Context) error {
 }
 
 const teamCreate = `-- name: TeamCreate :exec
-INSERT INTO teams ("id", "users", "slug", "api_access")
-VALUES ($1, $2, $3, $4)
+INSERT INTO teams ("id", "users", "slug", "api_access", "owner")
+VALUES ($1, $2, $3, $4, $5)
 `
 
 type TeamCreateParams struct {
@@ -32,6 +32,7 @@ type TeamCreateParams struct {
 	Users     []string
 	Slug      string
 	ApiAccess bool
+	Owner     string
 }
 
 func (q *Queries) TeamCreate(ctx context.Context, arg TeamCreateParams) error {
@@ -40,6 +41,7 @@ func (q *Queries) TeamCreate(ctx context.Context, arg TeamCreateParams) error {
 		pq.Array(arg.Users),
 		arg.Slug,
 		arg.ApiAccess,
+		arg.Owner,
 	)
 	return err
 }
@@ -56,13 +58,14 @@ func (q *Queries) TeamDelete(ctx context.Context, id string) error {
 }
 
 const teamGet = `-- name: TeamGet :one
-SELECT id, users, slug, pending_jupyter_upgrade, pending_airflow_upgrade, api_access, restrict_airflow_egress
+SELECT id, "owner", users, slug, pending_jupyter_upgrade, pending_airflow_upgrade, api_access, restrict_airflow_egress
 FROM teams
 WHERE slug = $1
 `
 
 type TeamGetRow struct {
 	ID                    string
+	Owner                 string
 	Users                 []string
 	Slug                  string
 	PendingJupyterUpgrade bool
@@ -76,6 +79,7 @@ func (q *Queries) TeamGet(ctx context.Context, slug string) (TeamGetRow, error) 
 	var i TeamGetRow
 	err := row.Scan(
 		&i.ID,
+		&i.Owner,
 		pq.Array(&i.Users),
 		&i.Slug,
 		&i.PendingJupyterUpgrade,
@@ -171,7 +175,7 @@ func (q *Queries) TeamUpdate(ctx context.Context, arg TeamUpdateParams) error {
 const teamsForUserGet = `-- name: TeamsForUserGet :many
 SELECT id, slug
 FROM teams
-WHERE $1::TEXT = ANY ("users")
+WHERE "owner" = $1 OR $1::TEXT = ANY ("users")
 `
 
 type TeamsForUserGetRow struct {
@@ -203,7 +207,7 @@ func (q *Queries) TeamsForUserGet(ctx context.Context, email string) ([]TeamsFor
 }
 
 const teamsGet = `-- name: TeamsGet :many
-select id, slug, users, created, pending_jupyter_upgrade, pending_airflow_upgrade, restrict_airflow_egress, api_access
+select id, slug, users, created, pending_jupyter_upgrade, pending_airflow_upgrade, restrict_airflow_egress, api_access, owner
 from teams
 ORDER BY slug
 `
@@ -226,6 +230,7 @@ func (q *Queries) TeamsGet(ctx context.Context) ([]Team, error) {
 			&i.PendingAirflowUpgrade,
 			&i.RestrictAirflowEgress,
 			&i.ApiAccess,
+			&i.Owner,
 		); err != nil {
 			return nil, err
 		}

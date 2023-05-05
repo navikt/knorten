@@ -697,7 +697,7 @@ webserver:
     username: admin
   env:
   - name: AIRFLOW_USERS
-    value: user.userson@nav.no
+    value: user.userson@nav.no,dummy@nav.no
   extraContainers:
   - args:
     - navikt/repo

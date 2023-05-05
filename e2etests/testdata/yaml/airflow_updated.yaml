@@ -697,7 +697,7 @@ webserver:
     username: admin
   env:
   - name: AIRFLOW_USERS
-    value: user.userson@nav.no
+    value: user.userson@nav.no,dummy@nav.no
   - name: AIRFLOW__API__AUTH_BACKENDS
     value: airflow.api.auth.backend.session,airflow.api.auth.backend.basic_auth
   extraContainers:

@@ -16,8 +16,15 @@ var ValidateTeamName validator.Func = func(fl validator.FieldLevel) bool {
 }
 
 var ValidateTeamUsers validator.Func = func(fl validator.FieldLevel) bool {
-	users := fl.Field().Interface().([]string)
+	users, ok := fl.Field().Interface().([]string)
+	if !ok {
+		return false
+	}
+
 	for _, user := range users {
+		if user == "" {
+			continue
+		}
 		_, err := mail.ParseAddress(user)
 		if err != nil {
 			return false

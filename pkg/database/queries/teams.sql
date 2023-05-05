@@ -1,6 +1,6 @@
 -- name: TeamCreate :exec
-INSERT INTO teams ("id", "users", "slug", "api_access")
-VALUES (@id, @users, @slug, @api_access);
+INSERT INTO teams ("id", "users", "slug", "api_access", "owner")
+VALUES (@id, @users, @slug, @api_access, @owner);
 
 -- name: TeamUpdate :exec
 UPDATE teams
@@ -11,10 +11,10 @@ WHERE id = @id;
 -- name: TeamsForUserGet :many
 SELECT id, slug
 FROM teams
-WHERE @email::TEXT = ANY ("users");
+WHERE "owner" = @email OR @email::TEXT = ANY ("users");
 
 -- name: TeamGet :one
-SELECT id, users, slug, pending_jupyter_upgrade, pending_airflow_upgrade, api_access, restrict_airflow_egress
+SELECT id, "owner", users, slug, pending_jupyter_upgrade, pending_airflow_upgrade, api_access, restrict_airflow_egress
 FROM teams
 WHERE slug = @slug;
 

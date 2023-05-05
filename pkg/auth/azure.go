@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -12,7 +13,6 @@ import (
 	"github.com/coreos/go-oidc"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/endpoints"
 )
@@ -60,10 +60,15 @@ type MemberOfGroup struct {
 	GroupTypes  []string `json:"groupTypes"`
 }
 
+type TokenResponse struct {
+	AccessToken string `json:"access_token"`
+}
+
 var ErrAzureTokenExpired = fmt.Errorf("token expired")
 
 const (
 	AzureGraphMemberOfEndpoint = "https://graph.microsoft.com/v1.0/me/memberOf/microsoft.graph.group?$select=mail"
+	AzureUsersEndpoint         = "https://graph.microsoft.com/v1.0/users"
 )
 
 func New(dryRun bool, clientID, clientSecret, tenantID, hostname string, log *logrus.Entry) *Azure {
@@ -148,6 +153,53 @@ func (a *Azure) ValidateUser(certificates map[string]CertificateList, token stri
 	}, nil
 }
 
+func (a *Azure) UserExistsInAzureAD(user string) error {
+	type usersResponse struct {
+		Value []struct {
+			Email string `json:"userPrincipalName"`
+		} `json:"value"`
+	}
+
+	token, err := a.getBearerTokenForApplication()
+	if err != nil {
+		return err
+	}
+
+	r, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%v?$filter=startswith(userPrincipalName,'%v')", AzureUsersEndpoint, user), nil)
+	if err != nil {
+		return err
+	}
+	r.Header.Add("Authorization", fmt.Sprintf("Bearer %v", token))
+
+	httpClient := &http.Client{
+		Timeout: time.Second * 10,
+	}
+
+	res, err := httpClient.Do(r)
+	if err != nil {
+		return err
+	}
+
+	resBytes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	var users usersResponse
+	if err := json.Unmarshal(resBytes, &users); err != nil {
+		return err
+	}
+
+	switch len(users.Value) {
+	case 0:
+		return fmt.Errorf("no user exists in aad with email %v", user)
+	case 1:
+		return nil
+	default:
+		return fmt.Errorf("multiple users exist in aad for email %v", user)
+	}
+}
+
 func (a *Azure) GroupsForUser(token, email string) ([]MemberOfGroup, error) {
 	bearerToken, err := a.getBearerTokenOnBehalfOfUser(token)
 	if err != nil {
@@ -181,7 +233,7 @@ func (a *Azure) GroupsForUser(token, email string) ([]MemberOfGroup, error) {
 
 func contains(groups []MemberOfGroup, email string) bool {
 	for _, group := range groups {
-		if strings.ToLower(group.Mail) == strings.ToLower(email) {
+		if strings.EqualFold(group.Mail, email) {
 			return true
 		}
 	}
@@ -197,11 +249,36 @@ func (a *Azure) UserInGroup(token string, userEmail, groupEmail string) (bool, e
 	return contains(groups, groupEmail), nil
 }
 
-func (a *Azure) getBearerTokenOnBehalfOfUser(token string) (string, error) {
-	type TokenResponse struct {
-		AccessToken string `json:"access_token"`
+func (a *Azure) getBearerTokenForApplication() (string, error) {
+	form := url.Values{}
+	form.Add("client_id", a.clientID)
+	form.Add("client_secret", a.clientSecret)
+	form.Add("scope", "https://graph.microsoft.com/.default")
+	form.Add("grant_type", "client_credentials")
+
+	req, err := http.NewRequest(http.MethodPost, endpoints.AzureAD(a.tenantID).TokenURL, strings.NewReader(form.Encode()))
+	if err != nil {
+		return "", err
 	}
 
+	httpClient := &http.Client{
+		Timeout: time.Second * 10,
+	}
+
+	response, err := httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+
+	var tokenResponse TokenResponse
+	if err := json.NewDecoder(response.Body).Decode(&tokenResponse); err != nil {
+		return "", err
+	}
+
+	return tokenResponse.AccessToken, nil
+}
+
+func (a *Azure) getBearerTokenOnBehalfOfUser(token string) (string, error) {
 	form := url.Values{}
 	form.Add("client_id", a.clientID)
 	form.Add("client_secret", a.clientSecret)
@@ -229,6 +306,6 @@ func (a *Azure) getBearerTokenOnBehalfOfUser(token string) (string, error) {
 		return "", err
 	}
 
-	log.Debugf("Successfully retrieved on-behalf-of token")
+	logrus.Debugf("Successfully retrieved on-behalf-of token")
 	return tokenResponse.AccessToken, nil
 }

@@ -141,4 +141,5 @@ type Team struct {
 	PendingAirflowUpgrade bool
 	RestrictAirflowEgress bool
 	ApiAccess             bool
+	Owner                 string
 }

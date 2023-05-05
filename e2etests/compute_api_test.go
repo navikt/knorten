@@ -21,7 +21,7 @@ func TestComputeAPI(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := repo.TeamCreate(ctx, testTeam+"-1234", testTeam, []string{"bruker.en@nav.no", "bruker.to@nav.no"}, false); err != nil {
+	if err := repo.TeamCreate(ctx, testTeam+"-1234", testTeam, "bruker.en@nav.no", []string{"bruker.en@nav.no", "bruker.to@nav.no"}, false); err != nil {
 		t.Fatal(err)
 	}
 

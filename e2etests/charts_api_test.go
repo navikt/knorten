@@ -490,10 +490,14 @@ func TestChartsAPI(t *testing.T) {
 			t.Fatalf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 	})
+
+	if err := cleanupTeamAndApps(testTeam); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func prepareChartTests(ctx context.Context, teamName string) error {
-	data := url.Values{"team": {teamName}, "users[]": {"user.userson@nav.no"}, "apiaccess": {""}}
+	data := url.Values{"team": {teamName}, "owner": {"dummy@nav.no"}, "users[]": {"user.userson@nav.no"}, "apiaccess": {""}}
 	resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/new", server.URL), data)
 	if err != nil {
 		return err

@@ -168,7 +168,7 @@ func replaceGeneratedValues(expected []byte, teamName string) ([]byte, error) {
 }
 
 func createTeamAndApps(teamName string) error {
-	data := url.Values{"team": {teamName}, "users[]": {"dummy@nav.no"}, "apiaccess": {""}}
+	data := url.Values{"team": {teamName}, "owner": {"dummy@nav.no"}, "users[]": {"annenbruker@nav.no"}, "apiaccess": {""}}
 	resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/new", server.URL), data)
 	if err != nil {
 		return fmt.Errorf("creating team: %v", err)

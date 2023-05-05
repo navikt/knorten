@@ -92,7 +92,8 @@ func TestAdminAPI(t *testing.T) {
 				team.ID: map[string]any{
 					"ID":    team.ID,
 					"Slug":  teamName,
-					"Users": []string{"dummy@nav.no"},
+					"Owner": "dummy@nav.no",
+					"Users": []string{"annenbruker@nav.no"},
 					"Apps":  []string{"jupyterhub", "airflow"},
 				},
 			},

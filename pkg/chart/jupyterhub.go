@@ -57,7 +57,6 @@ type JupyterValues struct {
 	AllowedUsers     []string `helm:"hub.config.Authenticator.allowed_users"`
 	Hosts            string   `helm:"ingress.hosts"`
 	IngressTLS       string   `helm:"ingress.tls"`
-	ServiceAccount   string   `helm:"singleuser.serviceAccountName"`
 	OAuthCallbackURL string   `helm:"hub.config.AzureAdOAuthenticator.oauth_callback_url"`
 	KnadaTeamSecret  string   `helm:"singleuser.extraEnv.KNADA_TEAM_SECRET"`
 	ProfileList      string   `helm:"singleuser.profileList"`
@@ -227,7 +226,6 @@ func JupyterReleaseName(namespace string) string {
 func addGeneratedJupyterhubConfig(values *JupyterForm) {
 	values.Hosts = fmt.Sprintf("[\"%v\"]", values.Slug+".jupyter.knada.io")
 	values.IngressTLS = fmt.Sprintf("[{\"hosts\":[\"%v\"], \"secretName\": \"%v\"}]", values.Slug+".jupyter.knada.io", "jupyterhub-certificate")
-	values.ServiceAccount = values.TeamID
 	values.OAuthCallbackURL = fmt.Sprintf("https://%v.jupyter.knada.io/hub/oauth_callback", values.Slug)
 	values.KnadaTeamSecret = fmt.Sprintf("projects/knada-gcp/secrets/%v", values.TeamID)
 }

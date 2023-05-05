@@ -32,7 +32,7 @@ local-online:
 	  --airflow-chart-version=1.7.0 \
 	  --jupyter-chart-version=2.0.0 \
 	  --in-cluster=false \
-	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knorten/knelm:v9 \
+	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knada/knelm:2023-03-15-3c6e024 \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
 	  --airflow-egress-netpol=./.default-egress-airflow-worker.yaml\
 	  --admin-group=nada@nav.no \

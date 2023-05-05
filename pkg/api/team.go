@@ -93,7 +93,7 @@ func (a *API) setupTeamRoutes() {
 			return
 		}
 
-		// Remove owner from user slice for edit team form
+		// Avoid duplicating owner as a user in edit form
 		team.Users = slices.Filter(nil, team.Users, func(s string) bool {
 			return s != team.Owner
 		})

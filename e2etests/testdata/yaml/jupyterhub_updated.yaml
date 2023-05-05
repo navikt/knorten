@@ -499,7 +499,7 @@ singleuser:
     display_name: Custom image
     kubespawner_override:
       image: ghcr.io/org/repo:v1
-  serviceAccountName: ${TEAM_ID}
+  serviceAccountName: null
   startTimeout: 300
   storage:
     capacity: 10Gi

@@ -495,7 +495,7 @@ singleuser:
   nodeSelector: {}
   podNameTemplate: null
   profileList: []
-  serviceAccountName: ${TEAM_ID}
+  serviceAccountName: null
   startTimeout: 300
   storage:
     capacity: 10Gi

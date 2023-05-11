@@ -218,7 +218,7 @@ func (a AirflowClient) addAirflowTeamValues(ctx context.Context, form AirflowFor
 }
 
 func (a AirflowClient) addGeneratedConfig(ctx context.Context, dbPassword, bucketName string, values *AirflowForm) error {
-	values.IngressHosts = fmt.Sprintf("[{\"name\":\"%v\",\"tls\":{\"enabled\":true,\"secretName\":\"%v\"}}]", values.Slug+".airflow.knada.io", "airflow-certificate")
+	values.IngressHosts = fmt.Sprintf("[{\"name\":\"%v\",\"tls\":{\"enabled\":true,\"secretName\":\"%v\"}}]", values.Slug+".airflow.knada.io", "airflow-cert-secret")
 	values.WebserverServiceAccount = values.TeamID
 	values.WorkerServiceAccount = values.TeamID
 	setSynkRepoAndBranch(values)
@@ -333,13 +333,16 @@ func setSynkRepoAndBranch(values *AirflowForm) {
 func (a AirflowClient) setRestrictAirflowEgress(ctx context.Context, restrictAirflowEgress, teamID string) error {
 	switch restrictAirflowEgress {
 	case "on":
-		if err := a.k8sClient.CreateOrUpdateDefaultEgressNetpol(ctx, k8s.NameToNamespace(teamID)); err != nil {
+		if err := a.k8sClient.EnableDefaultEgressNetpolSync(ctx, k8s.NameToNamespace(teamID)); err != nil {
 			return err
 		}
 		if err := a.repo.TeamSetRestrictAirflowEgress(ctx, teamID, true); err != nil {
 			return err
 		}
 	default:
+		if err := a.k8sClient.DisableDefaultEgressNetpolSync(ctx, k8s.NameToNamespace(teamID)); err != nil {
+			return err
+		}
 		if err := a.k8sClient.DeleteDefaultEgressNetpol(ctx, k8s.NameToNamespace(teamID)); err != nil {
 			return err
 		}

@@ -356,7 +356,7 @@ ingress:
     - name: chartteam.airflow.knada.io
       tls:
         enabled: true
-        secretName: airflow-certificate
+        secretName: airflow-cert-secret
     ingressClassName: ""
     path: /
     pathType: ImplementationSpecific

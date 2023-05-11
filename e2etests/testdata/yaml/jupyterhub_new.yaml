@@ -142,7 +142,7 @@ ingress:
   tls:
   - hosts:
     - chartteam.jupyter.knada.io
-    secretName: jupyterhub-certificate
+    secretName: jupyterhub-cert-secret
 nameOverride: null
 prePuller:
   annotations: {}

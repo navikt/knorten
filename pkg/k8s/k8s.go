@@ -265,7 +265,7 @@ func (c *Client) EnableDefaultEgressNetpolSync(ctx context.Context, namespace st
 	return nil
 }
 
-func (c *Client) DisableDefaultEgressNetpolSync(ctx context.Context, ns string) error {
+func (c *Client) DisableDefaultEgressNetpolSync(ctx context.Context, namespace string) error {
 	if c.dryRun {
 		return nil
 	}

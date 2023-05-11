@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	namespace                = "knada-system"
+	knadaNamespace           = "knada-system"
 	saName                   = "knorten"
 	ttlSecondsAfterFinished  = 60
 	backoffLimit             = 1
@@ -84,7 +84,7 @@ func (c *Client) CreateHelmInstallOrUpgradeJob(ctx context.Context, teamID, rele
 
 	job.Spec.Template.Spec.Containers[0] = container
 
-	_, err = c.clientSet.BatchV1().Jobs(namespace).Create(ctx, job, metav1.CreateOptions{})
+	_, err = c.clientSet.BatchV1().Jobs(knadaNamespace).Create(ctx, job, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func (c *Client) CreateHelmUninstallJob(ctx context.Context, teamID, releaseName
 		return nil
 	}
 
-	_, err := c.clientSet.BatchV1().Jobs(namespace).Create(ctx, c.createJobSpec(teamID, releaseName, string(helm.ActionUninstall)), metav1.CreateOptions{})
+	_, err := c.clientSet.BatchV1().Jobs(knadaNamespace).Create(ctx, c.createJobSpec(teamID, releaseName, string(helm.ActionUninstall)), metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func (c *Client) createJobSpec(teamID, releaseName, action string) *batchv1.Job 
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: fmt.Sprintf("%v-%v-", teamID, releaseName),
-			Namespace:    namespace,
+			Namespace:    knadaNamespace,
 		},
 		Spec: batchv1.JobSpec{
 			Template: v1.PodTemplateSpec{

@@ -218,7 +218,7 @@ func (a AirflowClient) addAirflowTeamValues(ctx context.Context, form AirflowFor
 }
 
 func (a AirflowClient) addGeneratedConfig(ctx context.Context, dbPassword, bucketName string, values *AirflowForm) error {
-	values.IngressHosts = fmt.Sprintf("[{\"name\":\"%v\",\"tls\":{\"enabled\":true,\"secretName\":\"%v\"}}]", values.Slug+".airflow.knada.io", "airflow-cert-secret")
+	values.IngressHosts = fmt.Sprintf("[{\"name\":\"%v\",\"tls\":{\"enabled\":true,\"secretName\":\"%v\"}}]", values.Slug+".airflow.knada.io", "airflow-certificate")
 	values.WebserverServiceAccount = values.TeamID
 	values.WorkerServiceAccount = values.TeamID
 	setSynkRepoAndBranch(values)

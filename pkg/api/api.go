@@ -31,11 +31,12 @@ type API struct {
 	teamClient          *team.Client
 	jupyterChartVersion string
 	airflowChartVersion string
-	adminGroup          string
+	adminGroupMail          string
 	dryRun              bool
+	adminGroupID		string
 }
 
-func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, dryRun bool, airflowChartVersion, jupyterChartVersion, sessionKey, adminGroup string, log *logrus.Entry) (*gin.Engine, error) {
+func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, dryRun bool, airflowChartVersion, jupyterChartVersion, sessionKey, adminGroupMail string, log *logrus.Entry) (*gin.Engine, error) {
 	adminClient := admin.New(repo, k8sClient, cryptClient, airflowChartVersion, jupyterChartVersion)
 	chartClient, err := chart.New(repo, googleClient, k8sClient, cryptClient, airflowChartVersion, jupyterChartVersion, log)
 	if err != nil {
@@ -59,7 +60,7 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 		cryptClient:  cryptClient,
 		log:          log,
 		chartClient:  chartClient,
-		adminGroup:   adminGroup,
+		adminGroupMail:   adminGroupMail,
 		dryRun:       dryRun,
 	}
 
@@ -78,6 +79,7 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 	api.setupAuthenticatedRoutes()
 	api.router.Use(api.adminAuthMiddleware())
 	api.setupAdminRoutes()
+	api.fetchAdminGroupID()
 	return router, nil
 }
 
@@ -159,4 +161,14 @@ func (a *API) isAdmin(c *gin.Context) bool {
 	}
 
 	return session.IsAdmin
+}
+
+func (a *API) fetchAdminGroupID(){
+	id, err:= a.azureClient.GetGroupID(a.adminGroupMail)
+	if err!= nil{
+		a.log.WithError(err).Error("retrieve admin group id")
+		a.adminGroupID = "INVALID_ADMIN_GROUP_ID_CHECK_AAD_STATUS"
+		return		
+	}
+	a.adminGroupID = id
 }

@@ -31,9 +31,9 @@ type API struct {
 	teamClient          *team.Client
 	jupyterChartVersion string
 	airflowChartVersion string
-	adminGroupMail          string
+	adminGroupMail      string
 	dryRun              bool
-	adminGroupID		string
+	adminGroupID        string
 }
 
 func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, dryRun bool, airflowChartVersion, jupyterChartVersion, sessionKey, adminGroupMail string, log *logrus.Entry) (*gin.Engine, error) {
@@ -51,17 +51,17 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 	})
 
 	api := API{
-		azureClient:  azureClient,
-		router:       router,
-		repo:         repo,
-		googleClient: googleClient,
-		k8sClient:    k8sClient,
-		adminClient:  adminClient,
-		cryptClient:  cryptClient,
-		log:          log,
-		chartClient:  chartClient,
-		adminGroupMail:   adminGroupMail,
-		dryRun:       dryRun,
+		azureClient:    azureClient,
+		router:         router,
+		repo:           repo,
+		googleClient:   googleClient,
+		k8sClient:      k8sClient,
+		adminClient:    adminClient,
+		cryptClient:    cryptClient,
+		log:            log,
+		chartClient:    chartClient,
+		adminGroupMail: adminGroupMail,
+		dryRun:         dryRun,
 	}
 
 	api.teamClient = team.NewClient(repo, googleClient, k8sClient, api.chartClient, azureClient, dryRun, log.WithField("subsystem", "teamClient"))
@@ -163,12 +163,12 @@ func (a *API) isAdmin(c *gin.Context) bool {
 	return session.IsAdmin
 }
 
-func (a *API) fetchAdminGroupID(){
-	id, err:= a.azureClient.GetGroupID(a.adminGroupMail)
-	if err!= nil{
+func (a *API) fetchAdminGroupID() {
+	id, err := a.azureClient.GetGroupID(a.adminGroupMail)
+	if err != nil {
 		a.log.WithError(err).Error("retrieve admin group id")
 		a.adminGroupID = "INVALID_ADMIN_GROUP_ID_CHECK_AAD_STATUS"
-		return		
+		return
 	}
 	a.adminGroupID = id
 }

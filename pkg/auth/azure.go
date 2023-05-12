@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -50,14 +51,14 @@ type User struct {
 	Expires time.Time
 }
 
-type AzureGroupsWithIDResponse struct{
+type AzureGroupsWithIDResponse struct {
 	Groups []AzureGroupWithID `json:"value"`
 }
 
 type AzureGroupWithID struct {
-	DisplayName string   `json:"displayName"`
-	ID string `json:"id"`
-	Mail        string   `json:"mail"`
+	DisplayName string `json:"displayName"`
+	ID          string `json:"id"`
+	Mail        string `json:"mail"`
 }
 
 type TokenResponse struct {
@@ -67,7 +68,7 @@ type TokenResponse struct {
 var ErrAzureTokenExpired = fmt.Errorf("token expired")
 
 const (
-	AzureUsersEndpoint         = "https://graph.microsoft.com/v1.0/users"
+	AzureUsersEndpoint  = "https://graph.microsoft.com/v1.0/users"
 	AzureGroupsEndpoint = "https://graph.microsoft.com/v1.0/groups"
 )
 
@@ -229,21 +230,20 @@ func (a *Azure) getBearerTokenForApplication() (string, error) {
 	return tokenResponse.AccessToken, nil
 }
 
-func (a *Azure) GetGroupID(groupMail string) (string, error){
+func (a *Azure) GetGroupID(groupMail string) (string, error) {
 	token, err := a.getBearerTokenForApplication()
 	if err != nil {
-		return "",err
+		return "", err
 	}
 
 	params := url.Values{}
 	params.Add("$select", "id,displayName,mail")
 	params.Add("$filter", fmt.Sprintf("mail eq '%v'", groupMail))
 
-	req, err := http.NewRequest(http.MethodGet, 
-		AzureGroupsEndpoint+ "?"+params.Encode(),
+	req, err := http.NewRequest(http.MethodGet,
+		AzureGroupsEndpoint+"?"+params.Encode(),
 		nil)
 	if err != nil {
-		fmt.Print(err)
 		return "", err
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", token))
@@ -260,12 +260,12 @@ func (a *Azure) GetGroupID(groupMail string) (string, error){
 
 	var groupsResponse AzureGroupsWithIDResponse
 	if err := json.NewDecoder(response.Body).Decode(&groupsResponse); err != nil {
-		fmt.Print(err)
 		return "", err
 	}
-	var groupID = ""
-	if(len(groupsResponse.Groups)>0){
-		groupID = groupsResponse.Groups[0].ID
+
+	if len(groupsResponse.Groups) > 0 {
+		return groupsResponse.Groups[0].ID, nil
+	} else {
+		return "", errors.New("Group not found by the mail")
 	}
-	return groupID, nil
 }

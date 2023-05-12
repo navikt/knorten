@@ -254,7 +254,6 @@ func (a *Azure) GetGroupID(groupMail string) (string, error) {
 
 	response, err := httpClient.Do(req)
 	if err != nil {
-		fmt.Print(err)
 		return "", err
 	}
 

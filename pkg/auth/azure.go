@@ -200,6 +200,52 @@ func (a *Azure) UserExistsInAzureAD(user string) error {
 	}
 }
 
+func (a *Azure) IdentForEmail(email string) (string, error) {
+	type identResponse struct {
+		Ident string `json:"onPremisesSamAccountName"`
+	}
+
+	token, err := a.getBearerTokenForApplication()
+	if err != nil {
+		return "", err
+	}
+
+	r, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%v/%v?$select=onPremisesSamAccountName", AzureUsersEndpoint, email), nil)
+	if err != nil {
+		return "", err
+	}
+	r.Header.Add("Authorization", fmt.Sprintf("Bearer %v", token))
+
+	httpClient := &http.Client{
+		Timeout: time.Second * 10,
+	}
+
+	res, err := httpClient.Do(r)
+	if err != nil {
+		return "", err
+	}
+
+	resBytes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return "", err
+	}
+
+	var identRes identResponse
+	if err := json.Unmarshal(resBytes, &identRes); err != nil {
+		return "", err
+	}
+
+	fmt.Println(string(resBytes))
+
+	fmt.Println(identRes)
+
+	if identRes.Ident == "" {
+		return "", fmt.Errorf("unable to get user ident for email %v", email)
+	}
+
+	return strings.ToLower(identRes.Ident), nil
+}
+
 func (a *Azure) GroupsForUser(token, email string) ([]MemberOfGroup, error) {
 	bearerToken, err := a.getBearerTokenOnBehalfOfUser(token)
 	if err != nil {
@@ -222,12 +268,16 @@ func (a *Azure) GroupsForUser(token, email string) ([]MemberOfGroup, error) {
 	}
 
 	var body []byte
-	response.Body.Read(body)
+	_, err = response.Body.Read(body)
+	if err != nil {
+		return nil, err
+	}
 
 	var memberOfResponse MemberOfResponse
 	if err := json.NewDecoder(response.Body).Decode(&memberOfResponse); err != nil {
 		return nil, err
 	}
+
 	return memberOfResponse.Groups, nil
 }
 

@@ -71,8 +71,7 @@ func (a *Client) UpdateGlobalValues(ctx context.Context, formValues url.Values, 
 		}
 	}
 
-	return nil
-	// return a.updateHelmReleases(ctx, chartType)
+	return a.updateHelmReleases(ctx, chartType)
 }
 
 func (a *Client) updateHelmReleases(ctx context.Context, chartType gensql.ChartType) error {

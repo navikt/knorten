@@ -235,10 +235,6 @@ func (a *Azure) IdentForEmail(email string) (string, error) {
 		return "", err
 	}
 
-	fmt.Println(string(resBytes))
-
-	fmt.Println(identRes)
-
 	if identRes.Ident == "" {
 		return "", fmt.Errorf("unable to get user ident for email %v", email)
 	}

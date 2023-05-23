@@ -154,7 +154,9 @@ func (g *Google) createComputeInstance(ctx context.Context, users []string, team
 		fmt.Sprintf("--machine-type=%v", machineType),
 		fmt.Sprintf("--network-interface=%v", g.vmNetworkConfig),
 		fmt.Sprintf("--labels=created-by=knorten,team=%v", teamSlug),
+		"--metadata=block-project-ssh-keys=TRUE",
 		"--no-service-account",
+		"--no-scopes",
 	)
 
 	buf := &bytes.Buffer{}

@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	ownerRole   = "roles/owner"
-	computeZone = "europe-west1-b"
+	ownerRole     = "roles/owner"
+	computeZone   = "europe-west1-b"
+	knadaUserRole = "projects/knada-gcp/roles/knadauser"
 )
 
 type ComputeForm struct {
@@ -173,6 +174,10 @@ func (g *Google) createComputeInstance(ctx context.Context, users []string, team
 			g.log.WithError(err).Errorf("create compute instance %v, add owner binding for user %v", name, u)
 			return
 		}
+		if err := g.grantKnadaUserRole(ctx, u); err != nil {
+			g.log.WithError(err).Errorf("create compute instance %v, grant knada-user project role for user %v", name, u)
+			return
+		}
 	}
 }
 
@@ -259,6 +264,34 @@ func (g *Google) addOwnerBinding(ctx context.Context, instance, user string) err
 	if err := addCmd.Run(); err != nil {
 		io.Copy(os.Stdout, buf)
 		g.log.WithError(err).Errorf("adding compute instance iam owner rolebinding for %v", user)
+		return err
+	}
+
+	return nil
+}
+
+func (g *Google) grantKnadaUserRole(ctx context.Context, user string) error {
+	if g.dryRun {
+		g.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
+	cmd := exec.CommandContext(
+		ctx,
+		"gcloud",
+		"projects",
+		"add-iam-policy-binding",
+		g.project,
+		fmt.Sprintf("--member=user:%v", user),
+		fmt.Sprintf("--role=%v", knadaUserRole),
+		"--condition=None")
+
+	buf := &bytes.Buffer{}
+	cmd.Stdout = buf
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		io.Copy(os.Stdout, buf)
+		g.log.WithError(err).Errorf("create knada-user iam binding for user %v", user)
 		return err
 	}
 

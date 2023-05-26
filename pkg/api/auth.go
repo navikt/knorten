@@ -292,8 +292,8 @@ func (a *API) adminAuthMiddleware() gin.HandlerFunc {
 func (a *API) isUserInAdminGroup(token string, email string) bool {
 	var claims jwt.MapClaims
 
-	certificates, err:= a.azureClient.FetchCertificates()
-	if err!= nil{
+	certificates, err := a.azureClient.FetchCertificates()
+	if err != nil {
 		a.log.WithError(err).Error("fetch certificates")
 		return false
 	}
@@ -302,16 +302,21 @@ func (a *API) isUserInAdminGroup(token string, email string) bool {
 
 	_, err = jwt.ParseWithClaims(token, &claims, jwtValidator)
 
-	if claims["groups"]!= nil{
-		groups, ok:= claims["groups"].([]interface{})
-		if !ok{
+	if err != nil {
+		a.log.WithError(err).Error(("Parse token"))
+		return false
+	}
+
+	if claims["groups"] != nil {
+		groups, ok := claims["groups"].([]interface{})
+		if !ok {
 			a.log.Logger.Error("User does not have groups in claims")
 			return false
 		}
-		for _, group:= range groups{
-			grp, ok:= group.(string)
-			if ok{
-				if grp == a.adminGroupID{
+		for _, group := range groups {
+			grp, ok := group.(string)
+			if ok {
+				if grp == a.adminGroupID {
 					return true
 				}
 			}

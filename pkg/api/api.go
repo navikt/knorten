@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/nais/knorten/pkg/chart"
@@ -79,7 +80,10 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 	api.setupAuthenticatedRoutes()
 	api.router.Use(api.adminAuthMiddleware())
 	api.setupAdminRoutes()
-	api.fetchAdminGroupID()
+	err = api.fetchAdminGroupID()
+	if err != nil {
+		return nil, err
+	}
 	return router, nil
 }
 
@@ -163,12 +167,11 @@ func (a *API) isAdmin(c *gin.Context) bool {
 	return session.IsAdmin
 }
 
-func (a *API) fetchAdminGroupID() {
+func (a *API) fetchAdminGroupID() error {
 	id, err := a.azureClient.GetGroupID(a.adminGroupMail)
 	if err != nil {
-		a.log.WithError(err).Error("retrieve admin group id")
-		a.adminGroupID = "INVALID_ADMIN_GROUP_ID_CHECK_AAD_STATUS"
-		return
+		return fmt.Errorf("retrieve admin group id error: %v", err)
 	}
 	a.adminGroupID = id
+	return nil
 }

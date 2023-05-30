@@ -95,24 +95,24 @@ func (g *Google) Update(c context.Context, teamSlug string) error {
 	return g.setUsersSecretOwnerBinding(c, team.Users, fmt.Sprintf("projects/%v/secrets/%v", g.project, team.ID))
 }
 
-func (g *Google) DeleteGCPTeamResources(c context.Context, teamID string, instance gensql.ComputeInstance) error {
+func (g *Google) DeleteGCPTeamResources(c context.Context, team gensql.TeamGetRow, instance gensql.ComputeInstance) error {
 	if g.dryRun {
 		g.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
 
-	if err := g.deleteIAMServiceAccount(c, teamID); err != nil {
-		g.log.WithError(err).Errorf("deleting iam service account %v", teamID)
+	if err := g.deleteIAMServiceAccount(c, team.ID); err != nil {
+		g.log.WithError(err).Errorf("deleting iam service account %v", team.ID)
 		return err
 	}
 
-	if err := g.deleteSecret(c, teamID); err != nil {
-		g.log.WithError(err).Errorf("deleting gsm secret %v", teamID)
+	if err := g.deleteSecret(c, team.ID); err != nil {
+		g.log.WithError(err).Errorf("deleting gsm secret %v", team.ID)
 		return err
 	}
 
 	if instance.InstanceName != "" {
-		if err := g.deleteComputeInstance(c, instance.InstanceName); err != nil {
+		if err := g.deleteComputeInstance(c, instance.InstanceName, team.Users); err != nil {
 			g.log.WithError(err).Errorf("deleting compute instance %v", instance.InstanceName)
 			return err
 		}

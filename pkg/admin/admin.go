@@ -21,6 +21,7 @@ type Client struct {
 	airflowChartVersion string
 	jupyterChartVersion string
 	cryptClient         *crypto.EncrypterDecrypter
+	chartClient         *chart.Client
 }
 
 type diffValue struct {
@@ -29,11 +30,12 @@ type diffValue struct {
 	Encrypted string
 }
 
-func New(repo *database.Repo, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, airflowChartVersion, jupyterChartVersion string) *Client {
+func New(repo *database.Repo, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, chartClient *chart.Client, airflowChartVersion, jupyterChartVersion string) *Client {
 	return &Client{
 		repo:                repo,
 		k8sClient:           k8sClient,
 		cryptClient:         cryptClient,
+		chartClient:         chartClient,
 		airflowChartVersion: airflowChartVersion,
 		jupyterChartVersion: jupyterChartVersion,
 	}
@@ -72,6 +74,32 @@ func (a *Client) UpdateGlobalValues(ctx context.Context, formValues url.Values, 
 	}
 
 	return a.updateHelmReleases(ctx, chartType)
+}
+
+func (a *Client) ResyncAll(ctx context.Context, chartType gensql.ChartType) error {
+	teamIDs, err := a.repo.TeamsForAppGet(ctx, chartType)
+	if err != nil {
+		return err
+	}
+
+	switch chartType {
+	case gensql.ChartTypeJupyterhub:
+		for _, tid := range teamIDs {
+			if err := a.chartClient.Jupyterhub.Sync(ctx, tid); err != nil {
+				return err
+			}
+		}
+	case gensql.ChartTypeAirflow:
+		for _, tid := range teamIDs {
+			if err := a.chartClient.Airflow.Sync(ctx, tid); err != nil {
+				return err
+			}
+		}
+	default:
+		return fmt.Errorf("resyncing all instances: invalid chart type %v, err: %v", chartType, err)
+	}
+
+	return nil
 }
 
 func (a *Client) updateHelmReleases(ctx context.Context, chartType gensql.ChartType) error {

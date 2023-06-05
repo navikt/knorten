@@ -32,7 +32,6 @@ type Config struct {
 	KnelmImage          string
 	AirflowChartVersion string
 	JupyterChartVersion string
-	AirflowEgressNetPol string
 	VMNetworkConfig     string
 	AdminGroup          string
 	SessionKey          string
@@ -57,7 +56,6 @@ func main() {
 	flag.StringVar(&cfg.AirflowChartVersion, "airflow-chart-version", os.Getenv("AIRFLOW_CHART_VERSION"), "The chart version for airflow")
 	flag.StringVar(&cfg.JupyterChartVersion, "jupyter-chart-version", os.Getenv("JUPYTER_CHART_VERSION"), "The chart version for jupyter")
 	flag.StringVar(&cfg.AdminGroup, "admin-group", os.Getenv("ADMIN_GROUP"), "Email of admin group used to authenticate Knorten administrators")
-	flag.StringVar(&cfg.AirflowEgressNetPol, "airflow-egress-netpol", os.Getenv("AIRFLOW_EGRESS_NETPOL"), "Path to the Airflow default egress netpol")
 	flag.StringVar(&cfg.VMNetworkConfig, "vm-network-config", os.Getenv("VM_NETWORK_CONFIG"), "Network configuration for compute instances created by knorten")
 	flag.StringVar(&cfg.SessionKey, "session-key", os.Getenv("SESSION_KEY"), "The session key for Knorten")
 	flag.Parse()
@@ -74,7 +72,7 @@ func main() {
 
 	cryptClient := crypto.New(cfg.DBEncKey)
 
-	k8sClient, err := k8s.New(log.WithField("subsystem", "k8sClient"), cryptClient, repo, cfg.DryRun, cfg.InCluster, cfg.GCPProject, cfg.GCPRegion, cfg.KnelmImage, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.AirflowEgressNetPol)
+	k8sClient, err := k8s.New(log.WithField("subsystem", "k8sClient"), cryptClient, repo, cfg.DryRun, cfg.InCluster, cfg.GCPProject, cfg.GCPRegion, cfg.KnelmImage, cfg.AirflowChartVersion, cfg.JupyterChartVersion)
 	if err != nil {
 		log.WithError(err).Fatal("creating k8s client")
 		return

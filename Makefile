@@ -34,7 +34,6 @@ local-online:
 	  --in-cluster=false \
 	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knada/knelm:2023-03-15-3c6e024 \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
-	  --airflow-egress-netpol=./.default-egress-airflow-worker.yaml\
 	  --admin-group=nada@nav.no \
 	  --vm-network-config=$(VM_NETWORK_CONFIG) \
 	  --session-key online-session

@@ -195,7 +195,7 @@ func (c Client) updateExternalResources(ctx context.Context, teamSlug string) {
 }
 
 func (c Client) deleteExternalResources(ctx context.Context, team gensql.TeamGetRow, apps []string, instance gensql.ComputeInstance) {
-	if err := c.googleClient.DeleteGCPTeamResources(ctx, team.ID, instance); err != nil {
+	if err := c.googleClient.DeleteGCPTeamResources(ctx, team, instance); err != nil {
 		c.log.WithError(err).Error("failed while deleting external resources")
 		return
 	}

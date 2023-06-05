@@ -14,6 +14,24 @@
                     class="navds-link"
                     href="/admin/airflow">Rediger globale Airflow verdier</a></li>
             </ul>
+            <form action="/admin/jupyterhub/sync/all" method="POST">
+                <button 
+                    type="submit" 
+                    onclick="return confirm('Er du sikker på at du vil resynce alle instanser av jupyterhub?')"
+                    class="mb-4 navds-button navds-button--secondary navds-button--small"
+                >
+                    <span class="navds-label">Resync alle jupyterhubs</span>
+                </button>
+            </form>
+            <form action="/admin/airflow/sync/all" method="POST">
+                <button 
+                    type="submit"
+                    onclick="return confirm('Er du sikker på at du vil resynce alle instanser av airflow?')"
+                    class="mb-4 navds-button navds-button--secondary navds-button--small"
+                >
+                    <span class="navds-label">Resync alle airflow</span>
+                </button>
+            </form>
             <h3 class="text-2xl font-bold">{{ len .teams }} team bruker Knada </h3>
             <div class="divide-y divide-border-divider divide-solid">
             {{ range .teams }}

@@ -333,13 +333,16 @@ func setSynkRepoAndBranch(values *AirflowForm) {
 func (a AirflowClient) setRestrictAirflowEgress(ctx context.Context, restrictAirflowEgress, teamID string) error {
 	switch restrictAirflowEgress {
 	case "on":
-		if err := a.k8sClient.CreateOrUpdateDefaultEgressNetpol(ctx, k8s.NameToNamespace(teamID)); err != nil {
+		if err := a.k8sClient.EnableDefaultEgressNetpolSync(ctx, k8s.NameToNamespace(teamID)); err != nil {
 			return err
 		}
 		if err := a.repo.TeamSetRestrictAirflowEgress(ctx, teamID, true); err != nil {
 			return err
 		}
 	default:
+		if err := a.k8sClient.DisableDefaultEgressNetpolSync(ctx, k8s.NameToNamespace(teamID)); err != nil {
+			return err
+		}
 		if err := a.k8sClient.DeleteDefaultEgressNetpol(ctx, k8s.NameToNamespace(teamID)); err != nil {
 			return err
 		}

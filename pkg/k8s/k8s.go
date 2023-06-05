@@ -20,13 +20,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/kubectl/pkg/scheme"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 const (
-	airflowDefaultEgressNetpol = "default-egress-airflow-worker"
+	airflowDefaultEgressNetpol    = "default-egress-airflow-worker"
+	airflowKnetpollerEnabledLabel = "knetpoller-enabled"
 )
 
 func NameToNamespace(name string) string {
@@ -48,13 +48,12 @@ type Client struct {
 	knelmImage          string
 	airflowChartVersion string
 	jupyterChartVersion string
-	airflowEgressNetPol string
 	repo                *database.Repo
 	cryptClient         *crypto.EncrypterDecrypter
 	log                 *logrus.Entry
 }
 
-func New(log *logrus.Entry, cryptClient *crypto.EncrypterDecrypter, repo *database.Repo, dryRun, inCluster bool, gcpProject, gcpRegion, knelmImage, airflowChartVersion, jupyterChartVersion, airflowEgressNetPol string) (*Client, error) {
+func New(log *logrus.Entry, cryptClient *crypto.EncrypterDecrypter, repo *database.Repo, dryRun, inCluster bool, gcpProject, gcpRegion, knelmImage, airflowChartVersion, jupyterChartVersion string) (*Client, error) {
 	client := &Client{
 		dryRun:              dryRun,
 		gcpProject:          gcpProject,
@@ -64,7 +63,6 @@ func New(log *logrus.Entry, cryptClient *crypto.EncrypterDecrypter, repo *databa
 		jupyterChartVersion: jupyterChartVersion,
 		log:                 log,
 		cryptClient:         cryptClient,
-		airflowEgressNetPol: airflowEgressNetPol,
 		repo:                repo,
 	}
 
@@ -94,18 +92,7 @@ func (c *Client) CreateTeamNamespace(ctx context.Context, name string) error {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 			Labels: map[string]string{
-				"team-namespace":             "include",
-				"cert-secret-jupyterhub":     "include",
-				"cert-secret-airflow":        "include",
-				"azureadapp-secret":          "include",
-				"smtp-secret":                "include",
-				"slack-secret":               "include",
-				"github-app-secret":          "include",
-				"ghcr-secret":                "include",
-				"ca-bundle-cm":               "include",
-				"airflow-webserver-config":   "include",
-				"airflow-auth-config":        "include",
-				"airflow-global-envs-config": "include",
+				"team-namespace": "true",
 			},
 		},
 	}
@@ -258,30 +245,42 @@ func (c *Client) DeleteSecret(ctx context.Context, name, namespace string) error
 	return nil
 }
 
-func (c *Client) CreateOrUpdateDefaultEgressNetpol(ctx context.Context, namespace string) error {
+func (c *Client) EnableDefaultEgressNetpolSync(ctx context.Context, namespace string) error {
 	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
 
-	netpolBytes, err := os.ReadFile(c.airflowEgressNetPol)
+	nsSpec, err := c.clientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
-	decoder := scheme.Codecs.UniversalDeserializer()
-	obj, _, err := decoder.Decode(netpolBytes, nil, nil)
+	nsSpec.Labels[airflowKnetpollerEnabledLabel] = "true"
+
+	_, err = c.clientSet.CoreV1().Namespaces().Update(ctx, nsSpec, metav1.UpdateOptions{})
+	if err != nil {
+		c.log.WithError(err).Error("updating team namespace")
+		return err
+	}
+	return nil
+}
+
+func (c *Client) DisableDefaultEgressNetpolSync(ctx context.Context, namespace string) error {
+	if c.dryRun {
+		return nil
+	}
+
+	nsSpec, err := c.clientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
-	switch o := obj.(type) {
-	case *networkingV1.NetworkPolicy:
-		if err := c.createOrUpdateEgressNetpol(ctx, o, namespace); err != nil {
-			return err
-		}
-	default:
-		c.log.Infof("create of update egress netpol: invalid netpol resource")
+	delete(nsSpec.Labels, airflowKnetpollerEnabledLabel)
+
+	_, err = c.clientSet.CoreV1().Namespaces().Update(ctx, nsSpec, metav1.UpdateOptions{})
+	if err != nil {
+		c.log.WithError(err).Error("updating team namespace")
+		return err
 	}
 
 	return nil

@@ -99,7 +99,7 @@ func TestMain(m *testing.M) {
 
 	cryptoClient := crypto.New("jegersekstentegn")
 
-	k8sClient, err := k8s.New(logrus.NewEntry(logrus.StandardLogger()), cryptoClient, repo, true, false, "", "", "", "", "", "")
+	k8sClient, err := k8s.New(logrus.NewEntry(logrus.StandardLogger()), cryptoClient, repo, true, false, "", "", "", "", "")
 	if err != nil {
 		log.Fatalf("creating k8sClient: %v", err)
 	}

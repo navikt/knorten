@@ -303,7 +303,7 @@ func (a *API) isUserInAdminGroup(token string, email string) bool {
 	_, err = jwt.ParseWithClaims(token, &claims, jwtValidator)
 
 	if err != nil {
-		a.log.WithError(err).Error(("Parse token"))
+		a.log.WithError(err).Error("Parse token")
 		return false
 	}
 

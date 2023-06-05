@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/nais/knorten/pkg/chart"
@@ -31,11 +32,12 @@ type API struct {
 	teamClient          *team.Client
 	jupyterChartVersion string
 	airflowChartVersion string
-	adminGroup          string
+	adminGroupMail      string
 	dryRun              bool
+	adminGroupID        string
 }
 
-func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, dryRun bool, airflowChartVersion, jupyterChartVersion, sessionKey, adminGroup string, log *logrus.Entry) (*gin.Engine, error) {
+func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, dryRun bool, airflowChartVersion, jupyterChartVersion, sessionKey, adminGroupMail string, log *logrus.Entry) (*gin.Engine, error) {
 	chartClient, err := chart.New(repo, googleClient, k8sClient, cryptClient, airflowChartVersion, jupyterChartVersion, log)
 	if err != nil {
 		return nil, err
@@ -50,17 +52,17 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 	})
 
 	api := API{
-		azureClient:  azureClient,
-		router:       router,
-		repo:         repo,
-		googleClient: googleClient,
-		k8sClient:    k8sClient,
-		adminClient:  adminClient,
-		cryptClient:  cryptClient,
-		log:          log,
-		chartClient:  chartClient,
-		adminGroup:   adminGroup,
-		dryRun:       dryRun,
+		azureClient:    azureClient,
+		router:         router,
+		repo:           repo,
+		googleClient:   googleClient,
+		k8sClient:      k8sClient,
+		adminClient:    adminClient,
+		cryptClient:    cryptClient,
+		log:            log,
+		chartClient:    chartClient,
+		adminGroupMail: adminGroupMail,
+		dryRun:         dryRun,
 	}
 
 	api.teamClient = team.NewClient(repo, googleClient, k8sClient, api.chartClient, azureClient, dryRun, log.WithField("subsystem", "teamClient"))
@@ -78,6 +80,10 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 	api.setupAuthenticatedRoutes()
 	api.router.Use(api.adminAuthMiddleware())
 	api.setupAdminRoutes()
+	err = api.fetchAdminGroupID()
+	if err != nil {
+		return nil, err
+	}
 	return router, nil
 }
 
@@ -159,4 +165,13 @@ func (a *API) isAdmin(c *gin.Context) bool {
 	}
 
 	return session.IsAdmin
+}
+
+func (a *API) fetchAdminGroupID() error {
+	id, err := a.azureClient.GetGroupID(a.adminGroupMail)
+	if err != nil {
+		return fmt.Errorf("retrieve admin group id error: %v", err)
+	}
+	a.adminGroupID = id
+	return nil
 }

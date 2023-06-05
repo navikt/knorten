@@ -15,6 +15,7 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/nais/knorten/pkg/auth"
 )
@@ -289,12 +290,39 @@ func (a *API) adminAuthMiddleware() gin.HandlerFunc {
 }
 
 func (a *API) isUserInAdminGroup(token string, email string) bool {
-	inGroup, err := a.azureClient.UserInGroup(token, email, a.adminGroup)
+	var claims jwt.MapClaims
+
+	certificates, err := a.azureClient.FetchCertificates()
 	if err != nil {
-		a.log.WithError(err).Error("problem verifying user group")
+		a.log.WithError(err).Error("fetch certificates")
 		return false
 	}
-	return inGroup
+
+	jwtValidator := auth.JWTValidator(certificates, a.azureClient.ClientID)
+
+	_, err = jwt.ParseWithClaims(token, &claims, jwtValidator)
+
+	if err != nil {
+		a.log.WithError(err).Error("Parse token")
+		return false
+	}
+
+	if claims["groups"] != nil {
+		groups, ok := claims["groups"].([]interface{})
+		if !ok {
+			a.log.Logger.Error("User does not have groups in claims")
+			return false
+		}
+		for _, group := range groups {
+			grp, ok := group.(string)
+			if ok {
+				if grp == a.adminGroupID {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 func (a *API) setupAuthRoutes() {

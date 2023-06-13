@@ -128,9 +128,28 @@ func (a *Client) regenerateSQLDBInfo(ctx context.Context, teamID string) error {
 		return err
 	}
 
+	resultDBConn := fmt.Sprintf("db+postgresql://%v:%v@%v:5432/%v?sslmode=disable", teamID, dbPass, "airflow-sql-proxy", teamID)
+	err = a.k8sClient.CreateOrUpdateSecret(ctx, "airflow-result-db", k8s.NameToNamespace(teamID), map[string]string{
+		"connection": resultDBConn,
+	})
+	if err != nil {
+		return err
+	}
+
+	secretKey, err := generatePassword(32)
+	if err != nil {
+		return err
+	}
+
+	if err := a.k8sClient.CreateOrUpdateSecret(ctx, "airflow-webserver", k8s.NameToNamespace(teamID), map[string]string{"webserver-secret-key": secretKey}); err != nil {
+		return err
+	}
+
 	if err := a.googleClient.CreateOrUpdateCloudSQLUser(ctx, teamID, dbPass, "airflow-"+teamID); err != nil {
 		return err
 	}
+
+	return nil
 }
 
 func (a *Client) ResyncAll(ctx context.Context, chartType gensql.ChartType) error {

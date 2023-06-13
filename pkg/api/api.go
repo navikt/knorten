@@ -42,7 +42,7 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 	if err != nil {
 		return nil, err
 	}
-	adminClient := admin.New(repo, k8sClient, cryptClient, chartClient, airflowChartVersion, jupyterChartVersion)
+	adminClient := admin.New(repo, k8sClient, googleClient, cryptClient, chartClient, airflowChartVersion, jupyterChartVersion)
 
 	router := gin.New()
 

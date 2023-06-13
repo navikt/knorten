@@ -2,13 +2,17 @@ package admin
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net/url"
 	"strings"
 
 	"github.com/nais/knorten/pkg/chart"
+	"github.com/nais/knorten/pkg/google"
 	helmApps "github.com/nais/knorten/pkg/helm/applications"
 	"github.com/nais/knorten/pkg/k8s"
+	"golang.org/x/exp/slices"
 
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/crypto"
@@ -18,6 +22,7 @@ import (
 type Client struct {
 	repo                *database.Repo
 	k8sClient           *k8s.Client
+	googleClient        *google.Google
 	airflowChartVersion string
 	jupyterChartVersion string
 	cryptClient         *crypto.EncrypterDecrypter
@@ -30,10 +35,11 @@ type diffValue struct {
 	Encrypted string
 }
 
-func New(repo *database.Repo, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, chartClient *chart.Client, airflowChartVersion, jupyterChartVersion string) *Client {
+func New(repo *database.Repo, k8sClient *k8s.Client, googleClient *google.Google, cryptClient *crypto.EncrypterDecrypter, chartClient *chart.Client, airflowChartVersion, jupyterChartVersion string) *Client {
 	return &Client{
 		repo:                repo,
 		k8sClient:           k8sClient,
+		googleClient:        googleClient,
 		cryptClient:         cryptClient,
 		chartClient:         chartClient,
 		airflowChartVersion: airflowChartVersion,
@@ -89,6 +95,34 @@ func (a *Client) ResyncTeams(ctx context.Context) error {
 
 		if err := a.k8sClient.CreateTeamServiceAccount(ctx, team.ID, k8s.NameToNamespace(team.ID)); err != nil {
 			return err
+		}
+
+		apps, err := a.repo.AppsForTeamGet(ctx, team.ID)
+		if err != nil {
+			return err
+		}
+
+		if slices.Contains(apps, string(gensql.ChartTypeAirflow)) {
+			dbPass, err := generatePassword(40)
+			if err != nil {
+				return err
+			}
+
+			if err := a.k8sClient.CreateCloudSQLProxy(ctx, "airflow-sql-proxy", team.ID, k8s.NameToNamespace(team.ID), "airflow-"+team.ID); err != nil {
+				return err
+			}
+
+			dbConn := fmt.Sprintf("postgresql://%v:%v@%v:5432/%v?sslmode=disable", team.ID, dbPass, "airflow-sql-proxy", team.ID)
+			err = a.k8sClient.CreateOrUpdateSecret(ctx, "airflow-db", k8s.NameToNamespace(team.ID), map[string]string{
+				"connection": dbConn,
+			})
+			if err != nil {
+				return err
+			}
+
+			if err := a.googleClient.CreateOrUpdateCloudSQLUser(ctx, team.ID, dbPass, "airflow-"+team.ID); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -268,4 +302,12 @@ func keyForValue(values map[string]diffValue, needle string) string {
 	}
 
 	return ""
+}
+
+func generatePassword(length int) (string, error) {
+	b := make([]byte, length)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }

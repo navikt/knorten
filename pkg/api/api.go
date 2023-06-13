@@ -52,16 +52,17 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 	})
 
 	api := API{
-		azureClient:  azureClient,
-		router:       router,
-		repo:         repo,
-		googleClient: googleClient,
-		k8sClient:    k8sClient,
-		adminClient:  adminClient,
-		cryptClient:  cryptClient,
-		log:          log,
-		chartClient:  chartClient,
-		dryRun:       dryRun,
+		azureClient:    azureClient,
+		router:         router,
+		repo:           repo,
+		googleClient:   googleClient,
+		k8sClient:      k8sClient,
+		adminClient:    adminClient,
+		cryptClient:    cryptClient,
+		log:            log,
+		chartClient:    chartClient,
+		adminGroupMail: adminGroup,
+		dryRun:         dryRun,
 	}
 
 	api.teamClient = team.NewClient(repo, googleClient, k8sClient, api.chartClient, azureClient, dryRun, log.WithField("subsystem", "teamClient"))

@@ -103,30 +103,34 @@ func (a *Client) ResyncTeams(ctx context.Context) error {
 		}
 
 		if slices.Contains(apps, string(gensql.ChartTypeAirflow)) {
-			dbPass, err := generatePassword(40)
-			if err != nil {
-				return err
-			}
-
-			if err := a.k8sClient.CreateCloudSQLProxy(ctx, "airflow-sql-proxy", team.ID, k8s.NameToNamespace(team.ID), "airflow-"+team.ID); err != nil {
-				return err
-			}
-
-			dbConn := fmt.Sprintf("postgresql://%v:%v@%v:5432/%v?sslmode=disable", team.ID, dbPass, "airflow-sql-proxy", team.ID)
-			err = a.k8sClient.CreateOrUpdateSecret(ctx, "airflow-db", k8s.NameToNamespace(team.ID), map[string]string{
-				"connection": dbConn,
-			})
-			if err != nil {
-				return err
-			}
-
-			if err := a.googleClient.CreateOrUpdateCloudSQLUser(ctx, team.ID, dbPass, "airflow-"+team.ID); err != nil {
-				return err
-			}
+			go a.regenerateSQLDBInfo(ctx, team.ID)
 		}
 	}
 
 	return nil
+}
+
+func (a *Client) regenerateSQLDBInfo(ctx context.Context, teamID string) error {
+	dbPass, err := generatePassword(40)
+	if err != nil {
+		return err
+	}
+
+	if err := a.k8sClient.CreateCloudSQLProxy(ctx, "airflow-sql-proxy", teamID, k8s.NameToNamespace(teamID), "airflow-"+teamID); err != nil {
+		return err
+	}
+
+	dbConn := fmt.Sprintf("postgresql://%v:%v@%v:5432/%v?sslmode=disable", teamID, dbPass, "airflow-sql-proxy", teamID)
+	err = a.k8sClient.CreateOrUpdateSecret(ctx, "airflow-db", k8s.NameToNamespace(teamID), map[string]string{
+		"connection": dbConn,
+	})
+	if err != nil {
+		return err
+	}
+
+	if err := a.googleClient.CreateOrUpdateCloudSQLUser(ctx, teamID, dbPass, "airflow-"+teamID); err != nil {
+		return err
+	}
 }
 
 func (a *Client) ResyncAll(ctx context.Context, chartType gensql.ChartType) error {

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nais/knorten/pkg/auth"
 	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/crypto"
@@ -42,8 +43,8 @@ type profile struct {
 	} `json:"kubespawner_override"`
 }
 
-func New(repo *database.Repo, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, jupyterChartVersion string, log *logrus.Entry) *ImageUpdater {
-	jupyterClient := chart.NewJupyterhubClient(repo, k8sClient, cryptClient, jupyterChartVersion, log.WithField("subsystem", "jupyterClient"))
+func New(repo *database.Repo, k8sClient *k8s.Client, azureClient *auth.Azure, cryptClient *crypto.EncrypterDecrypter, jupyterChartVersion string, log *logrus.Entry) *ImageUpdater {
+	jupyterClient := chart.NewJupyterhubClient(repo, k8sClient, azureClient, cryptClient, jupyterChartVersion, log.WithField("subsystem", "jupyterClient"))
 	return &ImageUpdater{
 		repo:          repo,
 		jupyterClient: &jupyterClient,

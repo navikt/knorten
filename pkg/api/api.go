@@ -37,8 +37,8 @@ type API struct {
 	adminGroupID        string
 }
 
-func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, dryRun bool, airflowChartVersion, jupyterChartVersion, sessionKey, adminGroupMail string, log *logrus.Entry) (*gin.Engine, error) {
-	chartClient, err := chart.New(repo, googleClient, k8sClient, cryptClient, airflowChartVersion, jupyterChartVersion, log)
+func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, dryRun bool, airflowChartVersion, jupyterChartVersion, sessionKey, adminGroup string, log *logrus.Entry) (*gin.Engine, error) {
+	chartClient, err := chart.New(repo, googleClient, k8sClient, azureClient, cryptClient, airflowChartVersion, jupyterChartVersion, log)
 	if err != nil {
 		return nil, err
 	}
@@ -52,17 +52,16 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 	})
 
 	api := API{
-		azureClient:    azureClient,
-		router:         router,
-		repo:           repo,
-		googleClient:   googleClient,
-		k8sClient:      k8sClient,
-		adminClient:    adminClient,
-		cryptClient:    cryptClient,
-		log:            log,
-		chartClient:    chartClient,
-		adminGroupMail: adminGroupMail,
-		dryRun:         dryRun,
+		azureClient:  azureClient,
+		router:       router,
+		repo:         repo,
+		googleClient: googleClient,
+		k8sClient:    k8sClient,
+		adminClient:  adminClient,
+		cryptClient:  cryptClient,
+		log:          log,
+		chartClient:  chartClient,
+		dryRun:       dryRun,
 	}
 
 	api.teamClient = team.NewClient(repo, googleClient, k8sClient, api.chartClient, azureClient, dryRun, log.WithField("subsystem", "teamClient"))

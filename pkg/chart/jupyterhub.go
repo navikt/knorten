@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	"github.com/nais/knorten/pkg/auth"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/database/gensql"
@@ -21,6 +22,7 @@ import (
 type JupyterhubClient struct {
 	repo         *database.Repo
 	k8sClient    *k8s.Client
+	azureClient  *auth.Azure
 	cryptClient  *crypto.EncrypterDecrypter
 	chartVersion string
 	log          *logrus.Entry
@@ -62,10 +64,11 @@ type JupyterValues struct {
 	ProfileList      string   `helm:"singleuser.profileList"`
 }
 
-func NewJupyterhubClient(repo *database.Repo, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, chartVersion string, log *logrus.Entry) JupyterhubClient {
+func NewJupyterhubClient(repo *database.Repo, k8sClient *k8s.Client, azureClient *auth.Azure, cryptClient *crypto.EncrypterDecrypter, chartVersion string, log *logrus.Entry) JupyterhubClient {
 	return JupyterhubClient{
 		repo:         repo,
 		k8sClient:    k8sClient,
+		azureClient:  azureClient,
 		cryptClient:  cryptClient,
 		chartVersion: chartVersion,
 		log:          log,
@@ -99,8 +102,7 @@ func (j JupyterhubClient) Create(c *gin.Context, slug string) error {
 
 	form.Slug = slug
 	form.TeamID = team.ID
-	form.AdminUsers = team.Users
-	form.AllowedUsers = team.Users
+	j.setUsers(team.Users, &form)
 
 	addGeneratedJupyterhubConfig(&form)
 
@@ -118,8 +120,7 @@ func (j JupyterhubClient) Update(c *gin.Context, form JupyterForm) error {
 	}
 
 	form.TeamID = team.ID
-	form.AdminUsers = team.Users
-	form.AllowedUsers = team.Users
+	j.setUsers(team.Users, &form)
 
 	return j.UpdateTeamValuesAndInstallOrUpdate(c, form)
 }
@@ -217,6 +218,29 @@ func (j JupyterhubClient) storeJupyterTeamValues(ctx context.Context, form Jupyt
 	}
 
 	return nil
+}
+
+func (j JupyterhubClient) setUsers(userEmails []string, form *JupyterForm) error {
+	users, err := j.convertEmailsToIdents(userEmails)
+	if err != nil {
+		return err
+	}
+	form.AdminUsers = users
+	form.AllowedUsers = users
+
+	return nil
+}
+
+func (j JupyterhubClient) convertEmailsToIdents(emails []string) ([]string, error) {
+	idents := []string{}
+	for _, e := range emails {
+		ident, err := j.azureClient.IdentForEmail(e)
+		if err != nil {
+			return nil, err
+		}
+		idents = append(idents, ident)
+	}
+	return idents, nil
 }
 
 func JupyterReleaseName(namespace string) string {

@@ -201,6 +201,48 @@ func (a *Azure) UserExistsInAzureAD(user string) error {
 	}
 }
 
+func (a *Azure) IdentForEmail(email string) (string, error) {
+	type identResponse struct {
+		Ident string `json:"onPremisesSamAccountName"`
+	}
+
+	token, err := a.getBearerTokenForApplication()
+	if err != nil {
+		return "", err
+	}
+
+	r, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%v/%v?$select=onPremisesSamAccountName", AzureUsersEndpoint, email), nil)
+	if err != nil {
+		return "", err
+	}
+	r.Header.Add("Authorization", fmt.Sprintf("Bearer %v", token))
+
+	httpClient := &http.Client{
+		Timeout: time.Second * 10,
+	}
+
+	res, err := httpClient.Do(r)
+	if err != nil {
+		return "", err
+	}
+
+	resBytes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return "", err
+	}
+
+	var identRes identResponse
+	if err := json.Unmarshal(resBytes, &identRes); err != nil {
+		return "", err
+	}
+
+	if identRes.Ident == "" {
+		return "", fmt.Errorf("unable to get user ident for email %v", email)
+	}
+
+	return strings.ToLower(identRes.Ident), nil
+}
+
 func (a *Azure) getBearerTokenForApplication() (string, error) {
 	form := url.Values{}
 	form.Add("client_id", a.clientID)
@@ -265,6 +307,6 @@ func (a *Azure) GetGroupID(groupMail string) (string, error) {
 	if len(groupsResponse.Groups) > 0 {
 		return groupsResponse.Groups[0].ID, nil
 	} else {
-		return "", errors.New("Group not found by the mail")
+		return "", errors.New("group not found by the mail")
 	}
 }

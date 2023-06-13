@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -50,14 +51,14 @@ type User struct {
 	Expires time.Time
 }
 
-type MemberOfResponse struct {
-	Groups []MemberOfGroup `json:"value"`
+type AzureGroupsWithIDResponse struct {
+	Groups []AzureGroupWithID `json:"value"`
 }
 
-type MemberOfGroup struct {
-	DisplayName string   `json:"displayName"`
-	Mail        string   `json:"mail"`
-	GroupTypes  []string `json:"groupTypes"`
+type AzureGroupWithID struct {
+	DisplayName string `json:"displayName"`
+	ID          string `json:"id"`
+	Mail        string `json:"mail"`
 }
 
 type TokenResponse struct {
@@ -67,8 +68,8 @@ type TokenResponse struct {
 var ErrAzureTokenExpired = fmt.Errorf("token expired")
 
 const (
-	AzureGraphMemberOfEndpoint = "https://graph.microsoft.com/v1.0/me/memberOf/microsoft.graph.group?$select=mail"
-	AzureUsersEndpoint         = "https://graph.microsoft.com/v1.0/users"
+	AzureUsersEndpoint  = "https://graph.microsoft.com/v1.0/users"
+	AzureGroupsEndpoint = "https://graph.microsoft.com/v1.0/groups"
 )
 
 func New(dryRun bool, clientID, clientSecret, tenantID, hostname string, log *logrus.Entry) *Azure {
@@ -242,59 +243,6 @@ func (a *Azure) IdentForEmail(email string) (string, error) {
 	return strings.ToLower(identRes.Ident), nil
 }
 
-func (a *Azure) GroupsForUser(token, email string) ([]MemberOfGroup, error) {
-	bearerToken, err := a.getBearerTokenOnBehalfOfUser(token)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, AzureGraphMemberOfEndpoint, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", bearerToken))
-
-	httpClient := &http.Client{
-		Timeout: time.Second * 10,
-	}
-
-	response, err := httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	var body []byte
-	_, err = response.Body.Read(body)
-	if err != nil {
-		return nil, err
-	}
-
-	var memberOfResponse MemberOfResponse
-	if err := json.NewDecoder(response.Body).Decode(&memberOfResponse); err != nil {
-		return nil, err
-	}
-
-	return memberOfResponse.Groups, nil
-}
-
-func contains(groups []MemberOfGroup, email string) bool {
-	for _, group := range groups {
-		if strings.EqualFold(group.Mail, email) {
-			return true
-		}
-	}
-	return false
-}
-
-func (a *Azure) UserInGroup(token string, userEmail, groupEmail string) (bool, error) {
-	groups, err := a.GroupsForUser(token, userEmail)
-	if err != nil {
-		return false, err
-	}
-
-	return contains(groups, groupEmail), nil
-}
-
 func (a *Azure) getBearerTokenForApplication() (string, error) {
 	form := url.Values{}
 	form.Add("client_id", a.clientID)
@@ -324,19 +272,23 @@ func (a *Azure) getBearerTokenForApplication() (string, error) {
 	return tokenResponse.AccessToken, nil
 }
 
-func (a *Azure) getBearerTokenOnBehalfOfUser(token string) (string, error) {
-	form := url.Values{}
-	form.Add("client_id", a.clientID)
-	form.Add("client_secret", a.clientSecret)
-	form.Add("scope", "https://graph.microsoft.com/.default")
-	form.Add("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer")
-	form.Add("requested_token_use", "on_behalf_of")
-	form.Add("assertion", token)
-
-	req, err := http.NewRequest(http.MethodPost, endpoints.AzureAD(a.tenantID).TokenURL, strings.NewReader(form.Encode()))
+func (a *Azure) GetGroupID(groupMail string) (string, error) {
+	token, err := a.getBearerTokenForApplication()
 	if err != nil {
 		return "", err
 	}
+
+	params := url.Values{}
+	params.Add("$select", "id,displayName,mail")
+	params.Add("$filter", fmt.Sprintf("mail eq '%v'", groupMail))
+
+	req, err := http.NewRequest(http.MethodGet,
+		AzureGroupsEndpoint+"?"+params.Encode(),
+		nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", token))
 
 	httpClient := &http.Client{
 		Timeout: time.Second * 10,
@@ -347,11 +299,14 @@ func (a *Azure) getBearerTokenOnBehalfOfUser(token string) (string, error) {
 		return "", err
 	}
 
-	var tokenResponse TokenResponse
-	if err := json.NewDecoder(response.Body).Decode(&tokenResponse); err != nil {
+	var groupsResponse AzureGroupsWithIDResponse
+	if err := json.NewDecoder(response.Body).Decode(&groupsResponse); err != nil {
 		return "", err
 	}
 
-	logrus.Debugf("Successfully retrieved on-behalf-of token")
-	return tokenResponse.AccessToken, nil
+	if len(groupsResponse.Groups) > 0 {
+		return groupsResponse.Groups[0].ID, nil
+	} else {
+		return "", errors.New("group not found by the mail")
+	}
 }

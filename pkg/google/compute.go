@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	ownerRole   = "roles/owner"
-	computeZone = "europe-west1-b"
+	ownerRole     = "roles/owner"
+	computeZone   = "europe-west1-b"
+	knadaUserRole = "projects/knada-gcp/roles/knadauser"
 )
 
 type ComputeForm struct {
@@ -118,7 +119,7 @@ func (g *Google) DeleteComputeInstance(ctx context.Context, slug string) error {
 		return err
 	}
 
-	go g.deleteComputeInstance(ctx, instance.InstanceName)
+	go g.deleteComputeInstance(ctx, instance.InstanceName, team.Users)
 
 	if err := g.repo.ComputeInstanceDelete(ctx, team.ID); err != nil {
 		return err
@@ -171,6 +172,10 @@ func (g *Google) createComputeInstance(ctx context.Context, users []string, team
 	for _, u := range users {
 		if err := g.addOwnerBinding(ctx, name, u); err != nil {
 			g.log.WithError(err).Errorf("create compute instance %v, add owner binding for user %v", name, u)
+			return
+		}
+		if err := g.grantKnadaUserRole(ctx, u); err != nil {
+			g.log.WithError(err).Errorf("create compute instance %v, grant knada-user project role for user %v", name, u)
 			return
 		}
 	}
@@ -229,6 +234,9 @@ func (g *Google) updateOwners(ctx context.Context, instance string, current, new
 			if err := g.removeOwnerBinding(ctx, instance, m); err != nil {
 				return err
 			}
+			if err := g.revokeKnadaUserRole(ctx, m); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -265,6 +273,62 @@ func (g *Google) addOwnerBinding(ctx context.Context, instance, user string) err
 	return nil
 }
 
+func (g *Google) grantKnadaUserRole(ctx context.Context, user string) error {
+	if g.dryRun {
+		g.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
+	cmd := exec.CommandContext(
+		ctx,
+		"gcloud",
+		"projects",
+		"add-iam-policy-binding",
+		g.project,
+		fmt.Sprintf("--member=user:%v", user),
+		fmt.Sprintf("--role=%v", knadaUserRole),
+		"--condition=None")
+
+	buf := &bytes.Buffer{}
+	cmd.Stdout = buf
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		io.Copy(os.Stdout, buf)
+		g.log.WithError(err).Errorf("create knada-user iam binding for user %v", user)
+		return err
+	}
+
+	return nil
+}
+
+func (g *Google) revokeKnadaUserRole(ctx context.Context, user string) error {
+	if g.dryRun {
+		g.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
+	cmd := exec.CommandContext(
+		ctx,
+		"gcloud",
+		"projects",
+		"remove-iam-policy-binding",
+		g.project,
+		fmt.Sprintf("--member=user:%v", user),
+		fmt.Sprintf("--role=%v", knadaUserRole),
+		"--condition=None")
+
+	buf := &bytes.Buffer{}
+	cmd.Stdout = buf
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		io.Copy(os.Stdout, buf)
+		g.log.WithError(err).Errorf("revoke knada-user iam binding for user %v", user)
+		return err
+	}
+
+	return nil
+}
+
 func (g *Google) removeOwnerBinding(ctx context.Context, instance, user string) error {
 	addCmd := exec.CommandContext(
 		ctx,
@@ -290,7 +354,7 @@ func (g *Google) removeOwnerBinding(ctx context.Context, instance, user string) 
 	return nil
 }
 
-func (g *Google) deleteComputeInstance(ctx context.Context, instance string) error {
+func (g *Google) deleteComputeInstance(ctx context.Context, instance string, users []string) error {
 	if g.dryRun {
 		g.log.Infof("NOOP: Running in dry run mode")
 		return nil
@@ -313,6 +377,12 @@ func (g *Google) deleteComputeInstance(ctx context.Context, instance string) err
 		io.Copy(os.Stdout, buf)
 		g.log.WithError(err).Errorf("delete compute instance %v", instance)
 		return err
+	}
+
+	for _, u := range users {
+		if err := g.revokeKnadaUserRole(ctx, u); err != nil {
+			return err
+		}
 	}
 
 	return nil

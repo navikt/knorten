@@ -219,6 +219,7 @@ func (a *API) setupAdminRoutes() {
 		session := sessions.Default(c)
 		chartType := getChartType(c.Param("chart"))
 		team := c.PostForm("team")
+
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
 			err := a.chartClient.Jupyterhub.Sync(c, team)
@@ -239,6 +240,22 @@ func (a *API) setupAdminRoutes() {
 				if err != nil {
 					a.log.WithError(err).Error("problem saving session")
 				}
+			}
+		}
+
+		c.Redirect(http.StatusSeeOther, "/admin")
+	})
+
+	a.router.POST("/admin/:chart/sync/all", func(c *gin.Context) {
+		session := sessions.Default(c)
+		chartType := getChartType(c.Param("chart"))
+
+		if err := a.adminClient.ResyncAll(c, chartType); err != nil {
+			a.log.WithError(err).Errorf("resyncing all instances of %v", chartType)
+			session.AddFlash(err.Error())
+			err = session.Save()
+			if err != nil {
+				a.log.WithError(err).Error("problem saving session")
 			}
 		}
 

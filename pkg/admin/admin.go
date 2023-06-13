@@ -76,6 +76,25 @@ func (a *Client) UpdateGlobalValues(ctx context.Context, formValues url.Values, 
 	return a.updateHelmReleases(ctx, chartType)
 }
 
+func (a *Client) ResyncTeams(ctx context.Context) error {
+	teams, err := a.repo.TeamsGet(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, team := range teams {
+		if err := a.k8sClient.CreateTeamNamespace(ctx, k8s.NameToNamespace(team.ID)); err != nil {
+			return err
+		}
+
+		if err := a.k8sClient.CreateTeamServiceAccount(ctx, team.ID, k8s.NameToNamespace(team.ID)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (a *Client) ResyncAll(ctx context.Context, chartType gensql.ChartType) error {
 	teamIDs, err := a.repo.TeamsForAppGet(ctx, chartType)
 	if err != nil {

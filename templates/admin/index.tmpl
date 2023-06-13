@@ -14,6 +14,15 @@
                     class="navds-link"
                     href="/admin/airflow">Rediger globale Airflow verdier</a></li>
             </ul>
+            <form action="/admin/team/sync/all" method="POST">
+                <button
+                        type="submit"
+                        onclick="return confirm('Er du sikker på at du vil resynce alle team?')"
+                        class="mb-4 navds-button navds-button--secondary navds-button--small"
+                >
+                    <span class="navds-label">Resync alle team</span>
+                </button>
+            </form>
             <form action="/admin/jupyterhub/sync/all" method="POST">
                 <button 
                     type="submit" 

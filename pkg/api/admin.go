@@ -279,4 +279,19 @@ func (a *API) setupAdminRoutes() {
 
 		c.Redirect(http.StatusSeeOther, "/admin")
 	})
+
+	a.router.POST("/admin/team/sync/all", func(c *gin.Context) {
+		session := sessions.Default(c)
+
+		if err := a.adminClient.ResyncTeams(c); err != nil {
+			a.log.WithError(err).Errorf("resyncing all teams")
+			session.AddFlash(err.Error())
+			err = session.Save()
+			if err != nil {
+				a.log.WithError(err).Error("problem saving session")
+			}
+		}
+
+		c.Redirect(http.StatusSeeOther, "/admin")
+	})
 }

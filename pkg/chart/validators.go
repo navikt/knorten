@@ -16,3 +16,8 @@ var ValidateAirflowRepo validator.Func = func(fl validator.FieldLevel) bool {
 
 	return parts[0] == "navikt"
 }
+
+var ValidateRepoBranch validator.Func = func(fl validator.FieldLevel) bool {
+	branch := fl.Field().Interface().(string)
+	return !strings.Contains(branch, "/")
+}

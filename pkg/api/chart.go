@@ -46,6 +46,14 @@ func (a *API) setupChartRoutes() {
 		}
 	}
 
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		err := v.RegisterValidation("validRepoBranch", chart.ValidateRepoBranch)
+		if err != nil {
+			a.log.WithError(err).Error("can't register validator")
+			return
+		}
+	}
+
 	a.router.GET("/team/:team/:chart/new", func(c *gin.Context) {
 		team := c.Param("team")
 		chartType := getChartType(c.Param("chart"))

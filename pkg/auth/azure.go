@@ -41,6 +41,7 @@ type Azure struct {
 	clientSecret string
 	tenantID     string
 	hostname     string
+	dryRun       bool
 	provider     *oidc.Provider
 	log          *logrus.Entry
 }
@@ -74,7 +75,9 @@ const (
 
 func New(dryRun bool, clientID, clientSecret, tenantID, hostname string, log *logrus.Entry) *Azure {
 	if dryRun {
-		return nil
+		return &Azure{
+			dryRun: true,
+		}
 	}
 
 	provider, err := oidc.NewProvider(context.Background(), fmt.Sprintf("https://login.microsoftonline.com/%v/v2.0", tenantID))
@@ -88,6 +91,7 @@ func New(dryRun bool, clientID, clientSecret, tenantID, hostname string, log *lo
 		tenantID:     tenantID,
 		hostname:     hostname,
 		provider:     provider,
+		dryRun:       dryRun,
 		log:          log,
 	}
 
@@ -202,6 +206,9 @@ func (a *Azure) UserExistsInAzureAD(user string) error {
 }
 
 func (a *Azure) IdentForEmail(email string) (string, error) {
+	if a.dryRun {
+		return email, nil
+	}
 	type identResponse struct {
 		Ident string `json:"onPremisesSamAccountName"`
 	}

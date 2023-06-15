@@ -20,6 +20,7 @@ import (
 
 	"github.com/nais/knorten/local/dbsetup"
 	"github.com/nais/knorten/pkg/api"
+	"github.com/nais/knorten/pkg/auth"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/database/gensql"
@@ -104,9 +105,11 @@ func TestMain(m *testing.M) {
 		log.Fatalf("creating k8sClient: %v", err)
 	}
 
+	azureClient := auth.New(true, "", "", "", "", logrus.NewEntry(logrus.StandardLogger()))
+
 	srv, err := api.New(
 		repo,
-		nil,
+		azureClient,
 		google.New(logrus.NewEntry(logrus.StandardLogger()), repo, "", "", "", true),
 		k8sClient,
 		cryptoClient,

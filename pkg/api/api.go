@@ -168,6 +168,9 @@ func (a *API) isAdmin(c *gin.Context) bool {
 }
 
 func (a *API) fetchAdminGroupID() error {
+	if a.dryRun {
+		return nil
+	}
 	id, err := a.azureClient.GetGroupID(a.adminGroupMail)
 	if err != nil {
 		return fmt.Errorf("retrieve admin group id error: %v", err)

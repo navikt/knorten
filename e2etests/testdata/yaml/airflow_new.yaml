@@ -251,7 +251,7 @@ extraConfigMaps: {}
 extraEnv: null
 extraEnvFrom: null
 extraSecrets: {}
-fernetKey: null
+fernetKey: ${FERNET_KEY}
 fernetKeySecretName: null
 flower:
   affinity: {}

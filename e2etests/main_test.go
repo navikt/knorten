@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -166,7 +167,15 @@ func replaceGeneratedValues(expected []byte, teamName string) ([]byte, error) {
 		return nil, err
 	}
 
+	fernetKey, err := repo.TeamValueGet(context.Background(), "fernetKey", team.ID)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+	}
+
 	updated := strings.ReplaceAll(string(expected), "${TEAM_ID}", team.ID)
+	updated = strings.ReplaceAll(string(updated), "${FERNET_KEY}", fernetKey.Value)
 	return []byte(updated), nil
 }
 

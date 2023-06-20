@@ -3,6 +3,7 @@ package chart
 import (
 	"context"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -26,6 +27,7 @@ const (
 	dbSecretName       = "airflow-db"
 	webserverSecret    = "airflow-webserver"
 	resultDBSecretName = "airflow-result-db"
+	fernetKeyLength    = 32
 )
 
 type AirflowClient struct {
@@ -71,6 +73,7 @@ type AirflowValues struct {
 	ExtraEnvs                  string `helm:"env"`
 	MetadataSecretName         string `helm:"data.metadataSecretName"`
 	ResultBackendSecretName    string `helm:"data.resultBackendSecretName"`
+	FernetKey                  string `helm:"fernetKey"`
 }
 
 func NewAirflowClient(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, chartVersion string, log *logrus.Entry) AirflowClient {
@@ -248,6 +251,11 @@ func (a AirflowClient) addGeneratedConfig(ctx context.Context, dbPassword, bucke
 		return err
 	}
 	values.ResultBackendSecretName = resultDBSecretName
+
+	values.FernetKey, err = generateFernetKey()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -445,6 +453,15 @@ func generatePassword(length int) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(b), nil
+}
+
+func generateFernetKey() (string, error) {
+	b := make([]byte, fernetKeyLength)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+
+	return base64.StdEncoding.EncodeToString(b), nil
 }
 
 func CreateAirflowDBInstanceName(teamID string) string {

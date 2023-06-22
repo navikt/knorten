@@ -63,7 +63,7 @@ func (d *ImageUpdater) run(ctx context.Context) {
 }
 
 func (d *ImageUpdater) triggerSync(ctx context.Context, chartType gensql.ChartType) error {
-	teams, err := d.repo.TeamsForAppGet(ctx, gensql.ChartTypeJupyterhub)
+	teams, err := d.repo.TeamsForAppGet(ctx, chartType)
 	if err != nil {
 		d.log.WithError(err).Errorf("reading jupyterhub teams from db")
 		return err

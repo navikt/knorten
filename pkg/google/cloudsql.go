@@ -40,7 +40,9 @@ func (g *Google) CreateCloudSQLInstance(ctx context.Context, dbInstance string) 
 		"--database-version=POSTGRES_14",
 		"--cpu=1",
 		"--memory=3.75GB",
-		"--require-ssl")
+		"--require-ssl",
+		"--backup",
+		"--backup-start-time=02:00")
 
 	buf := &bytes.Buffer{}
 	cmd.Stdout = buf

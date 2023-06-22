@@ -37,6 +37,10 @@ func (d *ImageUpdater) updateAirflowBaseImage(ctx context.Context) error {
 		if err := d.repo.GlobalChartValueInsert(ctx, airflowImageTagKey, garImage.Tag, false, gensql.ChartTypeAirflow); err != nil {
 			return err
 		}
+
+		if err := d.triggerSync(ctx, gensql.ChartTypeAirflow); err != nil {
+			return err
+		}
 	}
 
 	return nil

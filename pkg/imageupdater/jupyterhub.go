@@ -59,17 +59,8 @@ func (d *ImageUpdater) updateJupyterhubImages(ctx context.Context) error {
 			return err
 		}
 
-		teams, err := d.repo.TeamsForAppGet(ctx, gensql.ChartTypeJupyterhub)
-		if err != nil {
-			d.log.WithError(err).Error("reading jupyterhub teams from db")
+		if err := d.triggerSync(ctx, gensql.ChartTypeJupyterhub); err != nil {
 			return err
-		}
-
-		for _, t := range teams {
-			if err := d.jupyterClient.Sync(ctx, t); err != nil {
-				d.log.WithError(err).Errorf("error syncing jupyterhub for team %v", t)
-				return err
-			}
 		}
 	}
 

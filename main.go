@@ -79,7 +79,7 @@ func main() {
 	}
 
 	if !cfg.DryRun {
-		imageUpdater := imageupdater.New(repo, k8sClient, azureClient, cryptClient, cfg.JupyterChartVersion, log.WithField("subsystem", "imageupdater"))
+		imageUpdater := imageupdater.New(repo, googleClient, k8sClient, azureClient, cryptClient, cfg.JupyterChartVersion, cfg.AirflowChartVersion, log.WithField("subsystem", "imageupdater"))
 		go imageUpdater.Run(imageUpdaterFrequency)
 	}
 

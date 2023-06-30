@@ -57,9 +57,9 @@ func (d *ImageUpdater) run(ctx context.Context) {
 		d.log.WithError(err).Error("updating jupyterhub images")
 	}
 
-	// if err := d.updateAirflowBaseImage(ctx); err != nil {
-	// 	d.log.WithError(err).Error("updating airflow base image")
-	// }
+	if err := d.updateAirflowImages(ctx); err != nil {
+		d.log.WithError(err).Error("updating airflow images")
+	}
 }
 
 func (d *ImageUpdater) triggerSync(ctx context.Context, chartType gensql.ChartType) error {

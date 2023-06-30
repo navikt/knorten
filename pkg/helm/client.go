@@ -82,8 +82,12 @@ func (c *Client) InstallOrUpgrade(releaseName, chartVersion, namespace string, v
 		c.log.Infof("Upgrading existing release %v", releaseName)
 		upgradeClient := action.NewUpgrade(actionConfig)
 		upgradeClient.Namespace = namespace
-		upgradeClient.Atomic = true
 		upgradeClient.Timeout = timeout
+
+		// upgradeClient.Atomic = true
+		// Fra doc: The --wait flag will be set automatically if --atomic is used.
+		// Dette hindrer post-upgrade hooken som trigger databasemigrasjonsjobben for airflow og dermed blir alle airflow tjenester låst i wait-for-migrations initcontaineren når
+		// vi bumper til ny versjon av airflow hvis denne krever db migrasjoner. Tenker vi løser dette annerledes uansett når vi går over til pubsub så kommenterer det ut for nå.
 
 		_, err = upgradeClient.Run(releaseName, charty, charty.Values)
 		if err != nil {

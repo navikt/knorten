@@ -32,7 +32,7 @@ local-online:
 	  --airflow-chart-version=1.10.0 \
 	  --jupyter-chart-version=2.0.0 \
 	  --in-cluster=false \
-	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knada/knelm:2023-03-15-3c6e024 \
+	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knada/knelm:2023-06-30-a48491a \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
 	  --admin-group=nada@nav.no \
 	  --vm-network-config=$(VM_NETWORK_CONFIG) \
@@ -47,7 +47,7 @@ local:
 	  --db-enc-key=jegersekstentegn \
 	  --dry-run \
 	  --in-cluster=false \
-	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knorten/knelm:v9 \
+	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knada/knelm:2023-06-30-a48491a \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
 	  --admin-group=nada@nav.no \
 	  --session-key offline-session

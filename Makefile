@@ -29,7 +29,7 @@ local-online:
 	  --project=$(GCP_PROJECT) \
 	  --region=$(GCP_REGION) \
 	  --db-enc-key=$(DB_ENC_KEY) \
-	  --airflow-chart-version=1.7.0 \
+	  --airflow-chart-version=1.10.0 \
 	  --jupyter-chart-version=2.0.0 \
 	  --in-cluster=false \
 	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knada/knelm:2023-03-15-3c6e024 \
@@ -42,7 +42,7 @@ local:
 	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" \
     go run . \
 	  --hostname=localhost \
-	  --airflow-chart-version=1.7.0 \
+	  --airflow-chart-version=1.10.0 \
 	  --jupyter-chart-version=2.0.0 \
 	  --db-enc-key=jegersekstentegn \
 	  --dry-run \

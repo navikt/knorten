@@ -1,0 +1,25 @@
+{{ define "charts/script" }}
+    function deleteRow(event) {
+        const users = document.getElementById("allowlist");
+        users.removeChild(event.target.parentElement.parentElement)
+    }
+
+    function addElement(host) {
+        const target = document.getElementById("allowlist");
+        target.insertAdjacentHTML("beforeend",
+            `<div class="flex gap-2 mb-2">
+                <input 
+                    class="navds-text-field__input navds-body-short navds-body-medium" 
+                    type="text" 
+                    name="allowlist[]" 
+                    id="host" 
+                    value="${host ? host : ''}"
+                    placeholder="Host"
+                />
+                <button type="button" onclick="deleteRow(event)" class="navds-button navds-button--secondary">
+                    <span class="navds-label">Slett</span>
+                </button>
+            </div>` 
+        );
+    }
+{{ end }}

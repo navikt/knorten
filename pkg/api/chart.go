@@ -1,10 +1,14 @@
 package api
 
 import (
+	"context"
+	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 
@@ -13,6 +17,10 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database/gensql"
+)
+
+const (
+	jupyterhubAnnotationKey = "singleuser.extraAnnotations"
 )
 
 func getChartType(chartType string) gensql.ChartType {
@@ -156,9 +164,17 @@ func (a *API) setupChartRoutes() {
 		}
 
 		var form any
+		allowlist := []string{}
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
 			form = &chart.JupyterConfigurableValues{}
+			allowlist, err = a.getExistingAllowlist(c, team.ID)
+			if err != nil {
+				if !errors.Is(err, sql.ErrNoRows) {
+					a.log.WithError(err).Error("fetching existing jupyterhub allowlist")
+					c.Redirect(http.StatusSeeOther, "/oversikt")
+				}
+			}
 		case gensql.ChartTypeAirflow:
 			form = &chart.AirflowConfigurableValues{}
 		default:
@@ -196,6 +212,7 @@ func (a *API) setupChartRoutes() {
 			"pending_jupyterhub":    team.PendingJupyterUpgrade,
 			"pending_airflow":       team.PendingAirflowUpgrade,
 			"restrictairflowegress": team.RestrictAirflowEgress,
+			"allowlist":             allowlist,
 			"values":                form,
 			"errors":                flashes,
 		})
@@ -306,4 +323,24 @@ func (a *API) setupChartRoutes() {
 		}
 		c.Redirect(http.StatusSeeOther, "/oversikt")
 	})
+}
+
+func (a *API) getExistingAllowlist(ctx context.Context, teamID string) ([]string, error) {
+	extraAnnotations, err := a.repo.TeamValueGet(ctx, jupyterhubAnnotationKey, teamID)
+	if err != nil {
+		return nil, err
+	}
+
+	var annotations map[string]string
+	if err := json.Unmarshal([]byte(extraAnnotations.Value), &annotations); err != nil {
+		return nil, err
+	}
+
+	for k, v := range annotations {
+		if k == "allowlist" {
+			return strings.Split(v, ","), nil
+		}
+	}
+
+	return []string{}, nil
 }

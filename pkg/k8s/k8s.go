@@ -92,7 +92,8 @@ func (c *Client) CreateTeamNamespace(ctx context.Context, name string) error {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 			Labels: map[string]string{
-				"team-namespace": "true",
+				"team-namespace":           "true",
+				"allow-all-jupyter-egress": "true",
 			},
 		},
 	}

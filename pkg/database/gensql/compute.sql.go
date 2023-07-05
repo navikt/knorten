@@ -56,6 +56,34 @@ func (q *Queries) ComputeInstanceGet(ctx context.Context, teamID string) (Comput
 	return i, err
 }
 
+const computeInstancesGet = `-- name: ComputeInstancesGet :many
+SELECT team_id, instance_name, machine_type
+FROM compute_instances
+`
+
+func (q *Queries) ComputeInstancesGet(ctx context.Context) ([]ComputeInstance, error) {
+	rows, err := q.db.QueryContext(ctx, computeInstancesGet)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ComputeInstance{}
+	for rows.Next() {
+		var i ComputeInstance
+		if err := rows.Scan(&i.TeamID, &i.InstanceName, &i.MachineType); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const supportedComputeMachineTypes = `-- name: SupportedComputeMachineTypes :many
 SELECT unnest(enum_range(NULL::COMPUTE_MACHINE_TYPE))::text
 `

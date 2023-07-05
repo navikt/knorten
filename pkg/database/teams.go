@@ -2,6 +2,8 @@ package database
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"strings"
 
 	"github.com/nais/knorten/pkg/database/gensql"
@@ -44,6 +46,23 @@ func (r *Repo) TeamsGet(ctx context.Context) ([]gensql.Team, error) {
 
 func (r *Repo) TeamsForAppGet(ctx context.Context, chartType gensql.ChartType) ([]string, error) {
 	return r.querier.TeamsForAppGet(ctx, chartType)
+}
+
+func (r *Repo) TeamsForUser(ctx context.Context, email string) ([]string, error) {
+	teams, err := r.querier.TeamsForUserGet(ctx, email)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return []string{}, nil
+		}
+		return nil, err
+	}
+
+	var teamList []string
+	for _, t := range teams {
+		teamList = append(teamList, t.ID)
+	}
+
+	return teamList, nil
 }
 
 func (r *Repo) TeamSetPendingUpgrade(ctx context.Context, teamID, chartType string, pendingUpgrade bool) error {

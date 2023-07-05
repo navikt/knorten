@@ -15,6 +15,7 @@ type Querier interface {
 	ComputeInstanceCreate(ctx context.Context, arg ComputeInstanceCreateParams) error
 	ComputeInstanceDelete(ctx context.Context, teamID string) error
 	ComputeInstanceGet(ctx context.Context, teamID string) (ComputeInstance, error)
+	ComputeInstancesGet(ctx context.Context) ([]ComputeInstance, error)
 	GlobalValueDelete(ctx context.Context, arg GlobalValueDeleteParams) error
 	GlobalValueGet(ctx context.Context, arg GlobalValueGetParams) (ChartGlobalValue, error)
 	GlobalValueInsert(ctx context.Context, arg GlobalValueInsertParams) error

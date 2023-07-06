@@ -1,11 +1,10 @@
 -- name: EventCreate :exec
 INSERT INTO
-    Events (op, resource_type, param, status, deadline)
+    Events (event_type, task, status, deadline)
 VALUES
     (
-        @op,
-        @resource_type,
-        @param,
+        @event_type,
+        @task,
         'new',
         NOW() + INTERVAL @duration
     );
@@ -13,9 +12,8 @@ VALUES
 -- name: EventGet :one
 SELECT
     id,
-    op,
-    resource_type,
-    param,
+    event_type,
+    task,
     status,
     deadline,
     created_at,
@@ -44,11 +42,11 @@ WHERE
     status = "new"
     AND deadline < NOW();
 
--- name: EventProlongDeadline :exec
+-- name: EventSetDeadline :exec
 UPDATE
     Events
 SET
-    deadline = deadline + INTERVAL @duration
+    deadline = @deadline
 WHERE
     id = @id;
 
@@ -62,14 +60,15 @@ WHERE
 
 -- name: EventLogCreate :exec
 INSERT INTO
-    Event_Logs (event_id, message)
+    Event_Logs (event_id, log_type, message)
 VALUES
-    (@event_id, @message);
+    (@event_id, @log_type, @message);
 
 -- name: EventLogsForEventGet :many
 SELECT
     id,
     event_id,
+    log_type,
     message,
     created_at
 FROM

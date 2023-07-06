@@ -15,40 +15,32 @@ import (
 
 const eventCreate = `-- name: EventCreate :exec
 INSERT INTO
-    Events (op, resource_type, param, status, deadline)
+    Events (event_type, task, status, deadline)
 VALUES
     (
         $1,
         $2,
-        $3,
         'new',
-        NOW() + INTERVAL $4
+        NOW() + INTERVAL $3
     )
 `
 
 type EventCreateParams struct {
-	Op           Op
-	ResourceType ResourceType
-	Param        json.RawMessage
-	Duration     time.Time
+	EventType EventType
+	Task      json.RawMessage
+	Duration  time.Time
 }
 
 func (q *Queries) EventCreate(ctx context.Context, arg EventCreateParams) error {
-	_, err := q.db.ExecContext(ctx, eventCreate,
-		arg.Op,
-		arg.ResourceType,
-		arg.Param,
-		arg.Duration,
-	)
+	_, err := q.db.ExecContext(ctx, eventCreate, arg.EventType, arg.Task, arg.Duration)
 	return err
 }
 
 const eventGet = `-- name: EventGet :one
 SELECT
     id,
-    op,
-    resource_type,
-    param,
+    event_type,
+    task,
     status,
     deadline,
     created_at,
@@ -64,9 +56,8 @@ func (q *Queries) EventGet(ctx context.Context, id uuid.UUID) (Event, error) {
 	var i Event
 	err := row.Scan(
 		&i.ID,
-		&i.Op,
-		&i.ResourceType,
-		&i.Param,
+		&i.EventType,
+		&i.Task,
 		&i.Status,
 		&i.Deadline,
 		&i.CreatedAt,
@@ -77,18 +68,19 @@ func (q *Queries) EventGet(ctx context.Context, id uuid.UUID) (Event, error) {
 
 const eventLogCreate = `-- name: EventLogCreate :exec
 INSERT INTO
-    Event_Logs (event_id, message)
+    Event_Logs (event_id, log_type, message)
 VALUES
-    ($1, $2)
+    ($1, $2, $3)
 `
 
 type EventLogCreateParams struct {
 	EventID uuid.UUID
+	LogType LogType
 	Message string
 }
 
 func (q *Queries) EventLogCreate(ctx context.Context, arg EventLogCreateParams) error {
-	_, err := q.db.ExecContext(ctx, eventLogCreate, arg.EventID, arg.Message)
+	_, err := q.db.ExecContext(ctx, eventLogCreate, arg.EventID, arg.LogType, arg.Message)
 	return err
 }
 
@@ -96,6 +88,7 @@ const eventLogsForEventGet = `-- name: EventLogsForEventGet :many
 SELECT
     id,
     event_id,
+    log_type,
     message,
     created_at
 FROM
@@ -118,6 +111,7 @@ func (q *Queries) EventLogsForEventGet(ctx context.Context, eventID uuid.UUID) (
 		if err := rows.Scan(
 			&i.ID,
 			&i.EventID,
+			&i.LogType,
 			&i.Message,
 			&i.CreatedAt,
 		); err != nil {
@@ -134,22 +128,22 @@ func (q *Queries) EventLogsForEventGet(ctx context.Context, eventID uuid.UUID) (
 	return items, nil
 }
 
-const eventProlongDeadline = `-- name: EventProlongDeadline :exec
+const eventSetDeadline = `-- name: EventSetDeadline :exec
 UPDATE
     Events
 SET
-    deadline = deadline + INTERVAL $1
+    deadline = $1
 WHERE
     id = $2
 `
 
-type EventProlongDeadlineParams struct {
-	Duration time.Time
+type EventSetDeadlineParams struct {
+	Deadline time.Time
 	ID       uuid.UUID
 }
 
-func (q *Queries) EventProlongDeadline(ctx context.Context, arg EventProlongDeadlineParams) error {
-	_, err := q.db.ExecContext(ctx, eventProlongDeadline, arg.Duration, arg.ID)
+func (q *Queries) EventSetDeadline(ctx context.Context, arg EventSetDeadlineParams) error {
+	_, err := q.db.ExecContext(ctx, eventSetDeadline, arg.Deadline, arg.ID)
 	return err
 }
 
@@ -174,7 +168,7 @@ func (q *Queries) EventSetStatus(ctx context.Context, arg EventSetStatusParams) 
 
 const eventsGetNew = `-- name: EventsGetNew :many
 SELECT
-    id, op, resource_type, param, status, deadline, created_at, updated_at
+    id, event_type, task, status, deadline, created_at, updated_at
 FROM
     Events
 WHERE
@@ -194,9 +188,8 @@ func (q *Queries) EventsGetNew(ctx context.Context) ([]Event, error) {
 		var i Event
 		if err := rows.Scan(
 			&i.ID,
-			&i.Op,
-			&i.ResourceType,
-			&i.Param,
+			&i.EventType,
+			&i.Task,
 			&i.Status,
 			&i.Deadline,
 			&i.CreatedAt,
@@ -217,7 +210,7 @@ func (q *Queries) EventsGetNew(ctx context.Context) ([]Event, error) {
 
 const eventsGetOverdue = `-- name: EventsGetOverdue :many
 SELECT
-    id, op, resource_type, param, status, deadline, created_at, updated_at
+    id, event_type, task, status, deadline, created_at, updated_at
 FROM
     Events
 WHERE
@@ -236,9 +229,8 @@ func (q *Queries) EventsGetOverdue(ctx context.Context) ([]Event, error) {
 		var i Event
 		if err := rows.Scan(
 			&i.ID,
-			&i.Op,
-			&i.ResourceType,
-			&i.Param,
+			&i.EventType,
+			&i.Task,
 			&i.Status,
 			&i.Deadline,
 			&i.CreatedAt,

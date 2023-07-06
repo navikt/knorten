@@ -12,9 +12,19 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 	"github.com/nais/knorten/pkg/auth"
+	"github.com/nais/knorten/pkg/events"
 	"github.com/nais/knorten/pkg/team"
 	"k8s.io/utils/strings/slices"
 )
+
+func getForm(ctx *gin.Context) (interface{}, error) {
+	var form team.Form
+	err := ctx.ShouldBindWith(&form, binding.Form)
+	if err != nil {
+		return nil, err
+	}
+	return form, nil
+}
 
 func (a *API) setupTeamRoutes() {
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
@@ -62,7 +72,10 @@ func (a *API) setupTeamRoutes() {
 	})
 
 	a.router.POST("/team/new", func(c *gin.Context) {
-		err := a.teamClient.Create(c)
+		form, err := getForm(c)
+		if err == nil {
+			err = events.RegisterCreateTeamEvent(c, form)
+		}
 		if err != nil {
 			session := sessions.Default(c)
 			session.AddFlash(err.Error())
@@ -113,7 +126,7 @@ func (a *API) setupTeamRoutes() {
 
 	a.router.POST("/team/:team/edit", func(c *gin.Context) {
 		teamName := c.Param("team")
-		err := a.teamClient.Update(c)
+		err := a.TeamClient.Update(c)
 		if err != nil {
 			session := sessions.Default(c)
 			session.AddFlash(err.Error())
@@ -131,7 +144,7 @@ func (a *API) setupTeamRoutes() {
 	a.router.POST("/team/:team/delete", func(c *gin.Context) {
 		teamName := c.Param("team")
 
-		err := a.teamClient.Delete(c, teamName)
+		err := a.TeamClient.Delete(c, teamName)
 		if err != nil {
 			session := sessions.Default(c)
 			session.AddFlash(err.Error())

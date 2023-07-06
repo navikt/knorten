@@ -29,13 +29,15 @@ type API struct {
 	adminClient         *admin.Client
 	cryptClient         *crypto.EncrypterDecrypter
 	chartClient         *chart.Client
-	teamClient          *team.Client
+	TeamClient          *team.Client
 	jupyterChartVersion string
 	airflowChartVersion string
 	adminGroupMail      string
 	dryRun              bool
 	adminGroupID        string
 }
+
+var Api API
 
 func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, dryRun bool, airflowChartVersion, jupyterChartVersion, sessionKey, adminGroup string, log *logrus.Entry) (*gin.Engine, error) {
 	chartClient, err := chart.New(repo, googleClient, k8sClient, azureClient, cryptClient, airflowChartVersion, jupyterChartVersion, log)
@@ -51,7 +53,7 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 		log.Infof("[GIN] %v %v %v", ctx.Request.Method, ctx.Request.URL.Path, ctx.Writer.Status())
 	})
 
-	api := API{
+	Api := API{
 		azureClient:    azureClient,
 		router:         router,
 		repo:           repo,
@@ -65,22 +67,22 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 		dryRun:         dryRun,
 	}
 
-	api.teamClient = team.NewClient(repo, googleClient, k8sClient, api.chartClient, azureClient, dryRun, log.WithField("subsystem", "teamClient"))
+	Api.TeamClient = team.NewClient(repo, googleClient, k8sClient, api.chartClient, azureClient, dryRun, log.WithField("subsystem", "teamClient"))
 
 	session, err := repo.NewSessionStore(sessionKey)
 	if err != nil {
 		return nil, err
 	}
 
-	api.router.Use(session)
-	api.router.Static("/assets", "./assets")
-	api.router.LoadHTMLGlob("templates/**/*")
-	api.setupUnauthenticatedRoutes()
-	api.router.Use(api.authMiddleware([]string{}))
-	api.setupAuthenticatedRoutes()
-	api.router.Use(api.adminAuthMiddleware())
-	api.setupAdminRoutes()
-	err = api.fetchAdminGroupID()
+	Api.router.Use(session)
+	Api.router.Static("/assets", "./assets")
+	Api.router.LoadHTMLGlob("templates/**/*")
+	Api.setupUnauthenticatedRoutes()
+	Api.router.Use(Api.authMiddleware([]string{}))
+	Api.setupAuthenticatedRoutes()
+	Api.router.Use(Api.adminAuthMiddleware())
+	Api.setupAdminRoutes()
+	err = Api.fetchAdminGroupID()
 	if err != nil {
 		return nil, err
 	}

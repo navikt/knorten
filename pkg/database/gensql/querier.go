@@ -21,7 +21,7 @@ type Querier interface {
 	EventGet(ctx context.Context, id uuid.UUID) (Event, error)
 	EventLogCreate(ctx context.Context, arg EventLogCreateParams) error
 	EventLogsForEventGet(ctx context.Context, eventID uuid.UUID) ([]EventLog, error)
-	EventProlongDeadline(ctx context.Context, arg EventProlongDeadlineParams) error
+	EventSetDeadline(ctx context.Context, arg EventSetDeadlineParams) error
 	EventSetStatus(ctx context.Context, arg EventSetStatusParams) error
 	EventsGetNew(ctx context.Context) ([]Event, error)
 	EventsGetOverdue(ctx context.Context) ([]Event, error)

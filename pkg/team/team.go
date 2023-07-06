@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -17,6 +16,7 @@ import (
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/google"
 	"github.com/nais/knorten/pkg/k8s"
+	"github.com/nais/knorten/pkg/logger"
 	"github.com/thanhpk/randstr"
 	"k8s.io/utils/strings/slices"
 )
@@ -50,37 +50,49 @@ type Form struct {
 	APIAccess string   `form:"apiaccess"`
 }
 
-func (c Client) Create(ctx *gin.Context) error {
-	var form Form
-	err := ctx.ShouldBindWith(&form, binding.Form)
-	if err != nil {
-		return err
-	}
+func (c Client) Create(ctx context.Context, form Form, log logger.Logger) {
+
+	log.Infof("Creating team %v...", form.Slug)
 
 	team, err := c.repo.TeamGet(ctx, form.Slug)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
-			return err
+			log.Errorf("sql error: %v", err)
+			return
 		}
 	}
 	if team.Slug == form.Slug {
-		return fmt.Errorf("there already exists a team with name %v", form.Slug)
+		log.Fatalf("there already exists a team with name %v", form.Slug)
+		return
 	}
 
-	c.log.Infof("Creating team: %v", form.Slug)
 	teamID := createTeamID(form.Slug)
 	users := removeEmptyUsers(form.Users)
+
 	if err := c.ensureUsersExists(users); err != nil {
-		return err
+		log.Fatalf("failed to verify azure user %v: %v", users, err)
+		return
+	}
+
+	if err := c.googleClient.CreateGCPTeamResources(ctx, form.Slug, teamID, users); err != nil {
+		log.Errorf("failed creating gcp team: %v", err)
+		return
+	}
+
+	if err := c.k8sClient.CreateTeamNamespace(ctx, k8s.NameToNamespace(teamID)); err != nil {
+		log.Errorf("failed creating team namespace: %v", err)
+		return
+	}
+
+	if err := c.k8sClient.CreateTeamServiceAccount(ctx, teamID, k8s.NameToNamespace(teamID)); err != nil {
+		log.Errorf("failed creating team SA: %v", err)
+		return
 	}
 
 	if err := c.repo.TeamCreate(ctx, teamID, form.Slug, form.Owner, users, form.APIAccess == "on"); err != nil {
-		return err
+		log.Errorf("sql error: %v", err)
+		return
 	}
-
-	go c.createExternalResources(ctx, form.Slug, teamID, form.Users)
-
-	return nil
 }
 
 func (c Client) Update(ctx *gin.Context) error {
@@ -170,7 +182,7 @@ func (c Client) Delete(ctx context.Context, teamSlug string) error {
 	return nil
 }
 
-func (c Client) createExternalResources(ctx *gin.Context, slug, teamID string, users []string) {
+func (c Client) createExternalResources(ctx context.Context, slug, teamID string, users []string) {
 	if err := c.googleClient.CreateGCPTeamResources(ctx, slug, teamID, users); err != nil {
 		c.log.WithError(err).Error("failed while creating external resources")
 		return

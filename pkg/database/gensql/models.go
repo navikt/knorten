@@ -105,8 +105,8 @@ const (
 	EventStatusNew        EventStatus = "new"
 	EventStatusProcessing EventStatus = "processing"
 	EventStatusCompleted  EventStatus = "completed"
+	EventStatusPending    EventStatus = "pending"
 	EventStatusFailed     EventStatus = "failed"
-	EventStatusInvalid    EventStatus = "invalid"
 )
 
 func (e *EventStatus) Scan(src interface{}) error {
@@ -144,90 +144,97 @@ func (ns NullEventStatus) Value() (driver.Value, error) {
 	return string(ns.EventStatus), nil
 }
 
-type Op string
+type EventType string
 
 const (
-	OpCreate Op = "create"
-	OpUpdate Op = "update"
-	OpDelete Op = "delete"
+	EventTypeCreateTeam    EventType = "create:team"
+	EventTypeUpdateTeam    EventType = "update:team"
+	EventTypeDeleteTeam    EventType = "delete:team"
+	EventTypeCreateJupyter EventType = "create:jupyter"
+	EventTypeUpdateJupyter EventType = "update:jupyter"
+	EventTypeDeleteJupyter EventType = "delete:jupyter"
+	EventTypeCreateAirflow EventType = "create:airflow"
+	EventTypeUpdateAirflow EventType = "update:airflow"
+	EventTypeDeleteAirflow EventType = "delete:airflow"
 )
 
-func (e *Op) Scan(src interface{}) error {
+func (e *EventType) Scan(src interface{}) error {
 	switch s := src.(type) {
 	case []byte:
-		*e = Op(s)
+		*e = EventType(s)
 	case string:
-		*e = Op(s)
+		*e = EventType(s)
 	default:
-		return fmt.Errorf("unsupported scan type for Op: %T", src)
+		return fmt.Errorf("unsupported scan type for EventType: %T", src)
 	}
 	return nil
 }
 
-type NullOp struct {
-	Op    Op
-	Valid bool // Valid is true if Op is not NULL
+type NullEventType struct {
+	EventType EventType
+	Valid     bool // Valid is true if EventType is not NULL
 }
 
 // Scan implements the Scanner interface.
-func (ns *NullOp) Scan(value interface{}) error {
+func (ns *NullEventType) Scan(value interface{}) error {
 	if value == nil {
-		ns.Op, ns.Valid = "", false
+		ns.EventType, ns.Valid = "", false
 		return nil
 	}
 	ns.Valid = true
-	return ns.Op.Scan(value)
+	return ns.EventType.Scan(value)
 }
 
 // Value implements the driver Valuer interface.
-func (ns NullOp) Value() (driver.Value, error) {
+func (ns NullEventType) Value() (driver.Value, error) {
 	if !ns.Valid {
 		return nil, nil
 	}
-	return string(ns.Op), nil
+	return string(ns.EventType), nil
 }
 
-type ResourceType string
+type LogType string
 
 const (
-	ResourceTypeTeam    ResourceType = "team"
-	ResourceTypeJupyter ResourceType = "jupyter"
-	ResourceTypeAirflow ResourceType = "airflow"
+	LogTypeInfo  LogType = "info"
+	LogTypeWarn  LogType = "warn"
+	LogTypeError LogType = "error"
+	LogTypeFatal LogType = "fatal"
 )
 
-func (e *ResourceType) Scan(src interface{}) error {
+func (e *LogType) Scan(src interface{}) error {
 	switch s := src.(type) {
 	case []byte:
-		*e = ResourceType(s)
+		*e = LogType(s)
 	case string:
-		*e = ResourceType(s)
+		*e = LogType(s)
 	default:
-		return fmt.Errorf("unsupported scan type for ResourceType: %T", src)
+		return fmt.Errorf("unsupported scan type for LogType: %T", src)
 	}
 	return nil
 }
 
-type NullResourceType struct {
-	ResourceType ResourceType
-	Valid        bool // Valid is true if ResourceType is not NULL
+type NullLogType struct {
+	LogType LogType
+	Valid   bool // Valid is true if LogType is not NULL
 }
 
 // Scan implements the Scanner interface.
-func (ns *NullResourceType) Scan(value interface{}) error {
+func (ns *NullLogType) Scan(value interface{}) error {
 	if value == nil {
-		ns.ResourceType, ns.Valid = "", false
+		ns.LogType, ns.Valid = "", false
 		return nil
 	}
 	ns.Valid = true
-	return ns.ResourceType.Scan(value)
+	return ns.LogType.Scan(value)
 }
 
 // Value implements the driver Valuer interface.
-func (ns NullResourceType) Value() (driver.Value, error) {
+func (ns NullLogType) Value() (driver.Value, error) {
 	if !ns.Valid {
 		return nil, nil
 	}
-	return string(ns.ResourceType), nil
+	return string(ns.LogType), nil
 }
 
 type ChartGlobalValue struct {
@@ -255,19 +262,19 @@ type ComputeInstance struct {
 }
 
 type Event struct {
-	ID           uuid.UUID
-	Op           Op
-	ResourceType ResourceType
-	Param        json.RawMessage
-	Status       EventStatus
-	Deadline     time.Time
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID        uuid.UUID
+	EventType EventType
+	Task      json.RawMessage
+	Status    EventStatus
+	Deadline  time.Time
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type EventLog struct {
 	ID        uuid.UUID
 	EventID   uuid.UUID
+	LogType   LogType
 	Message   string
 	CreatedAt time.Time
 }

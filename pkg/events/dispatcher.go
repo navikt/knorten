@@ -6,70 +6,53 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/nais/knorten/pkg/api"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/team"
 	"github.com/sirupsen/logrus"
 )
 
-type WorkerFunc func(uuid.UUID, map[string]string)
+type WorkerFunc func(context.Context, uuid.UUID, any)
 
-type EventType string
-
-var started bool
-
-var eventChan chan string
-
+var eventChan = make(chan string, 10)
+var stopChan = make(chan string)
+var dbQuerier gensql.Querier
 var log *logrus.Entry
+var eventContext context.Context
 
 // eventWorker is a placeholder for the actual event worker function
-var eventWorker = map[EventType]WorkerFunc{
-	"create:team": func(eventID uuid.UUID, param map[string]string) {
-	},
-	"update:team": func(eventID uuid.UUID, param map[string]string) {
-	},
-	"delete:team": func(eventID uuid.UUID, param map[string]string) {
-	},
-	"create:jupyter": func(eventID uuid.UUID, param map[string]string) {
-	},
-	"update:jupyter": func(eventID uuid.UUID, param map[string]string) {
-	},
-	"delete:jupyter": func(eventID uuid.UUID, param map[string]string) {
-	},
-	"create:airflow": func(eventID uuid.UUID, param map[string]string) {
-	},
-	"update:airflow": func(eventID uuid.UUID, param map[string]string) {
-	},
-	"delete:airflow": func(eventID uuid.UUID, param map[string]string) {
+var eventWorker = map[gensql.EventType]WorkerFunc{
+	gensql.EventTypeCreateTeam: func(ctx context.Context, eventID uuid.UUID, anyForm any) {
+		logger := newEventLogger(eventID)
+		form, ok := anyForm.(team.Form)
+		if !ok {
+			logger.Fatalf("Illegal form type")
+			return
+		}
+		go api.Api.teamClient.Create(ctx, form, logger)
 	},
 }
 
-func getEventType(e *gensql.Event) EventType {
-	return EventType(string(e.Op) + ":" + string(e.ResourceType))
-}
-
-func getEventParam(e *gensql.Event) (map[string]string, error) {
+func getTask(e *gensql.Event) (map[string]string, error) {
 	var result map[string]string
-	err := json.Unmarshal([]byte(e.Param), &result)
+	err := json.Unmarshal([]byte(e.Task), &result)
 	return result, err
 }
 
-func TriggerDispatcher(incomingEvent string) {
-	if !started {
-		return
+func triggerDispatcher(incomingEvent string) {
+	select {
+	case eventChan <- incomingEvent:
+	default:
 	}
-	eventChan <- incomingEvent
+}
+
+func Stop(ctx context.Context) {
+	stopChan <- "stop"
 }
 
 func Start(ctx context.Context, logEntry *logrus.Entry, querier gensql.Querier) {
-	if started {
-		log.Errorln("Event dispatcher already started!")
-		return
-	}
-
-	started = true
-
 	log = logEntry
-
-	eventChan = make(chan string)
+	dbQuerier = querier
 
 	var eventRetrievers []func() ([]gensql.Event, error) = []func() ([]gensql.Event, error){
 		func() ([]gensql.Event, error) {
@@ -82,35 +65,41 @@ func Start(ctx context.Context, logEntry *logrus.Entry, querier gensql.Querier) 
 
 	go func() {
 		for {
+			select {
+			case incomingEvent := <-eventChan:
+				log.Debug("Received event: ", incomingEvent)
+			case stopMessage := <-stopChan:
+				log.Debug("Received stop: ", stopMessage)
+				return
+			case <-time.Tick(1 * time.Minute):
+				log.Debug("Event dispatcher run!")
+			case <-ctx.Done():
+				log.Debug("Context cancelled, stopping the event dispatcher.")
+				return
+			}
+
 			for _, eventRetriever := range eventRetrievers {
 				pickedEvents, err := eventRetriever()
 				if err != nil {
 					log.Errorf("Failed to fetch events: %v\n", err)
 				} else {
 					for _, event := range pickedEvents {
-						if worker, ok := eventWorker[getEventType((&event))]; ok {
-							eventParam, err := getEventParam(&event)
+						if worker, ok := eventWorker[event.EventType]; ok {
+							task, err := getTask(&event)
 							if err != nil {
 								querier.EventSetStatus(ctx, gensql.EventSetStatusParams{
-									Status: "invalid",
+									Status: gensql.EventStatusFailed,
 								})
 								//or decent error handling like send slack bug notification?
-								log.Errorf("retrieved event with invalid param: %v", event)
+								log.WithField("eventType", event.EventType).WithField("eventID", event.ID).Errorf("retrieved event with invalid param: %v", err)
 							} else {
-								worker(event.ID, eventParam)
+								worker(ctx, event.ID, task)
 							}
 						} else {
-							log.Errorf("No worker found for event type %v\n", getEventType(&event))
+							log.Errorf("No worker found for event type %v\n", event.EventType)
 						}
 					}
 				}
-			}
-
-			select {
-			case incomingEvent := <-eventChan:
-				log.Debug("Received event: ", incomingEvent)
-			case <-time.After(1 * time.Minute):
-				log.Debug("Event dispatcher run!")
 			}
 		}
 	}()

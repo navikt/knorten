@@ -22,11 +22,14 @@ import (
 	"github.com/nais/knorten/local/dbsetup"
 	"github.com/nais/knorten/pkg/api"
 	"github.com/nais/knorten/pkg/auth"
+	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/events"
 	"github.com/nais/knorten/pkg/google"
 	"github.com/nais/knorten/pkg/k8s"
+	"github.com/nais/knorten/pkg/team"
 	"github.com/ory/dockertest/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/tdewolff/minify/v2"
@@ -90,31 +93,42 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	var err error
-	repo, err = database.New(dbString, logrus.NewEntry(logrus.StandardLogger()))
+	querier, dbRepo, err := database.New(dbString, logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatal(err)
 	}
+	repo = dbRepo
 
 	if err := dbsetup.SetupDB(context.Background(), fmt.Sprintf("postgres://postgres:postgres@%v:%v", dbHost, dbPort), "knorten"); err != nil {
 		log.Fatalf("setting up knorten db: %v", err)
 	}
 
 	cryptoClient := crypto.New("jegersekstentegn")
+	logger := logrus.NewEntry(logrus.StandardLogger())
 
-	k8sClient, err := k8s.New(logrus.NewEntry(logrus.StandardLogger()), cryptoClient, repo, true, false, "", "", "", "", "")
+	k8sClient, err := k8s.New(cryptoClient, dbRepo, true, false, "", "", "", "", "", logger)
 	if err != nil {
 		log.Fatalf("creating k8sClient: %v", err)
 	}
+	googleClient := google.New(dbRepo, "", "", "", true, logger)
 
-	azureClient := auth.New(true, "", "", "", "", logrus.NewEntry(logrus.StandardLogger()))
+	azureClient := auth.New(true, "", "", "", "", logger)
+	chartClient, err := chart.New(dbRepo, googleClient, k8sClient, azureClient, cryptoClient, "", "", logger)
+	if err != nil {
+		log.Fatalf("creating googleClient: %v", err)
+	}
+	teamClient := team.NewClient(dbRepo, googleClient, k8sClient, chartClient, azureClient, true, logger)
+
+	go events.Start(context.Background(), querier, teamClient, logger)
 
 	srv, err := api.New(
-		repo,
+		dbRepo,
 		azureClient,
-		google.New(logrus.NewEntry(logrus.StandardLogger()), repo, "", "", "", true),
+		googleClient,
 		k8sClient,
 		cryptoClient,
+		chartClient,
+		teamClient,
 		true,
 		"1.8.0",
 		"2.0.0",

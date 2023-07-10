@@ -27,7 +27,7 @@ type Google struct {
 	vmNetworkConfig string
 }
 
-func New(log *logrus.Entry, repo *database.Repo, gcpProject, gcpRegion, vmNetworkConfig string, dryRun bool) *Google {
+func New(repo *database.Repo, gcpProject, gcpRegion, vmNetworkConfig string, dryRun bool, log *logrus.Entry) *Google {
 	return &Google{
 		log:             log,
 		repo:            repo,

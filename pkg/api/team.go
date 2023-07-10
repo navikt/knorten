@@ -126,7 +126,7 @@ func (a *API) setupTeamRoutes() {
 
 	a.router.POST("/team/:team/edit", func(c *gin.Context) {
 		teamName := c.Param("team")
-		err := a.TeamClient.Update(c)
+		err := a.teamClient.Update(c)
 		if err != nil {
 			session := sessions.Default(c)
 			session.AddFlash(err.Error())
@@ -144,7 +144,7 @@ func (a *API) setupTeamRoutes() {
 	a.router.POST("/team/:team/delete", func(c *gin.Context) {
 		teamName := c.Param("team")
 
-		err := a.TeamClient.Delete(c, teamName)
+		err := a.teamClient.Delete(c, teamName)
 		if err != nil {
 			session := sessions.Default(c)
 			session.AddFlash(err.Error())

@@ -53,7 +53,7 @@ type Client struct {
 	log                 *logrus.Entry
 }
 
-func New(log *logrus.Entry, cryptClient *crypto.EncrypterDecrypter, repo *database.Repo, dryRun, inCluster bool, gcpProject, gcpRegion, knelmImage, airflowChartVersion, jupyterChartVersion string) (*Client, error) {
+func New(cryptClient *crypto.EncrypterDecrypter, repo *database.Repo, dryRun, inCluster bool, gcpProject, gcpRegion, knelmImage, airflowChartVersion, jupyterChartVersion string, log *logrus.Entry) (*Client, error) {
 	client := &Client{
 		dryRun:              dryRun,
 		gcpProject:          gcpProject,

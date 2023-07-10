@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/nais/knorten/pkg/api"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/team"
 	"github.com/sirupsen/logrus"
@@ -19,6 +18,7 @@ var stopChan = make(chan string)
 var dbQuerier gensql.Querier
 var log *logrus.Entry
 var eventContext context.Context
+var teamClient *team.Client
 
 // eventWorker is a placeholder for the actual event worker function
 var eventWorker = map[gensql.EventType]WorkerFunc{
@@ -29,13 +29,13 @@ var eventWorker = map[gensql.EventType]WorkerFunc{
 			logger.Fatalf("Illegal form type")
 			return
 		}
-		go api.Api.teamClient.Create(ctx, form, logger)
+		go teamClient.Create(ctx, form, logger)
 	},
 }
 
 func getTask(e *gensql.Event) (map[string]string, error) {
 	var result map[string]string
-	err := json.Unmarshal([]byte(e.Task), &result)
+	err := json.Unmarshal(e.Task, &result)
 	return result, err
 }
 
@@ -50,11 +50,12 @@ func Stop(ctx context.Context) {
 	stopChan <- "stop"
 }
 
-func Start(ctx context.Context, logEntry *logrus.Entry, querier gensql.Querier) {
+func Start(ctx context.Context, querier gensql.Querier, tClient *team.Client, logEntry *logrus.Entry) {
 	log = logEntry
 	dbQuerier = querier
+	teamClient = tClient
 
-	var eventRetrievers []func() ([]gensql.Event, error) = []func() ([]gensql.Event, error){
+	var eventRetrievers = []func() ([]gensql.Event, error){
 		func() ([]gensql.Event, error) {
 			return querier.EventsGetNew(ctx)
 		},

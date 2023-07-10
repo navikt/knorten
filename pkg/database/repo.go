@@ -35,19 +35,21 @@ type Querier interface {
 	WithTx(tx *sql.Tx) *gensql.Queries
 }
 
-func New(dbConnDSN string, log *logrus.Entry) (*Repo, error) {
+func New(dbConnDSN string, log *logrus.Entry) (gensql.Querier, *Repo, error) {
 	db, err := sql.Open("postgres", dbConnDSN)
 	if err != nil {
-		return nil, fmt.Errorf("open sql connection: %w", err)
+		return nil, nil, fmt.Errorf("open sql connection: %w", err)
 	}
 
 	err = gooseMigrationWithRetries(log, db)
 	if err != nil {
-		return nil, fmt.Errorf("goose up: %w", err)
+		return nil, nil, fmt.Errorf("goose up: %w", err)
 	}
 
-	return &Repo{
-		querier: gensql.New(db),
+	querier := gensql.New(db)
+
+	return querier, &Repo{
+		querier: querier,
 		db:      db,
 		log:     log,
 	}, nil

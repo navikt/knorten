@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -8,11 +9,14 @@ import (
 
 	"github.com/nais/knorten/pkg/api"
 	"github.com/nais/knorten/pkg/auth"
+	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/crypto"
+	"github.com/nais/knorten/pkg/events"
 	"github.com/nais/knorten/pkg/google"
 	"github.com/nais/knorten/pkg/imageupdater"
 	"github.com/nais/knorten/pkg/k8s"
+	"github.com/nais/knorten/pkg/team"
 	"github.com/sirupsen/logrus"
 )
 
@@ -60,30 +64,40 @@ func main() {
 	flag.StringVar(&cfg.SessionKey, "session-key", os.Getenv("SESSION_KEY"), "The session key for Knorten")
 	flag.Parse()
 
-	repo, err := database.New(fmt.Sprintf("%v?sslmode=disable", cfg.DBConnString), log.WithField("subsystem", "repo"))
+	querier, dbClient, err := database.New(fmt.Sprintf("%v?sslmode=disable", cfg.DBConnString), log.WithField("subsystem", "db"))
 	if err != nil {
 		log.WithError(err).Fatal("setting up database")
 		return
 	}
 
-	azureClient := auth.New(cfg.DryRun, cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, log.WithField("subsystem", "auth"))
+	authClient := auth.New(cfg.DryRun, cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, log.WithField("subsystem", "auth"))
 
-	googleClient := google.New(log.WithField("subsystem", "google"), repo, cfg.GCPProject, cfg.GCPRegion, cfg.VMNetworkConfig, cfg.DryRun)
+	googleClient := google.New(dbClient, cfg.GCPProject, cfg.GCPRegion, cfg.VMNetworkConfig, cfg.DryRun, log.WithField("subsystem", "google"))
 
 	cryptClient := crypto.New(cfg.DBEncKey)
 
-	k8sClient, err := k8s.New(log.WithField("subsystem", "k8sClient"), cryptClient, repo, cfg.DryRun, cfg.InCluster, cfg.GCPProject, cfg.GCPRegion, cfg.KnelmImage, cfg.AirflowChartVersion, cfg.JupyterChartVersion)
+	k8sClient, err := k8s.New(cryptClient, dbClient, cfg.DryRun, cfg.InCluster, cfg.GCPProject, cfg.GCPRegion, cfg.KnelmImage, cfg.AirflowChartVersion, cfg.JupyterChartVersion, log.WithField("subsystem", "k8sClient"))
 	if err != nil {
 		log.WithError(err).Fatal("creating k8s client")
 		return
 	}
 
 	if !cfg.DryRun {
-		imageUpdater := imageupdater.New(repo, googleClient, k8sClient, azureClient, cryptClient, cfg.JupyterChartVersion, cfg.AirflowChartVersion, log.WithField("subsystem", "imageupdater"))
+		imageUpdater := imageupdater.New(dbClient, googleClient, k8sClient, authClient, cryptClient, cfg.JupyterChartVersion, cfg.AirflowChartVersion, log.WithField("subsystem", "imageupdater"))
 		go imageUpdater.Run(imageUpdaterFrequency)
 	}
 
-	router, err := api.New(repo, azureClient, googleClient, k8sClient, cryptClient, cfg.DryRun, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.SessionKey, cfg.AdminGroup, log.WithField("subsystem", "api"))
+	chartClient, err := chart.New(dbClient, googleClient, k8sClient, authClient, cryptClient, cfg.AirflowChartVersion, cfg.JupyterChartVersion, log.WithField("subsystem", "chartClient"))
+	if err != nil {
+		log.WithError(err).Fatal("creating chart client")
+		return
+	}
+
+	teamClient := team.NewClient(dbClient, googleClient, k8sClient, chartClient, authClient, cfg.DryRun, log.WithField("subsystem", "teamClient"))
+
+	go events.Start(context.Background(), querier, teamClient, log.WithField("subsystem", "events"))
+
+	router, err := api.New(dbClient, authClient, googleClient, k8sClient, cryptClient, chartClient, teamClient, cfg.DryRun, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.SessionKey, cfg.AdminGroup, log.WithField("subsystem", "api"))
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return

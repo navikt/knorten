@@ -88,9 +88,12 @@ func Start(ctx context.Context, querier gensql.Querier, tClient *team.Client, lo
 						if worker, ok := eventWorker[event.EventType]; ok {
 							task, err := getTask(&event)
 							if err != nil {
-								querier.EventSetStatus(ctx, gensql.EventSetStatusParams{
+								err := querier.EventSetStatus(ctx, gensql.EventSetStatusParams{
 									Status: gensql.EventStatusFailed,
 								})
+								if err != nil {
+									log.Errorf("can't change status to %v for %v: %v\n", gensql.EventStatusFailed, event.EventType, err)
+								}
 								//or decent error handling like send slack bug notification?
 								log.WithField("eventType", event.EventType).WithField("eventID", event.ID).Errorf("retrieved event with invalid param: %v", err)
 							} else {

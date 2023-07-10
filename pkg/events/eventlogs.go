@@ -13,46 +13,64 @@ type EventLogger struct {
 }
 
 func (el EventLogger) Infof(messageTemplate string, arg ...any) {
-	message := fmt.Sprintf(messageTemplate, arg)
+	message := fmt.Sprintf(messageTemplate, arg...)
 	log.Info(message)
-	dbQuerier.EventLogCreate(eventContext, gensql.EventLogCreateParams{
+	err := dbQuerier.EventLogCreate(eventContext, gensql.EventLogCreateParams{
 		EventID: el.EventID,
 		Message: message,
 		LogType: gensql.LogTypeInfo,
 	})
+	if err != nil {
+		log.Errorf("can't write event(%v) to database: %v", el.EventID, err)
+	}
 }
 
 func (el EventLogger) Errorf(messageTemplate string, arg ...any) {
-	message := fmt.Sprintf(messageTemplate, arg)
+	message := fmt.Sprintf(messageTemplate, arg...)
 	log.Error(message)
-	dbQuerier.EventLogCreate(eventContext, gensql.EventLogCreateParams{
+	err := dbQuerier.EventLogCreate(eventContext, gensql.EventLogCreateParams{
 		EventID: el.EventID,
 		Message: message,
 		LogType: gensql.LogTypeError,
 	})
-	dbQuerier.EventSetDeadline(eventContext, gensql.EventSetDeadlineParams{
+	if err != nil {
+		log.Errorf("can't write event(%v) to database: %v", el.EventID, err)
+	}
+	err = dbQuerier.EventSetDeadline(eventContext, gensql.EventSetDeadlineParams{
 		Deadline: time.Now().Add(3 * time.Minute),
 	})
-	dbQuerier.EventSetStatus(eventContext, gensql.EventSetStatusParams{
+	if err != nil {
+		log.Errorf("can't extend the deadline for event(%v) in database: %v", el.EventID, err)
+	}
+	err = dbQuerier.EventSetStatus(eventContext, gensql.EventSetStatusParams{
 		Status: gensql.EventStatusPending,
 	})
+	if err != nil {
+		log.Errorf("can't set status to %v for event(%v) in database: %v", gensql.EventStatusPending, el.EventID, err)
+	}
 }
 
 func (el EventLogger) Fatalf(messageTemplate string, arg ...any) {
-	message := fmt.Sprintf(messageTemplate, arg)
+	message := fmt.Sprintf(messageTemplate, arg...)
 	log.Fatal(message)
-	dbQuerier.EventLogCreate(eventContext, gensql.EventLogCreateParams{
+	err := dbQuerier.EventLogCreate(eventContext, gensql.EventLogCreateParams{
 		EventID: el.EventID,
 		Message: message,
 		LogType: gensql.LogTypeFatal,
 	})
-	dbQuerier.EventSetStatus(eventContext, gensql.EventSetStatusParams{
+	if err != nil {
+		log.Errorf("can't write event(%v) to database: %v", el.EventID, err)
+	}
+	err = dbQuerier.EventSetStatus(eventContext, gensql.EventSetStatusParams{
 		Status: gensql.EventStatusFailed,
 	})
+	if err != nil {
+		log.Errorf("can't set status to %v for event(%v) in database: %v", gensql.EventStatusFailed, el.EventID, err)
+	}
 }
 
 func (el EventLogger) Debugf(messageTemplate string, arg ...any) {
-	message := fmt.Sprintf(messageTemplate, arg)
+	message := fmt.Sprintf(messageTemplate, arg...)
 	log.Info(message)
 }
 

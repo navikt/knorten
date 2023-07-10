@@ -14,7 +14,6 @@ import (
 type WorkerFunc func(context.Context, uuid.UUID, any)
 
 var eventChan = make(chan string, 10)
-var stopChan = make(chan string)
 var dbQuerier gensql.Querier
 var log *logrus.Entry
 var eventContext context.Context
@@ -46,10 +45,6 @@ func triggerDispatcher(incomingEvent string) {
 	}
 }
 
-func Stop(ctx context.Context) {
-	stopChan <- "stop"
-}
-
 func Start(ctx context.Context, querier gensql.Querier, tClient *team.Client, logEntry *logrus.Entry) {
 	log = logEntry
 	dbQuerier = querier
@@ -69,9 +64,6 @@ func Start(ctx context.Context, querier gensql.Querier, tClient *team.Client, lo
 			select {
 			case incomingEvent := <-eventChan:
 				log.Debug("Received event: ", incomingEvent)
-			case stopMessage := <-stopChan:
-				log.Debug("Received stop: ", stopMessage)
-				return
 			case <-time.Tick(1 * time.Minute):
 				log.Debug("Event dispatcher run!")
 			case <-ctx.Done():

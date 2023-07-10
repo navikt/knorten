@@ -29,7 +29,7 @@ SELECT
 FROM
     Events
 WHERE
-    status = "new"
+    status = 'new'
 ORDER BY
     created_at DESC;
 
@@ -39,7 +39,7 @@ SELECT
 FROM
     Events
 WHERE
-    status = "new"
+    status = 'new'
     AND deadline < NOW();
 
 -- name: EventSetDeadline :exec

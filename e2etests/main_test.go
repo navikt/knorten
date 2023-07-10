@@ -6,7 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -41,7 +41,6 @@ var (
 const (
 	htmlContentType = "text/html; charset=utf-8"
 	jsonContentType = "application/json; charset=utf-8"
-	formContentType = "application/x-www-form-urlencoded"
 )
 
 func init() {
@@ -78,7 +77,10 @@ func TestMain(m *testing.M) {
 		if err != nil {
 			log.Fatalf("Could not start resource: %s", err)
 		}
-		resource.Expire(120) // setting resource timeout as postgres container is not terminated automatically
+		err = resource.Expire(120) // setting resource timeout as postgres container is not terminated automatically
+		if err != nil {
+			log.Fatalf("failed creating postgres expire: %v", err)
+		}
 		dbPort = resource.GetPort("5432/tcp")
 		dbHost = "localhost"
 		dbString = fmt.Sprintf("user=postgres dbname=knorten sslmode=disable password=postgres host=localhost port=%v", dbPort)
@@ -86,7 +88,6 @@ func TestMain(m *testing.M) {
 
 	if err := waitForDB(dbString); err != nil {
 		log.Fatal(err)
-		os.Exit(1)
 	}
 
 	var err error
@@ -175,7 +176,7 @@ func replaceGeneratedValues(expected []byte, teamName string) ([]byte, error) {
 	}
 
 	updated := strings.ReplaceAll(string(expected), "${TEAM_ID}", team.ID)
-	updated = strings.ReplaceAll(string(updated), "${FERNET_KEY}", fernetKey.Value)
+	updated = strings.ReplaceAll(updated, "${FERNET_KEY}", fernetKey.Value)
 	return []byte(updated), nil
 }
 
@@ -246,7 +247,7 @@ func createExpectedHTML(t string, values map[string]any) (string, error) {
 		return "", err
 	}
 
-	dataBytes, err := ioutil.ReadAll(buff)
+	dataBytes, err := io.ReadAll(buff)
 	if err != nil {
 		panic(err)
 	}

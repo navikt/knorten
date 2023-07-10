@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"testing"
 
 	"github.com/nais/knorten/pkg/chart"
@@ -17,7 +18,7 @@ import (
 func TestChartsAPI(t *testing.T) {
 	ctx := context.Background()
 	testTeam := "chartteam"
-	if err := prepareChartTests(ctx, testTeam); err != nil {
+	if err := prepareChartTests(testTeam); err != nil {
 		log.Fatalf("preparing chart tests: %v", err)
 	}
 
@@ -36,7 +37,7 @@ func TestChartsAPI(t *testing.T) {
 			t.Fatalf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 
-		received, err := ioutil.ReadAll(resp.Body)
+		received, err := io.ReadAll(resp.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -76,7 +77,7 @@ func TestChartsAPI(t *testing.T) {
 			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
-		expectedValues, err := ioutil.ReadFile("e2etests/testdata/yaml/jupyterhub_new.yaml")
+		expectedValues, err := os.ReadFile("e2etests/testdata/yaml/jupyterhub_new.yaml")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -85,7 +86,7 @@ func TestChartsAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		actualValues, err := ioutil.ReadFile("jupyterhub.yaml")
+		actualValues, err := os.ReadFile("jupyterhub.yaml")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -110,7 +111,7 @@ func TestChartsAPI(t *testing.T) {
 			t.Fatalf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 
-		received, err := ioutil.ReadAll(resp.Body)
+		received, err := io.ReadAll(resp.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -161,7 +162,7 @@ func TestChartsAPI(t *testing.T) {
 			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
-		expectedValues, err := ioutil.ReadFile("e2etests/testdata/yaml/jupyterhub_updated.yaml")
+		expectedValues, err := os.ReadFile("e2etests/testdata/yaml/jupyterhub_updated.yaml")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -170,7 +171,7 @@ func TestChartsAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		actualValues, err := ioutil.ReadFile("jupyterhub.yaml")
+		actualValues, err := os.ReadFile("jupyterhub.yaml")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -220,7 +221,7 @@ func TestChartsAPI(t *testing.T) {
 			t.Fatalf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 
-		received, err := ioutil.ReadAll(resp.Body)
+		received, err := io.ReadAll(resp.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -261,7 +262,7 @@ func TestChartsAPI(t *testing.T) {
 			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
-		expectedValues, err := ioutil.ReadFile("e2etests/testdata/yaml/airflow_new.yaml")
+		expectedValues, err := os.ReadFile("e2etests/testdata/yaml/airflow_new.yaml")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -270,7 +271,7 @@ func TestChartsAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		actualValues, err := ioutil.ReadFile("airflow.yaml")
+		actualValues, err := os.ReadFile("airflow.yaml")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -308,7 +309,7 @@ func TestChartsAPI(t *testing.T) {
 			t.Fatalf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 
-		received, err := ioutil.ReadAll(resp.Body)
+		received, err := io.ReadAll(resp.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -357,7 +358,7 @@ func TestChartsAPI(t *testing.T) {
 			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
-		expectedValues, err := ioutil.ReadFile("e2etests/testdata/yaml/airflow_updated.yaml")
+		expectedValues, err := os.ReadFile("e2etests/testdata/yaml/airflow_updated.yaml")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -366,7 +367,7 @@ func TestChartsAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		actualValues, err := ioutil.ReadFile("airflow.yaml")
+		actualValues, err := os.ReadFile("airflow.yaml")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -496,7 +497,7 @@ func TestChartsAPI(t *testing.T) {
 	}
 }
 
-func prepareChartTests(ctx context.Context, teamName string) error {
+func prepareChartTests(teamName string) error {
 	data := url.Values{"team": {teamName}, "owner": {"dummy@nav.no"}, "users[]": {"user.userson@nav.no"}, "apiaccess": {""}}
 	resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/new", server.URL), data)
 	if err != nil {

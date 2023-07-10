@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -34,7 +34,7 @@ func TestTeamsAPI(t *testing.T) {
 			t.Fatalf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 
-		received, err := ioutil.ReadAll(resp.Body)
+		received, err := io.ReadAll(resp.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -141,7 +141,7 @@ func TestTeamsAPI(t *testing.T) {
 			t.Fatalf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 
-		received, err := ioutil.ReadAll(resp.Body)
+		received, err := io.ReadAll(resp.Body)
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -185,7 +185,7 @@ func (a *Azure) UserExistsInAzureAD(user string) error {
 		return err
 	}
 
-	resBytes, err := ioutil.ReadAll(res.Body)
+	resBytes, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err
 	}
@@ -233,7 +233,7 @@ func (a *Azure) IdentForEmail(email string) (string, error) {
 		return "", err
 	}
 
-	resBytes, err := ioutil.ReadAll(res.Body)
+	resBytes, err := io.ReadAll(res.Body)
 	if err != nil {
 		return "", err
 	}

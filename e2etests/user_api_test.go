@@ -3,7 +3,7 @@ package e2etests
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 
@@ -30,7 +30,7 @@ func TestOverviewAPI(t *testing.T) {
 			t.Fatalf("expected content type header %v, got %v", htmlContentType, resp.Header.Get("Content-Type"))
 		}
 
-		received, err := ioutil.ReadAll(resp.Body)
+		received, err := io.ReadAll(resp.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -72,7 +72,7 @@ func TestOverviewAPI(t *testing.T) {
 			t.Fatalf("expected content type header %v, got %v", htmlContentType, resp.Header.Get("Content-Type"))
 		}
 
-		received, err := ioutil.ReadAll(resp.Body)
+		received, err := io.ReadAll(resp.Body)
 		if err != nil {
 			t.Fatal(err)
 		}

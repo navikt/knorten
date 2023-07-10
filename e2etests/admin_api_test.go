@@ -3,7 +3,7 @@ package e2etests
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 
@@ -29,7 +29,7 @@ func TestAdminAPI(t *testing.T) {
 			t.Fatalf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 
-		received, err := ioutil.ReadAll(resp.Body)
+		received, err := io.ReadAll(resp.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -49,7 +49,7 @@ func TestAdminAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if receivedMinimized != string(expectedMinimized) {
+		if receivedMinimized != expectedMinimized {
 			t.Fatal("Received and expected HTML response are different")
 		}
 	})
@@ -73,7 +73,7 @@ func TestAdminAPI(t *testing.T) {
 			t.Fatalf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 
-		received, err := ioutil.ReadAll(resp.Body)
+		received, err := io.ReadAll(resp.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -106,7 +106,7 @@ func TestAdminAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if receivedMinimized != string(expectedMinimized) {
+		if receivedMinimized != expectedMinimized {
 			t.Fatal("Received and expected HTML response are different")
 		}
 	})
@@ -126,7 +126,7 @@ func TestAdminAPI(t *testing.T) {
 			t.Fatalf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 
-		received, err := ioutil.ReadAll(resp.Body)
+		received, err := io.ReadAll(resp.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -148,7 +148,7 @@ func TestAdminAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if receivedMinimized != string(expectedMinimized) {
+		if receivedMinimized != expectedMinimized {
 			t.Fatal("Received and expected HTML response are different")
 		}
 	})
@@ -176,7 +176,7 @@ func TestAdminAPI(t *testing.T) {
 			t.Fatalf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 
-		received, err := ioutil.ReadAll(resp.Body)
+		received, err := io.ReadAll(resp.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -207,7 +207,7 @@ func TestAdminAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if receivedMinimized != string(expectedMinimized) {
+		if receivedMinimized != expectedMinimized {
 			t.Fatal("Received and expected HTML response are different")
 		}
 	})

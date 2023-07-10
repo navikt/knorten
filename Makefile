@@ -21,7 +21,7 @@ netpol:
 	$(shell kubectl get --context=knada --namespace=knada-system configmap/airflow-network-policy -o json | jq -r '.data."default-egress-airflow-worker.yaml"' > .default-egress-airflow-worker.yaml)
 
 local-online:
-	go run . \
+	go run -race . \
 	  --hostname=localhost \
 	  --oauth2-client-id=$(AZURE_APP_CLIENT_ID) \
 	  --oauth2-client-secret=$(AZURE_APP_CLIENT_SECRET) \
@@ -40,7 +40,7 @@ local-online:
 
 local:
 	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" \
-    go run . \
+    go run -race . \
 	  --hostname=localhost \
 	  --airflow-chart-version=1.10.0 \
 	  --jupyter-chart-version=2.0.0 \

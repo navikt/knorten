@@ -8,7 +8,7 @@ import (
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
-func registerEvent(ctx context.Context, eventType gensql.EventType, deadlineOffset time.Duration, form interface{}) error {
+func registerEvent(ctx context.Context, eventType gensql.EventType, deadlineOffset time.Duration, form any) error {
 	jsonTask, err := json.Marshal(form)
 	if err != nil {
 		return err
@@ -28,6 +28,6 @@ func registerEvent(ctx context.Context, eventType gensql.EventType, deadlineOffs
 	return nil
 }
 
-func RegisterCreateTeamEvent(ctx context.Context, form interface{}) error {
+func RegisterCreateTeamEvent(ctx context.Context, form any) error {
 	return registerEvent(ctx, gensql.EventTypeCreateTeam, 5*time.Minute, form)
 }

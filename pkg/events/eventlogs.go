@@ -12,8 +12,8 @@ type EventLogger struct {
 	EventID uuid.UUID
 }
 
-func (el EventLogger) Infof(messageTemplate string, arg ...any) {
-	message := fmt.Sprintf(messageTemplate, arg...)
+func (el EventLogger) Infof(template string, arg ...any) {
+	message := fmt.Sprintf(template, arg...)
 	log.Info(message)
 	err := dbQuerier.EventLogCreate(eventContext, gensql.EventLogCreateParams{
 		EventID: el.EventID,
@@ -52,7 +52,6 @@ func (el EventLogger) Errorf(messageTemplate string, arg ...any) {
 
 func (el EventLogger) Fatalf(messageTemplate string, arg ...any) {
 	message := fmt.Sprintf(messageTemplate, arg...)
-	log.Fatal(message)
 	err := dbQuerier.EventLogCreate(eventContext, gensql.EventLogCreateParams{
 		EventID: el.EventID,
 		Message: message,
@@ -67,6 +66,7 @@ func (el EventLogger) Fatalf(messageTemplate string, arg ...any) {
 	if err != nil {
 		log.Errorf("can't set status to %v for event(%v) in database: %v", gensql.EventStatusFailed, el.EventID, err)
 	}
+	log.Fatal(message)
 }
 
 func (el EventLogger) Debugf(messageTemplate string, arg ...any) {

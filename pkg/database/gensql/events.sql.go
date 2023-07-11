@@ -21,18 +21,18 @@ VALUES
         $1,
         $2,
         'new',
-        NOW() + INTERVAL $3
+        $3
     )
 `
 
 type EventCreateParams struct {
 	EventType EventType
 	Task      json.RawMessage
-	Duration  time.Time
+	Deadline  time.Time
 }
 
 func (q *Queries) EventCreate(ctx context.Context, arg EventCreateParams) error {
-	_, err := q.db.ExecContext(ctx, eventCreate, arg.EventType, arg.Task, arg.Duration)
+	_, err := q.db.ExecContext(ctx, eventCreate, arg.EventType, arg.Task, arg.Deadline)
 	return err
 }
 

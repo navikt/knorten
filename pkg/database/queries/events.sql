@@ -6,7 +6,7 @@ VALUES
         @event_type,
         @task,
         'new',
-        NOW() + INTERVAL @duration
+        @deadline
     );
 
 -- name: EventGet :one

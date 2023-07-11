@@ -17,7 +17,7 @@ func registerEvent(ctx context.Context, eventType gensql.EventType, deadlineOffs
 	err = dbQuerier.EventCreate(ctx, gensql.EventCreateParams{
 		EventType: eventType,
 		Task:      jsonTask,
-		Duration:  time.Time{}.Add(deadlineOffset),
+		Deadline:  time.Now().Add(deadlineOffset),
 	})
 
 	if err != nil {

@@ -6,8 +6,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/nais/knorten/pkg/auth"
@@ -17,6 +15,7 @@ import (
 	"github.com/nais/knorten/pkg/google"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/logger"
+	"github.com/sirupsen/logrus"
 	"github.com/thanhpk/randstr"
 	"k8s.io/utils/strings/slices"
 )
@@ -51,8 +50,7 @@ type Form struct {
 }
 
 func (c Client) Create(ctx context.Context, form Form, log logger.Logger) {
-
-	log.Infof("Creating team %v...", form.Slug)
+	log.Infof("Creating team %v", form.Slug)
 
 	team, err := c.repo.TeamGet(ctx, form.Slug)
 	if err != nil {
@@ -93,6 +91,8 @@ func (c Client) Create(ctx context.Context, form Form, log logger.Logger) {
 		log.Errorf("sql error: %v", err)
 		return
 	}
+
+	log.Infof("Created %v", teamID)
 }
 
 func (c Client) Update(ctx *gin.Context) error {

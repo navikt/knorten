@@ -60,7 +60,7 @@ func (c Client) Create(ctx context.Context, form Form, log logger.Logger) {
 		}
 	}
 	if team.Slug == form.Slug {
-		log.Fatalf("there already exists a team with name %v", form.Slug)
+		log.Errorf("there already exists a team with name %v", form.Slug)
 		return
 	}
 
@@ -68,12 +68,12 @@ func (c Client) Create(ctx context.Context, form Form, log logger.Logger) {
 	users := removeEmptyUsers(form.Users)
 
 	if err := c.ensureUsersExists(users); err != nil {
-		log.Fatalf("failed to verify azure user %v: %v", users, err)
+		log.Errorf("failed to verify azure user %v: %v", users, err)
 		return
 	}
 
 	if err := c.googleClient.CreateGCPTeamResources(ctx, form.Slug, teamID, users); err != nil {
-		log.Errorf("failed creating gcp team: %v", err)
+		log.Errorf("failed creating gcp team resources: %v", err)
 		return
 	}
 

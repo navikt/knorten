@@ -77,9 +77,10 @@ func (a *API) setupTeamRoutes() {
 			err = events.RegisterCreateTeamEvent(c, form)
 		}
 		if err != nil {
+			a.log.WithError(err).Info("create team")
 			session := sessions.Default(c)
 			session.AddFlash(err.Error())
-			err := session.Save()
+			err = session.Save()
 			if err != nil {
 				a.log.WithError(err).Error("problem saving session")
 				return

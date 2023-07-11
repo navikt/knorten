@@ -5,37 +5,46 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/team"
 	"github.com/sirupsen/logrus"
 )
 
-type WorkerFunc func(context.Context, uuid.UUID, any)
+type WorkerFunc func(context.Context, gensql.Event)
 
-var eventChan = make(chan string, 10)
-var dbQuerier gensql.Querier
-var log *logrus.Entry
-var eventContext context.Context
-var teamClient *team.Client
+var (
+	eventChan    = make(chan string, 10)
+	dbQuerier    gensql.Querier
+	log          *logrus.Entry
+	eventContext context.Context
+	teamClient   *team.Client
+)
 
 // eventWorker is a placeholder for the actual event worker function
 var eventWorker = map[gensql.EventType]WorkerFunc{
-	gensql.EventTypeCreateTeam: func(ctx context.Context, eventID uuid.UUID, anyForm any) {
-		logger := newEventLogger(eventID)
-		form, ok := anyForm.(team.Form)
-		if !ok {
-			logger.Fatalf("Illegal form type")
-			return
+	gensql.EventTypeCreateTeam: func(ctx context.Context, event gensql.Event) {
+		var form team.Form
+		logger := newEventLogger(event.ID)
+		err := json.Unmarshal(event.Task, &form)
+		if err != nil {
+			log.WithField("eventType", event.EventType).WithField("eventID", event.ID).Errorf("retrieved event with invalid param: %v", err)
+			err = dbQuerier.EventSetStatus(ctx, gensql.EventSetStatusParams{
+				ID:     event.ID,
+				Status: gensql.EventStatusFailed,
+			})
+			if err != nil {
+				log.Errorf("can't change status to %v for %v: %v\n", gensql.EventStatusFailed, event.EventType, err)
+			}
 		}
-		go teamClient.Create(ctx, form, logger)
+		teamClient.Create(ctx, form, logger)
+		err = dbQuerier.EventSetStatus(ctx, gensql.EventSetStatusParams{
+			ID:     event.ID,
+			Status: gensql.EventStatusCompleted,
+		})
+		if err != nil {
+			log.Errorf("can't change status to %v for %v: %v\n", gensql.EventStatusFailed, event.EventType, err)
+		}
 	},
-}
-
-func getTask(e *gensql.Event) (map[string]string, error) {
-	var result map[string]string
-	err := json.Unmarshal(e.Task, &result)
-	return result, err
 }
 
 func triggerDispatcher(incomingEvent string) {
@@ -49,8 +58,9 @@ func Start(ctx context.Context, querier gensql.Querier, tClient *team.Client, lo
 	log = logEntry
 	dbQuerier = querier
 	teamClient = tClient
+	eventContext = ctx
 
-	var eventRetrievers = []func() ([]gensql.Event, error){
+	eventRetrievers := []func() ([]gensql.Event, error){
 		func() ([]gensql.Event, error) {
 			return querier.EventsGetNew(ctx)
 		},
@@ -75,26 +85,17 @@ func Start(ctx context.Context, querier gensql.Querier, tClient *team.Client, lo
 				pickedEvents, err := eventRetriever()
 				if err != nil {
 					log.Errorf("Failed to fetch events: %v\n", err)
-				} else {
-					for _, event := range pickedEvents {
-						if worker, ok := eventWorker[event.EventType]; ok {
-							task, err := getTask(&event)
-							if err != nil {
-								err := querier.EventSetStatus(ctx, gensql.EventSetStatusParams{
-									Status: gensql.EventStatusFailed,
-								})
-								if err != nil {
-									log.Errorf("can't change status to %v for %v: %v\n", gensql.EventStatusFailed, event.EventType, err)
-								}
-								//or decent error handling like send slack bug notification?
-								log.WithField("eventType", event.EventType).WithField("eventID", event.ID).Errorf("retrieved event with invalid param: %v", err)
-							} else {
-								worker(ctx, event.ID, task)
-							}
-						} else {
-							log.Errorf("No worker found for event type %v\n", event.EventType)
-						}
+					continue
+				}
+
+				for _, event := range pickedEvents {
+					worker, ok := eventWorker[event.EventType]
+					if !ok {
+						log.Errorf("No worker found for event type %v\n", event.EventType)
+						continue
 					}
+
+					go worker(ctx, event)
 				}
 			}
 		}

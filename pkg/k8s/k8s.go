@@ -85,6 +85,7 @@ func New(cryptClient *crypto.EncrypterDecrypter, repo *database.Repo, dryRun, in
 
 func (c *Client) CreateTeamNamespace(ctx context.Context, name string) error {
 	if c.dryRun {
+		c.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
 

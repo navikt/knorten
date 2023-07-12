@@ -16,7 +16,6 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/nais/knorten/pkg/auth"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/events"
 	"github.com/thanhpk/randstr"
 	"k8s.io/utils/strings/slices"
 )
@@ -159,7 +158,7 @@ func (c *client) setupTeamRoutes() {
 
 	c.router.POST("/team/:team/delete", func(ctx *gin.Context) {
 		teamName := ctx.Param("team")
-		err := events.RegisterDeleteTeamEvent(ctx, teamName)
+		err := c.repo.RegisterDeleteTeamEvent(ctx, teamName)
 		if err != nil {
 			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
@@ -225,7 +224,7 @@ func (c *client) newTeam(ctx *gin.Context) error {
 	}
 
 	team.ID = createTeamID(team.Slug)
-	return events.RegisterCreateTeamEvent(ctx, team)
+	return c.repo.RegisterCreateTeamEvent(ctx, team)
 }
 
 func (c *client) editTeam(ctx *gin.Context) error {
@@ -241,7 +240,7 @@ func (c *client) editTeam(ctx *gin.Context) error {
 	}
 
 	team.ID = existingTeam.ID
-	return events.RegisterUpdateTeamEvent(ctx, team)
+	return c.repo.RegisterUpdateTeamEvent(ctx, team)
 }
 
 func (c *client) ensureUsersExists(users []string) error {

@@ -102,7 +102,10 @@ func (j JupyterhubClient) Create(ctx *gin.Context, slug string) error {
 
 	form.Slug = slug
 	form.TeamID = team.ID
-	j.setUsers(team.Users, &form)
+	err = j.setUsers(team.Users, &form)
+	if err != nil {
+		return err
+	}
 
 	addGeneratedJupyterhubConfig(&form)
 
@@ -120,7 +123,10 @@ func (j JupyterhubClient) Update(ctx context.Context, form JupyterForm) error {
 	}
 
 	form.TeamID = team.ID
-	j.setUsers(team.Users, &form)
+	err = j.setUsers(team.Users, &form)
+	if err != nil {
+		return err
+	}
 
 	return j.UpdateTeamValuesAndInstallOrUpdate(ctx, form)
 }

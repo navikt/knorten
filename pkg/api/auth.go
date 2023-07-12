@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -17,6 +18,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/nais/knorten/pkg/auth"
+	"k8s.io/utils/strings/slices"
 )
 
 const (
@@ -237,6 +239,29 @@ func (a *API) authMiddleware() gin.HandlerFunc {
 			}
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized validate user"})
 			return
+		}
+
+		teamSlug := c.Param("team")
+		if teamSlug != "" {
+			team, err := a.repo.TeamGet(c, teamSlug)
+			if err != nil {
+				a.log.WithError(err).Errorf("problem checking for authorization %v", user.Email)
+				c.Redirect(http.StatusSeeOther, "/")
+				return
+			}
+
+			if !slices.Contains(team.Users, strings.ToLower(user.Email)) {
+				sess := sessions.Default(c)
+				sess.AddFlash(fmt.Sprintf("%v is not authorized", user.Email))
+				err = sess.Save()
+				if err != nil {
+					a.log.WithError(err).Error("problem saving session")
+					c.Redirect(http.StatusSeeOther, "/")
+					return
+				}
+				c.Redirect(http.StatusUnauthorized, "/")
+				return
+			}
 		}
 
 		c.Set("user", user)

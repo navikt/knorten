@@ -117,7 +117,11 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("creating googleClient: %v", err)
 	}
-	teamClient := team.NewClient(dbRepo, googleClient, k8sClient, chartClient, azureClient, true, logger)
+
+	teamClient, err := team.NewClient(dbRepo, "", true, false, logger)
+	if err != nil {
+		log.Fatalf("creating teamClient: %v", err)
+	}
 
 	go events.Start(context.Background(), querier, teamClient, logger)
 

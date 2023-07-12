@@ -28,6 +28,14 @@ func registerEvent(ctx context.Context, eventType gensql.EventType, deadlineOffs
 	return nil
 }
 
-func RegisterCreateTeamEvent(ctx context.Context, form any) error {
-	return registerEvent(ctx, gensql.EventTypeCreateTeam, 5*time.Minute, form)
+func RegisterCreateTeamEvent(ctx context.Context, team gensql.Team) error {
+	return registerEvent(ctx, gensql.EventTypeCreateTeam, 5*time.Minute, team)
+}
+
+func RegisterUpdateTeamEvent(ctx context.Context, team gensql.Team) error {
+	return registerEvent(ctx, gensql.EventTypeUpdateTeam, 5*time.Minute, team)
+}
+
+func RegisterDeleteTeamEvent(ctx context.Context, team string) error {
+	return registerEvent(ctx, gensql.EventTypeDeleteTeam, 5*time.Minute, team)
 }

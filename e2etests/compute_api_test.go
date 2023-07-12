@@ -14,6 +14,12 @@ import (
 
 func TestComputeAPI(t *testing.T) {
 	ctx := context.Background()
+	team := gensql.Team{
+		ID:    "compute-team-1234",
+		Slug:  "compute-team",
+		Users: []string{"bruker.en@nav.no", "bruker.to@nav.no"},
+		Owner: "bruker.en@nav.no",
+	}
 	testTeam := "compute-team"
 
 	supported, err := repo.SupportedComputeMachineTypes(ctx)
@@ -21,7 +27,7 @@ func TestComputeAPI(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := repo.TeamCreate(ctx, testTeam+"-1234", testTeam, "bruker.en@nav.no", []string{"bruker.en@nav.no", "bruker.to@nav.no"}, false); err != nil {
+	if err := repo.TeamCreate(ctx, team); err != nil {
 		t.Fatal(err)
 	}
 

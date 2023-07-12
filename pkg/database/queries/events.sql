@@ -33,6 +33,16 @@ WHERE
 ORDER BY
     created_at DESC;
 
+-- name: EventsGetPending :many
+SELECT
+    *
+FROM
+    Events
+WHERE
+        status = 'pending'
+ORDER BY
+    created_at DESC;
+
 -- name: EventsGetOverdue :many
 SELECT
     *

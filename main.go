@@ -93,7 +93,11 @@ func main() {
 		return
 	}
 
-	teamClient := team.NewClient(dbClient, googleClient, k8sClient, chartClient, authClient, cfg.DryRun, log.WithField("subsystem", "teamClient"))
+	teamClient, err := team.NewClient(dbClient, cfg.GCPProject, cfg.DryRun, cfg.InCluster, log.WithField("subsystem", "teamClient"))
+	if err != nil {
+		log.WithError(err).Fatal("creating team client")
+		return
+	}
 
 	go events.Start(context.Background(), querier, teamClient, log.WithField("subsystem", "events"))
 

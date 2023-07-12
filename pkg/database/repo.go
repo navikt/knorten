@@ -1,7 +1,6 @@
 package database
 
 import (
-	"context"
 	"database/sql"
 	"embed"
 	"fmt"
@@ -12,7 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/reflect"
 	"github.com/pressly/goose/v3"
 	"github.com/sirupsen/logrus"
 
@@ -87,51 +85,4 @@ func (r *Repo) NewSessionStore(key string) (gin.HandlerFunc, error) {
 	}
 
 	return sessions.Sessions("session", store), nil
-}
-
-func (r *Repo) TeamChartValueInsert(ctx context.Context, key, value, team string, chartType gensql.ChartType) error {
-	return r.querier.TeamValueInsert(ctx, gensql.TeamValueInsertParams{
-		Key:       key,
-		Value:     value,
-		TeamID:    team,
-		ChartType: chartType,
-	})
-}
-
-func (r *Repo) TeamValuesGet(ctx context.Context, chartType gensql.ChartType, team string) ([]gensql.ChartTeamValue, error) {
-	return r.querier.TeamValuesGet(ctx, gensql.TeamValuesGetParams{
-		ChartType: chartType,
-		TeamID:    team,
-	})
-}
-
-func (r *Repo) TeamValueGet(ctx context.Context, key, team string) (gensql.ChartTeamValue, error) {
-	return r.querier.TeamValueGet(ctx, gensql.TeamValueGetParams{
-		Key:    key,
-		TeamID: team,
-	})
-}
-
-func (r *Repo) TeamValueDelete(ctx context.Context, key, team string) error {
-	return r.querier.TeamValueDelete(ctx, gensql.TeamValueDeleteParams{
-		Key:    key,
-		TeamID: team,
-	})
-}
-
-func (r *Repo) TeamConfigurableValuesGet(ctx context.Context, chartType gensql.ChartType, team string, obj any) error {
-	teamValues, err := r.querier.TeamValuesGet(ctx, gensql.TeamValuesGetParams{
-		ChartType: chartType,
-		TeamID:    team,
-	})
-	if err != nil {
-		return err
-	}
-
-	values := map[string]string{}
-	for _, value := range teamValues {
-		values[value.Key] = value.Value
-	}
-
-	return reflect.InterfaceToStruct(obj, values)
 }

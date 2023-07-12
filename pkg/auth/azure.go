@@ -75,6 +75,7 @@ const (
 
 func New(dryRun bool, clientID, clientSecret, tenantID, hostname string, log *logrus.Entry) *Azure {
 	if dryRun {
+		log.Infof("NOOP: Running in dry run mode")
 		return &Azure{
 			dryRun: true,
 		}
@@ -207,6 +208,7 @@ func (a *Azure) UserExistsInAzureAD(user string) error {
 
 func (a *Azure) IdentForEmail(email string) (string, error) {
 	if a.dryRun {
+		a.log.Infof("NOOP: Running in dry run mode")
 		return email, nil
 	}
 	type identResponse struct {

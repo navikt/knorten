@@ -226,7 +226,6 @@ func (c *client) newTeam(ctx *gin.Context) error {
 
 	team.ID = createTeamID(team.Slug)
 	return events.RegisterCreateTeamEvent(ctx, team)
-
 }
 
 func (c *client) editTeam(ctx *gin.Context) error {

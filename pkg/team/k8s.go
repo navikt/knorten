@@ -39,7 +39,6 @@ func createK8sConfig(inCluster bool) (*rest.Config, error) {
 }
 
 func (c Client) createK8sNamespace(ctx context.Context, name string) error {
-
 	namespace := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -64,7 +63,6 @@ func (c Client) createK8sNamespace(ctx context.Context, name string) error {
 }
 
 func (c Client) deleteK8sNamespace(ctx context.Context, namespace string) error {
-
 	err := c.k8sClient.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
@@ -78,7 +76,6 @@ func (c Client) deleteK8sNamespace(ctx context.Context, namespace string) error 
 }
 
 func (c Client) createK8sServiceAccount(ctx context.Context, teamID, namespace string) error {
-
 	saSpec := &v1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      teamID,

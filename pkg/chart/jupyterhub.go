@@ -238,7 +238,7 @@ func (j JupyterhubClient) setUsers(userEmails []string, form *JupyterForm) error
 }
 
 func (j JupyterhubClient) convertEmailsToIdents(emails []string) ([]string, error) {
-	idents := []string{}
+	var idents []string
 	for _, e := range emails {
 		ident, err := j.azureClient.IdentForEmail(e)
 		if err != nil {

@@ -110,8 +110,8 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("creating k8sClient: %v", err)
 	}
-	googleClient := google.New(dbRepo, "", "", "", true, logger)
 
+	googleClient := google.New(dbRepo, "", "", "", true, logger)
 	azureClient := auth.New(true, "", "", "", "", logger)
 	chartClient, err := chart.New(dbRepo, googleClient, k8sClient, azureClient, cryptoClient, "", "", logger)
 	if err != nil {

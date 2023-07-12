@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -195,7 +194,7 @@ func deleteCookie(c *gin.Context, name, host string) {
 	)
 }
 
-func (a *API) authMiddleware(allowedUsers []string) gin.HandlerFunc {
+func (a *API) authMiddleware() gin.HandlerFunc {
 	if a.dryRun {
 		return func(c *gin.Context) {
 			user := &auth.User{
@@ -238,29 +237,6 @@ func (a *API) authMiddleware(allowedUsers []string) gin.HandlerFunc {
 			}
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized validate user"})
 			return
-		}
-
-		if len(allowedUsers) > 0 {
-			allowed := false
-			for _, allowedUser := range allowedUsers {
-				if user.Email == allowedUser {
-					allowed = true
-					break
-				}
-			}
-
-			if !allowed {
-				session := sessions.Default(c)
-				session.AddFlash(fmt.Errorf("%v is not authorized", user.Email))
-				err := session.Save()
-				if err != nil {
-					a.log.WithError(err).Error("problem saving session")
-					c.Redirect(http.StatusSeeOther, "/")
-					return
-				}
-				c.Redirect(http.StatusUnauthorized, "/")
-				return
-			}
 		}
 
 		c.Set("user", user)

@@ -71,7 +71,7 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 	Api.router.Static("/assets", "./assets")
 	Api.router.LoadHTMLGlob("templates/**/*")
 	Api.setupUnauthenticatedRoutes()
-	Api.router.Use(Api.authMiddleware([]string{}))
+	Api.router.Use(Api.authMiddleware())
 	Api.setupAuthenticatedRoutes()
 	Api.router.Use(Api.adminAuthMiddleware())
 	Api.setupAdminRoutes()

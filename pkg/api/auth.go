@@ -29,14 +29,14 @@ const (
 	sessionLength     = 1 * time.Hour
 )
 
-func (a *API) login(c *gin.Context) string {
-	host, _, err := net.SplitHostPort(c.Request.Host)
+func (c *client) login(ctx *gin.Context) string {
+	host, _, err := net.SplitHostPort(ctx.Request.Host)
 	if err != nil {
-		host = c.Request.Host
+		host = ctx.Request.Host
 	}
 
-	redirectURI := c.Request.URL.Query().Get("redirect_uri")
-	c.SetCookie(
+	redirectURI := ctx.Request.URL.Query().Get("redirect_uri")
+	ctx.SetCookie(
 		RedirectURICookie,
 		redirectURI,
 		time.Now().Add(30*time.Minute).Second(),
@@ -47,7 +47,7 @@ func (a *API) login(c *gin.Context) string {
 	)
 
 	oauthState := uuid.New().String()
-	c.SetCookie(
+	ctx.SetCookie(
 		OAuthStateCookie,
 		oauthState,
 		time.Now().Add(30*time.Minute).Second(),
@@ -57,61 +57,61 @@ func (a *API) login(c *gin.Context) string {
 		true,
 	)
 
-	return a.azureClient.AuthCodeURL(oauthState)
+	return c.azureClient.AuthCodeURL(oauthState)
 }
 
-func (a *API) callback(c *gin.Context) (string, error) {
-	host, _, err := net.SplitHostPort(c.Request.Host)
+func (c *client) callback(ctx *gin.Context) (string, error) {
+	host, _, err := net.SplitHostPort(ctx.Request.Host)
 	if err != nil {
-		host = c.Request.Host
+		host = ctx.Request.Host
 	}
 	loginPage := "/oversikt"
 
-	redirectURI, _ := c.Cookie(RedirectURICookie)
+	redirectURI, _ := ctx.Cookie(RedirectURICookie)
 	if redirectURI != "" {
 		loginPage = redirectURI
 	}
 
-	if strings.HasPrefix(c.Request.Host, "localhost") {
+	if strings.HasPrefix(ctx.Request.Host, "localhost") {
 		loginPage = "http://localhost:8080" + loginPage
 	}
 
-	deleteCookie(c, RedirectURICookie, host)
-	code := c.Request.URL.Query().Get("code")
+	deleteCookie(ctx, RedirectURICookie, host)
+	code := ctx.Request.URL.Query().Get("code")
 	if len(code) == 0 {
 		return loginPage + "?error=unauthenticated", errors.New("unauthenticated")
 	}
 
-	oauthCookie, err := c.Cookie(OAuthStateCookie)
+	oauthCookie, err := ctx.Cookie(OAuthStateCookie)
 	if err != nil {
-		a.log.Errorf("Missing oauth state cookie: %v", err)
+		c.log.Errorf("Missing oauth state cookie: %v", err)
 		return loginPage + "?error=invalid-state", errors.New("invalid state")
 	}
 
-	deleteCookie(c, OAuthStateCookie, host)
+	deleteCookie(ctx, OAuthStateCookie, host)
 
-	state := c.Request.URL.Query().Get("state")
+	state := ctx.Request.URL.Query().Get("state")
 	if state != oauthCookie {
-		a.log.Info("Incoming state does not match local state")
+		c.log.Info("Incoming state does not match local state")
 		return loginPage + "?error=invalid-state", errors.New("invalid state")
 	}
 
-	tokens, err := a.azureClient.Exchange(c.Request.Context(), code)
+	tokens, err := c.azureClient.Exchange(ctx.Request.Context(), code)
 	if err != nil {
-		a.log.Errorf("Exchanging authorization code for tokens: %v", err)
+		c.log.Errorf("Exchanging authorization code for tokens: %v", err)
 		return loginPage + "?error=invalid-state", errors.New("forbidden")
 	}
 
 	rawIDToken, ok := tokens.Extra("id_token").(string)
 	if !ok {
-		a.log.Info("Missing id_token")
+		c.log.Info("Missing id_token")
 		return loginPage + "?error=unauthenticated", errors.New("unauthenticated")
 	}
 
 	// Parse and verify ID Token payload.
-	_, err = a.azureClient.Verify(c.Request.Context(), rawIDToken)
+	_, err = c.azureClient.Verify(ctx.Request.Context(), rawIDToken)
 	if err != nil {
-		a.log.Info("Invalid id_token")
+		c.log.Info("Invalid id_token")
 		return loginPage + "?error=unauthenticated", errors.New("unauthenticated")
 	}
 
@@ -123,23 +123,23 @@ func (a *API) callback(c *gin.Context) (string, error) {
 
 	b, err := base64.RawStdEncoding.DecodeString(strings.Split(tokens.AccessToken, ".")[1])
 	if err != nil {
-		a.log.WithError(err).Error("unable decode access token")
+		c.log.WithError(err).Error("unable decode access token")
 		return loginPage + "?error=unauthenticated", errors.New("unauthenticated")
 	}
 
 	if err := json.Unmarshal(b, session); err != nil {
-		a.log.WithError(err).Error("unable unmarshalling token")
+		c.log.WithError(err).Error("unable unmarshalling token")
 		return loginPage + "?error=unauthenticated", errors.New("unauthenticated")
 	}
 
-	session.IsAdmin = a.isUserInAdminGroup(session.AccessToken, session.Email)
+	session.IsAdmin = c.isUserInAdminGroup(session.AccessToken)
 
-	if err := a.repo.SessionCreate(c, session); err != nil {
-		a.log.WithError(err).Error("unable to create session")
+	if err := c.repo.SessionCreate(ctx, session); err != nil {
+		c.log.WithError(err).Error("unable to create session")
 		return loginPage + "?error=internal-server-error", errors.New("unable to create session")
 	}
 
-	c.SetCookie(
+	ctx.SetCookie(
 		sessionCookie,
 		session.Token,
 		86400,
@@ -152,24 +152,24 @@ func (a *API) callback(c *gin.Context) (string, error) {
 	return loginPage, nil
 }
 
-func (a *API) logout(c *gin.Context) (string, error) {
-	host, _, err := net.SplitHostPort(c.Request.Host)
+func (c *client) logout(ctx *gin.Context) (string, error) {
+	host, _, err := net.SplitHostPort(ctx.Request.Host)
 	if err != nil {
-		host = c.Request.Host
+		host = ctx.Request.Host
 	}
 
-	deleteCookie(c, sessionCookie, host)
+	deleteCookie(ctx, sessionCookie, host)
 
 	var loginPage string
-	if strings.HasPrefix(c.Request.Host, "localhost") {
+	if strings.HasPrefix(ctx.Request.Host, "localhost") {
 		loginPage = "http://localhost:8080/"
 	} else {
 		loginPage = "/"
 	}
 
-	err = a.repo.SessionDelete(c, sessionCookie)
+	err = c.repo.SessionDelete(ctx, sessionCookie)
 	if err != nil {
-		a.log.WithError(err).Error("failed deleting session")
+		c.log.WithError(err).Error("failed deleting session")
 		return loginPage, err
 	}
 
@@ -184,8 +184,8 @@ func generateSecureToken(length int) string {
 	return hex.EncodeToString(b)
 }
 
-func deleteCookie(c *gin.Context, name, host string) {
-	c.SetCookie(
+func deleteCookie(ctx *gin.Context, name, host string) {
+	ctx.SetCookie(
 		name,
 		"",
 		time.Unix(0, 0).Second(),
@@ -196,128 +196,128 @@ func deleteCookie(c *gin.Context, name, host string) {
 	)
 }
 
-func (a *API) authMiddleware() gin.HandlerFunc {
-	if a.dryRun {
-		return func(c *gin.Context) {
+func (c *client) authMiddleware() gin.HandlerFunc {
+	if c.dryRun {
+		return func(ctx *gin.Context) {
 			user := &auth.User{
 				Name:    "dummy@nav.no",
 				Email:   "dummy@nav.no",
 				Expires: time.Time{},
 			}
-			c.Set("user", user)
-			c.Next()
+			ctx.Set("user", user)
+			ctx.Next()
 		}
 	}
 
-	certificates, err := a.azureClient.FetchCertificates()
+	certificates, err := c.azureClient.FetchCertificates()
 	if err != nil {
-		a.log.Fatalf("Fetching signing certificates from IdP: %v", err)
+		c.log.Fatalf("Fetching signing certificates from IdP: %v", err)
 	}
 
-	return func(c *gin.Context) {
-		sessionToken, err := c.Cookie(sessionCookie)
+	return func(ctx *gin.Context) {
+		sessionToken, err := ctx.Cookie(sessionCookie)
 		if err != nil {
-			c.Redirect(http.StatusSeeOther, "/oauth2/login")
+			ctx.Redirect(http.StatusSeeOther, "/oauth2/login")
 			return
 		}
 
-		session, err := a.repo.SessionGet(c, sessionToken)
+		session, err := c.repo.SessionGet(ctx, sessionToken)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				c.Redirect(http.StatusSeeOther, "/oauth2/login")
+				ctx.Redirect(http.StatusSeeOther, "/oauth2/login")
 				return
 			}
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
 		}
 
-		user, err := a.azureClient.ValidateUser(certificates, session.AccessToken)
+		user, err := c.azureClient.ValidateUser(certificates, session.AccessToken)
 		if err != nil {
 			if errors.Is(err, auth.ErrAzureTokenExpired) {
-				c.Redirect(http.StatusSeeOther, "/oauth2/login")
+				ctx.Redirect(http.StatusSeeOther, "/oauth2/login")
 				return
 			}
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized validate user"})
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized validate user"})
 			return
 		}
 
-		teamSlug := c.Param("team")
+		teamSlug := ctx.Param("team")
 		if teamSlug != "" {
-			team, err := a.repo.TeamGet(c, teamSlug)
+			team, err := c.repo.TeamGet(ctx, teamSlug)
 			if err != nil {
-				a.log.WithError(err).Errorf("problem checking for authorization %v", user.Email)
-				c.Redirect(http.StatusSeeOther, "/")
+				c.log.WithError(err).Errorf("problem checking for authorization %v", user.Email)
+				ctx.Redirect(http.StatusSeeOther, "/")
 				return
 			}
 
 			if !slices.Contains(team.Users, strings.ToLower(user.Email)) {
-				sess := sessions.Default(c)
+				sess := sessions.Default(ctx)
 				sess.AddFlash(fmt.Sprintf("%v is not authorized", user.Email))
 				err = sess.Save()
 				if err != nil {
-					a.log.WithError(err).Error("problem saving session")
-					c.Redirect(http.StatusSeeOther, "/")
+					c.log.WithError(err).Error("problem saving session")
+					ctx.Redirect(http.StatusSeeOther, "/")
 					return
 				}
-				c.Redirect(http.StatusUnauthorized, "/")
+				ctx.Redirect(http.StatusUnauthorized, "/")
 				return
 			}
 		}
 
-		c.Set("user", user)
-		c.Next()
+		ctx.Set("user", user)
+		ctx.Next()
 	}
 }
 
-func (a *API) adminAuthMiddleware() gin.HandlerFunc {
-	if a.dryRun {
-		return func(c *gin.Context) {
+func (c *client) adminAuthMiddleware() gin.HandlerFunc {
+	if c.dryRun {
+		return func(ctx *gin.Context) {
 			user := &auth.User{
 				Name:    "dummy@nav.no",
 				Email:   "dummy@nav.no",
 				Expires: time.Time{},
 			}
-			c.Set("user", user)
-			c.Next()
+			ctx.Set("user", user)
+			ctx.Next()
 		}
 	}
-	return func(c *gin.Context) {
-		if !a.isAdmin(c) {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	return func(ctx *gin.Context) {
+		if !c.isAdmin(ctx) {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		}
 
-		c.Next()
+		ctx.Next()
 	}
 }
 
-func (a *API) isUserInAdminGroup(token string, email string) bool {
+func (c *client) isUserInAdminGroup(token string) bool {
 	var claims jwt.MapClaims
 
-	certificates, err := a.azureClient.FetchCertificates()
+	certificates, err := c.azureClient.FetchCertificates()
 	if err != nil {
-		a.log.WithError(err).Error("fetch certificates")
+		c.log.WithError(err).Error("fetch certificates")
 		return false
 	}
 
-	jwtValidator := auth.JWTValidator(certificates, a.azureClient.ClientID)
+	jwtValidator := auth.JWTValidator(certificates, c.azureClient.ClientID)
 
 	_, err = jwt.ParseWithClaims(token, &claims, jwtValidator)
 
 	if err != nil {
-		a.log.WithError(err).Error("Parse token")
+		c.log.WithError(err).Error("Parse token")
 		return false
 	}
 
 	if claims["groups"] != nil {
 		groups, ok := claims["groups"].([]interface{})
 		if !ok {
-			a.log.Logger.Error("User does not have groups in claims")
+			c.log.Logger.Error("User does not have groups in claims")
 			return false
 		}
 		for _, group := range groups {
 			grp, ok := group.(string)
 			if ok {
-				if grp == a.adminGroupID {
+				if grp == c.adminGroupID {
 					return true
 				}
 			}
@@ -326,49 +326,49 @@ func (a *API) isUserInAdminGroup(token string, email string) bool {
 	return false
 }
 
-func (a *API) setupAuthRoutes() {
-	a.router.GET("/oauth2/login", func(c *gin.Context) {
-		if a.dryRun {
-			c.Redirect(http.StatusSeeOther, "http://localhost:8080/oversikt")
+func (c *client) setupAuthRoutes() {
+	c.router.GET("/oauth2/login", func(ctx *gin.Context) {
+		if c.dryRun {
+			ctx.Redirect(http.StatusSeeOther, "http://localhost:8080/oversikt")
 			return
 		}
 
-		consentURL := a.login(c)
-		c.Redirect(http.StatusSeeOther, consentURL)
+		consentURL := c.login(ctx)
+		ctx.Redirect(http.StatusSeeOther, consentURL)
 	})
 
-	a.router.GET("/oauth2/callback", func(c *gin.Context) {
-		redirectURL, err := a.callback(c)
+	c.router.GET("/oauth2/callback", func(ctx *gin.Context) {
+		redirectURL, err := c.callback(ctx)
 		if err != nil {
-			session := sessions.Default(c)
+			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, "/")
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, "/")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, "/")
+			ctx.Redirect(http.StatusSeeOther, "/")
 			return
 		}
 
-		c.Redirect(http.StatusSeeOther, redirectURL)
+		ctx.Redirect(http.StatusSeeOther, redirectURL)
 	})
 
-	a.router.GET("/oauth2/logout", func(c *gin.Context) {
-		redirectURL, err := a.logout(c)
+	c.router.GET("/oauth2/logout", func(ctx *gin.Context) {
+		redirectURL, err := c.logout(ctx)
 		if err != nil {
-			session := sessions.Default(c)
+			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, "/")
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, "/")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, "/")
+			ctx.Redirect(http.StatusSeeOther, "/")
 			return
 		}
-		c.Redirect(http.StatusSeeOther, redirectURL)
+		ctx.Redirect(http.StatusSeeOther, redirectURL)
 	})
 }

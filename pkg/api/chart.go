@@ -37,11 +37,11 @@ func airflowMessageForTag(fe validator.FieldError) string {
 	}
 }
 
-func (a *API) setupChartRoutes() {
+func (c *client) setupChartRoutes() {
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		err := v.RegisterValidation("validAirflowRepo", chart.ValidateAirflowRepo)
 		if err != nil {
-			a.log.WithError(err).Error("can't register validator")
+			c.log.WithError(err).Error("can't register validator")
 			return
 		}
 	}
@@ -49,14 +49,14 @@ func (a *API) setupChartRoutes() {
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		err := v.RegisterValidation("validRepoBranch", chart.ValidateRepoBranch)
 		if err != nil {
-			a.log.WithError(err).Error("can't register validator")
+			c.log.WithError(err).Error("can't register validator")
 			return
 		}
 	}
 
-	a.router.GET("/team/:team/:chart/new", func(c *gin.Context) {
-		team := c.Param("team")
-		chartType := getChartType(c.Param("chart"))
+	c.router.GET("/team/:team/:chart/new", func(ctx *gin.Context) {
+		team := ctx.Param("team")
+		chartType := getChartType(ctx.Param("chart"))
 
 		var form any
 		switch chartType {
@@ -65,44 +65,44 @@ func (a *API) setupChartRoutes() {
 		case gensql.ChartTypeAirflow:
 			form = chart.AirflowForm{}
 		default:
-			c.JSON(http.StatusBadRequest, map[string]string{
+			ctx.JSON(http.StatusBadRequest, map[string]string{
 				"status":  strconv.Itoa(http.StatusBadRequest),
 				"message": fmt.Sprintf("Chart type %v is not supported", chartType),
 			})
 			return
 		}
 
-		session := sessions.Default(c)
+		session := sessions.Default(ctx)
 		flashes := session.Flashes()
 		err := session.Save()
 		if err != nil {
-			a.log.WithError(err).Error("problem saving session")
-			c.JSON(http.StatusInternalServerError, map[string]string{
+			c.log.WithError(err).Error("problem saving session")
+			ctx.JSON(http.StatusInternalServerError, map[string]string{
 				"status":  strconv.Itoa(http.StatusInternalServerError),
 				"message": "Internal server error",
 			})
 			return
 		}
 
-		a.htmlResponseWrapper(c, http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
+		c.htmlResponseWrapper(ctx, http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
 			"team":   team,
 			"form":   form,
 			"errors": flashes,
 		})
 	})
 
-	a.router.POST("/team/:team/:chart/new", func(c *gin.Context) {
-		slug := c.Param("team")
-		chartType := getChartType(c.Param("chart"))
+	c.router.POST("/team/:team/:chart/new", func(ctx *gin.Context) {
+		slug := ctx.Param("team")
+		chartType := getChartType(ctx.Param("chart"))
 		var err error
 
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
-			err = a.chartClient.Jupyterhub.Create(c, slug)
+			err = c.chartClient.Jupyterhub.Create(ctx, slug)
 		case gensql.ChartTypeAirflow:
-			err = a.chartClient.Airflow.Create(c, slug)
+			err = c.chartClient.Airflow.Create(ctx, slug)
 		default:
-			c.JSON(http.StatusBadRequest, map[string]string{
+			ctx.JSON(http.StatusBadRequest, map[string]string{
 				"status":  strconv.Itoa(http.StatusBadRequest),
 				"message": fmt.Sprintf("Chart type %v is not supported", chartType),
 			})
@@ -110,7 +110,7 @@ func (a *API) setupChartRoutes() {
 		}
 
 		if err != nil {
-			session := sessions.Default(c)
+			session := sessions.Default(ctx)
 			var ve validator.ValidationErrors
 			if errors.As(err, &ve) {
 				for _, fe := range ve {
@@ -126,32 +126,32 @@ func (a *API) setupChartRoutes() {
 
 			err := session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/new", slug, chartType))
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/new", slug, chartType))
 				return
 			}
-			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/new", slug, chartType))
+			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/new", slug, chartType))
 			return
 		}
 
-		c.Redirect(http.StatusSeeOther, "/oversikt")
+		ctx.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 
-	a.router.GET("/team/:team/:chart/edit", func(c *gin.Context) {
-		slug := c.Param("team")
-		chartType := getChartType(c.Param("chart"))
+	c.router.GET("/team/:team/:chart/edit", func(ctx *gin.Context) {
+		slug := ctx.Param("team")
+		chartType := getChartType(ctx.Param("chart"))
 
-		team, err := a.repo.TeamGet(c, slug)
+		team, err := c.repo.TeamGet(ctx, slug)
 		if err != nil {
-			session := sessions.Default(c)
+			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, "/oversikt")
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, "/oversikt")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, "/oversikt")
+			ctx.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
 
@@ -162,36 +162,36 @@ func (a *API) setupChartRoutes() {
 		case gensql.ChartTypeAirflow:
 			form = &chart.AirflowConfigurableValues{}
 		default:
-			c.JSON(http.StatusBadRequest, map[string]string{
+			ctx.JSON(http.StatusBadRequest, map[string]string{
 				"status":  strconv.Itoa(http.StatusBadRequest),
 				"message": fmt.Sprintf("Chart type %v is not supported", chartType),
 			})
 			return
 		}
 
-		err = a.repo.TeamConfigurableValuesGet(c, chartType, team.ID, form)
+		err = c.repo.TeamConfigurableValuesGet(ctx, chartType, team.ID, form)
 		if err != nil {
-			session := sessions.Default(c)
+			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, "/oversikt")
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, "/oversikt")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, "/oversikt")
+			ctx.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
 
-		session := sessions.Default(c)
+		session := sessions.Default(ctx)
 		flashes := session.Flashes()
 		err = session.Save()
 		if err != nil {
-			a.log.WithError(err).Error("problem saving session")
+			c.log.WithError(err).Error("problem saving session")
 			return
 		}
 
-		a.htmlResponseWrapper(c, http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
+		c.htmlResponseWrapper(ctx, http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
 			"team":                  slug,
 			"pending_jupyterhub":    team.PendingJupyterUpgrade,
 			"pending_airflow":       team.PendingAirflowUpgrade,
@@ -201,34 +201,34 @@ func (a *API) setupChartRoutes() {
 		})
 	})
 
-	a.router.POST("/team/:team/:chart/edit", func(c *gin.Context) {
-		slug := c.Param("team")
-		chartType := getChartType(c.Param("chart"))
+	c.router.POST("/team/:team/:chart/edit", func(ctx *gin.Context) {
+		slug := ctx.Param("team")
+		chartType := getChartType(ctx.Param("chart"))
 		var err error
 
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
 			var form chart.JupyterForm
-			err = c.ShouldBindWith(&form, binding.Form)
+			err = ctx.ShouldBindWith(&form, binding.Form)
 			if err != nil {
-				session := sessions.Default(c)
+				session := sessions.Default(ctx)
 				session.AddFlash(err.Error())
 				err := session.Save()
 				if err != nil {
-					a.log.WithError(err).Error("problem saving session")
-					c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", slug, chartType))
+					c.log.WithError(err).Error("problem saving session")
+					ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", slug, chartType))
 					return
 				}
-				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", slug, chartType))
+				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", slug, chartType))
 				return
 			}
 			form.Slug = slug
-			err = a.chartClient.Jupyterhub.Update(c, form)
+			err = c.chartClient.Jupyterhub.Update(ctx, form)
 		case gensql.ChartTypeAirflow:
 			var form chart.AirflowForm
-			err = c.ShouldBindWith(&form, binding.Form)
+			err = ctx.ShouldBindWith(&form, binding.Form)
 			if err != nil {
-				session := sessions.Default(c)
+				session := sessions.Default(ctx)
 				var ve validator.ValidationErrors
 				if errors.As(err, &ve) {
 					for _, fe := range ve {
@@ -240,17 +240,17 @@ func (a *API) setupChartRoutes() {
 
 				err := session.Save()
 				if err != nil {
-					a.log.WithError(err).Error("problem saving session")
-					c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", slug, chartType))
+					c.log.WithError(err).Error("problem saving session")
+					ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", slug, chartType))
 					return
 				}
-				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", slug, chartType))
+				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", slug, chartType))
 				return
 			}
 			form.Slug = slug
-			err = a.chartClient.Airflow.Update(c, form)
+			err = c.chartClient.Airflow.Update(ctx, form)
 		default:
-			c.JSON(http.StatusBadRequest, map[string]string{
+			ctx.JSON(http.StatusBadRequest, map[string]string{
 				"status":  strconv.Itoa(http.StatusBadRequest),
 				"message": fmt.Sprintf("Chart type %v is not supported", chartType),
 			})
@@ -258,33 +258,33 @@ func (a *API) setupChartRoutes() {
 		}
 
 		if err != nil {
-			a.log.WithError(err).Errorf("problem editing chart %v for team %v", chartType, slug)
-			session := sessions.Default(c)
+			c.log.WithError(err).Errorf("problem editing chart %v for team %v", chartType, slug)
+			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", slug, chartType))
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", slug, chartType))
 				return
 			}
-			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", slug, chartType))
+			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", slug, chartType))
 			return
 		}
-		c.Redirect(http.StatusSeeOther, "/oversikt")
+		ctx.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 
-	a.router.POST("/team/:team/:chart/delete", func(c *gin.Context) {
-		slug := c.Param("team")
-		chartType := getChartType(c.Param("chart"))
+	c.router.POST("/team/:team/:chart/delete", func(ctx *gin.Context) {
+		slug := ctx.Param("team")
+		chartType := getChartType(ctx.Param("chart"))
 		var err error
 
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
-			err = a.chartClient.Jupyterhub.Delete(c, slug)
+			err = c.chartClient.Jupyterhub.Delete(ctx, slug)
 		case gensql.ChartTypeAirflow:
-			err = a.chartClient.Airflow.Delete(c, slug)
+			err = c.chartClient.Airflow.Delete(ctx, slug)
 		default:
-			c.JSON(http.StatusBadRequest, map[string]string{
+			ctx.JSON(http.StatusBadRequest, map[string]string{
 				"status":  strconv.Itoa(http.StatusBadRequest),
 				"message": fmt.Sprintf("Chart type %v is not supported", chartType),
 			})
@@ -292,18 +292,18 @@ func (a *API) setupChartRoutes() {
 		}
 
 		if err != nil {
-			a.log.WithError(err).Errorf("problem deleting chart %v for team %v", chartType, slug)
-			session := sessions.Default(c)
+			c.log.WithError(err).Errorf("problem deleting chart %v for team %v", chartType, slug)
+			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, "/oversikt")
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, "/oversikt")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, "/oversikt")
+			ctx.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
-		c.Redirect(http.StatusSeeOther, "/oversikt")
+		ctx.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 }

@@ -19,7 +19,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type API struct {
+type client struct {
 	azureClient         *auth.Azure
 	router              *gin.Engine
 	repo                *database.Repo
@@ -29,7 +29,6 @@ type API struct {
 	adminClient         *admin.Client
 	cryptClient         *crypto.EncrypterDecrypter
 	chartClient         *chart.Client
-	teamClient          *team.Client
 	jupyterChartVersion string
 	airflowChartVersion string
 	adminGroupMail      string
@@ -47,7 +46,7 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 		log.Infof("[GIN] %v %v %v", ctx.Request.Method, ctx.Request.URL.Path, ctx.Writer.Status())
 	})
 
-	Api := API{
+	api := client{
 		azureClient:    azureClient,
 		router:         router,
 		repo:           repo,
@@ -56,7 +55,6 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 		adminClient:    adminClient,
 		cryptClient:    cryptClient,
 		log:            log,
-		teamClient:     teamClient,
 		chartClient:    chartClient,
 		adminGroupMail: adminGroup,
 		dryRun:         dryRun,
@@ -67,15 +65,15 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 		return nil, err
 	}
 
-	Api.router.Use(session)
-	Api.router.Static("/assets", "./assets")
-	Api.router.LoadHTMLGlob("templates/**/*")
-	Api.setupUnauthenticatedRoutes()
-	Api.router.Use(Api.authMiddleware())
-	Api.setupAuthenticatedRoutes()
-	Api.router.Use(Api.adminAuthMiddleware())
-	Api.setupAdminRoutes()
-	err = Api.fetchAdminGroupID()
+	api.router.Use(session)
+	api.router.Static("/assets", "./assets")
+	api.router.LoadHTMLGlob("templates/**/*")
+	api.setupUnauthenticatedRoutes()
+	api.router.Use(api.authMiddleware())
+	api.setupAuthenticatedRoutes()
+	api.router.Use(api.adminAuthMiddleware())
+	api.setupAdminRoutes()
+	err = api.fetchAdminGroupID()
 	if err != nil {
 		return nil, err
 	}
@@ -90,86 +88,87 @@ func Run(router *gin.Engine, inCluster bool) error {
 	return router.Run("localhost:8080")
 }
 
-func (a *API) setupAPIEndpoints() {
-	api := a.router.Group("/api")
-	api.POST("/status/:team/:chart", func(c *gin.Context) {
-		teamID := c.Param("team")
-		chartType := c.Param("chart")
+func (c *client) setupAPIEndpoints() {
+	api := c.router.Group("/api")
+	api.POST("/status/:team/:chart", func(ctx *gin.Context) {
+		teamID := ctx.Param("team")
+		chartType := ctx.Param("chart")
 
-		if err := a.repo.TeamSetPendingUpgrade(c, teamID, chartType, false); err != nil {
-			a.log.WithError(err).Error("clearing pending upgrade flag in database")
+		if err := c.repo.TeamSetPendingUpgrade(ctx, teamID, chartType, false); err != nil {
+			c.log.WithError(err).Error("clearing pending upgrade flag in database")
 		}
 
-		c.JSON(http.StatusOK, map[string]any{"status": "ok"})
+		ctx.JSON(http.StatusOK, map[string]any{"status": "ok"})
 	})
 }
 
-func (a *API) setupUnauthenticatedRoutes() {
-	a.router.GET("/", func(c *gin.Context) {
-		a.htmlResponseWrapper(c, http.StatusOK, "index", gin.H{})
+func (c *client) setupUnauthenticatedRoutes() {
+	c.router.GET("/", func(ctx *gin.Context) {
+		c.htmlResponseWrapper(ctx, http.StatusOK, "index", gin.H{})
 	})
 
-	a.setupAPIEndpoints()
-	a.setupAuthRoutes()
+	c.setupAPIEndpoints()
+	c.setupAuthRoutes()
 }
 
-func (a *API) setupAuthenticatedRoutes() {
-	a.setupUserRoutes()
-	a.setupTeamRoutes()
-	a.setupComputeRoutes()
-	a.setupChartRoutes()
+func (c *client) setupAuthenticatedRoutes() {
+	c.setupUserRoutes()
+	c.setupTeamRoutes()
+	c.setupComputeRoutes()
+	c.setupChartRoutes()
 }
 
-func (a *API) htmlResponseWrapper(c *gin.Context, status int, tmplName string, values gin.H) {
-	values["loggedIn"] = a.isLoggedIn(c)
-	values["isAdmin"] = a.isAdmin(c)
+func (c *client) htmlResponseWrapper(ctx *gin.Context, status int, tmplName string, values gin.H) {
+	values["loggedIn"] = c.isLoggedIn(ctx)
+	values["isAdmin"] = c.isAdmin(ctx)
 
-	c.HTML(status, tmplName, values)
+	ctx.HTML(status, tmplName, values)
 }
 
-func (a *API) isLoggedIn(c *gin.Context) bool {
-	cookie, err := c.Cookie(sessionCookie)
+func (c *client) isLoggedIn(ctx *gin.Context) bool {
+	cookie, err := ctx.Cookie(sessionCookie)
 	if err != nil {
 		if errors.Is(err, http.ErrNoCookie) {
 			return false
 		}
-		a.log.WithError(err).Error("reading session cookie")
+		c.log.WithError(err).Error("reading session cookie")
 		return false
 	}
 
 	return cookie != ""
 }
 
-func (a *API) isAdmin(c *gin.Context) bool {
-	cookie, err := c.Cookie(sessionCookie)
+func (c *client) isAdmin(ctx *gin.Context) bool {
+	cookie, err := ctx.Cookie(sessionCookie)
 	if err != nil {
 		if errors.Is(err, http.ErrNoCookie) {
 			return false
 		}
-		a.log.WithError(err).Error("reading session cookie")
+		c.log.WithError(err).Error("reading session cookie")
 		return false
 	}
 
-	session, err := a.repo.SessionGet(c, cookie)
+	session, err := c.repo.SessionGet(ctx, cookie)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return false
 		}
-		a.log.WithError(err).Error("retrieving session from db")
+		c.log.WithError(err).Error("retrieving session from db")
 		return false
 	}
 
 	return session.IsAdmin
 }
 
-func (a *API) fetchAdminGroupID() error {
-	if a.dryRun {
+func (c *client) fetchAdminGroupID() error {
+	if c.dryRun {
+		c.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
-	id, err := a.azureClient.GetGroupID(a.adminGroupMail)
+	id, err := c.azureClient.GetGroupID(c.adminGroupMail)
 	if err != nil {
 		return fmt.Errorf("retrieve admin group id error: %v", err)
 	}
-	a.adminGroupID = id
+	c.adminGroupID = id
 	return nil
 }

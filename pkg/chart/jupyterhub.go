@@ -75,19 +75,19 @@ func NewJupyterhubClient(repo *database.Repo, k8sClient *k8s.Client, azureClient
 	}
 }
 
-func (j JupyterhubClient) Create(c *gin.Context, slug string) error {
+func (j JupyterhubClient) Create(ctx *gin.Context, slug string) error {
 	var form JupyterForm
-	err := c.ShouldBindWith(&form, binding.Form)
+	err := ctx.ShouldBindWith(&form, binding.Form)
 	if err != nil {
 		return err
 	}
 
-	team, err := j.repo.TeamGet(c, slug)
+	team, err := j.repo.TeamGet(ctx, slug)
 	if err != nil {
 		return err
 	}
 
-	existing, err := j.repo.TeamValuesGet(c, gensql.ChartTypeJupyterhub, team.ID)
+	existing, err := j.repo.TeamValuesGet(ctx, gensql.ChartTypeJupyterhub, team.ID)
 	if err != nil {
 		return err
 	}
@@ -106,11 +106,11 @@ func (j JupyterhubClient) Create(c *gin.Context, slug string) error {
 
 	addGeneratedJupyterhubConfig(&form)
 
-	return j.UpdateTeamValuesAndInstallOrUpdate(c, form)
+	return j.UpdateTeamValuesAndInstallOrUpdate(ctx, form)
 }
 
-func (j JupyterhubClient) Update(c *gin.Context, form JupyterForm) error {
-	team, err := j.repo.TeamGet(c, form.Slug)
+func (j JupyterhubClient) Update(ctx context.Context, form JupyterForm) error {
+	team, err := j.repo.TeamGet(ctx, form.Slug)
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func (j JupyterhubClient) Update(c *gin.Context, form JupyterForm) error {
 	form.TeamID = team.ID
 	j.setUsers(team.Users, &form)
 
-	return j.UpdateTeamValuesAndInstallOrUpdate(c, form)
+	return j.UpdateTeamValuesAndInstallOrUpdate(ctx, form)
 }
 
 func (j JupyterhubClient) UpdateTeamValuesAndInstallOrUpdate(ctx context.Context, form JupyterForm) error {
@@ -158,8 +158,8 @@ func (j JupyterhubClient) Sync(ctx context.Context, teamID string) error {
 	return j.k8sClient.CreateHelmInstallOrUpgradeJob(ctx, teamID, releaseName, charty.Values)
 }
 
-func (j JupyterhubClient) Delete(c context.Context, teamSlug string) error {
-	team, err := j.repo.TeamGet(c, teamSlug)
+func (j JupyterhubClient) Delete(ctx context.Context, teamSlug string) error {
+	team, err := j.repo.TeamGet(ctx, teamSlug)
 	if err != nil {
 		return err
 	}
@@ -168,14 +168,14 @@ func (j JupyterhubClient) Delete(c context.Context, teamSlug string) error {
 		return nil
 	}
 
-	if err := j.repo.AppDelete(c, team.ID, gensql.ChartTypeJupyterhub); err != nil {
+	if err := j.repo.AppDelete(ctx, team.ID, gensql.ChartTypeJupyterhub); err != nil {
 		return err
 	}
 
 	namespace := k8s.NameToNamespace(team.ID)
 	releaseName := JupyterReleaseName(namespace)
 
-	return j.k8sClient.CreateHelmUninstallJob(c, team.ID, releaseName)
+	return j.k8sClient.CreateHelmUninstallJob(ctx, team.ID, releaseName)
 }
 
 func (j JupyterhubClient) addCustomImage(form *JupyterForm) error {

@@ -29,23 +29,23 @@ type computeInstance struct {
 	Name string `json:"name"`
 }
 
-func (g *Google) CreateComputeInstance(c *gin.Context, slug string) error {
+func (g *Google) CreateComputeInstance(ctx *gin.Context, slug string) error {
 	var form ComputeForm
-	err := c.ShouldBindWith(&form, binding.Form)
+	err := ctx.ShouldBindWith(&form, binding.Form)
 	if err != nil {
 		return err
 	}
 
-	team, err := g.repo.TeamGet(c, slug)
+	team, err := g.repo.TeamGet(ctx, slug)
 	if err != nil {
 		return err
 	}
 
 	computeInstance := TeamToComputeInstanceName(team.ID)
 
-	go g.createComputeInstance(c, team.Users, slug, computeInstance, form.MachineType)
+	go g.createComputeInstance(ctx, team.Users, slug, computeInstance, form.MachineType)
 
-	if err := g.repo.ComputeInstanceCreate(c, team.ID, computeInstance, form.MachineType); err != nil {
+	if err := g.repo.ComputeInstanceCreate(ctx, team.ID, computeInstance, form.MachineType); err != nil {
 		return err
 	}
 
@@ -134,7 +134,7 @@ func (g *Google) createComputeInstance(ctx context.Context, users []string, team
 		return
 	}
 
-	exists, err := g.computeInstanceExists(ctx, name)
+	exists, err := g.computeInstanceExists(name)
 	if err != nil {
 		g.log.WithError(err).Errorf("create compute instance %v", name)
 		return
@@ -181,8 +181,8 @@ func (g *Google) createComputeInstance(ctx context.Context, users []string, team
 	}
 }
 
-func (g *Google) computeInstanceExists(ctx context.Context, computeInstance string) (bool, error) {
-	computeInstances, err := g.listComputeInstances(ctx)
+func (g *Google) computeInstanceExists(computeInstance string) (bool, error) {
+	computeInstances, err := g.listComputeInstances()
 	if err != nil {
 		return false, err
 	}
@@ -196,7 +196,7 @@ func (g *Google) computeInstanceExists(ctx context.Context, computeInstance stri
 	return false, nil
 }
 
-func (g *Google) listComputeInstances(ctx context.Context) ([]*computeInstance, error) {
+func (g *Google) listComputeInstances() ([]*computeInstance, error) {
 	listCmd := exec.Command(
 		"gcloud",
 		"compute",

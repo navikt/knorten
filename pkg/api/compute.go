@@ -9,98 +9,98 @@ import (
 	"github.com/nais/knorten/pkg/google"
 )
 
-func (a *API) setupComputeRoutes() {
-	a.router.GET("/team/:team/compute/new", func(c *gin.Context) {
-		slug := c.Param("team")
-		machineTypes, err := a.repo.SupportedComputeMachineTypes(c)
+func (c *client) setupComputeRoutes() {
+	c.router.GET("/team/:team/compute/new", func(ctx *gin.Context) {
+		slug := ctx.Param("team")
+		machineTypes, err := c.repo.SupportedComputeMachineTypes(ctx)
 		if err != nil {
-			session := sessions.Default(c)
+			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/compute/new", slug))
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/compute/new", slug))
 				return
 			}
-			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/compute/new", slug))
+			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/compute/new", slug))
 			return
 		}
 
-		a.htmlResponseWrapper(c, http.StatusOK, "gcp/compute", gin.H{
+		c.htmlResponseWrapper(ctx, http.StatusOK, "gcp/compute", gin.H{
 			"team":          slug,
 			"machine_types": machineTypes,
 		})
 	})
 
-	a.router.POST("/team/:team/compute/new", func(c *gin.Context) {
-		slug := c.Param("team")
-		err := a.googleClient.CreateComputeInstance(c, slug)
+	c.router.POST("/team/:team/compute/new", func(ctx *gin.Context) {
+		slug := ctx.Param("team")
+		err := c.googleClient.CreateComputeInstance(ctx, slug)
 		if err != nil {
-			session := sessions.Default(c)
+			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/compute/new", slug))
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/compute/new", slug))
 				return
 			}
-			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/compute/new", slug))
+			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/compute/new", slug))
 			return
 		}
 
-		c.Redirect(http.StatusSeeOther, "/oversikt")
+		ctx.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 
-	a.router.GET("/team/:team/compute/edit", func(c *gin.Context) {
-		slug := c.Param("team")
+	c.router.GET("/team/:team/compute/edit", func(ctx *gin.Context) {
+		slug := ctx.Param("team")
 
-		machineTypes, err := a.repo.SupportedComputeMachineTypes(c)
+		machineTypes, err := c.repo.SupportedComputeMachineTypes(ctx)
 		if err != nil {
-			session := sessions.Default(c)
+			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, "/oversikt")
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, "/oversikt")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, "/oversikt")
+			ctx.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
 
-		team, err := a.repo.TeamGet(c, slug)
+		team, err := c.repo.TeamGet(ctx, slug)
 		if err != nil {
-			session := sessions.Default(c)
+			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, "/oversikt")
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, "/oversikt")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, "/oversikt")
+			ctx.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
 
-		instance, err := a.repo.ComputeInstanceGet(c, team.ID)
+		instance, err := c.repo.ComputeInstanceGet(ctx, team.ID)
 		if err != nil {
-			session := sessions.Default(c)
+			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, "/oversikt")
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, "/oversikt")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, "/oversikt")
+			ctx.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
 
-		session := sessions.Default(c)
+		session := sessions.Default(ctx)
 		flashes := session.Flashes()
 		err = session.Save()
 		if err != nil {
-			a.log.WithError(err).Error("problem saving session")
+			c.log.WithError(err).Error("problem saving session")
 			return
 		}
 
@@ -109,7 +109,7 @@ func (a *API) setupComputeRoutes() {
 			MachineType: string(instance.MachineType),
 		}
 
-		a.htmlResponseWrapper(c, http.StatusOK, "gcp/compute", gin.H{
+		c.htmlResponseWrapper(ctx, http.StatusOK, "gcp/compute", gin.H{
 			"team":          slug,
 			"values":        values,
 			"machine_types": machineTypes,
@@ -117,23 +117,23 @@ func (a *API) setupComputeRoutes() {
 		})
 	})
 
-	a.router.POST("/team/:team/compute/delete", func(c *gin.Context) {
-		slug := c.Param("team")
+	c.router.POST("/team/:team/compute/delete", func(ctx *gin.Context) {
+		slug := ctx.Param("team")
 
-		err := a.googleClient.DeleteComputeInstance(c, slug)
+		err := c.googleClient.DeleteComputeInstance(ctx, slug)
 		if err != nil {
-			session := sessions.Default(c)
+			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/compute/new", slug))
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/compute/new", slug))
 				return
 			}
-			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/compute/new", slug))
+			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/compute/new", slug))
 			return
 		}
 
-		c.Redirect(http.StatusSeeOther, "/oversikt")
+		ctx.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 }

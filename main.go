@@ -64,7 +64,7 @@ func main() {
 	flag.StringVar(&cfg.SessionKey, "session-key", os.Getenv("SESSION_KEY"), "The session key for Knorten")
 	flag.Parse()
 
-	querier, dbClient, err := database.New(fmt.Sprintf("%v?sslmode=disable", cfg.DBConnString), log.WithField("subsystem", "db"))
+	dbClient, err := database.New(fmt.Sprintf("%v?sslmode=disable", cfg.DBConnString), log.WithField("subsystem", "db"))
 	if err != nil {
 		log.WithError(err).Fatal("setting up database")
 		return
@@ -99,7 +99,7 @@ func main() {
 		return
 	}
 
-	go events.Start(context.Background(), querier, teamClient, log.WithField("subsystem", "events"))
+	events.Start(context.Background(), dbClient, teamClient, log.WithField("subsystem", "events"))
 
 	router, err := api.New(dbClient, authClient, googleClient, k8sClient, cryptClient, chartClient, teamClient, cfg.DryRun, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.SessionKey, cfg.AdminGroup, log.WithField("subsystem", "api"))
 	if err != nil {

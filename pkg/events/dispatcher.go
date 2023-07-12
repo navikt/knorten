@@ -5,79 +5,87 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/team"
 	"github.com/sirupsen/logrus"
 )
 
-type WorkerFunc func(context.Context, gensql.Event)
+var eventChan = make(chan gensql.EventType, 10)
 
-var (
-	eventChan    = make(chan string, 10)
-	dbQuerier    gensql.Querier
-	log          *logrus.Entry
-	eventContext context.Context
-	teamClient   *team.Client
-)
-
-var eventWorker = map[gensql.EventType]WorkerFunc{
-	gensql.EventTypeCreateTeam: func(ctx context.Context, event gensql.Event) {
-		err := createTeam(ctx, event)
-		if err != nil {
-			log.WithError(err).Error("can't set status for event")
-			return
-		}
-	},
-
-	gensql.EventTypeUpdateTeam: func(ctx context.Context, event gensql.Event) {
-		status := updateTeam(ctx, event)
-		err := setEventStatus(event.ID, status)
-		if err != nil {
-			log.WithError(err).Error("can't set event status")
-		}
-	},
-	gensql.EventTypeDeleteTeam: func(ctx context.Context, event gensql.Event) {
-		err := deleteTeam(ctx, event)
-		if err != nil {
-			log.WithError(err).Error("can't set event status")
-		}
-	},
+type eventHandler struct {
+	repo    *database.Repo
+	log     *logrus.Entry
+	context context.Context
+	team    *team.Client
 }
 
-func setEventStatus(id uuid.UUID, status gensql.EventStatus) error {
-	err := dbQuerier.EventSetStatus(eventContext, gensql.EventSetStatusParams{
-		ID:     id,
-		Status: status,
-	})
-	if err != nil {
-		log.Errorf("can't change status to %v for event(%v): %v", status, id, err)
+type workerFunc func(context.Context, gensql.Event)
+
+func (e eventHandler) distributeWork(eventType gensql.EventType) workerFunc {
+	switch eventType {
+	case gensql.EventTypeCreateTeam:
+		return func(ctx context.Context, event gensql.Event) {
+			err := createTeam(ctx, event)
+			if err != nil {
+				e.log.WithError(err).Error("can't set status for event")
+				return
+			}
+		}
+
+	case gensql.EventTypeUpdateTeam:
+		return func(ctx context.Context, event gensql.Event) {
+			status := updateTeam(ctx, event)
+			err := e.setEventStatus(event.ID, status)
+			if err != nil {
+				e.log.WithError(err).Error("can't set event status")
+			}
+		}
+	case gensql.EventTypeDeleteTeam:
+		return func(ctx context.Context, event gensql.Event) {
+			err := deleteTeam(ctx, event)
+			if err != nil {
+				e.log.WithError(err).Error("can't set event status")
+			}
+		}
 	}
 
 	return nil
 }
 
-func triggerDispatcher(incomingEvent string) {
+func (e eventHandler) setEventStatus(id uuid.UUID, status gensql.EventStatus) error {
+	err := e.repo.EventSetStatus(e.context, id, status)
+	if err != nil {
+		e.log.Errorf("can't change status to %v for event(%v): %v", status, id, err)
+	}
+
+	return nil
+}
+
+func TriggerDispatcher(incomingEvent gensql.EventType) {
 	select {
 	case eventChan <- incomingEvent:
 	default:
 	}
 }
 
-func Start(ctx context.Context, querier gensql.Querier, tClient *team.Client, logEntry *logrus.Entry) {
-	log = logEntry
-	dbQuerier = querier
-	teamClient = tClient
-	eventContext = ctx
+func Start(ctx context.Context, repo *database.Repo, team *team.Client, logEntry *logrus.Entry) {
+	handler := eventHandler{
+		repo:    repo,
+		log:     logEntry,
+		context: ctx,
+		team:    team,
+	}
 
 	eventRetrievers := []func() ([]gensql.Event, error){
 		func() ([]gensql.Event, error) {
-			return querier.EventsGetNew(ctx)
+			return handler.repo.EventsGetNew(ctx)
 		},
 		func() ([]gensql.Event, error) {
-			return querier.EventsGetOverdue(ctx)
+			return handler.repo.EventsGetOverdue(ctx)
 		},
 		func() ([]gensql.Event, error) {
-			return querier.EventsGetPending(ctx)
+			return handler.repo.EventsGetPending(ctx)
 		},
 	}
 
@@ -85,25 +93,25 @@ func Start(ctx context.Context, querier gensql.Querier, tClient *team.Client, lo
 		for {
 			select {
 			case incomingEvent := <-eventChan:
-				log.Debug("Received event: ", incomingEvent)
+				handler.log.Debug("Received event: ", incomingEvent)
 			case <-time.Tick(1 * time.Minute):
-				log.Debug("Event dispatcher run!")
+				handler.log.Debug("Event dispatcher run!")
 			case <-ctx.Done():
-				log.Debug("Context cancelled, stopping the event dispatcher.")
+				handler.log.Debug("Context cancelled, stopping the event dispatcher.")
 				return
 			}
 
 			for _, eventRetriever := range eventRetrievers {
 				pickedEvents, err := eventRetriever()
 				if err != nil {
-					log.Errorf("Failed to fetch events: %v", err)
+					handler.log.Errorf("Failed to fetch events: %v", err)
 					continue
 				}
 
 				for _, event := range pickedEvents {
-					worker, ok := eventWorker[event.EventType]
-					if !ok {
-						log.Errorf("No worker found for event type %v", event.EventType)
+					worker := handler.distributeWork(event.EventType)
+					if worker == nil {
+						handler.log.Errorf("No worker found for event type %v", event.EventType)
 						continue
 					}
 

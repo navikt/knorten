@@ -89,13 +89,14 @@ func (a *Client) ResyncTeams(ctx context.Context) error {
 	}
 
 	for _, team := range teams {
-		if err := a.k8sClient.CreateTeamNamespace(ctx, k8s.NameToNamespace(team.ID)); err != nil {
-			return err
-		}
-
-		if err := a.k8sClient.CreateTeamServiceAccount(ctx, team.ID, k8s.NameToNamespace(team.ID)); err != nil {
-			return err
-		}
+		// TODO
+		//if err := a.k8sClient.CreateTeamNamespace(ctx, k8s.NameToNamespace(team.ID)); err != nil {
+		//	return err
+		//}
+		//
+		//if err := a.k8sClient.CreateTeamServiceAccount(ctx, team.ID, k8s.NameToNamespace(team.ID)); err != nil {
+		//	return err
+		//}
 
 		apps, err := a.repo.AppsForTeamGet(ctx, team.ID)
 		if err != nil {

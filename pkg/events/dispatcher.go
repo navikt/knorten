@@ -8,6 +8,7 @@ import (
 	"github.com/nais/knorten/pkg/compute"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/logger"
 	"github.com/nais/knorten/pkg/team"
 	"github.com/sirupsen/logrus"
 )
@@ -20,51 +21,62 @@ type eventHandler struct {
 	computeClient *compute.Client
 }
 
-type workerFunc func(context.Context, gensql.Event)
+type workerFunc func(context.Context, gensql.Event, logger.Logger)
 
 func (e eventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 	switch eventType {
 	case gensql.EventTypeCreateTeam:
-		return func(ctx context.Context, event gensql.Event) {
-			err := e.createTeam(event)
-			if err != nil {
-				e.log.WithError(err).Error("can't set status for event")
-				return
-			}
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) {
+			e.createTeam(event, logger)
 		}
-
 	case gensql.EventTypeUpdateTeam:
-		return func(ctx context.Context, event gensql.Event) {
-			status := e.updateTeam(event)
-			err := e.setEventStatus(event.ID, status)
-			if err != nil {
-				e.log.WithError(err).Error("can't set event status")
-			}
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) {
+			e.updateTeam(event, logger)
 		}
 	case gensql.EventTypeDeleteTeam:
-		return func(ctx context.Context, event gensql.Event) {
-			err := e.deleteTeam(event)
-			if err != nil {
-				e.log.WithError(err).Error("can't set event status")
-			}
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) {
+			e.deleteTeam(event, logger)
 		}
+
 	case gensql.EventTypeCreateCompute:
-		return func(ctx context.Context, event gensql.Event) {
-			err := e.createCompute(event)
-			if err != nil {
-				e.log.WithError(err).Error("can't set event status")
-			}
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) {
+			e.createCompute(event, logger)
 		}
 	case gensql.EventTypeDeleteCompute:
-		return func(ctx context.Context, event gensql.Event) {
-			err := e.deleteCompute(event)
-			if err != nil {
-				e.log.WithError(err).Error("can't set event status")
-			}
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) {
+			e.deleteCompute(event, logger)
 		}
 	}
 
 	return nil
+}
+
+func (e eventHandler) processWork(event gensql.Event, form any, logger logger.Logger) {
+	var retry bool
+	switch event.EventType {
+	case gensql.EventTypeCreateTeam:
+		retry = e.teamClient.Create(e.context, form.(gensql.Team), logger)
+	case gensql.EventTypeUpdateTeam:
+		retry = e.teamClient.Update(e.context, form.(gensql.Team), logger)
+	case gensql.EventTypeDeleteTeam:
+		retry = e.teamClient.Delete(e.context, form.(string), logger)
+	case gensql.EventTypeCreateCompute:
+		retry = e.computeClient.Create(e.context, form.(gensql.ComputeInstance))
+	case gensql.EventTypeDeleteCompute:
+		retry = e.computeClient.Delete(e.context, form.(string))
+	}
+
+	var err error
+	if retry {
+		err = e.setEventStatus(event.ID, gensql.EventStatusPending)
+	} else {
+		err = e.setEventStatus(event.ID, gensql.EventStatusCompleted)
+	}
+
+	if err != nil {
+		e.log.WithError(err).Error("can't set status for event")
+		return
+	}
 }
 
 func (e eventHandler) setEventStatus(id uuid.UUID, status gensql.EventStatus) error {
@@ -76,29 +88,31 @@ func (e eventHandler) setEventStatus(id uuid.UUID, status gensql.EventStatus) er
 	return nil
 }
 
-func Start(ctx context.Context, repo *database.Repo, gcpProject string, dryRun, inCluster bool, log *logrus.Entry) error {
+func NewHandler(ctx context.Context, repo *database.Repo, gcpProject string, dryRun, inCluster bool, log *logrus.Entry) (eventHandler, error) {
 	teamClient, err := team.NewClient(repo, gcpProject, dryRun, inCluster, log.WithField("subsystem", "teamClient"))
 	if err != nil {
-		return err
+		return eventHandler{}, err
 	}
 
-	handler := eventHandler{
+	return eventHandler{
 		repo:          repo,
 		log:           log,
 		context:       ctx,
 		teamClient:    teamClient,
 		computeClient: compute.NewClient(repo, gcpProject, dryRun, log.WithField("subsystem", "computeClient")),
-	}
+	}, nil
+}
 
+func (e eventHandler) Run() {
 	eventRetrievers := []func() ([]gensql.Event, error){
 		func() ([]gensql.Event, error) {
-			return handler.repo.EventsGetNew(ctx)
+			return e.repo.EventsGetNew(e.context)
 		},
 		func() ([]gensql.Event, error) {
-			return handler.repo.EventsGetOverdue(ctx)
+			return e.repo.EventsGetOverdue(e.context)
 		},
 		func() ([]gensql.Event, error) {
-			return handler.repo.EventsGetPending(ctx)
+			return e.repo.EventsGetPending(e.context)
 		},
 	}
 
@@ -106,32 +120,31 @@ func Start(ctx context.Context, repo *database.Repo, gcpProject string, dryRun, 
 		for {
 			select {
 			case <-time.Tick(1 * time.Minute):
-				handler.log.Debug("Event dispatcher run!")
-			case <-ctx.Done():
-				handler.log.Debug("Context cancelled, stopping the event dispatcher.")
+				e.log.Debug("Event dispatcher run!")
+			case <-e.context.Done():
+				e.log.Debug("Context cancelled, stopping the event dispatcher.")
 				return
 			}
 
 			for _, eventRetriever := range eventRetrievers {
 				pickedEvents, err := eventRetriever()
 				if err != nil {
-					handler.log.Errorf("Failed to fetch events: %v", err)
+					e.log.Errorf("Failed to fetch events: %v", err)
 					continue
 				}
 
 				for _, event := range pickedEvents {
-					worker := handler.distributeWork(event.EventType)
+					worker := e.distributeWork(event.EventType)
 					if worker == nil {
-						handler.log.WithField("eventID", event.ID).Errorf("No worker found for event type %v", event.EventType)
+						e.log.WithField("eventID", event.ID).Errorf("No worker found for event type %v", event.EventType)
 						continue
 					}
 
-					handler.log.WithField("eventID", event.ID).Infof("Dispatching event '%v'", event.EventType)
-					go worker(ctx, event)
+					e.log.WithField("eventID", event.ID).Infof("Dispatching event '%v'", event.EventType)
+					logger := newEventLogger(e.context, e.log, e.repo, event)
+					go worker(e.context, event, logger)
 				}
 			}
 		}
 	}()
-
-	return nil
 }

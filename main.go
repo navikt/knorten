@@ -90,11 +90,12 @@ func main() {
 		return
 	}
 
-	err = events.Start(context.Background(), dbClient, cfg.GCPProject, cfg.DryRun, cfg.InCluster, log.WithField("subsystem", "events"))
+	eventHandler, err := events.NewHandler(context.Background(), dbClient, cfg.GCPProject, cfg.DryRun, cfg.InCluster, log.WithField("subsystem", "events"))
 	if err != nil {
 		log.WithError(err).Fatal("starting event watcher")
 		return
 	}
+	eventHandler.Run()
 
 	router, err := api.New(dbClient, authClient, googleClient, k8sClient, cryptClient, chartClient, cfg.DryRun, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.SessionKey, cfg.AdminGroup, log.WithField("subsystem", "api"))
 	if err != nil {

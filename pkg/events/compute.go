@@ -4,49 +4,33 @@ import (
 	"encoding/json"
 
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/logger"
 )
 
-func (e eventHandler) createCompute(event gensql.Event) error {
-	var instance gensql.ComputeInstance
-	logger := newEventLogger(e.context, e.log, e.repo, event)
-	err := json.Unmarshal(event.Task, &instance)
+func (e eventHandler) createCompute(event gensql.Event, logger logger.Logger) {
+	var form gensql.ComputeInstance
+	err := json.Unmarshal(event.Task, &form)
 	if err != nil {
 		logger.Errorf("retrieved event with invalid param: %v", err)
-		return e.setEventStatus(event.ID, gensql.EventStatusFailed)
+		err = e.setEventStatus(event.ID, gensql.EventStatusFailed)
+		if err != nil {
+			e.log.WithError(err).Error("can't set status for event")
+		}
 	}
 
-	err = e.setEventStatus(event.ID, gensql.EventStatusProcessing)
-	if err != nil {
-		return err
-	}
-
-	// TODO: Send med logger
-	retry := e.computeClient.Create(e.context, instance)
-	if retry {
-		return e.setEventStatus(event.ID, gensql.EventStatusPending)
-	}
-
-	return e.setEventStatus(event.ID, gensql.EventStatusCompleted)
+	e.processWork(event, form, logger)
 }
 
-func (e eventHandler) deleteCompute(event gensql.Event) error {
-	var email string
-	logger := newEventLogger(e.context, e.log, e.repo, event)
-	err := json.Unmarshal(event.Task, &email)
+func (e eventHandler) deleteCompute(event gensql.Event, logger logger.Logger) {
+	var form string
+	err := json.Unmarshal(event.Task, &form)
 	if err != nil {
 		logger.Errorf("retrieved event with invalid param: %v", err)
-		return e.setEventStatus(event.ID, gensql.EventStatusFailed)
+		err = e.setEventStatus(event.ID, gensql.EventStatusFailed)
+		if err != nil {
+			e.log.WithError(err).Error("can't set status for event")
+		}
 	}
 
-	err = e.setEventStatus(event.ID, gensql.EventStatusProcessing)
-	if err != nil {
-		return err
-	}
-
-	retry := e.computeClient.Delete(e.context, email)
-	if retry {
-		return e.setEventStatus(event.ID, gensql.EventStatusPending)
-	}
-
-	return e.setEventStatus(event.ID, gensql.EventStatusCompleted)
+	e.processWork(event, form, logger)
 }

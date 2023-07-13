@@ -99,7 +99,7 @@ func (c *client) createComputeInstance(ctx *gin.Context) error {
 
 	instance := gensql.ComputeInstance{
 		Email: user.Email,
-		Name:  "compute-" + normalizeName(user.Name),
+		Name:  "compute-" + getNameFromEmail(user.Email),
 	}
 
 	return c.repo.RegisterCreateComputeEvent(ctx, instance)
@@ -116,11 +116,8 @@ func getUser(ctx *gin.Context) (*auth.User, error) {
 	return user, nil
 }
 
-func normalizeName(name string) string {
-	name = strings.Replace(name, " ", "-", -1)
-	name = strings.Replace(name, "_", "-", -1)
-	name = strings.Replace(name, "æ", "a", -1)
-	name = strings.Replace(name, "ø", "o", -1)
-	name = strings.Replace(name, "å", "a", -1)
+func getNameFromEmail(name string) string {
+	name = strings.Split(name, "@")[0]
+	name = strings.Replace(name, ".", "-", -1)
 	return strings.ToLower(name)
 }

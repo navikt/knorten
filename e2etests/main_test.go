@@ -93,7 +93,7 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	querier, dbRepo, err := database.New(dbString, logrus.NewEntry(logrus.StandardLogger()))
+	dbRepo, err := database.New(dbString, logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -123,7 +123,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("creating teamClient: %v", err)
 	}
 
-	go events.Start(context.Background(), querier, teamClient, logger)
+	events.Start(context.Background(), dbRepo, teamClient, logger)
 
 	srv, err := api.New(
 		dbRepo,

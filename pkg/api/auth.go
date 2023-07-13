@@ -200,7 +200,7 @@ func (c *client) authMiddleware() gin.HandlerFunc {
 	if c.dryRun {
 		return func(ctx *gin.Context) {
 			user := &auth.User{
-				Name:    "dummy@nav.no",
+				Name:    "Dum My",
 				Email:   "dummy@nav.no",
 				Expires: time.Time{},
 			}
@@ -273,7 +273,7 @@ func (c *client) adminAuthMiddleware() gin.HandlerFunc {
 	if c.dryRun {
 		return func(ctx *gin.Context) {
 			user := &auth.User{
-				Name:    "dummy@nav.no",
+				Name:    "Dum My",
 				Email:   "dummy@nav.no",
 				Expires: time.Time{},
 			}

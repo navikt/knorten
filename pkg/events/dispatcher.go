@@ -21,30 +21,30 @@ type eventHandler struct {
 	computeClient *compute.Client
 }
 
-type workerFunc func(context.Context, gensql.Event, logger.Logger)
+type workerFunc func(context.Context, gensql.Event, logger.Logger) error
 
 func (e eventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 	switch eventType {
 	case gensql.EventTypeCreateTeam:
-		return func(ctx context.Context, event gensql.Event, logger logger.Logger) {
-			e.createTeam(event, logger)
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
+			return e.createTeam(event, logger)
 		}
 	case gensql.EventTypeUpdateTeam:
-		return func(ctx context.Context, event gensql.Event, logger logger.Logger) {
-			e.updateTeam(event, logger)
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
+			return e.updateTeam(event, logger)
 		}
 	case gensql.EventTypeDeleteTeam:
-		return func(ctx context.Context, event gensql.Event, logger logger.Logger) {
-			e.deleteTeam(event, logger)
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
+			return e.deleteTeam(event, logger)
 		}
 
 	case gensql.EventTypeCreateCompute:
-		return func(ctx context.Context, event gensql.Event, logger logger.Logger) {
-			e.createCompute(event, logger)
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
+			return e.createCompute(event, logger)
 		}
 	case gensql.EventTypeDeleteCompute:
-		return func(ctx context.Context, event gensql.Event, logger logger.Logger) {
-			e.deleteCompute(event, logger)
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
+			return e.deleteCompute(event, logger)
 		}
 	}
 
@@ -140,9 +140,18 @@ func (e eventHandler) Run() {
 						continue
 					}
 
-					e.log.WithField("eventID", event.ID).Infof("Dispatching event '%v'", event.EventType)
-					logger := newEventLogger(e.context, e.log, e.repo, event)
-					go worker(e.context, event, logger)
+					eventLogger := newEventLogger(e.context, e.log, e.repo, event)
+					eventLogger.log.Infof("Dispatching event '%v'", event.EventType)
+					go func() {
+						err := worker(e.context, event, eventLogger)
+						if err != nil {
+							eventLogger.log.WithError(err).Errorf("retrieved event with invalid param: %v", err)
+							err = e.setEventStatus(event.ID, gensql.EventStatusFailed)
+							if err != nil {
+								eventLogger.log.WithError(err).Error("can't set status for event")
+							}
+						}
+					}()
 				}
 			}
 		}

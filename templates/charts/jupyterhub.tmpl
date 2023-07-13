@@ -55,6 +55,20 @@
                                placeholder="3600" 
                                class="navds-text-field__input navds-body-short navds-body-medium" />
                     </div>
+                    <div class="navds-form-field navds-form-field--medium">
+                        <fieldset id="allowlist">
+                            <legend class="navds-form-field__label navds-label">Allowlist</legend>
+                            <div class="navds-fieldset__description navds-body-long navds-body-long--small">
+                                <a class="navds-link" target="_blank"
+                                href="https://docs.knada.io/analyse/notebook/knada-notebook/#trafikk-fra-notebooks">
+                                    Les mer om trafikk fra Notebooks i dokumentasjonen vår
+                                </a>
+                            </div>
+                            <button type="button" class="mb-4 navds-button navds-button--secondary navds-button--small" onClick="addElement()">
+                            Legg til flere hoster
+                            </button>
+                        </fieldset>
+                    </div>
                     <div class="flex gap-2 items-center">
                         <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action"
                                 {{ if .pending_jupyterhub }}disabled{{ end }}>
@@ -66,5 +80,11 @@
             </form>
         </article>
     </section>
+    <script>
+        {{ template "charts/script" }}
+        {{ range .allowlist }}
+        addElement("{{ . }}")
+        {{ end }}
+    </script>
     {{ template "footer" }}
 {{ end }}

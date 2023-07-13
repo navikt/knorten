@@ -29,8 +29,9 @@ type JupyterhubClient struct {
 }
 
 type JupyterForm struct {
-	TeamID string
-	Slug   string
+	TeamID    string
+	Slug      string
+	Allowlist []string `form:"allowlist[]"`
 	JupyterValues
 }
 
@@ -62,6 +63,7 @@ type JupyterValues struct {
 	OAuthCallbackURL string   `helm:"hub.config.AzureAdOAuthenticator.oauth_callback_url"`
 	KnadaTeamSecret  string   `helm:"singleuser.extraEnv.KNADA_TEAM_SECRET"`
 	ProfileList      string   `helm:"singleuser.profileList"`
+	ExtraAnnotations string   `helm:"singleuser.extraAnnotations"`
 }
 
 func NewJupyterhubClient(repo *database.Repo, k8sClient *k8s.Client, azureClient *auth.Azure, cryptClient *crypto.EncrypterDecrypter, chartVersion string, log *logrus.Entry) JupyterhubClient {
@@ -144,6 +146,10 @@ func (j JupyterhubClient) UpdateTeamValuesAndInstallOrUpdate(ctx context.Context
 		}
 	}
 
+	if err := j.addAllowlistAnnotation(&form); err != nil {
+		return err
+	}
+
 	if err := j.storeJupyterTeamValues(ctx, form); err != nil {
 		return err
 	}
@@ -208,6 +214,21 @@ func (j JupyterhubClient) addCustomImage(form *JupyterForm) error {
 		return err
 	}
 	form.ProfileList = string(profilesBytes)
+
+	return nil
+}
+
+func (j JupyterhubClient) addAllowlistAnnotation(form *JupyterForm) error {
+	if len(form.Allowlist) == 0 {
+		return nil
+	}
+
+	annotations := map[string]string{"allowlist": strings.Join(form.Allowlist, ",")}
+	annotationBytes, err := json.Marshal(annotations)
+	if err != nil {
+		return err
+	}
+	form.ExtraAnnotations = string(annotationBytes)
 
 	return nil
 }

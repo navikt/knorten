@@ -1,50 +1,49 @@
 package events
 
 import (
-	"context"
 	"encoding/json"
 
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
-func createTeam(ctx context.Context, event gensql.Event) error {
+func (e eventHandler) createTeam(event gensql.Event) error {
 	var form gensql.Team
-	logger := newEventLogger(event)
+	logger := newEventLogger(e.context, e.log, e.repo, event)
 	err := json.Unmarshal(event.Task, &form)
 	if err != nil {
 		logger.Errorf("retrieved event with invalid param: %v", err)
-		return setEventStatus(event.ID, gensql.EventStatusFailed)
+		return e.setEventStatus(event.ID, gensql.EventStatusFailed)
 	}
 
-	err = setEventStatus(event.ID, gensql.EventStatusProcessing)
+	err = e.setEventStatus(event.ID, gensql.EventStatusProcessing)
 	if err != nil {
 		return err
 	}
 
-	retry := teamClient.Create(ctx, form, logger)
+	retry := e.teamClient.Create(e.context, form, logger)
 	if retry {
-		return setEventStatus(event.ID, gensql.EventStatusPending)
+		return e.setEventStatus(event.ID, gensql.EventStatusPending)
 	}
 
-	return setEventStatus(event.ID, gensql.EventStatusCompleted)
+	return e.setEventStatus(event.ID, gensql.EventStatusCompleted)
 }
 
-func updateTeam(ctx context.Context, event gensql.Event) gensql.EventStatus {
+func (e eventHandler) updateTeam(event gensql.Event) gensql.EventStatus {
 	var form gensql.Team
-	logger := newEventLogger(event)
+	logger := newEventLogger(e.context, e.log, e.repo, event)
 	err := json.Unmarshal(event.Task, &form)
 	if err != nil {
 		logger.Errorf("retrieved event with invalid param: %v", err)
 		return gensql.EventStatusFailed
 	}
 
-	err = setEventStatus(event.ID, gensql.EventStatusProcessing)
+	err = e.setEventStatus(event.ID, gensql.EventStatusProcessing)
 	if err != nil {
 		logger.Errorf("can't change status, trying again soon")
 		return gensql.EventStatusPending
 	}
 
-	retry := teamClient.Update(ctx, form, logger)
+	retry := e.teamClient.Update(e.context, form, logger)
 	if retry {
 		return gensql.EventStatusPending
 	}
@@ -52,24 +51,24 @@ func updateTeam(ctx context.Context, event gensql.Event) gensql.EventStatus {
 	return gensql.EventStatusCompleted
 }
 
-func deleteTeam(ctx context.Context, event gensql.Event) error {
+func (e eventHandler) deleteTeam(event gensql.Event) error {
 	var team string
-	logger := newEventLogger(event)
+	logger := newEventLogger(e.context, e.log, e.repo, event)
 	err := json.Unmarshal(event.Task, &team)
 	if err != nil {
 		logger.Errorf("retrieved event with invalid param: %v", err)
-		return setEventStatus(event.ID, gensql.EventStatusFailed)
+		return e.setEventStatus(event.ID, gensql.EventStatusFailed)
 	}
 
-	err = setEventStatus(event.ID, gensql.EventStatusPending)
+	err = e.setEventStatus(event.ID, gensql.EventStatusPending)
 	if err != nil {
 		return err
 	}
 
-	retry := teamClient.Delete(ctx, team, logger)
+	retry := e.teamClient.Delete(e.context, team, logger)
 	if retry {
-		return setEventStatus(event.ID, gensql.EventStatusPending)
+		return e.setEventStatus(event.ID, gensql.EventStatusPending)
 	}
 
-	return setEventStatus(event.ID, gensql.EventStatusCompleted)
+	return e.setEventStatus(event.ID, gensql.EventStatusCompleted)
 }

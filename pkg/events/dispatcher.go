@@ -14,10 +14,10 @@ import (
 var eventChan = make(chan gensql.EventType, 10)
 
 type eventHandler struct {
-	repo    *database.Repo
-	log     *logrus.Entry
-	context context.Context
-	team    *team.Client
+	repo       *database.Repo
+	log        *logrus.Entry
+	context    context.Context
+	teamClient *team.Client
 }
 
 type workerFunc func(context.Context, gensql.Event)
@@ -26,7 +26,7 @@ func (e eventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 	switch eventType {
 	case gensql.EventTypeCreateTeam:
 		return func(ctx context.Context, event gensql.Event) {
-			err := createTeam(ctx, event)
+			err := e.createTeam(event)
 			if err != nil {
 				e.log.WithError(err).Error("can't set status for event")
 				return
@@ -35,7 +35,7 @@ func (e eventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 
 	case gensql.EventTypeUpdateTeam:
 		return func(ctx context.Context, event gensql.Event) {
-			status := updateTeam(ctx, event)
+			status := e.updateTeam(event)
 			err := e.setEventStatus(event.ID, status)
 			if err != nil {
 				e.log.WithError(err).Error("can't set event status")
@@ -43,7 +43,7 @@ func (e eventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 		}
 	case gensql.EventTypeDeleteTeam:
 		return func(ctx context.Context, event gensql.Event) {
-			err := deleteTeam(ctx, event)
+			err := e.deleteTeam(event)
 			if err != nil {
 				e.log.WithError(err).Error("can't set event status")
 			}
@@ -71,10 +71,10 @@ func TriggerDispatcher(incomingEvent gensql.EventType) {
 
 func Start(ctx context.Context, repo *database.Repo, team *team.Client, logEntry *logrus.Entry) {
 	handler := eventHandler{
-		repo:    repo,
-		log:     logEntry,
-		context: ctx,
-		team:    team,
+		repo:       repo,
+		log:        logEntry,
+		context:    ctx,
+		teamClient: team,
 	}
 
 	eventRetrievers := []func() ([]gensql.Event, error){

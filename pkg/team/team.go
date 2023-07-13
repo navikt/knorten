@@ -37,7 +37,7 @@ func NewClient(repo *database.Repo, gcpProject string, dryRun, inCluster bool, l
 }
 
 func (c Client) Create(ctx context.Context, team gensql.Team, log logger.Logger) bool {
-	log.Infof("Creating team %v", team.Slug)
+	log.Infof("Creating team %v", team.ID)
 
 	existingTeam, err := c.repo.TeamGet(ctx, team.Slug)
 	if err != nil {

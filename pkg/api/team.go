@@ -35,7 +35,7 @@ func formToTeam(ctx *gin.Context) (gensql.Team, error) {
 	}
 
 	return gensql.Team{
-		Slug:      ctx.Param("team"),
+		Slug:      form.Slug,
 		Users:     form.Users,
 		ApiAccess: form.APIAccess == "on",
 		Owner:     form.Owner,
@@ -233,13 +233,13 @@ func (c *client) editTeam(ctx *gin.Context) error {
 		return err
 	}
 
-	team.Users = removeEmptyUsers(team.Users)
 	existingTeam, err := c.repo.TeamGet(ctx, team.Slug)
 	if err != nil {
 		return err
 	}
 
 	team.ID = existingTeam.ID
+	team.Users = removeEmptyUsers(team.Users)
 	return c.repo.RegisterUpdateTeamEvent(ctx, team)
 }
 

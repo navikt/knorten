@@ -22,6 +22,7 @@
             {{ end }}
 
             <form action="" method="POST" class="flex flex-col gap-4 w-80">
+                <input type="text" name="team" id="team" value="{{ .team.Slug }}" readonly hidden/>
                 <div class="">
                     <label for="owner" class="navds-form-field__label navds-label">Eier</label>
                     <input style="background-color:#AAAFB4" readonly type="text" name="owner" id="owner" value="{{ .team.Owner }}"

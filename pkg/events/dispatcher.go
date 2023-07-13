@@ -111,13 +111,16 @@ func Start(ctx context.Context, repo *database.Repo, team *team.Client, logEntry
 				for _, event := range pickedEvents {
 					worker := handler.distributeWork(event.EventType)
 					if worker == nil {
-						handler.log.Errorf("No worker found for event type %v", event.EventType)
+						handler.log.WithField("eventID", event.ID).Errorf("No worker found for event type %v", event.EventType)
 						continue
 					}
 
+					handler.log.WithField("eventID", event.ID).Infof("Dispatching event '%v'", event.EventType)
 					go worker(ctx, event)
 				}
 			}
 		}
 	}()
+
+	return nil
 }

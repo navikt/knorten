@@ -14,6 +14,10 @@ SELECT *
 FROM compute_instances
 WHERE team_id = @team_id;
 
+-- name: ComputeInstancesGet :many
+SELECT *
+FROM compute_instances;
+
 -- name: SupportedComputeMachineTypes :many
 SELECT unnest(enum_range(NULL::COMPUTE_MACHINE_TYPE))::text;
 

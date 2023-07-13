@@ -18,6 +18,10 @@ func (r *Repo) ComputeInstanceGet(ctx context.Context, teamID string) (gensql.Co
 	return r.querier.ComputeInstanceGet(ctx, teamID)
 }
 
+func (r *Repo) ComputeInstancesGet(ctx context.Context) ([]gensql.ComputeInstance, error) {
+	return r.querier.ComputeInstancesGet(ctx)
+}
+
 func (r *Repo) SupportedComputeMachineTypes(ctx context.Context) ([]string, error) {
 	return r.querier.SupportedComputeMachineTypes(ctx)
 }

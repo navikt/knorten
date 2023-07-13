@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	"k8s.io/utils/strings/slices"
 )
 
 const (
@@ -27,6 +28,15 @@ type ComputeForm struct {
 
 type computeInstance struct {
 	Name string `json:"name"`
+}
+
+type roleBinding struct {
+	Members []string `json:"members"`
+	Role    string   `json:"role"`
+}
+
+type iamPolicy struct {
+	Bindings []roleBinding `json:"bindings"`
 }
 
 func (g *Google) CreateComputeInstance(ctx *gin.Context, slug string) error {
@@ -234,8 +244,12 @@ func (g *Google) updateOwners(ctx context.Context, instance string, current, new
 			if err := g.removeOwnerBinding(ctx, instance, m); err != nil {
 				return err
 			}
-			if err := g.revokeKnadaUserRole(ctx, m); err != nil {
+			hasOther, err := g.userHasOtherVMs(ctx, instance, m)
+			if err != nil {
 				return err
+			}
+			if !hasOther {
+				return g.revokeKnadaUserRole(ctx, m)
 			}
 		}
 	}
@@ -307,13 +321,18 @@ func (g *Google) revokeKnadaUserRole(ctx context.Context, user string) error {
 		return nil
 	}
 
+	user, err := g.ensureCorrectCaseInEmail(ctx, user)
+	if err != nil {
+		return err
+	}
+
 	cmd := exec.CommandContext(
 		ctx,
 		"gcloud",
 		"projects",
 		"remove-iam-policy-binding",
 		g.project,
-		fmt.Sprintf("--member=user:%v", user),
+		fmt.Sprintf("--member=%v", user),
 		fmt.Sprintf("--role=%v", knadaUserRole),
 		"--condition=None")
 
@@ -327,6 +346,78 @@ func (g *Google) revokeKnadaUserRole(ctx context.Context, user string) error {
 	}
 
 	return nil
+}
+
+func (g *Google) userHasOtherVMs(ctx context.Context, instance, user string) (bool, error) {
+	instances, err := g.repo.ComputeInstancesGet(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	teamsForUser, err := g.repo.TeamsForUser(ctx, user)
+	if err != nil {
+		return false, err
+	}
+
+	for _, i := range instances {
+		if i.InstanceName == instance {
+			continue
+		}
+
+		if slices.Contains(teamsForUser, i.TeamID) {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (g *Google) ensureCorrectCaseInEmail(ctx context.Context, user string) (string, error) {
+	listCmd := exec.CommandContext(
+		ctx,
+		"gcloud",
+		"projects",
+		"get-iam-policy",
+		g.project,
+		"--format=json",
+	)
+
+	buf := &bytes.Buffer{}
+	listCmd.Stdout = buf
+	listCmd.Stderr = os.Stderr
+	if err := listCmd.Run(); err != nil {
+		io.Copy(os.Stdout, buf)
+		g.log.WithError(err).Errorf("listing project iam-bindings for role %v", knadaUserRole)
+		return "", err
+	}
+
+	iam := iamPolicy{}
+	if err := json.Unmarshal(buf.Bytes(), &iam); err != nil {
+		return "", err
+	}
+
+	knadaRoleBinding, err := g.getKnadaRoleBinding(iam)
+	if err != nil {
+		return "", err
+	}
+
+	for _, m := range knadaRoleBinding.Members {
+		if strings.ToLower(m) == "user:"+user {
+			return m, nil
+		}
+	}
+
+	return "", fmt.Errorf("no project iam-binding exists for role %v for user %v", knadaUserRole, user)
+}
+
+func (g *Google) getKnadaRoleBinding(iam iamPolicy) (roleBinding, error) {
+	for _, b := range iam.Bindings {
+		if b.Role == knadaUserRole {
+			return b, nil
+		}
+	}
+
+	return roleBinding{}, fmt.Errorf("unable to fetch role binding for role %v in project %v", knadaUserRole, g.project)
 }
 
 func (g *Google) removeOwnerBinding(ctx context.Context, instance, user string) error {
@@ -380,8 +471,15 @@ func (g *Google) deleteComputeInstance(ctx context.Context, instance string, use
 	}
 
 	for _, u := range users {
-		if err := g.revokeKnadaUserRole(ctx, u); err != nil {
-			return err
+		hasOther, err := g.userHasOtherVMs(ctx, instance, u)
+		if err != nil {
+			g.log.WithError(err).Errorf("user has other VM check, user %v", u)
+		}
+		if !hasOther {
+			err := g.revokeKnadaUserRole(ctx, u)
+			if err != nil {
+				g.log.WithError(err).Errorf("revoking knada user role for user %v", u)
+			}
 		}
 	}
 

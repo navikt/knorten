@@ -164,15 +164,15 @@ func (c *client) setupChartRoutes() {
 		}
 
 		var form any
-		allowlist := []string{}
+		var allowlist []string
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
 			form = &chart.JupyterConfigurableValues{}
-			allowlist, err = a.getExistingAllowlist(c, team.ID)
+			allowlist, err = c.getExistingAllowlist(ctx, team.ID)
 			if err != nil {
 				if !errors.Is(err, sql.ErrNoRows) {
-					a.log.WithError(err).Error("fetching existing jupyterhub allowlist")
-					c.Redirect(http.StatusSeeOther, "/oversikt")
+					c.log.WithError(err).Error("fetching existing jupyterhub allowlist")
+					ctx.Redirect(http.StatusSeeOther, "/oversikt")
 				}
 			}
 		case gensql.ChartTypeAirflow:
@@ -325,8 +325,8 @@ func (c *client) setupChartRoutes() {
 	})
 }
 
-func (a *API) getExistingAllowlist(ctx context.Context, teamID string) ([]string, error) {
-	extraAnnotations, err := a.repo.TeamValueGet(ctx, jupyterhubAnnotationKey, teamID)
+func (c *client) getExistingAllowlist(ctx context.Context, teamID string) ([]string, error) {
+	extraAnnotations, err := c.repo.TeamValueGet(ctx, jupyterhubAnnotationKey, teamID)
 	if err != nil {
 		return nil, err
 	}

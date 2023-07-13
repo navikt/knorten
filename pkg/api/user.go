@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-contrib/sessions"
@@ -18,8 +17,6 @@ func (c *client) setupUserRoutes() {
 			return
 		}
 
-		user := anyUser.(*auth.User)
-
 		session := sessions.Default(ctx)
 		flashes := session.Flashes()
 		err := session.Save()
@@ -28,6 +25,7 @@ func (c *client) setupUserRoutes() {
 			return
 		}
 
+		user = anyUser.(*auth.User)
 		services, err := c.repo.ServicesForUser(ctx, user.Email)
 		c.htmlResponseWrapper(ctx, http.StatusOK, "oversikt/index", gin.H{
 			"errors":  err,

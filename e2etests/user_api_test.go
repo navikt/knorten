@@ -86,12 +86,8 @@ func TestOverviewAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		instance, err := repo.ComputeInstanceGet(ctx, team.ID)
-		if err != nil {
-			t.Fatal(err)
-		}
-
 		expected, err := createExpectedHTML("oversikt/index", map[string]any{
+			// TODO: Legg inn ComputeInstance
 			"services": []database.TeamServices{
 				{
 					Slug:           teamName,
@@ -107,11 +103,6 @@ func TestOverviewAPI(t *testing.T) {
 						App:     string(gensql.ChartTypeAirflow),
 						Ingress: "https://" + teamName + ".airflow.knada.io",
 						Slug:    teamName,
-					},
-					Compute: &database.ComputeService{
-						Name:        instance.InstanceName,
-						MachineType: string(gensql.ComputeMachineTypeC2Standard4),
-						Slug:        teamName,
 					},
 				},
 			},

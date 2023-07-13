@@ -25,11 +25,9 @@ import (
 	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/crypto"
-	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/events"
 	"github.com/nais/knorten/pkg/google"
 	"github.com/nais/knorten/pkg/k8s"
-	"github.com/nais/knorten/pkg/team"
 	"github.com/ory/dockertest/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/tdewolff/minify/v2"
@@ -111,34 +109,16 @@ func TestMain(m *testing.M) {
 		log.Fatalf("creating k8sClient: %v", err)
 	}
 
-	googleClient := google.New(dbRepo, "", "", "", true, logger)
+	googleClient := google.New(dbRepo, "", "", true, logger)
 	azureClient := auth.New(true, "", "", "", "", logger)
 	chartClient, err := chart.New(dbRepo, googleClient, k8sClient, azureClient, cryptoClient, "", "", logger)
 	if err != nil {
 		log.Fatalf("creating googleClient: %v", err)
 	}
 
-	teamClient, err := team.NewClient(dbRepo, "", true, false, logger)
-	if err != nil {
-		log.Fatalf("creating teamClient: %v", err)
-	}
+	events.Start(context.Background(), dbRepo, "", true, false, logger)
 
-	events.Start(context.Background(), dbRepo, teamClient, logger)
-
-	srv, err := api.New(
-		dbRepo,
-		azureClient,
-		googleClient,
-		k8sClient,
-		cryptoClient,
-		chartClient,
-		teamClient,
-		true,
-		"1.8.0",
-		"2.0.0",
-		"nada@nav.no",
-		"session",
-		logrus.NewEntry(logrus.StandardLogger()))
+	srv, err := api.New(dbRepo, azureClient, googleClient, k8sClient, cryptoClient, chartClient, true, "1.8.0", "2.0.0", "nada@nav.no", "session", logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatalf("creating api: %v", err)
 	}
@@ -229,8 +209,7 @@ func createTeamAndApps(teamName string) error {
 		return fmt.Errorf("creating airflow for team %v returned status code: %v", teamName, resp.StatusCode)
 	}
 
-	data = url.Values{"machine_type": {string(gensql.ComputeMachineTypeC2Standard4)}}
-	resp, err = server.Client().PostForm(fmt.Sprintf("%v/team/%v/compute/new", server.URL, teamName), data)
+	resp, err = server.Client().Post(fmt.Sprintf("%v/compute/new", server.URL), jsonContentType, nil)
 	if err != nil {
 		return fmt.Errorf("creating compute instance for team %v: %v", teamName, err)
 	}

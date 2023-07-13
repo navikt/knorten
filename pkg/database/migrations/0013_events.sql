@@ -5,9 +5,9 @@ CREATE TYPE event_status AS ENUM (
     'completed',
     'pending',
     'failed'
-);
+    );
 
-CREATE TYPE event_type AS ENUM(
+CREATE TYPE event_type AS ENUM (
     'create:team',
     'update:team',
     'delete:team',
@@ -16,38 +16,40 @@ CREATE TYPE event_type AS ENUM(
     'delete:jupyter',
     'create:airflow',
     'update:airflow',
-    'delete:airflow'
-);
+    'delete:airflow',
+    'create:compute',
+    'delete:compute'
+    );
 
-CREATE TYPE log_type as ENUM(
+CREATE TYPE log_type as ENUM (
     'info',
-    'warn',
-    'error',
-    'fatal'
+    'error'
+    );
+
+CREATE TABLE Events
+(
+    id         uuid         DEFAULT uuid_generate_v4(),
+    event_type event_type                             NOT NULL,
+    task       JSONB                                  NOT NULL,
+    status     event_status DEFAULT 'new'             NOT NULL,
+    deadline   TIMESTAMP                              NOT NULL,
+    created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    PRIMARY KEY (id)
 );
 
-CREATE TABLE Events (
-    id uuid DEFAULT uuid_generate_v4(),
-    event_type event_type NOT NULL,
-    task JSONB NOT NULL,
-    status event_status DEFAULT 'new' NOT NULL,
-    deadline TIMESTAMP NOT NULL,
+CREATE TABLE Event_Logs
+(
+    id         uuid      DEFAULT uuid_generate_v4(),
+    event_id   uuid                                NOT NULL,
+    log_type   log_type                            NOT NULL,
+    message    TEXT                                NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    PRIMARY KEY(id)
+    PRIMARY KEY (id),
+    FOREIGN KEY (event_id) REFERENCES Events (id)
 );
 
-CREATE TABLE Event_Logs (
-    id uuid DEFAULT uuid_generate_v4(),
-    event_id uuid NOT NULL,
-    log_type log_type NOT NULL,
-    message TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    PRIMARY KEY(id),
-    FOREIGN KEY (event_id) REFERENCES Events(id)
-);
-
-CREATE INDEX idx_event_logs_event_id ON Event_Logs(event_id);
+CREATE INDEX idx_event_logs_event_id ON Event_Logs (event_id);
 
 -- +goose Down
 DROP TABLE Event_Logs;

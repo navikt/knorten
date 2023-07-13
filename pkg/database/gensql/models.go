@@ -56,49 +56,6 @@ func (ns NullChartType) Value() (driver.Value, error) {
 	return string(ns.ChartType), nil
 }
 
-type ComputeMachineType string
-
-const (
-	ComputeMachineTypeE2Standard4 ComputeMachineType = "e2-standard-4"
-	ComputeMachineTypeN2Standard2 ComputeMachineType = "n2-standard-2"
-	ComputeMachineTypeC2Standard4 ComputeMachineType = "c2-standard-4"
-)
-
-func (e *ComputeMachineType) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = ComputeMachineType(s)
-	case string:
-		*e = ComputeMachineType(s)
-	default:
-		return fmt.Errorf("unsupported scan type for ComputeMachineType: %T", src)
-	}
-	return nil
-}
-
-type NullComputeMachineType struct {
-	ComputeMachineType ComputeMachineType
-	Valid              bool // Valid is true if ComputeMachineType is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullComputeMachineType) Scan(value interface{}) error {
-	if value == nil {
-		ns.ComputeMachineType, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.ComputeMachineType.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullComputeMachineType) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.ComputeMachineType), nil
-}
-
 type EventStatus string
 
 const (
@@ -156,6 +113,8 @@ const (
 	EventTypeCreateAirflow EventType = "create:airflow"
 	EventTypeUpdateAirflow EventType = "update:airflow"
 	EventTypeDeleteAirflow EventType = "delete:airflow"
+	EventTypeCreateCompute EventType = "create:compute"
+	EventTypeDeleteCompute EventType = "delete:compute"
 )
 
 func (e *EventType) Scan(src interface{}) error {
@@ -197,9 +156,7 @@ type LogType string
 
 const (
 	LogTypeInfo  LogType = "info"
-	LogTypeWarn  LogType = "warn"
 	LogTypeError LogType = "error"
-	LogTypeFatal LogType = "fatal"
 )
 
 func (e *LogType) Scan(src interface{}) error {
@@ -256,9 +213,8 @@ type ChartTeamValue struct {
 }
 
 type ComputeInstance struct {
-	TeamID       string
-	InstanceName string
-	MachineType  ComputeMachineType
+	Email string
+	Name  string
 }
 
 type Event struct {

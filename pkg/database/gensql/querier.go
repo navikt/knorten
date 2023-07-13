@@ -15,8 +15,8 @@ type Querier interface {
 	AppsForTeamGet(ctx context.Context, teamID string) ([]ChartType, error)
 	ClearPendingUpgradeLocks(ctx context.Context) error
 	ComputeInstanceCreate(ctx context.Context, arg ComputeInstanceCreateParams) error
-	ComputeInstanceDelete(ctx context.Context, teamID string) error
-	ComputeInstanceGet(ctx context.Context, teamID string) (ComputeInstance, error)
+	ComputeInstanceDelete(ctx context.Context, email string) error
+	ComputeInstanceGet(ctx context.Context, email string) (ComputeInstance, error)
 	EventCreate(ctx context.Context, arg EventCreateParams) error
 	EventGet(ctx context.Context, id uuid.UUID) (Event, error)
 	EventLogCreate(ctx context.Context, arg EventLogCreateParams) error
@@ -33,7 +33,6 @@ type Querier interface {
 	SessionCreate(ctx context.Context, arg SessionCreateParams) error
 	SessionDelete(ctx context.Context, token string) error
 	SessionGet(ctx context.Context, token string) (Session, error)
-	SupportedComputeMachineTypes(ctx context.Context) ([]string, error)
 	TeamCreate(ctx context.Context, arg TeamCreateParams) error
 	TeamDelete(ctx context.Context, id string) error
 	TeamGet(ctx context.Context, slug string) (TeamGetRow, error)

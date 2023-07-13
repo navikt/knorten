@@ -6,12 +6,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/nais/knorten/pkg/chart"
-	"github.com/nais/knorten/pkg/team"
-
 	"github.com/gin-gonic/gin"
 	"github.com/nais/knorten/pkg/admin"
 	"github.com/nais/knorten/pkg/auth"
+	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/google"
@@ -36,7 +34,7 @@ type client struct {
 	adminGroupID        string
 }
 
-func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, chartClient *chart.Client, teamClient *team.Client, dryRun bool, airflowChartVersion, jupyterChartVersion, sessionKey, adminGroup string, log *logrus.Entry) (*gin.Engine, error) {
+func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, chartClient *chart.Client, dryRun bool, airflowChartVersion, jupyterChartVersion, sessionKey, adminGroup string, log *logrus.Entry) (*gin.Engine, error) {
 	adminClient := admin.New(repo, k8sClient, googleClient, cryptClient, chartClient, airflowChartVersion, jupyterChartVersion)
 
 	router := gin.New()

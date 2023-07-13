@@ -138,14 +138,6 @@ func (c Client) Delete(ctx context.Context, teamSlug string, log logger.Logger) 
 		return true
 	}
 
-	// TODO: Denne burde ikke være knyttet til et team
-	// TODO: Dette er en egen event
-	//instance, err := c.repo.ComputeInstanceGet(ctx, team.ID)
-	//if err != nil && !errors.Is(err, sql.ErrNoRows) {
-	//	log.Errorf("sql error: %v", err)
-	//	return true
-	//}
-
 	//apps, err := c.repo.AppsForTeamGet(ctx, team.ID)
 	//if err != nil {
 	//	log.Errorf("sql error: %v", err)

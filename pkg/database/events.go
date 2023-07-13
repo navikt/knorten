@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/events"
 )
 
 func (r *Repo) registerEvent(ctx context.Context, eventType gensql.EventType, deadlineOffset time.Duration, data any) error {
@@ -25,8 +24,6 @@ func (r *Repo) registerEvent(ctx context.Context, eventType gensql.EventType, de
 		return err
 	}
 
-	events.TriggerDispatcher(eventType)
-
 	return nil
 }
 
@@ -40,6 +37,12 @@ func (r *Repo) RegisterUpdateTeamEvent(ctx context.Context, team gensql.Team) er
 
 func (r *Repo) RegisterDeleteTeamEvent(ctx context.Context, team string) error {
 	return r.registerEvent(ctx, gensql.EventTypeDeleteTeam, 5*time.Minute, team)
+}
+func (r *Repo) RegisterDeleteComputeEvent(ctx context.Context, user string) error {
+	return r.registerEvent(ctx, gensql.EventTypeDeleteCompute, 5*time.Minute, user)
+}
+func (r *Repo) RegisterCreateComputeEvent(ctx context.Context, instance gensql.ComputeInstance) error {
+	return r.registerEvent(ctx, gensql.EventTypeCreateCompute, 5*time.Minute, instance)
 }
 
 func (r *Repo) EventLogCreate(ctx context.Context, id uuid.UUID, message string, logType gensql.LogType) error {

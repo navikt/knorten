@@ -10,103 +10,40 @@ import (
 )
 
 const computeInstanceCreate = `-- name: ComputeInstanceCreate :exec
-INSERT INTO compute_instances (
-    "team_id",
-    "instance_name",
-    "machine_type"
-) VALUES (
-    $1,
-    $2,
-    $3
-)
+INSERT INTO compute_instances ("email", "name")
+VALUES ($1, $2)
 `
 
 type ComputeInstanceCreateParams struct {
-	TeamID       string
-	InstanceName string
-	MachineType  ComputeMachineType
+	Email string
+	Name  string
 }
 
 func (q *Queries) ComputeInstanceCreate(ctx context.Context, arg ComputeInstanceCreateParams) error {
-	_, err := q.db.ExecContext(ctx, computeInstanceCreate, arg.TeamID, arg.InstanceName, arg.MachineType)
+	_, err := q.db.ExecContext(ctx, computeInstanceCreate, arg.Email, arg.Name)
 	return err
 }
 
 const computeInstanceDelete = `-- name: ComputeInstanceDelete :exec
 DELETE
 FROM compute_instances
-WHERE team_id = $1
+WHERE email = $1
 `
 
-func (q *Queries) ComputeInstanceDelete(ctx context.Context, teamID string) error {
-	_, err := q.db.ExecContext(ctx, computeInstanceDelete, teamID)
+func (q *Queries) ComputeInstanceDelete(ctx context.Context, email string) error {
+	_, err := q.db.ExecContext(ctx, computeInstanceDelete, email)
 	return err
 }
 
 const computeInstanceGet = `-- name: ComputeInstanceGet :one
-SELECT team_id, instance_name, machine_type
+SELECT email, name
 FROM compute_instances
-WHERE team_id = $1
+WHERE email = $1
 `
 
-func (q *Queries) ComputeInstanceGet(ctx context.Context, teamID string) (ComputeInstance, error) {
-	row := q.db.QueryRowContext(ctx, computeInstanceGet, teamID)
+func (q *Queries) ComputeInstanceGet(ctx context.Context, email string) (ComputeInstance, error) {
+	row := q.db.QueryRowContext(ctx, computeInstanceGet, email)
 	var i ComputeInstance
-	err := row.Scan(&i.TeamID, &i.InstanceName, &i.MachineType)
+	err := row.Scan(&i.Email, &i.Name)
 	return i, err
-}
-
-const computeInstancesGet = `-- name: ComputeInstancesGet :many
-SELECT team_id, instance_name, machine_type
-FROM compute_instances
-`
-
-func (q *Queries) ComputeInstancesGet(ctx context.Context) ([]ComputeInstance, error) {
-	rows, err := q.db.QueryContext(ctx, computeInstancesGet)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []ComputeInstance{}
-	for rows.Next() {
-		var i ComputeInstance
-		if err := rows.Scan(&i.TeamID, &i.InstanceName, &i.MachineType); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const supportedComputeMachineTypes = `-- name: SupportedComputeMachineTypes :many
-SELECT unnest(enum_range(NULL::COMPUTE_MACHINE_TYPE))::text
-`
-
-func (q *Queries) SupportedComputeMachineTypes(ctx context.Context) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, supportedComputeMachineTypes)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []string{}
-	for rows.Next() {
-		var column_1 string
-		if err := rows.Scan(&column_1); err != nil {
-			return nil, err
-		}
-		items = append(items, column_1)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }

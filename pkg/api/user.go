@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-contrib/sessions"
@@ -12,9 +13,12 @@ func (c *client) setupUserRoutes() {
 	c.router.GET("/oversikt", func(ctx *gin.Context) {
 		var user *auth.User
 		anyUser, exists := ctx.Get("user")
-		if exists {
-			user = anyUser.(*auth.User)
+		if !exists {
+			ctx.Redirect(http.StatusSeeOther, "/")
+			return
 		}
+
+		user := anyUser.(*auth.User)
 
 		session := sessions.Default(ctx)
 		flashes := session.Flashes()
@@ -26,9 +30,9 @@ func (c *client) setupUserRoutes() {
 
 		services, err := c.repo.ServicesForUser(ctx, user.Email)
 		c.htmlResponseWrapper(ctx, http.StatusOK, "oversikt/index", gin.H{
-			"errors":   err,
-			"flashes":  flashes,
-			"services": services,
+			"errors":  err,
+			"flashes": flashes,
+			"user":    services,
 		})
 	})
 }

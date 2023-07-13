@@ -5,19 +5,19 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/nais/knorten/pkg/compute"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/team"
 	"github.com/sirupsen/logrus"
 )
 
-var eventChan = make(chan gensql.EventType, 10)
-
 type eventHandler struct {
-	repo       *database.Repo
-	log        *logrus.Entry
-	context    context.Context
-	teamClient *team.Client
+	repo          *database.Repo
+	log           *logrus.Entry
+	context       context.Context
+	teamClient    *team.Client
+	computeClient *compute.Client
 }
 
 type workerFunc func(context.Context, gensql.Event)
@@ -48,6 +48,20 @@ func (e eventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 				e.log.WithError(err).Error("can't set event status")
 			}
 		}
+	case gensql.EventTypeCreateCompute:
+		return func(ctx context.Context, event gensql.Event) {
+			err := e.createCompute(event)
+			if err != nil {
+				e.log.WithError(err).Error("can't set event status")
+			}
+		}
+	case gensql.EventTypeDeleteCompute:
+		return func(ctx context.Context, event gensql.Event) {
+			err := e.deleteCompute(event)
+			if err != nil {
+				e.log.WithError(err).Error("can't set event status")
+			}
+		}
 	}
 
 	return nil
@@ -62,19 +76,18 @@ func (e eventHandler) setEventStatus(id uuid.UUID, status gensql.EventStatus) er
 	return nil
 }
 
-func TriggerDispatcher(incomingEvent gensql.EventType) {
-	select {
-	case eventChan <- incomingEvent:
-	default:
+func Start(ctx context.Context, repo *database.Repo, gcpProject string, dryRun, inCluster bool, log *logrus.Entry) error {
+	teamClient, err := team.NewClient(repo, gcpProject, dryRun, inCluster, log.WithField("subsystem", "teamClient"))
+	if err != nil {
+		return err
 	}
-}
 
-func Start(ctx context.Context, repo *database.Repo, team *team.Client, logEntry *logrus.Entry) {
 	handler := eventHandler{
-		repo:       repo,
-		log:        logEntry,
-		context:    ctx,
-		teamClient: team,
+		repo:          repo,
+		log:           log,
+		context:       ctx,
+		teamClient:    teamClient,
+		computeClient: compute.NewClient(repo, gcpProject, dryRun, log.WithField("subsystem", "computeClient")),
 	}
 
 	eventRetrievers := []func() ([]gensql.Event, error){
@@ -92,8 +105,6 @@ func Start(ctx context.Context, repo *database.Repo, team *team.Client, logEntry
 	go func() {
 		for {
 			select {
-			case incomingEvent := <-eventChan:
-				handler.log.Debug("Received event: ", incomingEvent)
 			case <-time.Tick(1 * time.Minute):
 				handler.log.Debug("Event dispatcher run!")
 			case <-ctx.Done():

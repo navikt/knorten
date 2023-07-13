@@ -5,26 +5,20 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	secretRoleName = "roles/owner"
-)
-
 type Google struct {
-	dryRun          bool
-	log             *logrus.Entry
-	repo            *database.Repo
-	project         string
-	region          string
-	vmNetworkConfig string
+	dryRun  bool
+	log     *logrus.Entry
+	repo    *database.Repo
+	project string
+	region  string
 }
 
-func New(repo *database.Repo, gcpProject, gcpRegion, vmNetworkConfig string, dryRun bool, log *logrus.Entry) *Google {
+func New(repo *database.Repo, gcpProject, gcpRegion string, dryRun bool, log *logrus.Entry) *Google {
 	return &Google{
-		log:             log,
-		repo:            repo,
-		project:         gcpProject,
-		region:          gcpRegion,
-		vmNetworkConfig: vmNetworkConfig,
-		dryRun:          dryRun,
+		log:     log,
+		repo:    repo,
+		project: gcpProject,
+		region:  gcpRegion,
+		dryRun:  dryRun,
 	}
 }

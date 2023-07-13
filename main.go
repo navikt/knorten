@@ -16,7 +16,6 @@ import (
 	"github.com/nais/knorten/pkg/google"
 	"github.com/nais/knorten/pkg/imageupdater"
 	"github.com/nais/knorten/pkg/k8s"
-	"github.com/nais/knorten/pkg/team"
 	"github.com/sirupsen/logrus"
 )
 
@@ -36,7 +35,6 @@ type Config struct {
 	KnelmImage          string
 	AirflowChartVersion string
 	JupyterChartVersion string
-	VMNetworkConfig     string
 	AdminGroup          string
 	SessionKey          string
 }
@@ -60,7 +58,6 @@ func main() {
 	flag.StringVar(&cfg.AirflowChartVersion, "airflow-chart-version", os.Getenv("AIRFLOW_CHART_VERSION"), "The chart version for airflow")
 	flag.StringVar(&cfg.JupyterChartVersion, "jupyter-chart-version", os.Getenv("JUPYTER_CHART_VERSION"), "The chart version for jupyter")
 	flag.StringVar(&cfg.AdminGroup, "admin-group", os.Getenv("ADMIN_GROUP"), "Email of admin group used to authenticate Knorten administrators")
-	flag.StringVar(&cfg.VMNetworkConfig, "vm-network-config", os.Getenv("VM_NETWORK_CONFIG"), "Network configuration for compute instances created by knorten")
 	flag.StringVar(&cfg.SessionKey, "session-key", os.Getenv("SESSION_KEY"), "The session key for Knorten")
 	flag.Parse()
 
@@ -72,7 +69,7 @@ func main() {
 
 	authClient := auth.New(cfg.DryRun, cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, log.WithField("subsystem", "auth"))
 
-	googleClient := google.New(dbClient, cfg.GCPProject, cfg.GCPRegion, cfg.VMNetworkConfig, cfg.DryRun, log.WithField("subsystem", "google"))
+	googleClient := google.New(dbClient, cfg.GCPProject, cfg.GCPRegion, cfg.DryRun, log.WithField("subsystem", "google"))
 
 	cryptClient := crypto.New(cfg.DBEncKey)
 
@@ -93,15 +90,13 @@ func main() {
 		return
 	}
 
-	teamClient, err := team.NewClient(dbClient, cfg.GCPProject, cfg.DryRun, cfg.InCluster, log.WithField("subsystem", "teamClient"))
+	err = events.Start(context.Background(), dbClient, cfg.GCPProject, cfg.DryRun, cfg.InCluster, log.WithField("subsystem", "events"))
 	if err != nil {
-		log.WithError(err).Fatal("creating team client")
+		log.WithError(err).Fatal("starting event watcher")
 		return
 	}
 
-	events.Start(context.Background(), dbClient, teamClient, log.WithField("subsystem", "events"))
-
-	router, err := api.New(dbClient, authClient, googleClient, k8sClient, cryptClient, chartClient, teamClient, cfg.DryRun, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.SessionKey, cfg.AdminGroup, log.WithField("subsystem", "api"))
+	router, err := api.New(dbClient, authClient, googleClient, k8sClient, cryptClient, chartClient, cfg.DryRun, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.SessionKey, cfg.AdminGroup, log.WithField("subsystem", "api"))
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return

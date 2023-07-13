@@ -7,18 +7,13 @@ import (
 	"fmt"
 
 	"github.com/nais/knorten/pkg/database/gensql"
+	"golang.org/x/exp/slices"
 )
 
 type AppService struct {
 	App     string
 	Ingress string
 	Slug    string
-}
-
-type ComputeService struct {
-	Name        string
-	MachineType string
-	Slug        string
 }
 
 type TeamServices struct {
@@ -28,7 +23,11 @@ type TeamServices struct {
 	ServiceAccount string
 	Jupyterhub     *AppService
 	Airflow        *AppService
-	Compute        *ComputeService
+}
+
+type UserServices struct {
+	Services []TeamServices
+	Compute  *gensql.ComputeInstance
 }
 
 func createIngress(team string, chartType gensql.ChartType) string {
@@ -71,17 +70,21 @@ func (r *Repo) AppDelete(ctx context.Context, teamID string, chartType gensql.Ch
 	})
 }
 
-func (r *Repo) ServicesForUser(ctx context.Context, email string) ([]TeamServices, error) {
+func (r *Repo) ServicesForUser(ctx context.Context, email string) (UserServices, error) {
 	teamsForUser, err := r.querier.TeamsForUserGet(ctx, email)
 	if err != nil {
-		return nil, err
+		return UserServices{}, err
 	}
 
-	var services []TeamServices
+	slices.SortFunc(teamsForUser, func(a, b gensql.TeamsForUserGetRow) bool {
+		return a.ID < b.ID
+	})
+
+	var userServices UserServices
 	for _, team := range teamsForUser {
 		apps, err := r.querier.AppsForTeamGet(ctx, team.ID)
 		if err != nil {
-			return nil, err
+			return UserServices{}, err
 		}
 
 		teamServices := TeamServices{
@@ -100,23 +103,21 @@ func (r *Repo) ServicesForUser(ctx context.Context, email string) ([]TeamService
 			}
 		}
 
-		compute, err := r.querier.ComputeInstanceGet(ctx, team.ID)
-		if err != nil {
-			if !errors.Is(err, sql.ErrNoRows) {
-				return nil, err
-			}
-		}
-		if compute.TeamID != "" {
-			teamServices.Compute = &ComputeService{
-				Name:        compute.InstanceName,
-				MachineType: string(compute.MachineType),
-				Slug:        team.Slug,
-			}
+		userServices.Services = append(userServices.Services, teamServices)
+	}
+
+	compute, err := r.querier.ComputeInstanceGet(ctx, email)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return UserServices{}, err
 		}
 
-		services = append(services, teamServices)
+		userServices.Compute = nil
+	} else {
+		userServices.Compute = &compute
 	}
-	return services, nil
+
+	return userServices, nil
 }
 
 func (r *Repo) TeamValuesInsert(ctx context.Context, chartType gensql.ChartType, chartValues map[string]string, team string) error {

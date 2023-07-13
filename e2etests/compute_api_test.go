@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"testing"
 
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/google"
 )
 
 func TestComputeAPI(t *testing.T) {
@@ -20,19 +18,13 @@ func TestComputeAPI(t *testing.T) {
 		Users: []string{"bruker.en@nav.no", "bruker.to@nav.no"},
 		Owner: "bruker.en@nav.no",
 	}
-	testTeam := "compute-team"
-
-	supported, err := repo.SupportedComputeMachineTypes(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	if err := repo.TeamCreate(ctx, team); err != nil {
 		t.Fatal(err)
 	}
 
 	t.Run("get new compute html", func(t *testing.T) {
-		resp, err := server.Client().Get(fmt.Sprintf("%v/team/%v/compute/new", server.URL, testTeam))
+		resp, err := server.Client().Get(fmt.Sprintf("%v/team/%v/compute/new", server.URL, team.Slug))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -56,10 +48,7 @@ func TestComputeAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		expected, err := createExpectedHTML("gcp/compute", map[string]any{
-			"team":          testTeam,
-			"machine_types": supported,
-		})
+		expected, err := createExpectedHTML("compute/new", map[string]any{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -74,8 +63,7 @@ func TestComputeAPI(t *testing.T) {
 	})
 
 	t.Run("create new compute instance", func(t *testing.T) {
-		data := url.Values{"machine_type": {string(gensql.ComputeMachineTypeC2Standard4)}}
-		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/%v/compute/new", server.URL, testTeam), data)
+		resp, err := server.Client().Post(fmt.Sprintf("%v/compute/new", server.URL), jsonContentType, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -84,7 +72,7 @@ func TestComputeAPI(t *testing.T) {
 			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
-		team, err := repo.TeamGet(ctx, testTeam)
+		team, err := repo.TeamGet(ctx, team.Slug)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -94,17 +82,14 @@ func TestComputeAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if instance.InstanceName != google.TeamToComputeInstanceName(team.ID) {
-			t.Fatalf("expected compute instance name %v, got %v", google.TeamToComputeInstanceName(team.ID), instance.InstanceName)
-		}
-
-		if instance.MachineType != gensql.ComputeMachineTypeC2Standard4 {
-			t.Fatalf("expected compute instance machine type %v, got %v", gensql.ComputeMachineTypeC2Standard4, instance.MachineType)
+		expectedInstanceName := fmt.Sprintf("compute-%v", team.ID)
+		if instance.Name != expectedInstanceName {
+			t.Fatalf("expected compute instance name %v, got %v", expectedInstanceName, instance.Name)
 		}
 	})
 
 	t.Run("get edit compute html", func(t *testing.T) {
-		resp, err := server.Client().Get(fmt.Sprintf("%v/team/%v/compute/edit", server.URL, testTeam))
+		resp, err := server.Client().Get(fmt.Sprintf("%v/team/%v/compute/edit", server.URL, team.Slug))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -128,13 +113,8 @@ func TestComputeAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		expected, err := createExpectedHTML("gcp/compute", map[string]any{
-			"team":          testTeam,
-			"machine_types": supported,
-			"values": google.ComputeForm{
-				Name:        "compute-" + testTeam + "-1234",
-				MachineType: string(gensql.ComputeMachineTypeC2Standard4),
-			},
+		expected, err := createExpectedHTML("compute/edit", map[string]any{
+			"name": team.ID,
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -149,7 +129,7 @@ func TestComputeAPI(t *testing.T) {
 		}
 	})
 
-	if err := repo.TeamDelete(ctx, testTeam+"-1234"); err != nil {
+	if err := repo.TeamDelete(ctx, team.ID); err != nil {
 		t.Fatal(err)
 	}
 }

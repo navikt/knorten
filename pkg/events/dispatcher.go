@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,7 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type eventHandler struct {
+type EventHandler struct {
 	repo          *database.Repo
 	log           *logrus.Entry
 	context       context.Context
@@ -23,7 +24,7 @@ type eventHandler struct {
 
 type workerFunc func(context.Context, gensql.Event, logger.Logger) error
 
-func (e eventHandler) distributeWork(eventType gensql.EventType) workerFunc {
+func (e EventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 	switch eventType {
 	case gensql.EventTypeCreateTeam:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
@@ -33,25 +34,34 @@ func (e eventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			return e.updateTeam(event, logger)
 		}
-	case gensql.EventTypeDeleteTeam:
-		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
-			return e.deleteTeam(event, logger)
-		}
-
 	case gensql.EventTypeCreateCompute:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			return e.createCompute(event, logger)
 		}
-	case gensql.EventTypeDeleteCompute:
+	case gensql.EventTypeDeleteTeam,
+		gensql.EventTypeDeleteCompute,
+		gensql.EventTypeDeleteAirflow:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
-			return e.deleteCompute(event, logger)
+			return e.deleteEvent(event, logger)
 		}
 	}
 
 	return nil
 }
 
-func (e eventHandler) processWork(event gensql.Event, form any, logger logger.Logger) {
+func (e EventHandler) deleteEvent(event gensql.Event, logger logger.Logger) error {
+	var teamID string
+	err := json.Unmarshal(event.Task, &teamID)
+	if err != nil {
+		return err
+	}
+
+	e.processWork(event, teamID, logger)
+
+	return nil
+}
+
+func (e EventHandler) processWork(event gensql.Event, form any, logger logger.Logger) {
 	var retry bool
 	switch event.EventType {
 	case gensql.EventTypeCreateTeam:
@@ -79,7 +89,7 @@ func (e eventHandler) processWork(event gensql.Event, form any, logger logger.Lo
 	}
 }
 
-func (e eventHandler) setEventStatus(id uuid.UUID, status gensql.EventStatus) error {
+func (e EventHandler) setEventStatus(id uuid.UUID, status gensql.EventStatus) error {
 	err := e.repo.EventSetStatus(e.context, id, status)
 	if err != nil {
 		e.log.Errorf("can't change status to %v for event(%v): %v", status, id, err)
@@ -91,10 +101,11 @@ func (e eventHandler) setEventStatus(id uuid.UUID, status gensql.EventStatus) er
 func NewHandler(ctx context.Context, repo *database.Repo, gcpProject string, dryRun, inCluster bool, log *logrus.Entry) (eventHandler, error) {
 	teamClient, err := team.NewClient(repo, gcpProject, dryRun, inCluster, log.WithField("subsystem", "teamClient"))
 	if err != nil {
-		return eventHandler{}, err
+		return EventHandler{}, err
 	}
 
 	return eventHandler{
+	return EventHandler{
 		repo:          repo,
 		log:           log,
 		context:       ctx,
@@ -142,6 +153,7 @@ func (e eventHandler) Run() {
 
 					eventLogger := newEventLogger(e.context, e.log, e.repo, event)
 					eventLogger.log.Infof("Dispatching event '%v'", event.EventType)
+					event := event
 					go func() {
 						err := worker(e.context, event, eventLogger)
 						if err != nil {

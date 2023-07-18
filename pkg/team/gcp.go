@@ -203,18 +203,6 @@ func (c Client) updateGCPTeamResources(ctx context.Context, team gensql.Team) er
 		return nil
 	}
 
-	//// TODO: Compute skal flyttes ut til per bruker, i stedet for en delt på et team
-	//instance, err := c.repo.ComputeInstanceGet(ctx, team.ID)
-	//if err != nil && errors.Is(err, sql.ErrNoRows) {
-	//		return nil
-	//	}
-	//	return err
-	//}
-	//
-	//if err := c.UpdateComputeInstanceOwners(ctx, instance.InstanceName, team.Slug); err != nil {
-	//	return err
-	//}
-
 	return c.setUsersSecretOwnerBinding(ctx, team.Users, fmt.Sprintf("projects/%v/secrets/%v", c.gcpProject, team.ID))
 }
 

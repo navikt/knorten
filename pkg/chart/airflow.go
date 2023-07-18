@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/nais/knorten/pkg/helm"
 	"github.com/sirupsen/logrus"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -23,11 +25,11 @@ import (
 )
 
 const (
-	sqlProxyHost       = "airflow-sql-proxy"
-	dbSecretName       = "airflow-db"
-	webserverSecret    = "airflow-webserver"
-	resultDBSecretName = "airflow-result-db"
-	fernetKeyLength    = 32
+	sqlProxyHost                       = "airflow-sql-proxy"
+	k8sAirflowDatabaseSecretName       = "airflow-db"
+	webserverSecret                    = "airflow-webserver"
+	k8sAirflowResultDatabaseSecretName = "airflow-result-db"
+	fernetKeyLength                    = 32
 )
 
 type AirflowClient struct {
@@ -36,6 +38,15 @@ type AirflowClient struct {
 	k8sClient    *k8s.Client
 	cryptClient  *crypto.EncrypterDecrypter
 	chartVersion string
+	log          *logrus.Entry
+}
+
+type airflowClient struct {
+	repo         *database.Repo
+	k8sClient    *kubernetes.Clientset
+	chartVersion string
+	gcpProject   string
+	dryRun       bool
 	log          *logrus.Entry
 }
 
@@ -74,6 +85,17 @@ type AirflowValues struct {
 	MetadataSecretName         string `helm:"data.metadataSecretName"`
 	ResultBackendSecretName    string `helm:"data.resultBackendSecretName"`
 	FernetKey                  string `helm:"fernetKey"`
+}
+
+func newAirflowClient(repo *database.Repo, k8sClient *kubernetes.Clientset, dryRun bool, chartVersion, gcpProject string, log *logrus.Entry) airflowClient {
+	return airflowClient{
+		repo:         repo,
+		k8sClient:    k8sClient,
+		dryRun:       dryRun,
+		gcpProject:   gcpProject,
+		chartVersion: chartVersion,
+		log:          log.WithField("chart", "airflow"),
+	}
 }
 
 func NewAirflowClient(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, chartVersion string, log *logrus.Entry) AirflowClient {
@@ -186,24 +208,47 @@ func (a AirflowClient) Sync(ctx context.Context, teamID string) error {
 	return a.k8sClient.CreateHelmInstallOrUpgradeJob(ctx, teamID, string(gensql.ChartTypeAirflow), charty.Values)
 }
 
-func (a AirflowClient) Delete(ctx context.Context, teamSlug string) error {
-	team, err := a.repo.TeamGet(ctx, teamSlug)
-	if err != nil {
-		return err
-	}
-
-	if team.PendingAirflowUpgrade {
-		a.log.Info("pending airflow upgrade")
+func (a airflowClient) Delete(ctx context.Context, teamID string) error {
+	if a.dryRun {
+		a.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
 
-	if err := a.repo.AppDelete(ctx, team.ID, gensql.ChartTypeAirflow); err != nil {
+	namespace := k8s.TeamIDToNamespace(teamID)
+
+	if err := helm.Uninstall(string(gensql.ChartTypeAirflow), namespace); err != nil {
 		return err
 	}
 
-	go a.deleteDB(ctx, team.ID)
+	if err := a.repo.AppDelete(ctx, teamID, gensql.ChartTypeAirflow); err != nil {
+		return err
+	}
 
-	return a.k8sClient.CreateHelmUninstallJob(ctx, team.ID, string(gensql.ChartTypeAirflow))
+	if err := a.removeSQLClientIAMBinding(ctx, teamID); err != nil {
+		return err
+	}
+
+	if err := a.deleteCloudSQLInstance(ctx, teamID); err != nil {
+		return err
+	}
+
+<<<<<<< Updated upstream
+	namespace := k8s.TeamIDToNamespace(teamID)
+=======
+>>>>>>> Stashed changes
+	if err := a.deleteCloudSQLProxy(ctx, namespace); err != nil {
+		return err
+	}
+
+	if err := a.deleteSecret(ctx, k8sAirflowDatabaseSecretName, namespace); err != nil {
+		return err
+	}
+
+	if err := a.deleteSecret(ctx, k8sAirflowResultDatabaseSecretName, namespace); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (a AirflowClient) addAirflowTeamValues(ctx context.Context, form AirflowForm) error {
@@ -241,16 +286,16 @@ func (a AirflowClient) addGeneratedConfig(ctx context.Context, dbPassword, bucke
 	if err != nil {
 		return err
 	}
-	values.MetadataSecretName = dbSecretName
+	values.MetadataSecretName = k8sAirflowDatabaseSecretName
 
 	resultDBConn := fmt.Sprintf("db+postgresql://%v:%v@%v:5432/%v?sslmode=disable", values.TeamID, dbPassword, sqlProxyHost, values.TeamID)
-	err = a.k8sClient.CreateOrUpdateSecret(ctx, resultDBSecretName, k8s.NameToNamespace(values.TeamID), map[string]string{
+	err = a.k8sClient.CreateOrUpdateSecret(ctx, k8sAirflowResultDatabaseSecretName, k8s.TeamIDToNamespace(values.TeamID), map[string]string{
 		"connection": resultDBConn,
 	})
 	if err != nil {
 		return err
 	}
-	values.ResultBackendSecretName = resultDBSecretName
+	values.ResultBackendSecretName = k8sAirflowResultDatabaseSecretName
 
 	values.FernetKey, err = generateFernetKey()
 	if err != nil {
@@ -367,7 +412,7 @@ func (a AirflowClient) setApiAccess(ctx context.Context, apiAccess, teamID strin
 }
 
 func (a AirflowClient) createDB(ctx context.Context, teamID, dbPassword string) {
-	dbInstance := CreateAirflowDBInstanceName(teamID)
+	dbInstance := createAirflowcloudSQLInstanceName(teamID)
 	if err := a.googleClient.CreateCloudSQLInstance(ctx, dbInstance); err != nil {
 		a.log.WithError(err).Errorf("error while creating dbInstance %v for %v", dbInstance, teamID)
 		return
@@ -417,36 +462,6 @@ func (a AirflowClient) createWebserverSecret(ctx context.Context, teamID string)
 	}
 }
 
-func (a AirflowClient) deleteDB(ctx context.Context, teamID string) {
-	dbInstance := CreateAirflowDBInstanceName(teamID)
-
-	if err := a.googleClient.RemoveSQLClientIAMBinding(ctx, teamID); err != nil {
-		a.log.WithError(err).Errorf("error while deleting dbInstace %v for %v", dbInstance, teamID)
-		return
-	}
-
-	if err := a.googleClient.DeleteCloudSQLInstance(ctx, dbInstance); err != nil {
-		a.log.WithError(err).Errorf("error while deleting dbInstace %v for %v", dbInstance, teamID)
-		return
-	}
-
-	namespace := k8s.NameToNamespace(teamID)
-	if err := a.k8sClient.DeleteCloudSQLProxy(ctx, sqlProxyHost, namespace); err != nil {
-		a.log.WithError(err).Errorf("error while deleting dbInstace %v for %v", dbInstance, teamID)
-		return
-	}
-
-	if err := a.k8sClient.DeleteSecret(ctx, dbSecretName, namespace); err != nil {
-		a.log.WithError(err).Errorf("error while deleting dbInstace %v for %v", dbInstance, teamID)
-		return
-	}
-
-	if err := a.k8sClient.DeleteSecret(ctx, resultDBSecretName, namespace); err != nil {
-		a.log.WithError(err).Errorf("error while deleting dbInstace %v for %v", dbInstance, teamID)
-		return
-	}
-}
-
 func generatePassword(length int) (string, error) {
 	b := make([]byte, length)
 	if _, err := rand.Read(b); err != nil {
@@ -462,8 +477,4 @@ func generateFernetKey() (string, error) {
 	}
 
 	return base64.StdEncoding.EncodeToString(b), nil
-}
-
-func CreateAirflowDBInstanceName(teamID string) string {
-	return "airflow-" + teamID
 }

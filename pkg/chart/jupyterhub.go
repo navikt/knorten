@@ -13,11 +13,21 @@ import (
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/helm"
 	helmApps "github.com/nais/knorten/pkg/helm/applications"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/reflect"
 	"github.com/sirupsen/logrus"
+	"k8s.io/client-go/kubernetes"
 )
+
+type jupyterClient struct {
+	repo         *database.Repo
+	k8sClient    *kubernetes.Clientset
+	dryRun       bool
+	chartVersion string
+	log          *logrus.Entry
+}
 
 type JupyterhubClient struct {
 	repo         *database.Repo
@@ -72,6 +82,15 @@ func NewJupyterhubClient(repo *database.Repo, k8sClient *k8s.Client, azureClient
 		k8sClient:    k8sClient,
 		azureClient:  azureClient,
 		cryptClient:  cryptClient,
+		chartVersion: chartVersion,
+		log:          log,
+	}
+}
+func newJupyterClient(repo *database.Repo, k8sClient *kubernetes.Clientset, dryRun bool, chartVersion string, log *logrus.Entry) jupyterClient {
+	return jupyterClient{
+		repo:         repo,
+		k8sClient:    k8sClient,
+		dryRun:       dryRun,
 		chartVersion: chartVersion,
 		log:          log,
 	}
@@ -170,24 +189,22 @@ func (j JupyterhubClient) Sync(ctx context.Context, teamID string) error {
 	return j.k8sClient.CreateHelmInstallOrUpgradeJob(ctx, teamID, releaseName, charty.Values)
 }
 
-func (j JupyterhubClient) Delete(ctx context.Context, teamSlug string) error {
-	team, err := j.repo.TeamGet(ctx, teamSlug)
-	if err != nil {
-		return err
-	}
-	if team.PendingJupyterUpgrade {
-		j.log.Info("pending jupyterhub install")
+func (j jupyterClient) Delete(ctx context.Context, teamID string) error {
+	if j.dryRun {
+		j.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
 
-	if err := j.repo.AppDelete(ctx, team.ID, gensql.ChartTypeJupyterhub); err != nil {
+	namespace := k8s.TeamIDToNamespace(teamID)
+	if err := helm.Uninstall(JupyterReleaseName(namespace), namespace); err != nil {
 		return err
 	}
 
-	namespace := k8s.TeamIDToNamespace(team.ID)
-	releaseName := JupyterReleaseName(namespace)
+	if err := j.repo.AppDelete(ctx, teamID, gensql.ChartTypeJupyterhub); err != nil {
+		return err
+	}
 
-	return j.k8sClient.CreateHelmUninstallJob(ctx, team.ID, releaseName)
+	return nil
 }
 
 func (j JupyterhubClient) addCustomImage(form *JupyterForm) error {

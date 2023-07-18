@@ -58,42 +58,6 @@ func (g *Google) CreateCloudSQLInstance(ctx context.Context, dbInstance string) 
 	return nil
 }
 
-func (g *Google) DeleteCloudSQLInstance(ctx context.Context, dbInstance string) error {
-	if g.dryRun {
-		g.log.Infof("NOOP: Running in dry run mode")
-		return nil
-	}
-
-	sqlInstances, err := g.listSQLInstances()
-	if err != nil {
-		return err
-	}
-
-	if !contains(sqlInstances, dbInstance) {
-		g.log.Infof("delete sql instance: sql instance %v does not exist", dbInstance)
-		return nil
-	}
-
-	deleteCmd := exec.CommandContext(
-		ctx,
-		"gcloud",
-		"sql",
-		"instances",
-		"delete",
-		dbInstance)
-
-	buf := &bytes.Buffer{}
-	deleteCmd.Stdout = buf
-	deleteCmd.Stderr = os.Stderr
-	if err := deleteCmd.Run(); err != nil {
-		io.Copy(os.Stdout, buf)
-		g.log.WithError(err).Error("delete db instance")
-		return err
-	}
-
-	return nil
-}
-
 func (g *Google) CreateCloudSQLDatabase(ctx context.Context, dbName, dbInstance string) error {
 	if g.dryRun {
 		g.log.Infof("NOOP: Running in dry run mode")
@@ -194,35 +158,6 @@ func (g *Google) SetSQLClientIAMBinding(ctx context.Context, teamID string) erro
 	if err := cmd.Run(); err != nil {
 		io.Copy(os.Stdout, buf)
 		g.log.WithError(err).Error("create sql client iam binding")
-		return err
-	}
-
-	return nil
-}
-
-func (g *Google) RemoveSQLClientIAMBinding(ctx context.Context, teamID string) error {
-	if g.dryRun {
-		g.log.Infof("NOOP: Running in dry run mode")
-		return nil
-	}
-
-	cmd := exec.CommandContext(
-		ctx,
-		"gcloud",
-		"projects",
-		"remove-iam-policy-binding",
-		g.project,
-		"--member",
-		fmt.Sprintf("serviceAccount:%v@%v.iam.gserviceaccount.com", teamID, g.project),
-		"--role=roles/cloudsql.client",
-		"--condition=None")
-
-	buf := &bytes.Buffer{}
-	cmd.Stdout = buf
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		io.Copy(os.Stdout, buf)
-		g.log.WithError(err).Error("remove sql client iam binding")
 		return err
 	}
 

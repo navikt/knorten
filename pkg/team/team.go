@@ -138,31 +138,6 @@ func (c Client) Delete(ctx context.Context, teamSlug string, log logger.Logger) 
 		return true
 	}
 
-	//apps, err := c.repo.AppsForTeamGet(ctx, team.ID)
-	//if err != nil {
-	//	log.Errorf("sql error: %v", err)
-	//	return true
-	//}
-
-	// TODO: Her må vi lage en ny event :thinking:
-	// Vi kan egentlig bare slette hele namespacet, da forsvinner alt fra clusteret :thinking:
-	// Da holder det å lage en event som sletter SQLDatabasen, den burde ikke gå ned før vi har ryddet bort i clusteret,
-	// ellers kan det bli tull med alerts som trigges fordi databasen er nede men appen fortsatt kjører en kort periode
-	//if slices.Contains(apps, string(gensql.ChartTypeJupyterhub)) {
-	//	releaseName := chart.JupyterReleaseName(namespace)
-	//	if err := c.k8sClient.CreateHelmUninstallJob(ctx, team.ID, releaseName); err != nil {
-	//		c.log.WithError(err).Error("create helm uninstall job")
-	//		return
-	//	}
-	//}
-	//
-	//if slices.Contains(apps, string(gensql.ChartTypeAirflow)) {
-	//	if err := c.googleClient.DeleteCloudSQLInstance(ctx, chart.CreateAirflowDBInstanceName(team.ID)); err != nil {
-	//		c.log.WithError(err).Error("failed while deleting external resources")
-	//		return
-	//	}
-	//}
-
 	if err = c.deleteGCPTeamResources(ctx, team.ID); err != nil {
 		c.log.WithError(err).Error("failed while deleting external resources")
 		return true
@@ -175,6 +150,11 @@ func (c Client) Delete(ctx context.Context, teamSlug string, log logger.Logger) 
 
 	if err = c.repo.TeamDelete(ctx, team.ID); err != nil && errors.Is(err, sql.ErrNoRows) {
 		log.Errorf("sql error: %v", err)
+		return true
+	}
+
+	if err := c.repo.RegisterDeleteAirflowEvent(ctx, team.ID); err != nil {
+		c.log.WithError(err).Error("failed while registering airflow delete event")
 		return true
 	}
 

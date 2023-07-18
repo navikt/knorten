@@ -291,25 +291,13 @@ func (c *client) setupChartRoutes() {
 	})
 
 	c.router.POST("/team/:team/:chart/delete", func(ctx *gin.Context) {
-		slug := ctx.Param("team")
+		team := ctx.Param("team")
 		chartType := getChartType(ctx.Param("chart"))
-		var err error
 
-		switch chartType {
-		case gensql.ChartTypeJupyterhub:
-			err = c.chartClient.Jupyterhub.Delete(ctx, slug)
-		case gensql.ChartTypeAirflow:
-			err = c.chartClient.Airflow.Delete(ctx, slug)
-		default:
-			ctx.JSON(http.StatusBadRequest, map[string]string{
-				"status":  strconv.Itoa(http.StatusBadRequest),
-				"message": fmt.Sprintf("Chart type %v is not supported", chartType),
-			})
-			return
-		}
+		err := c.deleteChart(ctx, team, chartType)
 
 		if err != nil {
-			c.log.WithError(err).Errorf("problem deleting chart %v for team %v", chartType, slug)
+			c.log.WithError(err).Errorf("problem deleting chart %v for team %v", chartType, team)
 			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
@@ -344,3 +332,15 @@ func (c *client) getExistingAllowlist(ctx context.Context, teamID string) ([]str
 
 	return []string{}, nil
 }
+
+func (c *client) deleteChart(ctx *gin.Context, team string, chartType gensql.ChartType) error {
+	switch chartType {
+	case gensql.ChartTypeJupyterhub:
+		return c.repo.RegisterDeleteJupyterEvent(ctx, team)
+	case gensql.ChartTypeAirflow:
+		return c.repo.RegisterDeleteAirflowEvent(ctx, team)
+	}
+
+	return fmt.Errorf("chart type %v is not supported", chartType)
+}
+

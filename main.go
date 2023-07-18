@@ -90,7 +90,7 @@ func main() {
 		return
 	}
 
-	eventHandler, err := events.NewHandler(context.Background(), dbClient, cfg.GCPProject, cfg.DryRun, cfg.InCluster, log.WithField("subsystem", "events"))
+	eventHandler, err := events.NewHandler(context.Background(), dbClient, cfg.GCPProject, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.DryRun, cfg.InCluster, log.WithField("subsystem", "events"))
 	if err != nil {
 		log.WithError(err).Fatal("starting event watcher")
 		return

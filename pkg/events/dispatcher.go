@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/compute"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
@@ -20,6 +21,7 @@ type EventHandler struct {
 	context       context.Context
 	teamClient    *team.Client
 	computeClient *compute.Client
+	chartClient   *chart.Client
 }
 
 type workerFunc func(context.Context, gensql.Event, logger.Logger) error
@@ -40,7 +42,8 @@ func (e EventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 		}
 	case gensql.EventTypeDeleteTeam,
 		gensql.EventTypeDeleteCompute,
-		gensql.EventTypeDeleteAirflow:
+		gensql.EventTypeDeleteAirflow,
+		gensql.EventTypeDeleteJupyter:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			return e.deleteEvent(event, logger)
 		}
@@ -74,6 +77,10 @@ func (e EventHandler) processWork(event gensql.Event, form any, logger logger.Lo
 		retry = e.computeClient.Create(e.context, form.(gensql.ComputeInstance))
 	case gensql.EventTypeDeleteCompute:
 		retry = e.computeClient.Delete(e.context, form.(string))
+	case gensql.EventTypeDeleteAirflow:
+		retry = e.chartClient.DeleteAirflow(e.context, form.(string))
+	case gensql.EventTypeDeleteJupyter:
+		retry = e.chartClient.DeleteJupyter(e.context, form.(string))
 	}
 
 	var err error
@@ -98,23 +105,28 @@ func (e EventHandler) setEventStatus(id uuid.UUID, status gensql.EventStatus) er
 	return nil
 }
 
-func NewHandler(ctx context.Context, repo *database.Repo, gcpProject string, dryRun, inCluster bool, log *logrus.Entry) (eventHandler, error) {
+func NewHandler(ctx context.Context, repo *database.Repo, gcpProject, airflowChartVersion, jupyterChartVersion string, dryRun, inCluster bool, log *logrus.Entry) (EventHandler, error) {
 	teamClient, err := team.NewClient(repo, gcpProject, dryRun, inCluster, log.WithField("subsystem", "teamClient"))
 	if err != nil {
 		return EventHandler{}, err
 	}
 
-	return eventHandler{
+	chartClient, err := chart.NewClient(repo, dryRun, inCluster, gcpProject, airflowChartVersion, jupyterChartVersion, log.WithField("subsystem", "chartClient"))
+	if err != nil {
+		return EventHandler{}, err
+	}
+
 	return EventHandler{
 		repo:          repo,
 		log:           log,
 		context:       ctx,
 		teamClient:    teamClient,
 		computeClient: compute.NewClient(repo, gcpProject, dryRun, log.WithField("subsystem", "computeClient")),
+		chartClient:   chartClient,
 	}, nil
 }
 
-func (e eventHandler) Run() {
+func (e EventHandler) Run() {
 	eventRetrievers := []func() ([]gensql.Event, error){
 		func() ([]gensql.Event, error) {
 			return e.repo.EventsGetNew(e.context)

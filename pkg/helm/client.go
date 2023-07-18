@@ -73,7 +73,7 @@ func (c *Client) InstallOrUpgrade(releaseName, chartVersion, namespace string, v
 
 	charty.Values = values
 
-	exists, err := c.releaseExists(actionConfig, releaseName)
+	exists, err := releaseExists(actionConfig, releaseName)
 	if err != nil {
 		return err
 	}
@@ -111,41 +111,37 @@ func (c *Client) InstallOrUpgrade(releaseName, chartVersion, namespace string, v
 	return nil
 }
 
-func (c *Client) Uninstall(releaseName, namespace string) error {
+func Uninstall(releaseName, namespace string) error {
 	settings := cli.New()
 	settings.SetNamespace(namespace)
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "secret", log.Printf); err != nil {
-		c.log.WithError(err).Errorf("error while init actionConfig for %v", releaseName)
 		return err
 	}
 
-	exists, err := c.releaseExists(actionConfig, releaseName)
+	exists, err := releaseExists(actionConfig, releaseName)
 	if err != nil {
 		return err
 	}
 
 	if !exists {
-		c.log.Infof("release %v does not exist", releaseName)
 		return nil
 	}
 
 	uninstallClient := action.NewUninstall(actionConfig)
 	_, err = uninstallClient.Run(releaseName)
 	if err != nil {
-		c.log.WithError(err).Errorf("error while uninstalling release %v", releaseName)
 		return err
 	}
 
 	return nil
 }
 
-func (c *Client) releaseExists(actionConfig *action.Configuration, releaseName string) (bool, error) {
+func releaseExists(actionConfig *action.Configuration, releaseName string) (bool, error) {
 	listClient := action.NewList(actionConfig)
 	listClient.Deployed = true
 	results, err := listClient.Run()
 	if err != nil {
-		c.log.WithError(err).Errorf("error while listing helm releases %v", releaseName)
 		return false, err
 	}
 

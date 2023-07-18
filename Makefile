@@ -45,6 +45,8 @@ local:
 	  --db-enc-key=jegersekstentegn \
 	  --dry-run \
 	  --in-cluster=false \
+	  --project=nada-dev-db2e \
+	  --region=europe-west1 \
 	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knada/knelm:2023-06-30-a48491a \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
 	  --admin-group=nada@nav.no \

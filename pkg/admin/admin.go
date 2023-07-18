@@ -90,11 +90,11 @@ func (a *Client) ResyncTeams(ctx context.Context) error {
 
 	for _, team := range teams {
 		// TODO
-		//if err := a.k8sClient.CreateTeamNamespace(ctx, k8s.NameToNamespace(team.ID)); err != nil {
+		//if err := a.k8sClient.CreateTeamNamespace(ctx, k8s.TeamIDToNamespace(team.ID)); err != nil {
 		//	return err
 		//}
 		//
-		//if err := a.k8sClient.CreateTeamServiceAccount(ctx, team.ID, k8s.NameToNamespace(team.ID)); err != nil {
+		//if err := a.k8sClient.CreateTeamServiceAccount(ctx, team.ID, k8s.TeamIDToNamespace(team.ID)); err != nil {
 		//	return err
 		//}
 
@@ -117,12 +117,12 @@ func (a *Client) regenerateSQLDBInfo(ctx context.Context, teamID string) error {
 		return err
 	}
 
-	if err := a.k8sClient.CreateCloudSQLProxy(ctx, "airflow-sql-proxy", teamID, k8s.NameToNamespace(teamID), "airflow-"+teamID); err != nil {
+	if err := a.k8sClient.CreateCloudSQLProxy(ctx, "airflow-sql-proxy", teamID, k8s.TeamIDToNamespace(teamID), "airflow-"+teamID); err != nil {
 		return err
 	}
 
 	dbConn := fmt.Sprintf("postgresql://%v:%v@%v:5432/%v?sslmode=disable", teamID, dbPass, "airflow-sql-proxy", teamID)
-	err = a.k8sClient.CreateOrUpdateSecret(ctx, "airflow-db", k8s.NameToNamespace(teamID), map[string]string{
+	err = a.k8sClient.CreateOrUpdateSecret(ctx, "airflow-db", k8s.TeamIDToNamespace(teamID), map[string]string{
 		"connection": dbConn,
 	})
 	if err != nil {
@@ -130,7 +130,7 @@ func (a *Client) regenerateSQLDBInfo(ctx context.Context, teamID string) error {
 	}
 
 	resultDBConn := fmt.Sprintf("db+postgresql://%v:%v@%v:5432/%v?sslmode=disable", teamID, dbPass, "airflow-sql-proxy", teamID)
-	err = a.k8sClient.CreateOrUpdateSecret(ctx, "airflow-result-db", k8s.NameToNamespace(teamID), map[string]string{
+	err = a.k8sClient.CreateOrUpdateSecret(ctx, "airflow-result-db", k8s.TeamIDToNamespace(teamID), map[string]string{
 		"connection": resultDBConn,
 	})
 	if err != nil {
@@ -142,7 +142,7 @@ func (a *Client) regenerateSQLDBInfo(ctx context.Context, teamID string) error {
 		return err
 	}
 
-	if err := a.k8sClient.CreateOrUpdateSecret(ctx, "airflow-webserver", k8s.NameToNamespace(teamID), map[string]string{"webserver-secret-key": secretKey}); err != nil {
+	if err := a.k8sClient.CreateOrUpdateSecret(ctx, "airflow-webserver", k8s.TeamIDToNamespace(teamID), map[string]string{"webserver-secret-key": secretKey}); err != nil {
 		return err
 	}
 
@@ -196,7 +196,7 @@ func (a *Client) updateHelmReleases(ctx context.Context, chartType gensql.ChartT
 
 			// Release name must be unique across namespaces as the helm chart creates a clusterrole
 			// for each jupyterhub with the same name as the release name.
-			releaseName := chart.JupyterReleaseName(k8s.NameToNamespace(team))
+			releaseName := chart.JupyterReleaseName(k8s.TeamIDToNamespace(team))
 			if err := a.k8sClient.CreateHelmInstallOrUpgradeJob(ctx, team, releaseName, charty.Values); err != nil {
 				return err
 			}

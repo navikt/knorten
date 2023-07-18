@@ -22,7 +22,7 @@ type Client struct {
 }
 
 func NewClient(repo *database.Repo, gcpProject string, dryRun, inCluster bool, log *logrus.Entry) (*Client, error) {
-	k8sClient, err := createClientset(inCluster)
+	k8sClient, err := k8s.CreateClientset(inCluster)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (c Client) Create(ctx context.Context, team gensql.Team, log logger.Logger)
 		return true
 	}
 
-	namespace := k8s.NameToNamespace(team.ID)
+	namespace := k8s.TeamIDToNamespace(team.ID)
 	if err := c.createK8sNamespace(ctx, namespace); err != nil {
 		log.Errorf("failed creating team namespace: %v", err)
 		return true
@@ -168,7 +168,7 @@ func (c Client) Delete(ctx context.Context, teamSlug string, log logger.Logger) 
 		return true
 	}
 
-	if err = c.deleteK8sNamespace(ctx, k8s.NameToNamespace(team.ID)); err != nil {
+	if err = c.deleteK8sNamespace(ctx, k8s.TeamIDToNamespace(team.ID)); err != nil {
 		c.log.WithError(err).Error("failed while deleting external resources")
 		return true
 	}

@@ -3,42 +3,18 @@ package team
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	v1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
 )
 
-func createClientset(inCluster bool) (*kubernetes.Clientset, error) {
-	config, err := createK8sConfig(inCluster)
-	if err != nil {
-		return nil, err
-	}
-
-	return kubernetes.NewForConfig(config)
-}
-
-func createK8sConfig(inCluster bool) (*rest.Config, error) {
-	if inCluster {
-		return rest.InClusterConfig()
-	}
-
-	kubeconfig := os.Getenv("KUBECONFIG")
-	if kubeconfig == "" {
-		kubeconfig = filepath.Join(homedir.HomeDir(), ".kube", "config")
-	}
-
-	// use the current context in kubeconfig
-	return clientcmd.BuildConfigFromFlags("", kubeconfig)
-}
-
 func (c Client) createK8sNamespace(ctx context.Context, name string) error {
+	if c.dryRun {
+		c.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
 	namespace := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -63,6 +39,11 @@ func (c Client) createK8sNamespace(ctx context.Context, name string) error {
 }
 
 func (c Client) deleteK8sNamespace(ctx context.Context, namespace string) error {
+	if c.dryRun {
+		c.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
 	err := c.k8sClient.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
 	if err != nil {
 		if k8sErrors.IsNotFound(err) {
@@ -76,6 +57,11 @@ func (c Client) deleteK8sNamespace(ctx context.Context, namespace string) error 
 }
 
 func (c Client) createK8sServiceAccount(ctx context.Context, teamID, namespace string) error {
+	if c.dryRun {
+		c.log.Infof("NOOP: Running in dry run mode")
+		return nil
+	}
+
 	saSpec := &v1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      teamID,

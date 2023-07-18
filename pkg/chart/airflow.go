@@ -235,7 +235,7 @@ func (a AirflowClient) addGeneratedConfig(ctx context.Context, dbPassword, bucke
 	}
 
 	dbConn := fmt.Sprintf("postgresql://%v:%v@%v:5432/%v?sslmode=disable", values.TeamID, dbPassword, sqlProxyHost, values.TeamID)
-	err = a.k8sClient.CreateOrUpdateSecret(ctx, dbSecretName, k8s.NameToNamespace(values.TeamID), map[string]string{
+	err = a.k8sClient.CreateOrUpdateSecret(ctx, k8sAirflowDatabaseSecretName, k8s.TeamIDToNamespace(values.TeamID), map[string]string{
 		"connection": dbConn,
 	})
 	if err != nil {
@@ -302,7 +302,7 @@ func setUserEnvs(values *AirflowForm, bucketName string) error {
 		},
 		{
 			Name:  "NAMESPACE",
-			Value: k8s.NameToNamespace(values.TeamID),
+			Value: k8s.TeamIDToNamespace(values.TeamID),
 		},
 		{
 			Name:  "AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER",
@@ -341,17 +341,17 @@ func setSynkRepoAndBranch(values *AirflowForm) {
 func (a AirflowClient) setRestrictAirflowEgress(ctx context.Context, restrictAirflowEgress, teamID string) error {
 	switch restrictAirflowEgress {
 	case "on":
-		if err := a.k8sClient.EnableDefaultEgressNetpolSync(ctx, k8s.NameToNamespace(teamID)); err != nil {
+		if err := a.k8sClient.EnableDefaultEgressNetpolSync(ctx, k8s.TeamIDToNamespace(teamID)); err != nil {
 			return err
 		}
 		if err := a.repo.TeamSetRestrictAirflowEgress(ctx, teamID, true); err != nil {
 			return err
 		}
 	default:
-		if err := a.k8sClient.DisableDefaultEgressNetpolSync(ctx, k8s.NameToNamespace(teamID)); err != nil {
+		if err := a.k8sClient.DisableDefaultEgressNetpolSync(ctx, k8s.TeamIDToNamespace(teamID)); err != nil {
 			return err
 		}
-		if err := a.k8sClient.DeleteDefaultEgressNetpol(ctx, k8s.NameToNamespace(teamID)); err != nil {
+		if err := a.k8sClient.DeleteDefaultEgressNetpol(ctx, k8s.TeamIDToNamespace(teamID)); err != nil {
 			return err
 		}
 		if err := a.repo.TeamSetRestrictAirflowEgress(ctx, teamID, false); err != nil {
@@ -388,7 +388,7 @@ func (a AirflowClient) createDB(ctx context.Context, teamID, dbPassword string) 
 		return
 	}
 
-	if err := a.k8sClient.CreateCloudSQLProxy(ctx, sqlProxyHost, teamID, k8s.NameToNamespace(teamID), dbInstance); err != nil {
+	if err := a.k8sClient.CreateCloudSQLProxy(ctx, sqlProxyHost, teamID, k8s.TeamIDToNamespace(teamID), dbInstance); err != nil {
 		a.log.WithError(err).Errorf("error while creating dbInstance %v for %v", dbInstance, teamID)
 		return
 	}
@@ -411,7 +411,7 @@ func (a AirflowClient) createWebserverSecret(ctx context.Context, teamID string)
 		return
 	}
 
-	if err := a.k8sClient.CreateOrUpdateSecret(ctx, webserverSecret, k8s.NameToNamespace(teamID), map[string]string{"webserver-secret-key": secretKey}); err != nil {
+	if err := a.k8sClient.CreateOrUpdateSecret(ctx, webserverSecret, k8s.TeamIDToNamespace(teamID), map[string]string{"webserver-secret-key": secretKey}); err != nil {
 		a.log.WithError(err).Errorf("error while setting secret %v for %v", webserverSecret, teamID)
 		return
 	}

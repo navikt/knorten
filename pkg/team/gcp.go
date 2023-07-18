@@ -61,7 +61,7 @@ func (c Client) createSAWorkloadIdentityBinding(ctx context.Context, email, team
 	if err != nil {
 		return err
 	}
-	namespace := k8s.NameToNamespace(teamID)
+	namespace := k8s.TeamIDToNamespace(teamID)
 	bindings := policy.Bindings
 	if !c.updateRoleBindingIfExists(bindings, "roles/iam.workloadIdentityUser", namespace, teamID) {
 		// Add role binding if not exists

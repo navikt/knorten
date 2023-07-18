@@ -51,7 +51,7 @@ func main() {
 			os.Exit(1)
 		}
 	case string(helm.ActionUninstall):
-		if err := helmClient.Uninstall(cfg.ReleaseName, k8s.NameToNamespace(cfg.TeamID)); err != nil {
+		if err := helm.Uninstall(cfg.ReleaseName, k8s.TeamIDToNamespace(cfg.TeamID)); err != nil {
 			log.WithError(err).Error("uninstall")
 			os.Exit(1)
 		}
@@ -78,7 +78,7 @@ func installOrUpgrade(cfg Config, helmClient *helm.Client) error {
 		return err
 	}
 
-	if err := helmClient.InstallOrUpgrade(cfg.ReleaseName, cfg.ChartVersion, k8s.NameToNamespace(cfg.TeamID), values); err != nil {
+	if err := helmClient.InstallOrUpgrade(cfg.ReleaseName, cfg.ChartVersion, k8s.TeamIDToNamespace(cfg.TeamID), values); err != nil {
 		return err
 	}
 

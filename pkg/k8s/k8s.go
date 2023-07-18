@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/nais/knorten/pkg/database"
@@ -20,14 +21,45 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
 )
+
+func CreateClientset(inCluster bool) (*kubernetes.Clientset, error) {
+	config, err := createK8sConfig(inCluster)
+	if err != nil {
+		return nil, err
+	}
+
+	return kubernetes.NewForConfig(config)
+}
+
+func createK8sConfig(inCluster bool) (*rest.Config, error) {
+	if inCluster {
+		return rest.InClusterConfig()
+	}
+
+	kubeconfig := os.Getenv("KUBECONFIG")
+	if kubeconfig == "" {
+		kubeconfig = filepath.Join(homedir.HomeDir(), ".kube", "config")
+	}
+
+	// use the current context in kubeconfig
+	return clientcmd.BuildConfigFromFlags("", kubeconfig)
+}
 
 const (
 	airflowDefaultEgressNetpol    = "default-egress-airflow-worker"
 	airflowKnetpollerEnabledLabel = "knetpoller-enabled"
 )
 
-func NameToNamespace(name string) string {
+// TeamIDToNamespace prefix team- to a team ID. If the ID already has in as a prefix, will add a - after the word team.
+//
+// hello-1234 => team-hello-1234
+//
+// teamhello-1234 => team-hello-1234
+//
+// helloteam-1234 => team-helloteam-1234
+func TeamIDToNamespace(name string) string {
 	if strings.HasPrefix(name, "team-") {
 		return name
 	} else if strings.HasPrefix(name, "team") {
@@ -96,25 +128,6 @@ func (c *Client) CreateCloudSQLProxy(ctx context.Context, name, teamID, namespac
 
 	if err := c.createCloudSQLProxyService(ctx, name, namespace, port); err != nil {
 		c.log.WithError(err).Error("creating cloudsql proxy service")
-		return err
-	}
-
-	return nil
-}
-
-func (c *Client) DeleteCloudSQLProxy(ctx context.Context, name, namespace string) error {
-	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
-		return nil
-	}
-
-	if err := c.deleteCloudSQLProxyDeployment(ctx, name, namespace); err != nil {
-		c.log.WithError(err).Error("deleting cloudsql proxy deployment")
-		return err
-	}
-
-	if err := c.deleteCloudSQLProxyService(ctx, name, namespace); err != nil {
-		c.log.WithError(err).Error("deleting cloudsql proxy service")
 		return err
 	}
 
@@ -312,18 +325,6 @@ func (c *Client) createCloudSQLProxyDeployment(ctx context.Context, name, namesp
 	return nil
 }
 
-func (c *Client) deleteCloudSQLProxyDeployment(ctx context.Context, name, namespace string) error {
-	if err := c.clientSet.AppsV1().Deployments(namespace).Delete(ctx, name, metav1.DeleteOptions{}); err != nil {
-		if k8sErrors.IsNotFound(err) {
-			c.log.Infof("delete deployment: deployment %v in namespace %v does not exist", name, namespace)
-			return nil
-		}
-		return err
-	}
-
-	return nil
-}
-
 func (c *Client) createCloudSQLProxyService(ctx context.Context, name, namespace string, port int32) error {
 	serviceSpec := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -350,19 +351,6 @@ func (c *Client) createCloudSQLProxyService(ctx context.Context, name, namespace
 			c.log.Infof("cloudsql proxy service %v already exists in namespace %v", name, namespace)
 			return nil
 		}
-		return err
-	}
-
-	return nil
-}
-
-func (c *Client) deleteCloudSQLProxyService(ctx context.Context, name, namespace string) error {
-	if err := c.clientSet.CoreV1().Services(namespace).Delete(ctx, name, metav1.DeleteOptions{}); err != nil {
-		if k8sErrors.IsNotFound(err) {
-			c.log.Infof("delete service: service %v in namespace %v does not exist", name, namespace)
-			return nil
-		}
-		c.log.WithError(err).Error("deleting cloudsql proxy service")
 		return err
 	}
 

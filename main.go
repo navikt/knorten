@@ -75,8 +75,7 @@ func main() {
 	}
 	eventHandler.Run()
 
-	azureClient := auth.NewAzureClient(cfg.DryRun, cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, log.WithField("subsystem", "auth"))
-	router, err := api.New(dbClient, azureClient, cfg.DryRun, cfg.SessionKey, cfg.AdminGroup, log.WithField("subsystem", "api"))
+	router, err := api.New(dbClient, cfg.DryRun, cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, cfg.SessionKey, cfg.AdminGroup, log.WithField("subsystem", "api"))
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return

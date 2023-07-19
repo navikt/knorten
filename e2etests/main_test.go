@@ -21,7 +21,6 @@ import (
 
 	"github.com/nais/knorten/local/dbsetup"
 	"github.com/nais/knorten/pkg/api"
-	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/events"
 	"github.com/ory/dockertest/v3"
@@ -104,8 +103,7 @@ func TestMain(m *testing.M) {
 	}
 	eventHandler.Run()
 
-	azureClient := auth.NewAzureClient(true, "", "", "", "", logger)
-	srv, err := api.New(dbRepo, azureClient, true, "nada@nav.no", "session", logrus.NewEntry(logrus.StandardLogger()))
+	srv, err := api.New(dbRepo, true, "", "", " ", "", "nada@nav.no", "session", logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatalf("creating api: %v", err)
 	}

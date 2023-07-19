@@ -244,11 +244,6 @@ func (c *client) editTeam(ctx *gin.Context) error {
 }
 
 func (c *client) ensureUsersExists(users []string) error {
-	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
-		return nil
-	}
-
 	for _, u := range users {
 		if err := c.azureClient.UserExistsInAzureAD(u); err != nil {
 			return err

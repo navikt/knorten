@@ -16,6 +16,7 @@ import (
 	"github.com/coreos/go-oidc"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/exp/rand"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/endpoints"
 )
@@ -162,6 +163,11 @@ func (a *Azure) ValidateUser(certificates map[string]CertificateList, token stri
 }
 
 func (a *Azure) UserExistsInAzureAD(user string) error {
+	if a.dryRun {
+		fmt.Printf("NOOP: Would have checked if user %v exists in Azure AD\n", user)
+		return nil
+	}
+
 	type usersResponse struct {
 		Value []struct {
 			Email string `json:"userPrincipalName"`
@@ -211,7 +217,7 @@ func (a *Azure) UserExistsInAzureAD(user string) error {
 func (a *Azure) IdentForEmail(email string) (string, error) {
 	if a.dryRun {
 		a.log.Infof("NOOP: Running in dry run mode")
-		return email, nil
+		return fmt.Sprintf("d%v", rand.Intn(10000)+100000), nil
 	}
 
 	type identResponse struct {
@@ -285,6 +291,11 @@ func (a *Azure) getBearerTokenForApplication() (string, error) {
 }
 
 func (a *Azure) GetGroupID(groupMail string) (string, error) {
+	if a.dryRun {
+		a.log.Infof("NOOP: Running in dry run mode")
+		return "dummyID", nil
+	}
+
 	token, err := a.getBearerTokenForApplication()
 	if err != nil {
 		return "", err

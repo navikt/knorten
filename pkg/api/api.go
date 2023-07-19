@@ -145,24 +145,16 @@ func (c *client) isAdmin(ctx *gin.Context) bool {
 }
 
 func (c *client) fetchAdminGroupID() error {
-	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
-		return nil
-	}
 	id, err := c.azureClient.GetGroupID(c.adminGroupEmail)
 	if err != nil {
 		return fmt.Errorf("retrieve admin group id error: %v", err)
 	}
+
 	c.adminGroupID = id
 	return nil
 }
 
 func (c *client) convertEmailsToIdents(emails []string) ([]string, error) {
-	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
-		return []string{"d123456"}, nil
-	}
-
 	var idents []string
 	for _, e := range emails {
 		ident, err := c.azureClient.IdentForEmail(e)

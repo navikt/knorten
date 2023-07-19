@@ -40,8 +40,6 @@ spec:
                 key: jupyter_chart_version
           - name: AIRFLOW_EGRESS_NETPOL
             value: /root/.config/netpol/default-egress-airflow-worker.yaml
-          - name: "KNELM_IMAGE"
-            value: europe-west1-docker.pkg.dev/knada-gcp/knada/knelm:2023-06-30-a48491a
           - name: ADMIN_GROUP
             value: nada@nav.no
         envFrom:

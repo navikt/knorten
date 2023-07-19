@@ -14,7 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
-	"github.com/nais/knorten/pkg/auth"
+	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/thanhpk/randstr"
 	"k8s.io/utils/strings/slices"

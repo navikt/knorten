@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/nais/knorten/pkg/auth"
+	"github.com/nais/knorten/pkg/api/auth"
 )
 
 func (c *client) setupUserRoutes() {

@@ -47,12 +47,11 @@ func New(log *logrus.Entry) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) InstallOrUpgrade(releaseName, chartVersion, namespace string, values map[string]any) error {
+func InstallOrUpgrade(releaseName, chartVersion, namespace string, values map[string]any) error {
 	settings := cli.New()
 	settings.SetNamespace(namespace)
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "secret", log.Printf); err != nil {
-		c.log.WithError(err).Errorf("error while init actionConfig for %v", releaseName)
 		return err
 	}
 
@@ -67,7 +66,6 @@ func (c *Client) InstallOrUpgrade(releaseName, chartVersion, namespace string, v
 		return fmt.Errorf("chart type for release %v is not supported", releaseName)
 	}
 	if err != nil {
-		c.log.WithError(err).Errorf("error fetching chart for %v", releaseName)
 		return err
 	}
 
@@ -79,7 +77,6 @@ func (c *Client) InstallOrUpgrade(releaseName, chartVersion, namespace string, v
 	}
 
 	if exists {
-		c.log.Infof("Upgrading existing release %v", releaseName)
 		upgradeClient := action.NewUpgrade(actionConfig)
 		upgradeClient.Namespace = namespace
 		upgradeClient.Timeout = timeout
@@ -91,11 +88,9 @@ func (c *Client) InstallOrUpgrade(releaseName, chartVersion, namespace string, v
 
 		_, err = upgradeClient.Run(releaseName, charty, charty.Values)
 		if err != nil {
-			c.log.WithError(err).Errorf("error while upgrading release %v", releaseName)
 			return err
 		}
 	} else {
-		c.log.Infof("Installing new release %v", releaseName)
 		installClient := action.NewInstall(actionConfig)
 		installClient.Namespace = namespace
 		installClient.ReleaseName = releaseName
@@ -103,7 +98,6 @@ func (c *Client) InstallOrUpgrade(releaseName, chartVersion, namespace string, v
 
 		_, err = installClient.Run(charty, charty.Values)
 		if err != nil {
-			c.log.WithError(err).Errorf("error while installing new release %v", releaseName)
 			return err
 		}
 	}

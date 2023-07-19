@@ -6,7 +6,7 @@
                 <div>
                     <p>Airflow status: {{ if $.PendingAirflowUpgrade }}<strong>Upgrading</strong>{{ else }}<strong>Running</strong>{{ end }}</p>
                     <form action="/admin/airflow/sync" method="POST">
-                        <input type="hidden" name="team" value="{{ $.ID }}" />
+                        <input type="hidden" name="team" value="{{ $.Slug }}" />
                         <button type="submit" class="mb-4 navds-button navds-button--secondary navds-button--small">
                             <span class="navds-label">Resync Airflow for {{ $.Slug }}</span></button>
                     </form>
@@ -14,7 +14,7 @@
                         <form action="/admin/airflow/unlock" method="POST">
                                 <button type="submit" class="mb-4 navds-button navds-button--secondary navds-button--small">
                                     <span class="navds-label">Lås opp Airflow</span></button>
-                                <input type="hidden" name="team" value="{{ $.ID }}" />
+                                <input type="hidden" name="team" value="{{ $.Slug }}" />
                         </form>
                     {{ end }}
                 </div>

@@ -45,24 +45,24 @@ func (r *Repo) RegisterCreateComputeEvent(ctx context.Context, instance gensql.C
 	return r.registerEvent(ctx, gensql.EventTypeCreateCompute, 5*time.Minute, instance)
 }
 
-func (r *Repo) RegisterCreateAirflowEvent(ctx context.Context, team string) error {
-	return r.registerEvent(ctx, gensql.EventTypeCreateAirflow, 5*time.Minute, team)
+func (r *Repo) RegisterCreateAirflowEvent(ctx context.Context, values any) error {
+	return r.registerEvent(ctx, gensql.EventTypeCreateAirflow, 5*time.Minute, values)
 }
 
-func (r *Repo) RegisterUpdateAirflowEvent(ctx context.Context, team string) error {
-	return r.registerEvent(ctx, gensql.EventTypeUpdateAirflow, 5*time.Minute, team)
+func (r *Repo) RegisterUpdateAirflowEvent(ctx context.Context, values any) error {
+	return r.registerEvent(ctx, gensql.EventTypeUpdateAirflow, 5*time.Minute, values)
 }
 
 func (r *Repo) RegisterDeleteAirflowEvent(ctx context.Context, team string) error {
 	return r.registerEvent(ctx, gensql.EventTypeDeleteAirflow, 5*time.Minute, team)
 }
 
-func (r *Repo) RegisterCreateJupyterEvent(ctx context.Context, form any) error {
-	return r.registerEvent(ctx, gensql.EventTypeCreateJupyter, 5*time.Minute, form)
+func (r *Repo) RegisterCreateJupyterEvent(ctx context.Context, values any) error {
+	return r.registerEvent(ctx, gensql.EventTypeCreateJupyter, 5*time.Minute, values)
 }
 
-func (r *Repo) RegisterUpdateJupyterEvent(ctx context.Context, team string) error {
-	return r.registerEvent(ctx, gensql.EventTypeUpdateJupyter, 5*time.Minute, team)
+func (r *Repo) RegisterUpdateJupyterEvent(ctx context.Context, values any) error {
+	return r.registerEvent(ctx, gensql.EventTypeUpdateJupyter, 5*time.Minute, values)
 }
 
 func (r *Repo) RegisterDeleteJupyterEvent(ctx context.Context, team string) error {

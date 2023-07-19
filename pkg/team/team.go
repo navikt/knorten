@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/k8s"
@@ -84,49 +85,25 @@ func (c Client) Update(ctx context.Context, team gensql.Team, log logger.Logger)
 	}
 
 	if err := c.updateGCPTeamResources(ctx, team); err != nil {
-		c.log.WithError(err).Error("failed while updating google resources")
+		c.log.WithError(err).Error("failed while updating gcp resources")
 		return true
 	}
 
-	//apps, err := c.repo.AppsForTeamGet(ctx, team.ID)
-	//if err != nil {
-	//	log.Errorf("sql error: %v", err)
-	//	return true
-	//}
+	jupyterValues := chart.JupyterConfigurableValues{
+		Slug: team.Slug,
+	}
+	if err := c.repo.RegisterUpdateJupyterEvent(ctx, jupyterValues); err != nil {
+		c.log.WithError(err).Error("failed while registering jupyter update event")
+		return true
+	}
 
-	// TODO: Hvordan håndterer vi oppdatering av Jupyter og Airflow
-	//if slices.Contains(apps, string(gensql.ChartTypeJupyterhub)) {
-	//	configValues := chart.JupyterConfigurableValues{}
-	//	if err := c.repo.TeamConfigurableValuesGet(ctx, gensql.ChartTypeJupyterhub, team.ID, &configValues); err != nil {
-	//		log.Errorf("sql error: %v", err)
-	//		return true
-	//	}
-	//
-	//	jupyterForm := chart.JupyterForm{
-	//		Slug: team.Slug,
-	//		JupyterValues: chart.JupyterValues{
-	//			JupyterConfigurableValues: configValues,
-	//		},
-	//	}
-	//
-	//	err = c.chartClient.Jupyterhub.Update(ctx, jupyterForm)
-	//	if err != nil {
-	//		log.Errorf(err.Error())
-	//		return true
-	//	}
-	//}
-	//
-	//if slices.Contains(apps, string(gensql.ChartTypeAirflow)) {
-	//	airflowForm := chart.AirflowForm{
-	//		Slug: team.Slug,
-	//	}
-	//
-	//	err = c.chartClient.Airflow.Update(ctx, airflowForm)
-	//	if err != nil {
-	//		log.Errorf(err.Error())
-	//		return true
-	//	}
-	//}
+	airflowValues := chart.AirflowConfigurableValues{
+		Slug: team.Slug,
+	}
+	if err := c.repo.RegisterUpdateAirflowEvent(ctx, airflowValues); err != nil {
+		c.log.WithError(err).Error("failed while registering airflow update event")
+		return true
+	}
 
 	return false
 }
@@ -153,6 +130,7 @@ func (c Client) Delete(ctx context.Context, teamSlug string, log logger.Logger) 
 		return true
 	}
 
+	// Kun Airflow som har ressurser utenfor clusteret
 	if err := c.repo.RegisterDeleteAirflowEvent(ctx, team.ID); err != nil {
 		c.log.WithError(err).Error("failed while registering airflow delete event")
 		return true

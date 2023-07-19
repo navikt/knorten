@@ -40,6 +40,15 @@ func (e EventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			return e.createCompute(event, logger)
 		}
+	case gensql.EventTypeCreateAirflow:
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
+			return e.createAirflow(event, logger)
+		}
+	case gensql.EventTypeCreateJupyter,
+		gensql.EventTypeUpdateJupyter:
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
+			return e.jupyterEvent(event, logger)
+		}
 	case gensql.EventTypeDeleteTeam,
 		gensql.EventTypeDeleteCompute,
 		gensql.EventTypeDeleteAirflow,
@@ -77,8 +86,14 @@ func (e EventHandler) processWork(event gensql.Event, form any, logger logger.Lo
 		retry = e.computeClient.Create(e.context, form.(gensql.ComputeInstance))
 	case gensql.EventTypeDeleteCompute:
 		retry = e.computeClient.Delete(e.context, form.(string))
+	case gensql.EventTypeCreateAirflow,
+		gensql.EventTypeUpdateAirflow:
+		retry = e.chartClient.SyncAirflow(e.context, form.(chart.AirflowConfigurableValues))
 	case gensql.EventTypeDeleteAirflow:
 		retry = e.chartClient.DeleteAirflow(e.context, form.(string))
+	case gensql.EventTypeCreateJupyter,
+		gensql.EventTypeUpdateJupyter:
+		retry = e.chartClient.SyncJupyter(e.context, form.(chart.JupyterConfigurableValues))
 	case gensql.EventTypeDeleteJupyter:
 		retry = e.chartClient.DeleteJupyter(e.context, form.(string))
 	}
@@ -105,13 +120,13 @@ func (e EventHandler) setEventStatus(id uuid.UUID, status gensql.EventStatus) er
 	return nil
 }
 
-func NewHandler(ctx context.Context, repo *database.Repo, gcpProject, airflowChartVersion, jupyterChartVersion string, dryRun, inCluster bool, log *logrus.Entry) (EventHandler, error) {
+func NewHandler(ctx context.Context, repo *database.Repo, gcpProject, gcpRegion, airflowChartVersion, jupyterChartVersion string, dryRun, inCluster bool, log *logrus.Entry) (EventHandler, error) {
 	teamClient, err := team.NewClient(repo, gcpProject, dryRun, inCluster, log.WithField("subsystem", "teamClient"))
 	if err != nil {
 		return EventHandler{}, err
 	}
 
-	chartClient, err := chart.NewClient(repo, dryRun, inCluster, gcpProject, airflowChartVersion, jupyterChartVersion, log.WithField("subsystem", "chartClient"))
+	chartClient, err := chart.NewClient(repo, dryRun, inCluster, airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion, log.WithField("subsystem", "chartClient"))
 	if err != nil {
 		return EventHandler{}, err
 	}

@@ -8,7 +8,6 @@ import (
 	"helm.sh/helm/v3/pkg/chart"
 
 	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/helm"
 )
@@ -20,12 +19,11 @@ type Application struct {
 	chartVersion string
 	teamID       string
 	repo         *database.Repo
-	cryptClient  *crypto.EncrypterDecrypter
 }
 
 // TODO: Vi bør ta inn chart-settings som config
 
-func NewAirflow(teamID string, repo *database.Repo, cryptClient *crypto.EncrypterDecrypter, chartVersion string) *Application {
+func NewAirflow(teamID string, repo *database.Repo, chartVersion string) *Application {
 	return &Application{
 		chartName:    "airflow",
 		chartRepo:    "apache-airflow",
@@ -33,11 +31,10 @@ func NewAirflow(teamID string, repo *database.Repo, cryptClient *crypto.Encrypte
 		chartVersion: chartVersion,
 		teamID:       teamID,
 		repo:         repo,
-		cryptClient:  cryptClient,
 	}
 }
 
-func NewJupyterhub(teamID string, repo *database.Repo, cryptClient *crypto.EncrypterDecrypter, chartVersion string) *Application {
+func NewJupyterhub(teamID string, repo *database.Repo, chartVersion string) *Application {
 	return &Application{
 		chartName:    "jupyterhub",
 		chartRepo:    "jupyterhub",
@@ -45,7 +42,6 @@ func NewJupyterhub(teamID string, repo *database.Repo, cryptClient *crypto.Encry
 		chartVersion: chartVersion,
 		teamID:       teamID,
 		repo:         repo,
-		cryptClient:  cryptClient,
 	}
 }
 
@@ -87,7 +83,7 @@ func (a *Application) globalValues(ctx context.Context) (map[string]any, error) 
 	values := map[string]any{}
 	for _, v := range dbValues {
 		if v.Encrypted {
-			v.Value, err = a.cryptClient.DecryptValue(v.Value)
+			v.Value, err = a.repo.DecryptValue(v.Value)
 			if err != nil {
 				return nil, err
 			}

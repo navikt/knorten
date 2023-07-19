@@ -10,6 +10,7 @@ import (
 	"github.com/gin-contrib/sessions/postgres"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/pressly/goose/v3"
 	"github.com/sirupsen/logrus"
@@ -22,10 +23,10 @@ import (
 var embedMigrations embed.FS
 
 type Repo struct {
-	querier Querier
-	encKey  string
-	db      *sql.DB
-	log     *logrus.Entry
+	querier     Querier
+	db          *sql.DB
+	cryptClient *crypto.EncrypterDecrypter
+	log         *logrus.Entry
 }
 
 type Querier interface {
@@ -33,7 +34,7 @@ type Querier interface {
 	WithTx(tx *sql.Tx) *gensql.Queries
 }
 
-func New(dbConnDSN string, log *logrus.Entry) (*Repo, error) {
+func New(dbConnDSN, cryptoKey string, log *logrus.Entry) (*Repo, error) {
 	db, err := sql.Open("postgres", dbConnDSN)
 	if err != nil {
 		return nil, fmt.Errorf("open sql connection: %w", err)
@@ -45,9 +46,10 @@ func New(dbConnDSN string, log *logrus.Entry) (*Repo, error) {
 	}
 
 	return &Repo{
-		querier: gensql.New(db),
-		db:      db,
-		log:     log,
+		querier:     gensql.New(db),
+		db:          db,
+		cryptClient: crypto.New(cryptoKey),
+		log:         log,
 	}, nil
 }
 
@@ -83,4 +85,12 @@ func (r *Repo) NewSessionStore(key string) (gin.HandlerFunc, error) {
 	}
 
 	return sessions.Sessions("session", store), nil
+}
+
+func (r *Repo) DecryptValue(encValue string) (string, error) {
+	return r.cryptClient.DecryptValue(encValue)
+}
+
+func (r *Repo) EncryptValue(encValue string) (string, error) {
+	return r.cryptClient.EncryptValue(encValue)
 }

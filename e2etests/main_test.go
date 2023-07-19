@@ -21,13 +21,9 @@ import (
 
 	"github.com/nais/knorten/local/dbsetup"
 	"github.com/nais/knorten/pkg/api"
-	"github.com/nais/knorten/pkg/auth"
-	"github.com/nais/knorten/pkg/chart"
+	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/events"
-	"github.com/nais/knorten/pkg/google"
-	"github.com/nais/knorten/pkg/k8s"
 	"github.com/ory/dockertest/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/tdewolff/minify/v2"
@@ -91,34 +87,25 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	dbRepo, err := database.New(dbString, logrus.NewEntry(logrus.StandardLogger()))
+	logger := logrus.NewEntry(logrus.StandardLogger())
+
+	dbRepo, err := database.New(dbString, "jegersekstentegn", logger)
 	if err != nil {
 		log.Fatal(err)
 	}
-	repo = dbRepo
 
 	if err := dbsetup.SetupDB(context.Background(), fmt.Sprintf("postgres://postgres:postgres@%v:%v", dbHost, dbPort), "knorten"); err != nil {
 		log.Fatalf("setting up knorten db: %v", err)
 	}
 
-	cryptoClient := crypto.New("jegersekstentegn")
-	logger := logrus.NewEntry(logrus.StandardLogger())
-
-	k8sClient, err := k8s.New(cryptoClient, dbRepo, true, false, "", "", "", "", "", logger)
-	if err != nil {
-		log.Fatalf("creating k8sClient: %v", err)
-	}
-
-	googleClient := google.New(dbRepo, "", "", true, logger)
-	azureClient := auth.New(true, "", "", "", "", logger)
-	chartClient, err := chart.New(dbRepo, googleClient, k8sClient, azureClient, cryptoClient, "", "", logger)
+	eventHandler, err := events.NewHandler(context.Background(), dbRepo, "", "", "", "", true, false, logger)
 	if err != nil {
 		log.Fatalf("creating googleClient: %v", err)
 	}
+	eventHandler.Run()
 
-	events.Start(context.Background(), dbRepo, "", true, false, logger)
-
-	srv, err := api.New(dbRepo, azureClient, googleClient, k8sClient, cryptoClient, chartClient, true, "1.8.0", "2.0.0", "nada@nav.no", "session", logrus.NewEntry(logrus.StandardLogger()))
+	azureClient := auth.NewAzureClient(true, "", "", "", "", logger)
+	srv, err := api.New(dbRepo, azureClient, true, "nada@nav.no", "session", logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatalf("creating api: %v", err)
 	}

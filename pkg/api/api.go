@@ -8,34 +8,24 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/nais/knorten/pkg/admin"
-	"github.com/nais/knorten/pkg/auth"
-	"github.com/nais/knorten/pkg/chart"
+	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/database/crypto"
-	"github.com/nais/knorten/pkg/google"
-	"github.com/nais/knorten/pkg/k8s"
 	"github.com/sirupsen/logrus"
 )
 
 type client struct {
-	azureClient         *auth.Azure
-	router              *gin.Engine
-	repo                *database.Repo
-	log                 *logrus.Entry
-	googleClient        *google.Google
-	k8sClient           *k8s.Client
-	adminClient         *admin.Client
-	cryptClient         *crypto.EncrypterDecrypter
-	chartClient         *chart.Client
-	jupyterChartVersion string
-	airflowChartVersion string
-	adminGroupMail      string
-	dryRun              bool
-	adminGroupID        string
+	azureClient     *auth.Azure
+	router          *gin.Engine
+	repo            *database.Repo
+	log             *logrus.Entry
+	adminClient     *admin.Client
+	adminGroupEmail string
+	dryRun          bool
+	adminGroupID    string
 }
 
-func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Google, k8sClient *k8s.Client, cryptClient *crypto.EncrypterDecrypter, chartClient *chart.Client, dryRun bool, airflowChartVersion, jupyterChartVersion, sessionKey, adminGroup string, log *logrus.Entry) (*gin.Engine, error) {
-	adminClient := admin.New(repo, k8sClient, googleClient, cryptClient, chartClient, airflowChartVersion, jupyterChartVersion)
+func New(repo *database.Repo, azureClient *auth.Azure, dryRun bool, sessionKey, adminGroupEmail string, log *logrus.Entry) (*gin.Engine, error) {
+	adminClient := admin.New(repo)
 
 	router := gin.New()
 
@@ -45,17 +35,13 @@ func New(repo *database.Repo, azureClient *auth.Azure, googleClient *google.Goog
 	})
 
 	api := client{
-		azureClient:    azureClient,
-		router:         router,
-		repo:           repo,
-		googleClient:   googleClient,
-		k8sClient:      k8sClient,
-		adminClient:    adminClient,
-		cryptClient:    cryptClient,
-		log:            log,
-		chartClient:    chartClient,
-		adminGroupMail: adminGroup,
-		dryRun:         dryRun,
+		azureClient:     azureClient,
+		router:          router,
+		repo:            repo,
+		adminClient:     adminClient,
+		log:             log,
+		adminGroupEmail: adminGroupEmail,
+		dryRun:          dryRun,
 	}
 
 	session, err := repo.NewSessionStore(sessionKey)
@@ -163,10 +149,27 @@ func (c *client) fetchAdminGroupID() error {
 		c.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
-	id, err := c.azureClient.GetGroupID(c.adminGroupMail)
+	id, err := c.azureClient.GetGroupID(c.adminGroupEmail)
 	if err != nil {
 		return fmt.Errorf("retrieve admin group id error: %v", err)
 	}
 	c.adminGroupID = id
 	return nil
+}
+
+func (c *client) convertEmailsToIdents(emails []string) ([]string, error) {
+	if c.dryRun {
+		c.log.Infof("NOOP: Running in dry run mode")
+		return []string{"d123456"}, nil
+	}
+
+	var idents []string
+	for _, e := range emails {
+		ident, err := c.azureClient.IdentForEmail(e)
+		if err != nil {
+			return nil, err
+		}
+		idents = append(idents, ident)
+	}
+	return idents, nil
 }

@@ -1,49 +1,40 @@
 package imageupdater
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"os"
+	"os/exec"
 	"time"
 
-	"github.com/nais/knorten/pkg/auth"
 	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/google"
-	"github.com/nais/knorten/pkg/k8s"
 	"github.com/sirupsen/logrus"
 )
 
-type ImageUpdater struct {
-	repo          *database.Repo
-	jupyterClient *chart.JupyterhubClient
-	airflowClient *chart.AirflowClient
-	log           *logrus.Entry
+type client struct {
+	repo *database.Repo
+	log  *logrus.Entry
 }
 
-type garImage struct {
-	Name string `json:"package"`
-	Tag  string `json:"tags"`
-}
-
-func New(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, azureClient *auth.Azure, cryptClient *crypto.EncrypterDecrypter, jupyterChartVersion, airflowChartVersion string, log *logrus.Entry) *ImageUpdater {
-	jupyterClient := chart.NewJupyterhubClient(repo, k8sClient, azureClient, cryptClient, jupyterChartVersion, log.WithField("subsystem", "jupyterClient"))
-	airflowClient := chart.NewAirflowClient(repo, googleClient, k8sClient, cryptClient, airflowChartVersion, log.WithField("subsystem", "airflowClient"))
-	return &ImageUpdater{
-		repo:          repo,
-		jupyterClient: &jupyterClient,
-		airflowClient: &airflowClient,
-		log:           log,
+func NewClient(repo *database.Repo, log *logrus.Entry) *client {
+	return &client{
+		repo: repo,
+		log:  log,
 	}
 }
 
-func (d *ImageUpdater) Run(frequency time.Duration) {
+func (c *client) Run(frequency time.Duration) {
 	ctx := context.Background()
 
 	ticker := time.NewTicker(frequency)
 	defer ticker.Stop()
 	for {
-		d.run(ctx)
+		c.run(ctx)
 		select {
 		case <-ctx.Done():
 			return
@@ -52,37 +43,83 @@ func (d *ImageUpdater) Run(frequency time.Duration) {
 	}
 }
 
-func (d *ImageUpdater) run(ctx context.Context) {
-	if err := d.updateJupyterhubImages(ctx); err != nil {
-		d.log.WithError(err).Error("updating jupyterhub images")
+func (c *client) run(ctx context.Context) {
+	if err := c.updateJupyterhubImages(ctx); err != nil {
+		c.log.WithError(err).Error("updating jupyterhub images")
 	}
 
-	if err := d.updateAirflowImages(ctx); err != nil {
-		d.log.WithError(err).Error("updating airflow images")
+	if err := c.updateAirflowImages(ctx); err != nil {
+		c.log.WithError(err).Error("updating airflow images")
 	}
 }
 
-func (d *ImageUpdater) triggerSync(ctx context.Context, chartType gensql.ChartType) error {
-	teams, err := d.repo.TeamsForAppGet(ctx, chartType)
+func (c *client) triggerSync(ctx context.Context, chartType gensql.ChartType) error {
+	teams, err := c.repo.TeamsForAppGet(ctx, chartType)
 	if err != nil {
-		d.log.WithError(err).Errorf("reading jupyterhub teams from db")
 		return err
 	}
 
-	for _, t := range teams {
-		switch chartType {
-		case gensql.ChartTypeAirflow:
-			if err := d.airflowClient.Sync(ctx, t); err != nil {
-				d.log.WithError(err).Errorf("error syncing airflow for team %v", t)
-				return err
-			}
-		case gensql.ChartTypeJupyterhub:
-			if err := d.jupyterClient.Sync(ctx, t); err != nil {
-				d.log.WithError(err).Errorf("error syncing jupyterhub for team %v", t)
-				return err
-			}
+	for _, team := range teams {
+		err := c.syncChart(ctx, team[:len(team)-5], chartType)
+		if err != nil {
+			return err
 		}
 	}
 
 	return nil
+}
+
+func (c *client) syncChart(ctx context.Context, team string, chartType gensql.ChartType) error {
+	switch chartType {
+	case gensql.ChartTypeJupyterhub:
+		values := chart.JupyterConfigurableValues{
+			Slug: team,
+		}
+		return c.repo.RegisterUpdateJupyterEvent(ctx, values)
+	case gensql.ChartTypeAirflow:
+		values := chart.AirflowConfigurableValues{
+			Slug: team,
+		}
+		return c.repo.RegisterUpdateAirflowEvent(ctx, values)
+	}
+
+	return nil
+}
+
+type garImage struct {
+	Name string `json:"package"`
+	Tag  string `json:"tags"`
+}
+
+func getLatestImageInGAR(image, tagsFilter string) (*garImage, error) {
+	listCmd := exec.Command(
+		"gcloud",
+		"artifacts",
+		"docker",
+		"images",
+		"list",
+		image,
+		"--include-tags",
+		"--sort-by=~Update_Time",
+		"--limit=1",
+		"--format=json")
+
+	if tagsFilter != "" {
+		listCmd.Args = append(listCmd.Args, fmt.Sprintf("--filter=TAGS:%v", tagsFilter))
+	}
+
+	buf := &bytes.Buffer{}
+	listCmd.Stdout = buf
+	listCmd.Stderr = os.Stderr
+	if err := listCmd.Run(); err != nil {
+		io.Copy(os.Stdout, buf)
+		return nil, err
+	}
+
+	var images []*garImage
+	if err := json.Unmarshal(buf.Bytes(), &images); err != nil {
+		return nil, err
+	}
+
+	return images[0], nil
 }

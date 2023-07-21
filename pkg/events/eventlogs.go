@@ -18,14 +18,20 @@ type EventLogger struct {
 	context context.Context
 }
 
-func (e EventLogger) Infof(template string, arg ...any) {
-	message := fmt.Sprintf(template, arg...)
-	e.log.Info(message)
+func (e EventLogger) Info(messages ...any) {
+	for _, message := range messages {
+		messageAsString := fmt.Sprint(message)
 
-	err := e.repo.EventLogCreate(e.context, e.eventID, message, gensql.LogTypeInfo)
-	if err != nil {
-		e.log.WithError(err).Error("can't write event to database")
+		e.log.Info(messageAsString)
+		err := e.repo.EventLogCreate(e.context, e.eventID, messageAsString, gensql.LogTypeInfo)
+		if err != nil {
+			e.log.WithError(err).Error("can't write event to database")
+		}
 	}
+}
+
+func (e EventLogger) Infof(template string, arg ...any) {
+	e.Info(fmt.Sprintf(template, arg...))
 }
 
 func (e EventLogger) Errorf(template string, arg ...any) {

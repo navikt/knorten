@@ -35,103 +35,114 @@ func NewClient(repo *database.Repo, gcpProject string, dryRun, inCluster bool) (
 }
 
 func (c Client) Create(ctx context.Context, team gensql.Team, log logger.Logger) bool {
+	log = log.WithField("team", team.Slug)
 	log.Infof("Creating team %v", team.ID)
 
 	existingTeam, err := c.repo.TeamGet(ctx, team.Slug)
-	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			log.Errorf("sql error: %v", err)
-			return true
-		}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		log.WithError(err).Error("failed retrieving team from database")
+		return true
 	}
+
 	if existingTeam.Slug == team.Slug {
 		log.Errorf("there already exists a team with name %v", team.Slug)
 		return false
 	}
 
 	if err := c.createGCPTeamResources(ctx, team); err != nil {
-		log.Errorf("failed creating gcp team resources: %v", err)
+		log.WithError(err).Error("failed creating GCP resources")
 		return true
 	}
 
 	namespace := k8s.TeamIDToNamespace(team.ID)
 	if err := c.createK8sNamespace(ctx, namespace); err != nil {
-		log.Errorf("failed creating team namespace: %v", err)
+		log.WithError(err).Error("failed creating team namespace")
 		return true
 	}
 
 	if err := c.createK8sServiceAccount(ctx, team.ID, namespace); err != nil {
-		log.Errorf("failed creating team SA: %v", err)
+		log.WithError(err).Error("failed creating k8s service account")
 		return true
 	}
 
 	if err := c.repo.TeamCreate(ctx, team); err != nil {
-		log.Errorf("sql error: %v", err)
+		log.WithError(err).Error("failed saving team to database")
 		return true
 	}
 
-	log.Infof("Created %v", team.ID)
+	log.Infof("Successfully created team %v", team.ID)
 	return false
 }
 
 func (c Client) Update(ctx context.Context, team gensql.Team, log logger.Logger) bool {
+	log = log.WithField("team", team.Slug)
+	log.Infof("Updating team %v", team.Slug)
+
 	err := c.repo.TeamUpdate(ctx, team)
 	if err != nil {
-		log.Errorf("sql error: %v", err)
+		log.WithError(err).Error("failed updating team in database")
 		return true
 	}
 
 	if err := c.updateGCPTeamResources(ctx, team); err != nil {
-		log.WithError(err).Error("failed while updating gcp resources")
+		log.WithError(err).Error("failed while updating GCP resources")
 		return true
 	}
 
+	log.Info("Trigger update of Jupyter")
 	jupyterValues := chart.JupyterConfigurableValues{
 		Slug: team.Slug,
 	}
 	if err := c.repo.RegisterUpdateJupyterEvent(ctx, jupyterValues); err != nil {
-		log.WithError(err).Error("failed while registering jupyter update event")
+		log.WithError(err).Error("failed while registering Jupyter update event")
 		return true
 	}
 
+	log.Info("Trigger update of Airflow")
 	airflowValues := chart.AirflowConfigurableValues{
 		Slug: team.Slug,
 	}
 	if err := c.repo.RegisterUpdateAirflowEvent(ctx, airflowValues); err != nil {
-		log.WithError(err).Error("failed while registering airflow update event")
+		log.WithError(err).Error("failed while registering Airflow update event")
 		return true
 	}
 
+	log.Infof("Successfully updated team %v", team.Slug)
 	return false
 }
 
 func (c Client) Delete(ctx context.Context, teamSlug string, log logger.Logger) bool {
+	log = log.WithField("team", teamSlug)
+	log.Infof("Deleting team %v", teamSlug)
+
 	team, err := c.repo.TeamGet(ctx, teamSlug)
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
-		log.Errorf("sql error: %v", err)
+		log.WithError(err).Error("failed retrieving team from database")
 		return true
 	}
 
 	if err = c.deleteGCPTeamResources(ctx, team.ID); err != nil {
-		log.WithError(err).Error("failed while deleting external resources")
+		log.WithError(err).Error("failed while deleting GCP resources")
 		return true
 	}
 
 	if err = c.deleteK8sNamespace(ctx, k8s.TeamIDToNamespace(team.ID)); err != nil {
-		log.WithError(err).Error("failed while deleting external resources")
+		log.WithError(err).Error("failed while deleting k8s namespace")
 		return true
 	}
 
 	if err = c.repo.TeamDelete(ctx, team.ID); err != nil && errors.Is(err, sql.ErrNoRows) {
-		log.Errorf("sql error: %v", err)
+		log.WithError(err).Error("failed deleting team from database")
 		return true
 	}
 
+	log.Info("Trigger delete of Airflow")
 	// Kun Airflow som har ressurser utenfor clusteret
 	if err := c.repo.RegisterDeleteAirflowEvent(ctx, team.ID); err != nil {
-		log.WithError(err).Error("failed while registering airflow delete event")
+		log.WithError(err).Error("failed while registering Airflow delete event")
 		return true
 	}
 
+	log.Infof("Successfully deleted team %v", teamSlug)
 	return false
 }

@@ -32,8 +32,10 @@ func createKubeConfig(inCluster bool) (*rest.Config, error) {
 		kubeconfig = filepath.Join(homedir.HomeDir(), ".kube", "config")
 	}
 
-	// use the current context in kubeconfig
-	return clientcmd.BuildConfigFromFlags("", kubeconfig)
+	configLoadingRules := &clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfig}
+	configOverrides := &clientcmd.ConfigOverrides{CurrentContext: "kind"}
+
+	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(configLoadingRules, configOverrides).ClientConfig()
 }
 
 // TeamIDToNamespace prefix team- to a team ID. If the ID already has in as a prefix, will add a - after the word team.

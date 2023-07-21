@@ -25,13 +25,11 @@ local-online:
 	  --oauth2-client-id=$(AZURE_APP_CLIENT_ID) \
 	  --oauth2-client-secret=$(AZURE_APP_CLIENT_SECRET) \
 	  --oauth2-tenant-id=$(AZURE_APP_TENANT_ID) \
-	  --project=$(GCP_PROJECT) \
-	  --region=$(GCP_REGION) \
-	  --db-enc-key=$(DB_ENC_KEY) \
+	  --project=nada-dev-db2e \
+	  --region=europe-west1 \
 	  --airflow-chart-version=1.10.0 \
 	  --jupyter-chart-version=2.0.0 \
 	  --in-cluster=false \
-	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knada/knelm:2023-06-30-a48491a \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
 	  --admin-group=nada@nav.no \
 	  --session-key online-session
@@ -47,7 +45,6 @@ local:
 	  --in-cluster=false \
 	  --project=nada-dev-db2e \
 	  --region=europe-west1 \
-	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knada/knelm:2023-06-30-a48491a \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
 	  --admin-group=nada@nav.no \
 	  --session-key offline-session

@@ -50,13 +50,15 @@ func (c Client) UpdateJupyter(ctx context.Context, values JupyterConfigurableVal
 		return true
 	}
 
+	retry := false
 	for _, app := range apps {
 		if app == string(gensql.ChartTypeJupyterhub) {
-			return c.SyncJupyter(ctx, values, log)
+			retry = c.SyncJupyter(ctx, values, log)
 		}
 	}
 
-	return false
+	log.WithField("team", values.Slug).WithField("chart", "jupyter").Info("Successfully updated Jupyter")
+	return retry
 }
 
 func (c Client) SyncJupyter(ctx context.Context, values JupyterConfigurableValues, log logger.Logger) bool {
@@ -93,13 +95,15 @@ func (c Client) UpdateAirflow(ctx context.Context, values AirflowConfigurableVal
 		return true
 	}
 
+	retry := false
 	for _, app := range apps {
 		if app == string(gensql.ChartTypeAirflow) {
-			return c.SyncAirflow(ctx, values, log)
+			retry = c.SyncAirflow(ctx, values, log)
 		}
 	}
 
-	return false
+	log.WithField("team", values.Slug).WithField("chart", "airflow").Info("Successfully updated Airflow")
+	return retry
 }
 
 func (c Client) SyncAirflow(ctx context.Context, values AirflowConfigurableValues, log logger.Logger) bool {

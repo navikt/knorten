@@ -5,53 +5,52 @@ import (
 
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/sirupsen/logrus"
+	"github.com/nais/knorten/pkg/logger"
 )
 
 type Client struct {
-	log        *logrus.Entry
 	repo       *database.Repo
 	gcpProject string
 	dryRun     bool
 }
 
-func NewClient(repo *database.Repo, gcpProject string, dryRun bool, log *logrus.Entry) *Client {
+func NewClient(repo *database.Repo, gcpProject string, dryRun bool) *Client {
 	return &Client{
-		log:        log,
 		repo:       repo,
 		gcpProject: gcpProject,
 		dryRun:     dryRun,
 	}
 }
 
-func (c Client) Create(ctx context.Context, instance gensql.ComputeInstance) bool {
-	c.createComputeInstanceInGCP(ctx, instance.Name, instance.Email)
-
-	err := c.repo.ComputeInstanceCreate(ctx, instance)
+func (c Client) Create(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) bool {
+	err := c.createComputeInstanceInGCP(ctx, instance.Name, instance.Email)
 	if err != nil {
-		c.log.Errorf("failed creating compute instance: %v", err)
+		log.Errorf("failed creating compute instance: %v", err)
+		return true
+	}
+
+	if err := c.repo.ComputeInstanceCreate(ctx, instance); err != nil {
+		log.Errorf("failed saving compute instance to database: %v", err)
 		return true
 	}
 
 	return false
 }
 
-func (c Client) Delete(ctx context.Context, email string) bool {
+func (c Client) Delete(ctx context.Context, email string, log logger.Logger) bool {
 	instance, err := c.repo.ComputeInstanceGet(ctx, email)
 	if err != nil {
-		c.log.Errorf("failed deleting compute instance: %v", err)
+		log.Errorf("failed deleting compute instance: %v", err)
 		return true
 	}
 
-	err = c.deleteComputeInstanceFromGCP(ctx, instance.Name)
-	if err != nil {
-		c.log.Errorf("failed deleting compute instance: %v", err)
+	if err := c.deleteComputeInstanceFromGCP(ctx, instance.Name); err != nil {
+		log.Errorf("failed deleting compute instance: %v", err)
 		return false
 	}
 
-	err = c.repo.ComputeInstanceDelete(ctx, email)
-	if err != nil {
-		c.log.Errorf("failed deleting compute instance: %v", err)
+	if err = c.repo.ComputeInstanceDelete(ctx, email); err != nil {
+		log.Errorf("failed deleting compute instance: %v", err)
 		return true
 	}
 

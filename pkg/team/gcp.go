@@ -3,6 +3,7 @@ package team
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"cloud.google.com/go/iam"
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
@@ -20,7 +21,6 @@ const secretRoleName = "roles/owner"
 
 func (c Client) createGCPTeamResources(ctx context.Context, team gensql.Team) error {
 	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
 
@@ -31,7 +31,7 @@ func (c Client) createGCPTeamResources(ctx context.Context, team gensql.Team) er
 
 	secret, err := c.createSecret(ctx, team.Slug, team.ID)
 	if err != nil {
-		return fmt.Errorf("failed to create secret: %v", err)
+		return err
 	}
 
 	if err := c.createServiceAccountSecretAccessorBinding(ctx, sa.Email, secret.Name); err != nil {
@@ -39,7 +39,7 @@ func (c Client) createGCPTeamResources(ctx context.Context, team gensql.Team) er
 	}
 
 	if err := c.setUsersSecretOwnerBinding(ctx, team.Users, secret.Name); err != nil {
-		return fmt.Errorf("failed while creating secret binding: %v", err)
+		return err
 	}
 
 	if err := c.createSAWorkloadIdentityBinding(ctx, sa.Email, team.ID); err != nil {
@@ -61,6 +61,7 @@ func (c Client) createSAWorkloadIdentityBinding(ctx context.Context, email, team
 	if err != nil {
 		return err
 	}
+
 	namespace := k8s.TeamIDToNamespace(teamID)
 	bindings := policy.Bindings
 	if !c.updateRoleBindingIfExists(bindings, "roles/iam.workloadIdentityUser", namespace, teamID) {
@@ -90,6 +91,7 @@ func (c Client) updateRoleBindingIfExists(bindings []*iamv1.Binding, role, names
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -127,8 +129,9 @@ func (c Client) createSecret(ctx context.Context, slug, teamID string) (*secretm
 		apiError, ok := apierror.FromError(err)
 		if ok {
 			if apiError.GRPCStatus().Code() == codes.AlreadyExists {
-				c.log.Infof("create secret: secret %v already exists", teamID)
-				return c.getSecret(ctx, client, teamID)
+				return client.GetSecret(ctx, &secretmanagerpb.GetSecretRequest{
+					Name: fmt.Sprintf("projects/%v/secrets/%v", c.gcpProject, teamID),
+				})
 			}
 		}
 		return nil, err
@@ -137,28 +140,22 @@ func (c Client) createSecret(ctx context.Context, slug, teamID string) (*secretm
 	return s, nil
 }
 
-func (c Client) getSecret(ctx context.Context, client *secretmanager.Client, sName string) (*secretmanagerpb.Secret, error) {
-	return client.GetSecret(ctx, &secretmanagerpb.GetSecretRequest{
-		Name: fmt.Sprintf("projects/%v/secrets/%v", c.gcpProject, sName),
-	})
-}
-
 func (c Client) createServiceAccountSecretAccessorBinding(ctx context.Context, sa, secret string) error {
 	client, err := secretmanager.NewClient(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to create secretmanager client: %v", err)
+		return err
 	}
 	defer client.Close()
 
 	handle := client.IAM(secret)
 	policy, err := handle.Policy(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get policy: %v", err)
+		return err
 	}
 
 	policy.Add("serviceAccount:"+sa, "roles/secretmanager.secretAccessor")
 	if err = handle.SetPolicy(ctx, policy); err != nil {
-		return fmt.Errorf("failed to save policy: %v", err)
+		return err
 	}
 
 	return nil
@@ -167,7 +164,7 @@ func (c Client) createServiceAccountSecretAccessorBinding(ctx context.Context, s
 func (c Client) createIAMServiceAccount(ctx context.Context, team string) (*iamv1.ServiceAccount, error) {
 	service, err := iamv1.NewService(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("iam.NewService: %v", err)
+		return nil, err
 	}
 
 	request := &iamv1.CreateServiceAccountRequest{
@@ -181,25 +178,20 @@ func (c Client) createIAMServiceAccount(ctx context.Context, team string) (*iamv
 	if err != nil {
 		gError, ok := err.(*googleapi.Error)
 		if ok {
-			if gError.Code == 409 {
-				c.log.Infof("create iam service account: service account %v already exists", team)
-				return c.getIAMServiceAccount(service, team)
+			if gError.Code == http.StatusConflict {
+				serviceAccountName := fmt.Sprintf("projects/%v/serviceAccounts/%v@%v.iam.gserviceaccount.com", c.gcpProject, team, c.gcpProject)
+				return service.Projects.ServiceAccounts.Get(serviceAccountName).Do()
 			}
 		}
-		return nil, fmt.Errorf("Projects.ServiceAccounts.Create: %v", err)
+
+		return nil, err
 	}
 
 	return account, nil
 }
 
-func (c Client) getIAMServiceAccount(service *iamv1.Service, team string) (*iamv1.ServiceAccount, error) {
-	sa := fmt.Sprintf("projects/%v/serviceAccounts/%v@%v.iam.gserviceaccount.com", c.gcpProject, team, c.gcpProject)
-	return service.Projects.ServiceAccounts.Get(sa).Do()
-}
-
 func (c Client) updateGCPTeamResources(ctx context.Context, team gensql.Team) error {
 	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
 
@@ -208,17 +200,14 @@ func (c Client) updateGCPTeamResources(ctx context.Context, team gensql.Team) er
 
 func (c Client) deleteGCPTeamResources(ctx context.Context, teamID string) error {
 	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
 
 	if err := c.deleteIAMServiceAccount(ctx, teamID); err != nil {
-		c.log.WithError(err).Errorf("deleting iam service account %v", teamID)
 		return err
 	}
 
 	if err := c.deleteSecret(ctx, teamID); err != nil {
-		c.log.WithError(err).Errorf("deleting gsm secret %v", teamID)
 		return err
 	}
 
@@ -228,7 +217,6 @@ func (c Client) deleteGCPTeamResources(ctx context.Context, teamID string) error
 func (c Client) deleteSecret(ctx context.Context, teamID string) error {
 	client, err := secretmanager.NewClient(ctx)
 	if err != nil {
-		c.log.WithError(err).Errorf("deleting secret %v", teamID)
 		return err
 	}
 	defer client.Close()
@@ -248,10 +236,10 @@ func (c Client) deleteSecret(ctx context.Context, teamID string) error {
 		apiError, ok := apierror.FromError(err)
 		if ok {
 			if apiError.GRPCStatus().Code() == codes.NotFound {
-				c.log.Infof("delete secret: secret %v does not exist", teamID)
 				return nil
 			}
 		}
+
 		return err
 	}
 
@@ -261,15 +249,14 @@ func (c Client) deleteSecret(ctx context.Context, teamID string) error {
 func (c Client) deleteIAMServiceAccount(ctx context.Context, teamID string) error {
 	service, err := iamv1.NewService(ctx)
 	if err != nil {
-		return fmt.Errorf("iam.NewService: %v", err)
+		return err
 	}
 
 	sa := fmt.Sprintf("projects/%v/serviceAccounts/%v@%v.iam.gserviceaccount.com", c.gcpProject, teamID, c.gcpProject)
 	_, err = service.Projects.ServiceAccounts.Delete(sa).Do()
 	if err != nil {
 		apiError, ok := err.(*googleapi.Error)
-		if ok && apiError.Code == 404 {
-			c.log.Infof("delete iam service account: service account %v does not exist", teamID)
+		if ok && apiError.Code == http.StatusNotFound {
 			return nil
 		}
 
@@ -295,7 +282,6 @@ func (c Client) setUsersSecretOwnerBinding(ctx context.Context, users []string, 
 	}
 
 	policyMembers := policy.Members(secretRoleName)
-
 	for _, member := range policyMembers {
 		if !slices.Contains(users, member) {
 			policy.Remove(member, secretRoleName)
@@ -329,10 +315,10 @@ func (c Client) updatePolicy(ctx context.Context, handle *iam.Handle, user strin
 		if err != nil {
 			apiError, ok := apierror.FromError(err)
 			if ok && apiError.GRPCStatus().Code() == codes.InvalidArgument {
-				c.log.Infof("%v does not exist in GCP", user)
 				return nil
 
 			}
+
 			return err
 		}
 	}

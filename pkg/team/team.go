@@ -10,7 +10,6 @@ import (
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/logger"
-	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -19,10 +18,9 @@ type Client struct {
 	k8sClient  *kubernetes.Clientset
 	gcpProject string
 	dryRun     bool
-	log        *logrus.Entry
 }
 
-func NewClient(repo *database.Repo, gcpProject string, dryRun, inCluster bool, log *logrus.Entry) (*Client, error) {
+func NewClient(repo *database.Repo, gcpProject string, dryRun, inCluster bool) (*Client, error) {
 	k8sClient, err := k8s.CreateClientset(inCluster)
 	if err != nil {
 		return nil, err
@@ -33,7 +31,6 @@ func NewClient(repo *database.Repo, gcpProject string, dryRun, inCluster bool, l
 		k8sClient:  k8sClient,
 		gcpProject: gcpProject,
 		dryRun:     dryRun,
-		log:        log,
 	}, nil
 }
 
@@ -85,7 +82,7 @@ func (c Client) Update(ctx context.Context, team gensql.Team, log logger.Logger)
 	}
 
 	if err := c.updateGCPTeamResources(ctx, team); err != nil {
-		c.log.WithError(err).Error("failed while updating gcp resources")
+		log.WithError(err).Error("failed while updating gcp resources")
 		return true
 	}
 
@@ -93,7 +90,7 @@ func (c Client) Update(ctx context.Context, team gensql.Team, log logger.Logger)
 		Slug: team.Slug,
 	}
 	if err := c.repo.RegisterUpdateJupyterEvent(ctx, jupyterValues); err != nil {
-		c.log.WithError(err).Error("failed while registering jupyter update event")
+		log.WithError(err).Error("failed while registering jupyter update event")
 		return true
 	}
 
@@ -101,7 +98,7 @@ func (c Client) Update(ctx context.Context, team gensql.Team, log logger.Logger)
 		Slug: team.Slug,
 	}
 	if err := c.repo.RegisterUpdateAirflowEvent(ctx, airflowValues); err != nil {
-		c.log.WithError(err).Error("failed while registering airflow update event")
+		log.WithError(err).Error("failed while registering airflow update event")
 		return true
 	}
 
@@ -116,12 +113,12 @@ func (c Client) Delete(ctx context.Context, teamSlug string, log logger.Logger) 
 	}
 
 	if err = c.deleteGCPTeamResources(ctx, team.ID); err != nil {
-		c.log.WithError(err).Error("failed while deleting external resources")
+		log.WithError(err).Error("failed while deleting external resources")
 		return true
 	}
 
 	if err = c.deleteK8sNamespace(ctx, k8s.TeamIDToNamespace(team.ID)); err != nil {
-		c.log.WithError(err).Error("failed while deleting external resources")
+		log.WithError(err).Error("failed while deleting external resources")
 		return true
 	}
 
@@ -132,7 +129,7 @@ func (c Client) Delete(ctx context.Context, teamSlug string, log logger.Logger) 
 
 	// Kun Airflow som har ressurser utenfor clusteret
 	if err := c.repo.RegisterDeleteAirflowEvent(ctx, team.ID); err != nil {
-		c.log.WithError(err).Error("failed while registering airflow delete event")
+		log.WithError(err).Error("failed while registering airflow delete event")
 		return true
 	}
 

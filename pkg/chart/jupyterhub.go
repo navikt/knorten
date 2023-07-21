@@ -77,7 +77,6 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfi
 
 func (c Client) deleteJupyter(ctx context.Context, teamID string) error {
 	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
 

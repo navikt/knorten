@@ -18,7 +18,6 @@ const (
 
 func (c Client) deleteCloudSQLProxy(ctx context.Context, namespace string) error {
 	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
 
@@ -34,20 +33,16 @@ func (c Client) deleteCloudSQLProxy(ctx context.Context, namespace string) error
 }
 
 func (c Client) deleteCloudSQLProxyDeployment(ctx context.Context, name, namespace string) error {
-	if err := c.k8sClient.AppsV1().Deployments(namespace).Delete(ctx, name, metav1.DeleteOptions{}); err != nil {
-		if !k8sErrors.IsNotFound(err) {
-			return err
-		}
+	if err := c.k8sClient.AppsV1().Deployments(namespace).Delete(ctx, name, metav1.DeleteOptions{}); err != nil && !k8sErrors.IsNotFound(err) {
+		return err
 	}
 
 	return nil
 }
 
 func (c Client) deleteCloudSQLProxyService(ctx context.Context, name, namespace string) error {
-	if err := c.k8sClient.CoreV1().Services(namespace).Delete(ctx, name, metav1.DeleteOptions{}); err != nil {
-		if !k8sErrors.IsNotFound(err) {
-			return err
-		}
+	if err := c.k8sClient.CoreV1().Services(namespace).Delete(ctx, name, metav1.DeleteOptions{}); err != nil && !k8sErrors.IsNotFound(err) {
+		return err
 	}
 
 	return nil
@@ -55,14 +50,11 @@ func (c Client) deleteCloudSQLProxyService(ctx context.Context, name, namespace 
 
 func (c Client) deleteSecret(ctx context.Context, name, namespace string) error {
 	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
 
-	if err := c.k8sClient.CoreV1().Secrets(namespace).Delete(ctx, name, metav1.DeleteOptions{}); err != nil {
-		if !k8sErrors.IsNotFound(err) {
-			return err
-		}
+	if err := c.k8sClient.CoreV1().Secrets(namespace).Delete(ctx, name, metav1.DeleteOptions{}); err != nil && !k8sErrors.IsNotFound(err) {
+		return err
 	}
 
 	return nil
@@ -70,7 +62,6 @@ func (c Client) deleteSecret(ctx context.Context, name, namespace string) error 
 
 func (c Client) defaultEgressNetpolSync(ctx context.Context, namespace string, restrictEgress bool) error {
 	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
 
@@ -93,7 +84,6 @@ func (c Client) defaultEgressNetpolSync(ctx context.Context, namespace string, r
 
 	_, err = c.k8sClient.CoreV1().Namespaces().Update(ctx, nsSpec, metav1.UpdateOptions{})
 	if err != nil {
-		c.log.WithError(err).Error("updating team namespace")
 		return err
 	}
 	return nil
@@ -101,7 +91,6 @@ func (c Client) defaultEgressNetpolSync(ctx context.Context, namespace string, r
 
 func (c Client) createOrUpdateSecret(ctx context.Context, name, namespace string, data map[string]string) error {
 	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
 
@@ -121,7 +110,6 @@ func (c Client) createOrUpdateSecret(ctx context.Context, name, namespace string
 
 		_, err = c.k8sClient.CoreV1().Secrets(secret.Namespace).Create(ctx, secret, metav1.CreateOptions{})
 		if err != nil {
-			c.log.WithError(err).Errorf("creating secret %v in namespace %v", secret.Name, secret.Namespace)
 			return err
 		}
 
@@ -130,7 +118,6 @@ func (c Client) createOrUpdateSecret(ctx context.Context, name, namespace string
 
 	_, err = c.k8sClient.CoreV1().Secrets(secret.Namespace).Update(ctx, secret, metav1.UpdateOptions{})
 	if err != nil {
-		c.log.WithError(err).Errorf("updating secret %v in namespace %v", secret.Name, secret.Namespace)
 		return err
 	}
 
@@ -139,19 +126,16 @@ func (c Client) createOrUpdateSecret(ctx context.Context, name, namespace string
 
 func (c Client) createCloudSQLProxy(ctx context.Context, name, teamID, namespace, dbInstance string) error {
 	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
 
 	port := int32(5432)
 
 	if err := c.createCloudSQLProxyDeployment(ctx, name, namespace, teamID, dbInstance, port); err != nil {
-		c.log.WithError(err).Error("creating cloudsql proxy deployment")
 		return err
 	}
 
 	if err := c.createCloudSQLProxyService(ctx, name, namespace, port); err != nil {
-		c.log.WithError(err).Error("creating cloudsql proxy service")
 		return err
 	}
 
@@ -203,11 +187,7 @@ func (c Client) createCloudSQLProxyDeployment(ctx context.Context, name, namespa
 	}
 
 	_, err := c.k8sClient.AppsV1().Deployments(namespace).Create(ctx, deploySpec, metav1.CreateOptions{})
-	if err != nil {
-		if k8sErrors.IsAlreadyExists(err) {
-			c.log.Infof("cloudsql proxy deployment %v already exists in namespace %v", name, namespace)
-			return nil
-		}
+	if err != nil && !k8sErrors.IsAlreadyExists(err) {
 		return err
 	}
 
@@ -235,11 +215,7 @@ func (c Client) createCloudSQLProxyService(ctx context.Context, name, namespace 
 	}
 
 	_, err := c.k8sClient.CoreV1().Services(namespace).Create(ctx, serviceSpec, metav1.CreateOptions{})
-	if err != nil {
-		if k8sErrors.IsAlreadyExists(err) {
-			c.log.Infof("cloudsql proxy service %v already exists in namespace %v", name, namespace)
-			return nil
-		}
+	if err != nil && !k8sErrors.IsAlreadyExists(err) {
 		return err
 	}
 

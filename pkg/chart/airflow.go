@@ -59,8 +59,7 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 	}
 
 	if team.PendingAirflowUpgrade {
-		c.log.Info("pending airflow install")
-		return nil
+		return fmt.Errorf("pending airflow install")
 	}
 
 	if err := c.restrictAirflowEgress(ctx, configurableValues.RestrictEgress, team.ID); err != nil {
@@ -120,7 +119,6 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 
 func (c Client) deleteAirflow(ctx context.Context, teamID string) error {
 	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
 
@@ -267,7 +265,6 @@ func (c Client) restrictAirflowEgress(ctx context.Context, restrictAirflowEgress
 
 func (c Client) createAirflowDatabase(ctx context.Context, teamID, dbPassword string) error {
 	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
 
@@ -293,7 +290,6 @@ func (c Client) createAirflowDatabase(ctx context.Context, teamID, dbPassword st
 
 func (c Client) createLogBucketForAirflow(ctx context.Context, teamID, bucketName string) error {
 	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
 		return nil
 	}
 

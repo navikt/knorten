@@ -50,7 +50,7 @@ func getChartType(chartType string) gensql.ChartType {
 	}
 }
 
-func descriptiveMessageForFieldError(fieldError validator.FieldError) string {
+func descriptiveMessageForChartError(fieldError validator.FieldError) string {
 	switch fieldError.Tag() {
 	case "required":
 		return fmt.Sprintf("%v er et påkrevd felt", fieldError.Field())
@@ -125,12 +125,11 @@ func (c *client) setupChartRoutes() {
 			var validationErrorse validator.ValidationErrors
 			if errors.As(err, &validationErrorse) {
 				for _, fieldError := range validationErrorse {
-					session.AddFlash(descriptiveMessageForFieldError(fieldError))
+					session.AddFlash(descriptiveMessageForChartError(fieldError))
 				}
 			} else {
 				session.AddFlash(err.Error())
 			}
-
 			err := session.Save()
 			if err != nil {
 				c.log.WithError(err).Error("problem saving session")
@@ -228,7 +227,7 @@ func (c *client) setupChartRoutes() {
 			var validationErrorse validator.ValidationErrors
 			if errors.As(err, &validationErrorse) {
 				for _, fieldError := range validationErrorse {
-					session.AddFlash(descriptiveMessageForFieldError(fieldError))
+					session.AddFlash(descriptiveMessageForChartError(fieldError))
 				}
 			} else {
 				session.AddFlash(err.Error())

@@ -91,8 +91,16 @@ func (c *client) setupTeamRoutes() {
 		err := c.newTeam(ctx)
 		if err != nil {
 			c.log.WithError(err).Info("create team")
+
 			session := sessions.Default(ctx)
-			session.AddFlash(err.Error())
+			var validationErrorse validator.ValidationErrors
+			if errors.As(err, &validationErrorse) {
+				for _, fieldError := range validationErrorse {
+					session.AddFlash(descriptiveMessageForTeamError(fieldError))
+				}
+			} else {
+				session.AddFlash(err.Error())
+			}
 			err = session.Save()
 			if err != nil {
 				c.log.WithError(err).Error("problem saving session")
@@ -172,6 +180,24 @@ func (c *client) setupTeamRoutes() {
 		}
 		ctx.Redirect(http.StatusSeeOther, "/oversikt")
 	})
+}
+
+func descriptiveMessageForTeamError(fieldError validator.FieldError) string {
+	switch fieldError.Tag() {
+	case "required":
+		field := fieldError.Field()
+		if field == "Slug" {
+			field = "Teamnavn"
+		}
+
+		return fmt.Sprintf("%v er et påkrevd felt", field)
+	case "validEmail":
+		return fmt.Sprintf("'%v' er ikke en godkjent NAV-bruker", fieldError.Value())
+	case "validTeamName":
+		return "Teamnavn må være med små bokstaver og bindestrek"
+	default:
+		return fieldError.Error()
+	}
 }
 
 var ValidateTeamName validator.Func = func(fl validator.FieldLevel) bool {

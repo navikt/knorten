@@ -33,7 +33,7 @@
                     <tr class="navds-table__row navds-table__row--shade-on-hover">
                         <th class="navds-table__header-cell navds-label navds-label--small">
                             <a class="navds-link" target="_blank"
-                               href="https://console.cloud.google.com/compute/instancesDetail/zones/europe-west1-b/instances/{{ .Name }}?project={{ $.gcpProject }}">
+                               href="https://console.cloud.google.com/compute/instancesDetail/zones/{{ $.gcpZone }}/instances/{{ .Name }}?project={{ $.gcpProject }}">
                                 {{ .Name }}
                             </a>
                         </th>
@@ -58,9 +58,11 @@
                     <a class="navds-button--small navds-button--secondary" href="team/{{ .Slug }}/edit">Rediger</a>
                 </div>
                 {{ with .Airflow }}
-                    <a class="navds-link" target="_blank" href="{{ .Secret }}">Secret Manager</a>
+                    <a class="navds-link" target="_blank" href="https://console.cloud.google.com/security/secret-manager/secret/{{ .TeamID }}/versions?project={{ $.gcpProject }}">
+                        Secret Manager
+                    </a>
                     <p class="pb-4 flex items-center gap-2">
-                        <b>Service account:</b> <code class="text-base p-1 bg-gray-50">{{ .ServiceAccount }}</code>
+                        <b>Service account:</b> <code class="text-base p-1 bg-gray-50">{{ .TeamID }}@{{ $.gcpProject }}.iam.gserviceaccount.com</code>
                     </p>
                 {{ end }}
                 <label for="machine_types" class="navds-form-field__label navds-label">Apper</label>

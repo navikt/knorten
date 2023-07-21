@@ -97,13 +97,13 @@ func TestMain(m *testing.M) {
 		log.Fatalf("setting up knorten db: %v", err)
 	}
 
-	eventHandler, err := events.NewHandler(context.Background(), dbRepo, "", "", "", "", true, false, logger)
+	eventHandler, err := events.NewHandler(context.Background(), dbRepo, "", "", "", "", "", true, false, logger)
 	if err != nil {
 		log.Fatalf("creating googleClient: %v", err)
 	}
 	eventHandler.Run()
 
-	srv, err := api.New(dbRepo, true, "", "", " ", "", "", "nada@nav.no", "session", logrus.NewEntry(logrus.StandardLogger()))
+	srv, err := api.New(dbRepo, true, "", "", " ", "", "", "nada@nav.no", "", "", logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatalf("creating api: %v", err)
 	}

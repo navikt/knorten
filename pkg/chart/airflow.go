@@ -85,7 +85,7 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 
 	bucketName := fmt.Sprintf("airflow-logs-%v", team.ID)
 
-	values, err := mergeAirflowValues(bucketName, team, configurableValues)
+	values, err := c.mergeAirflowValues(bucketName, team, configurableValues)
 	if err != nil {
 		return err
 	}
@@ -136,12 +136,12 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string) error {
 		return err
 	}
 
-	if err := removeSQLClientIAMBinding(ctx, c.gcpProject, teamID); err != nil {
+	if err := removeSQLClientIAMBinding(c.gcpProject, teamID); err != nil {
 		return err
 	}
 
 	instanceName := createAirflowcloudSQLInstanceName(teamID)
-	if err := deleteCloudSQLInstance(ctx, instanceName, c.gcpProject); err != nil {
+	if err := deleteCloudSQLInstance(instanceName, c.gcpProject); err != nil {
 		return err
 	}
 
@@ -152,18 +152,18 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string) error {
 	return nil
 }
 
-func mergeAirflowValues(bucketName string, team gensql.TeamGetRow, configurableValues AirflowConfigurableValues) (AirflowValues, error) {
+func (c Client) mergeAirflowValues(bucketName string, team gensql.TeamGetRow, configurableValues AirflowConfigurableValues) (AirflowValues, error) {
 	fernetKey, err := generateFernetKey()
 	if err != nil {
 		return AirflowValues{}, err
 	}
 
-	extraEnvs, err := generateAirflowExtraEnvs(bucketName, team.ID)
+	extraEnvs, err := c.generateAirflowExtraEnvs(bucketName, team.ID)
 	if err != nil {
 		return AirflowValues{}, err
 	}
 
-	webserverEnv, err := generateAirflowWebServerEnvs(team.Users, configurableValues.ApiAccess)
+	webserverEnv, err := c.generateAirflowWebServerEnvs(team.Users, configurableValues.ApiAccess)
 	if err != nil {
 		return AirflowValues{}, err
 	}
@@ -193,7 +193,7 @@ type airflowEnv struct {
 	Value string `json:"value"`
 }
 
-func generateAirflowWebServerEnvs(users []string, apiAccess bool) (string, error) {
+func (Client) generateAirflowWebServerEnvs(users []string, apiAccess bool) (string, error) {
 	envs := []airflowEnv{
 		{
 			Name:  "AIRFLOW_USERS",
@@ -217,11 +217,11 @@ func generateAirflowWebServerEnvs(users []string, apiAccess bool) (string, error
 	return string(envBytes), nil
 }
 
-func generateAirflowExtraEnvs(bucketName, teamID string) (string, error) {
+func (c Client) generateAirflowExtraEnvs(bucketName, teamID string) (string, error) {
 	userEnvs := []airflowEnv{
 		{
 			Name:  "KNADA_TEAM_SECRET",
-			Value: fmt.Sprintf("projects/knada-gcp/secrets/%v", teamID),
+			Value: fmt.Sprintf("projects/%v/secrets/%v", c.gcpProject, teamID),
 		},
 		{
 			Name:  "TEAM",
@@ -273,15 +273,15 @@ func (c Client) createAirflowDatabase(ctx context.Context, teamID, dbPassword st
 		return err
 	}
 
-	if err := createCloudSQLDatabase(ctx, teamID, dbInstance, c.gcpProject); err != nil {
+	if err := createCloudSQLDatabase(teamID, dbInstance, c.gcpProject); err != nil {
 		return err
 	}
 
-	if err := createOrUpdateCloudSQLUser(ctx, teamID, dbPassword, dbInstance, c.gcpProject); err != nil {
+	if err := createOrUpdateCloudSQLUser(teamID, dbPassword, dbInstance, c.gcpProject); err != nil {
 		return err
 	}
 
-	if err := setSQLClientIAMBinding(ctx, teamID, c.gcpProject); err != nil {
+	if err := setSQLClientIAMBinding(teamID, c.gcpProject); err != nil {
 		return err
 	}
 

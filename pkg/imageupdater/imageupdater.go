@@ -92,7 +92,7 @@ type garImage struct {
 }
 
 func getLatestImageInGAR(image, tagsFilter string) (*garImage, error) {
-	listCmd := exec.Command(
+	cmd := exec.Command(
 		"gcloud",
 		"artifacts",
 		"docker",
@@ -105,13 +105,13 @@ func getLatestImageInGAR(image, tagsFilter string) (*garImage, error) {
 		"--format=json")
 
 	if tagsFilter != "" {
-		listCmd.Args = append(listCmd.Args, fmt.Sprintf("--filter=TAGS:%v", tagsFilter))
+		cmd.Args = append(cmd.Args, fmt.Sprintf("--filter=TAGS:%v", tagsFilter))
 	}
 
 	buf := &bytes.Buffer{}
-	listCmd.Stdout = buf
-	listCmd.Stderr = os.Stderr
-	if err := listCmd.Run(); err != nil {
+	cmd.Stdout = buf
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
 		io.Copy(os.Stdout, buf)
 		return nil, err
 	}

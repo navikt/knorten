@@ -3,15 +3,11 @@ package compute
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
-)
-
-const (
-	computeZone = "europe-west1-b"
+	"strings"
 )
 
 func (c Client) createComputeInstanceInGCP(ctx context.Context, name, email string) error {
@@ -31,10 +27,11 @@ func (c Client) createComputeInstanceInGCP(ctx context.Context, name, email stri
 			"instances",
 			"create",
 			name,
-			fmt.Sprintf("--zone=%v", computeZone),
-			fmt.Sprintf("--machine-type=%v", "n2-standard-2"),
-			fmt.Sprintf("--network-interface=%v", "network=knada-vpc,subnet=knada,no-address"),
-			fmt.Sprintf("--labels=created-by=knorten,user=%v", email),
+			"--project", c.gcpProject,
+			"--zone", c.gcpZone,
+			"--machine-type", "n2-standard-2",
+			"--network-interface", "network=knada-vpc,subnet=knada,no-address",
+			fmt.Sprintf("--labels=created-by=knorten,user=%v", normalizeEmailToName(email)),
 			"--metadata=block-project-ssh-keys=TRUE",
 			"--no-service-account",
 			"--no-scopes",
@@ -63,7 +60,7 @@ func (c Client) computeInstanceExistsInGCP(name string) (bool, error) {
 		"instances",
 		"list",
 		"--format=get(name)",
-		fmt.Sprintf("--project=%v", c.gcpProject),
+		"--project", c.gcpProject,
 		fmt.Sprintf("--filter=name=%v", name))
 
 	buf := &bytes.Buffer{}
@@ -74,15 +71,10 @@ func (c Client) computeInstanceExistsInGCP(name string) (bool, error) {
 		return false, err
 	}
 
-	var instances []string
-	if err := json.Unmarshal(buf.Bytes(), &instances); err != nil {
-		return false, err
-	}
-
-	return len(instances) > 0, nil
+	return buf.String() != "", nil
 }
 
-func (c Client) addGCPOwnerBinding(ctx context.Context, instance, user string) error {
+func (c Client) addGCPOwnerBinding(ctx context.Context, instanceName, user string) error {
 	if c.dryRun {
 		return nil
 	}
@@ -93,10 +85,11 @@ func (c Client) addGCPOwnerBinding(ctx context.Context, instance, user string) e
 		"compute",
 		"instances",
 		"add-iam-policy-binding",
-		instance,
+		instanceName,
+		"--zone", c.gcpZone,
+		"--project", c.gcpProject,
 		fmt.Sprintf("--role=%v", "roles/owner"),
 		fmt.Sprintf("--member=user:%v", user),
-		fmt.Sprintf("--zone=%v", computeZone),
 	)
 
 	buf := &bytes.Buffer{}
@@ -110,7 +103,7 @@ func (c Client) addGCPOwnerBinding(ctx context.Context, instance, user string) e
 	return nil
 }
 
-func (c Client) deleteComputeInstanceFromGCP(ctx context.Context, instance string) error {
+func (c Client) deleteComputeInstanceFromGCP(ctx context.Context, instanceName string) error {
 	if c.dryRun {
 		return nil
 	}
@@ -121,8 +114,11 @@ func (c Client) deleteComputeInstanceFromGCP(ctx context.Context, instance strin
 		"compute",
 		"instances",
 		"delete",
-		instance,
-		fmt.Sprintf("--zone=%v", computeZone),
+		"--delete-disks=all",
+		"--quiet",
+		instanceName,
+		"--zone", c.gcpZone,
+		"--project", c.gcpProject,
 	)
 
 	buf := &bytes.Buffer{}
@@ -134,4 +130,9 @@ func (c Client) deleteComputeInstanceFromGCP(ctx context.Context, instance strin
 	}
 
 	return nil
+}
+
+func normalizeEmailToName(email string) string {
+	name, _ := strings.CutSuffix(email, "@nav.no")
+	return strings.ReplaceAll(name, ".", "_")
 }

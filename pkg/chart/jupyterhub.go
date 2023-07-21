@@ -58,7 +58,7 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfi
 		return err
 	}
 
-	values := jupyterMergeValues(team, configurableValues)
+	values := c.jupyterMergeValues(team, configurableValues)
 
 	chartValues, err := reflect.CreateChartValues(values)
 	if err != nil {
@@ -100,7 +100,7 @@ func jupyterReleaseName(namespace string) string {
 	return fmt.Sprintf("%v-%v", string(gensql.ChartTypeJupyterhub), namespace)
 }
 
-func jupyterMergeValues(team gensql.TeamGetRow, configurableValues JupyterConfigurableValues) jupyterValues {
+func (c Client) jupyterMergeValues(team gensql.TeamGetRow, configurableValues JupyterConfigurableValues) jupyterValues {
 	var profileList string
 	if configurableValues.ImageName != "" {
 		profileList = fmt.Sprintf(`{"display_name":"Custom image","description":"Custom image for team %v","kubespawner_override":{"image":"%v:%v"}}`,
@@ -123,7 +123,7 @@ func jupyterMergeValues(team gensql.TeamGetRow, configurableValues JupyterConfig
 		Hosts:                     fmt.Sprintf(`["%v"]`, team.Slug+".jupyter.knada.io"),
 		IngressTLS:                fmt.Sprintf(`[{"hosts":["%v"], "secretName": "%v"}`, team.Slug+".jupyter.knada.io", "jupyterhub-certificate"),
 		OAuthCallbackURL:          fmt.Sprintf("https://%v.jupyter.knada.io/hub/oauth_callback", team.Slug),
-		KnadaTeamSecret:           fmt.Sprintf("projects/knada-gcp/secrets/%v", team.ID),
+		KnadaTeamSecret:           fmt.Sprintf("projects/%v/secrets/%v", c.gcpProject, team.ID),
 		ProfileList:               profileList,
 		ExtraAnnotations:          allowList,
 	}

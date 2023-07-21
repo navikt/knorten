@@ -65,7 +65,6 @@ func (c Client) createSAWorkloadIdentityBinding(ctx context.Context, email, team
 	namespace := k8s.TeamIDToNamespace(teamID)
 	bindings := policy.Bindings
 	if !c.updateRoleBindingIfExists(bindings, "roles/iam.workloadIdentityUser", namespace, teamID) {
-		// Add role binding if not exists
 		bindings = append(bindings, &iamv1.Binding{
 			Members: []string{fmt.Sprintf("serviceAccount:%v.svc.id.goog[%v/%v]", c.gcpProject, namespace, teamID)},
 			Role:    "roles/iam.workloadIdentityUser",
@@ -115,7 +114,7 @@ func (c Client) createSecret(ctx context.Context, slug, teamID string) (*secretm
 					UserManaged: &secretmanagerpb.Replication_UserManaged{
 						Replicas: []*secretmanagerpb.Replication_UserManaged_Replica{
 							{
-								Location: "europe-west1",
+								Location: c.gcpRegion,
 							},
 						},
 					},

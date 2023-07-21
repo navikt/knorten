@@ -27,6 +27,7 @@ local-online:
 	  --oauth2-tenant-id=$(AZURE_APP_TENANT_ID) \
 	  --project=nada-dev-db2e \
 	  --region=europe-west1 \
+	  --zone=europe-west1-b \
 	  --airflow-chart-version=1.10.0 \
 	  --jupyter-chart-version=2.0.0 \
 	  --in-cluster=false \
@@ -45,6 +46,7 @@ local:
 	  --in-cluster=false \
 	  --project=nada-dev-db2e \
 	  --region=europe-west1 \
+	  --zone=europe-west1-b \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
 	  --admin-group=nada@nav.no \
 	  --session-key offline-session

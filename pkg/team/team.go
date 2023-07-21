@@ -17,10 +17,11 @@ type Client struct {
 	repo       *database.Repo
 	k8sClient  *kubernetes.Clientset
 	gcpProject string
+	gcpRegion  string
 	dryRun     bool
 }
 
-func NewClient(repo *database.Repo, gcpProject string, dryRun, inCluster bool) (*Client, error) {
+func NewClient(repo *database.Repo, gcpProject, gcpRegion string, dryRun, inCluster bool) (*Client, error) {
 	k8sClient, err := k8s.CreateClientset(inCluster)
 	if err != nil {
 		return nil, err
@@ -30,6 +31,7 @@ func NewClient(repo *database.Repo, gcpProject string, dryRun, inCluster bool) (
 		repo:       repo,
 		k8sClient:  k8sClient,
 		gcpProject: gcpProject,
+		gcpRegion:  gcpRegion,
 		dryRun:     dryRun,
 	}, nil
 }

@@ -11,13 +11,15 @@ import (
 type Client struct {
 	repo       *database.Repo
 	gcpProject string
+	gcpZone    string
 	dryRun     bool
 }
 
-func NewClient(repo *database.Repo, gcpProject string, dryRun bool) *Client {
+func NewClient(repo *database.Repo, gcpProject, gcpZone string, dryRun bool) *Client {
 	return &Client{
 		repo:       repo,
 		gcpProject: gcpProject,
+		gcpZone:    gcpZone,
 		dryRun:     dryRun,
 	}
 }

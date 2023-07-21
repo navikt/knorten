@@ -9,7 +9,7 @@
             </p>
             <p class="flex items-center gap-4 pb-4">
                 <a class="navds-link" target="_blank"
-                   href="https://console.cloud.google.com/compute/instancesDetail/zones/europe-west1-b/instances/{{ .name }}?project=knada-gcp">
+                   href="https://console.cloud.google.com/compute/instancesDetail/zones/{{ .gcpZone }}/instances/{{ .name }}?project={{ .gcpProject }}">
                     Gå til din compute instance i Google Cloud Console.
                 </a>
             </p>

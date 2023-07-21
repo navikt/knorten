@@ -23,9 +23,10 @@ type client struct {
 	dryRun          bool
 	adminGroupID    string
 	gcpProject      string
+	gcpZone         string
 }
 
-func New(repo *database.Repo, dryRun bool, clientID, clientSecret, tenantID, hostname, sessionKey, adminGroupEmail, gcpProject string, log *logrus.Entry) (*gin.Engine, error) {
+func New(repo *database.Repo, dryRun bool, clientID, clientSecret, tenantID, hostname, sessionKey, adminGroupEmail, gcpProject, gcpZone string, log *logrus.Entry) (*gin.Engine, error) {
 	adminClient := admin.New(repo)
 
 	router := gin.New()
@@ -43,6 +44,7 @@ func New(repo *database.Repo, dryRun bool, clientID, clientSecret, tenantID, hos
 		log:         log,
 		dryRun:      dryRun,
 		gcpProject:  gcpProject,
+		gcpZone:     gcpZone,
 	}
 
 	session, err := repo.NewSessionStore(sessionKey)

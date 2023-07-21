@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/compute"
 	"github.com/nais/knorten/pkg/database"
@@ -100,24 +99,14 @@ func (e EventHandler) processWork(event gensql.Event, form any, logger logger.Lo
 
 	var err error
 	if retry {
-		err = e.setEventStatus(event.ID, gensql.EventStatusPending)
+		err = e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusPending)
 	} else {
-		err = e.setEventStatus(event.ID, gensql.EventStatusCompleted)
+		err = e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusCompleted)
 	}
 
 	if err != nil {
 		e.log.WithError(err).Error("can't set status for event")
-		return
 	}
-}
-
-func (e EventHandler) setEventStatus(id uuid.UUID, status gensql.EventStatus) error {
-	err := e.repo.EventSetStatus(e.context, id, status)
-	if err != nil {
-		e.log.Errorf("can't change status to %v for event(%v): %v", status, id, err)
-	}
-
-	return nil
 }
 
 func NewHandler(ctx context.Context, repo *database.Repo, gcpProject, gcpRegion, airflowChartVersion, jupyterChartVersion string, dryRun, inCluster bool, log *logrus.Entry) (EventHandler, error) {
@@ -182,10 +171,10 @@ func (e EventHandler) Run() {
 					eventLogger.log.Infof("Dispatching event '%v'", event.EventType)
 					event := event
 					go func() {
-						err := worker(e.context, event, eventLogger)
+						err = worker(e.context, event, eventLogger)
 						if err != nil {
 							eventLogger.log.WithError(err).Errorf("retrieved event with invalid param: %v", err)
-							err = e.setEventStatus(event.ID, gensql.EventStatusFailed)
+							err = e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusFailed)
 							if err != nil {
 								eventLogger.log.WithError(err).Error("can't set status for event")
 							}

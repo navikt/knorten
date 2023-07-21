@@ -48,6 +48,14 @@ func (e EventLogger) Errorf(template string, arg ...any) {
 	}
 }
 
+func (e EventLogger) WithField(key string, value interface{}) *logrus.Entry {
+	return e.log.WithFields(logrus.Fields{key: value})
+}
+
+func (e EventLogger) WithError(err error) *logrus.Entry {
+	return e.log.WithField(logrus.ErrorKey, err)
+}
+
 func newEventLogger(ctx context.Context, log *logrus.Entry, repo *database.Repo, event gensql.Event) EventLogger {
 	return EventLogger{
 		eventID: event.ID,

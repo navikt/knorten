@@ -67,12 +67,15 @@ func (e EventHandler) deleteEvent(event gensql.Event, logger logger.Logger) erro
 		return err
 	}
 
-	e.processWork(event, teamID, logger)
-
-	return nil
+	return e.processWork(event, teamID, logger)
 }
 
-func (e EventHandler) processWork(event gensql.Event, form any, logger logger.Logger) {
+func (e EventHandler) processWork(event gensql.Event, form any, logger logger.Logger) error {
+	err := e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusProcessing)
+	if err != nil {
+		return err
+	}
+
 	var retry bool
 	switch event.EventType {
 	case gensql.EventTypeCreateTeam:
@@ -97,20 +100,15 @@ func (e EventHandler) processWork(event gensql.Event, form any, logger logger.Lo
 		retry = e.chartClient.DeleteJupyter(e.context, form.(string), logger)
 	}
 
-	var err error
 	if retry {
-		err = e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusPending)
-	} else {
-		err = e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusCompleted)
+		return e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusPending)
 	}
 
-	if err != nil {
-		e.log.WithError(err).Error("can't set status for event")
-	}
+	return e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusCompleted)
 }
 
-func NewHandler(ctx context.Context, repo *database.Repo, gcpProject, gcpRegion, airflowChartVersion, jupyterChartVersion string, dryRun, inCluster bool, log *logrus.Entry) (EventHandler, error) {
-	teamClient, err := team.NewClient(repo, gcpProject, dryRun, inCluster)
+func NewHandler(ctx context.Context, repo *database.Repo, gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion string, dryRun, inCluster bool, log *logrus.Entry) (EventHandler, error) {
+	teamClient, err := team.NewClient(repo, gcpProject, gcpRegion, dryRun, inCluster)
 	if err != nil {
 		return EventHandler{}, err
 	}
@@ -125,7 +123,7 @@ func NewHandler(ctx context.Context, repo *database.Repo, gcpProject, gcpRegion,
 		log:           log,
 		context:       ctx,
 		teamClient:    teamClient,
-		computeClient: compute.NewClient(repo, gcpProject, dryRun),
+		computeClient: compute.NewClient(repo, gcpProject, gcpZone, dryRun),
 		chartClient:   chartClient,
 	}, nil
 }
@@ -173,7 +171,7 @@ func (e EventHandler) Run() {
 					go func() {
 						err = worker(e.context, event, eventLogger)
 						if err != nil {
-							eventLogger.log.WithError(err).Errorf("retrieved event with invalid param: %v", err)
+							eventLogger.log.WithError(err).Error("failed processing event")
 							err = e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusFailed)
 							if err != nil {
 								eventLogger.log.WithError(err).Error("can't set status for event")

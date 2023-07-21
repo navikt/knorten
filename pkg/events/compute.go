@@ -14,7 +14,5 @@ func (e EventHandler) createCompute(event gensql.Event, logger logger.Logger) er
 		return err
 	}
 
-	e.processWork(event, form, logger)
-
-	return nil
+	return e.processWork(event, form, logger)
 }

@@ -8,16 +8,14 @@ import (
 	"github.com/nais/knorten/pkg/logger"
 )
 
-func (e EventHandler) createAirflow(event gensql.Event, logger logger.Logger) error {
+func (e EventHandler) airflowEvent(event gensql.Event, logger logger.Logger) error {
 	var values chart.AirflowConfigurableValues
 	err := json.Unmarshal(event.Task, &values)
 	if err != nil {
 		return err
 	}
 
-	e.processWork(event, values, logger)
-
-	return nil
+	return e.processWork(event, values, logger)
 }
 
 func (e EventHandler) jupyterEvent(event gensql.Event, logger logger.Logger) error {
@@ -27,7 +25,5 @@ func (e EventHandler) jupyterEvent(event gensql.Event, logger logger.Logger) err
 		return err
 	}
 
-	e.processWork(event, values, logger)
-
-	return nil
+	return e.processWork(event, values, logger)
 }

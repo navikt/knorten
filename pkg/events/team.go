@@ -14,9 +14,7 @@ func (e EventHandler) createTeam(event gensql.Event, logger logger.Logger) error
 		return err
 	}
 
-	e.processWork(event, form, logger)
-
-	return nil
+	return e.processWork(event, form, logger)
 }
 
 func (e EventHandler) updateTeam(event gensql.Event, logger logger.Logger) error {
@@ -26,7 +24,5 @@ func (e EventHandler) updateTeam(event gensql.Event, logger logger.Logger) error
 		return err
 	}
 
-	e.processWork(event, form, logger)
-
-	return nil
+	return e.processWork(event, form, logger)
 }

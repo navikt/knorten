@@ -47,11 +47,6 @@ func (e EventLogger) Errorf(template string, arg ...any) {
 	if err != nil {
 		e.log.WithError(err).Errorf("can't extend the deadline for event")
 	}
-
-	err = e.repo.EventSetStatus(e.context, e.eventID, gensql.EventStatusPending)
-	if err != nil {
-		e.log.WithError(err).Errorf("can't set status to %v for event", gensql.EventStatusPending)
-	}
 }
 
 func (e EventLogger) WithField(key string, value interface{}) *logrus.Entry {

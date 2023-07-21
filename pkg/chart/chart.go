@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/nais/knorten/pkg/database"
+	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/helm"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/logger"
@@ -41,6 +42,23 @@ func NewClient(repo *database.Repo, dryRun, inCluster bool, airflowChartVersion,
 	}, nil
 }
 
+func (c Client) UpdateJupyter(ctx context.Context, values JupyterConfigurableValues, log logger.Logger) bool {
+	log.WithField("team", values.Slug).WithField("chart", "jupyter").Info("Updating Jupyter")
+	apps, err := c.repo.AppsForTeamGet(ctx, values.Slug)
+	if err != nil {
+		log.WithField("team", values.Slug).WithField("chart", "jupyter").WithError(err).Error("failed getting apps for team")
+		return true
+	}
+
+	for _, app := range apps {
+		if app == string(gensql.ChartTypeJupyterhub) {
+			return c.SyncJupyter(ctx, values, log)
+		}
+	}
+
+	return false
+}
+
 func (c Client) SyncJupyter(ctx context.Context, values JupyterConfigurableValues, log logger.Logger) bool {
 	log = log.WithField("team", values.Slug).WithField("chart", "jupyter")
 	log.Info("Syncing Jupyter")
@@ -64,6 +82,23 @@ func (c Client) DeleteJupyter(ctx context.Context, teamID string, log logger.Log
 	}
 
 	log.Info("Successfully deleted Jupyter")
+	return false
+}
+
+func (c Client) UpdateAirflow(ctx context.Context, values AirflowConfigurableValues, log logger.Logger) bool {
+	log.WithField("team", values.Slug).WithField("chart", "jupyter").Info("Updating Airflow")
+	apps, err := c.repo.AppsForTeamGet(ctx, values.Slug)
+	if err != nil {
+		log.WithField("team", values.Slug).WithField("chart", "airflow").WithError(err).Error("failed getting apps for team")
+		return true
+	}
+
+	for _, app := range apps {
+		if app == string(gensql.ChartTypeAirflow) {
+			return c.SyncAirflow(ctx, values, log)
+		}
+	}
+
 	return false
 }
 

@@ -33,7 +33,7 @@ func New(repo *database.Repo, dryRun bool, clientID, clientSecret, tenantID, hos
 
 	router.Use(gin.Recovery())
 	router.Use(func(ctx *gin.Context) {
-		log.Infof("[GIN] %v %v %v", ctx.Request.Method, ctx.Request.URL.Path, ctx.Writer.Status())
+		log.WithField("subsystem", "gin").Infof("%v %v %v", ctx.Request.Method, ctx.Request.URL.Path, ctx.Writer.Status())
 	})
 
 	api := client{

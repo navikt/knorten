@@ -35,7 +35,7 @@ func (c *client) setupComputeRoutes() {
 	})
 
 	c.router.GET("/compute/edit", func(ctx *gin.Context) {
-		instance, err := c.editComputeInstace(ctx)
+		user, err := getUser(ctx)
 		if err != nil {
 			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
@@ -50,7 +50,7 @@ func (c *client) setupComputeRoutes() {
 		}
 
 		c.htmlResponseWrapper(ctx, http.StatusOK, "compute/edit", gin.H{
-			"name": instance.Name,
+			"name": "compute-" + getNormalizedNameFromEmail(user.Email),
 		})
 	})
 
@@ -82,15 +82,6 @@ func (c *client) deleteComputeInstance(ctx *gin.Context) error {
 	return c.repo.RegisterDeleteComputeEvent(ctx, user.Email)
 }
 
-func (c *client) editComputeInstace(ctx *gin.Context) (gensql.ComputeInstance, error) {
-	user, err := getUser(ctx)
-	if err != nil {
-		return gensql.ComputeInstance{}, err
-	}
-
-	return c.repo.ComputeInstanceGet(ctx, user.Email)
-}
-
 func (c *client) createComputeInstance(ctx *gin.Context) error {
 	user, err := getUser(ctx)
 	if err != nil {
@@ -99,7 +90,7 @@ func (c *client) createComputeInstance(ctx *gin.Context) error {
 
 	instance := gensql.ComputeInstance{
 		Email: user.Email,
-		Name:  "compute-" + getNameFromEmail(user.Email),
+		Name:  "compute-" + getNormalizedNameFromEmail(user.Email),
 	}
 
 	return c.repo.RegisterCreateComputeEvent(ctx, instance)
@@ -116,7 +107,7 @@ func getUser(ctx *gin.Context) (*auth.User, error) {
 	return user, nil
 }
 
-func getNameFromEmail(name string) string {
+func getNormalizedNameFromEmail(name string) string {
 	name = strings.Split(name, "@")[0]
 	name = strings.Replace(name, ".", "-", -1)
 	return strings.ToLower(name)

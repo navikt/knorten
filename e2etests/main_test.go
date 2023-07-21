@@ -103,7 +103,7 @@ func TestMain(m *testing.M) {
 	}
 	eventHandler.Run()
 
-	srv, err := api.New(dbRepo, true, "", "", " ", "", "nada@nav.no", "session", logrus.NewEntry(logrus.StandardLogger()))
+	srv, err := api.New(dbRepo, true, "", "", " ", "", "", "nada@nav.no", "session", logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatalf("creating api: %v", err)
 	}

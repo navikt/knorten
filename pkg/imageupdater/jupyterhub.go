@@ -28,13 +28,13 @@ func (c *client) updateJupyterhubImages(ctx context.Context) error {
 		return err
 	}
 
-	profiles := []*profile{}
+	var profiles []*profile
 	if err := json.Unmarshal([]byte(profilesDB.Value), &profiles); err != nil {
 		c.log.WithError(err).Error("unmarshalling profiles")
 		return err
 	}
 
-	profilesStatus := []bool{}
+	var profilesStatus []bool
 	for _, p := range profiles {
 		updated, err := updateIfNeeded(p)
 		if err != nil {

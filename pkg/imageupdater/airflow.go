@@ -2,6 +2,7 @@ package imageupdater
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/nais/knorten/pkg/database/gensql"
 )
@@ -17,12 +18,12 @@ const (
 func (c *client) updateAirflowImages(ctx context.Context) error {
 	baseUpdated, err := c.updateAirflowBaseImage(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("updating airflow base image: %w", err)
 	}
 
 	workerUpdated, err := c.updateAirflowWorkerDefaultImage(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("updating airflow worker default image: %w", err)
 	}
 
 	if baseUpdated || workerUpdated {

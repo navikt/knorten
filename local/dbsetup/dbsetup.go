@@ -64,6 +64,11 @@ func SetupDB(ctx context.Context, dbURL, dbname string) error {
 		{"airflow", "scheduler.extraInitContainers", `[{"name":"dummy","image":"navikt/dummy:aaa15ba","args":["","","/dags","60"]}]`},
 		{"airflow", "webserver.extraContainers", `[{"name":"dummy","image":"navikt/dummy:aaa15ba","args":["","","/dags","60"]}]`},
 		{"airflow", "workers.extraInitContainers", `[{"name":"dummy","image":"navikt/dummy:aaa15ba","args":["","","/dags","60"]}]`},
+		{"airflow", "images.airflow.repository", "europe-west1-docker.pkg.dev/knada-gcp/knada/airflow"},
+		{"airflow", "images.airflow.tag", "latest"},
+		{"airflow", "config.kubernetes_executor.worker_container_repository", "europe-west1-docker.pkg.dev/knada-gcp/knada/airflow"},
+		{"airflow", "config.kubernetes_executor.worker_container_tag", "latest"},
+		{"jupyterhub", "singleuser.profileList", "[{\"display_name\":\"default\",\"description\":\"Default profile\",\"kubespawner_override\":{\"image\":\"europe-west1-docker.pkg.dev/knada-gcp/knada/jupyter:2023-07-17-0bd2ea4-3.9\"}}]"},
 	}
 	_, err = db.CopyFrom(ctx,
 		pgx.Identifier{"chart_global_values"},

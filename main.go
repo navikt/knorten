@@ -11,6 +11,7 @@ import (
 	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/events"
+	"github.com/nais/knorten/pkg/helm"
 	"github.com/nais/knorten/pkg/imageupdater"
 	"github.com/sirupsen/logrus"
 )
@@ -66,6 +67,10 @@ func main() {
 	if !cfg.DryRun {
 		imageUpdater := imageupdater.NewClient(dbClient, log.WithField("subsystem", "imageupdater"))
 		go imageUpdater.Run(imageUpdaterFrequency)
+
+		if err := helm.UpdateHelmRepositories(); err != nil {
+			log.WithError(err).Fatal("updating helm repositories")
+		}
 	}
 
 	eventHandler, err := events.NewHandler(context.Background(), dbClient, cfg.GCPProject, cfg.GCPRegion, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.DryRun, cfg.InCluster, log.WithField("subsystem", "events"))

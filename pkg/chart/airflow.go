@@ -11,7 +11,6 @@ import (
 
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/helm"
-	helmApps "github.com/nais/knorten/pkg/helm/applications"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/reflect"
 )
@@ -116,13 +115,7 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 		return err
 	}
 
-	application := helmApps.NewAirflow(team.ID, c.repo, c.chartVersionAirflow)
-	charty, err := application.Chart(ctx)
-	if err != nil {
-		return err
-	}
-
-	return helm.InstallOrUpgrade(string(gensql.ChartTypeAirflow), c.chartVersionJupyter, namespace, charty.Values)
+	return helm.InstallOrUpgrade(ctx, string(gensql.ChartTypeAirflow), namespace, team.ID, "airflow", "apache-airflow", c.chartVersionAirflow, gensql.ChartTypeAirflow, c.repo)
 }
 
 func (c Client) deleteAirflow(ctx context.Context, teamID string) error {

@@ -7,7 +7,6 @@ import (
 
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/helm"
-	helmApps "github.com/nais/knorten/pkg/helm/applications"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/reflect"
 )
@@ -71,15 +70,9 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfi
 		return err
 	}
 
-	application := helmApps.NewJupyterhub(team.ID, c.repo, c.chartVersionJupyter)
-	charty, err := application.Chart(ctx)
-	if err != nil {
-		return err
-	}
-
 	namespace := k8s.TeamIDToNamespace(team.ID)
 	releaseName := jupyterReleaseName(namespace)
-	return helm.InstallOrUpgrade(releaseName, c.chartVersionJupyter, namespace, charty.Values)
+	return helm.InstallOrUpgrade(ctx, releaseName, namespace, team.ID, "jupyterhub", "jupyterhub", c.chartVersionJupyter, gensql.ChartTypeJupyterhub, c.repo)
 }
 
 func (c Client) deleteJupyter(ctx context.Context, teamID string) error {

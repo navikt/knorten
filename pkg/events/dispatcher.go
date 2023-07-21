@@ -172,7 +172,7 @@ func (e EventHandler) Run() {
 					eventLogger.log.Infof("Dispatching event '%v'", event.EventType)
 					event := event
 					go func() {
-						err = worker(e.context, event, eventLogger)
+						err := worker(e.context, event, eventLogger)
 						if err != nil {
 							eventLogger.log.WithError(err).Error("failed processing event")
 							err = e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusFailed)

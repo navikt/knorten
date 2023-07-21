@@ -22,9 +22,10 @@ type client struct {
 	adminGroupEmail string
 	dryRun          bool
 	adminGroupID    string
+	gcpProject      string
 }
 
-func New(repo *database.Repo, dryRun bool, clientID, clientSecret, tenantID, hostname, sessionKey, adminGroupEmail string, log *logrus.Entry) (*gin.Engine, error) {
+func New(repo *database.Repo, dryRun bool, clientID, clientSecret, tenantID, hostname, sessionKey, adminGroupEmail, gcpProject string, log *logrus.Entry) (*gin.Engine, error) {
 	adminClient := admin.New(repo)
 
 	router := gin.New()
@@ -35,13 +36,13 @@ func New(repo *database.Repo, dryRun bool, clientID, clientSecret, tenantID, hos
 	})
 
 	api := client{
-		azureClient:     auth.NewAzureClient(dryRun, clientID, clientSecret, tenantID, hostname, log.WithField("subsystem", "auth")),
-		router:          router,
-		repo:            repo,
-		adminClient:     adminClient,
-		log:             log,
-		adminGroupEmail: adminGroupEmail,
-		dryRun:          dryRun,
+		azureClient: auth.NewAzureClient(dryRun, clientID, clientSecret, tenantID, hostname, log.WithField("subsystem", "auth")),
+		router:      router,
+		repo:        repo,
+		adminClient: adminClient,
+		log:         log,
+		dryRun:      dryRun,
+		gcpProject:  gcpProject,
 	}
 
 	session, err := repo.NewSessionStore(sessionKey)
@@ -57,7 +58,7 @@ func New(repo *database.Repo, dryRun bool, clientID, clientSecret, tenantID, hos
 	api.setupAuthenticatedRoutes()
 	api.router.Use(api.adminAuthMiddleware())
 	api.setupAdminRoutes()
-	err = api.fetchAdminGroupID()
+	err = api.fetchAdminGroupID(adminGroupEmail)
 	if err != nil {
 		return nil, err
 	}
@@ -144,8 +145,8 @@ func (c *client) isAdmin(ctx *gin.Context) bool {
 	return session.IsAdmin
 }
 
-func (c *client) fetchAdminGroupID() error {
-	id, err := c.azureClient.GetGroupID(c.adminGroupEmail)
+func (c *client) fetchAdminGroupID(adminGroupEmail string) error {
+	id, err := c.azureClient.GetGroupID(adminGroupEmail)
 	if err != nil {
 		return fmt.Errorf("retrieve admin group id error: %v", err)
 	}

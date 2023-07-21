@@ -70,7 +70,7 @@ func (r *Repo) AppDelete(ctx context.Context, teamID string, chartType gensql.Ch
 	})
 }
 
-func (r *Repo) ServicesForUser(ctx context.Context, email string) (UserServices, error) {
+func (r *Repo) ServicesForUser(ctx context.Context, email, gcpProject string) (UserServices, error) {
 	teamsForUser, err := r.querier.TeamsForUserGet(ctx, email)
 	if err != nil {
 		return UserServices{}, err
@@ -90,7 +90,7 @@ func (r *Repo) ServicesForUser(ctx context.Context, email string) (UserServices,
 		teamServices := TeamServices{
 			TeamID:         team.ID,
 			Slug:           team.Slug,
-			Secret:         fmt.Sprintf("https://console.cloud.google.com/security/secret-manager/secret/%v/versions?project=knada-gcp", team.ID),
+			Secret:         fmt.Sprintf("https://console.cloud.google.com/security/secret-manager/secret/%v/versions?project=%v", team.ID, gcpProject),
 			ServiceAccount: fmt.Sprintf("%v@knada-gcp.iam.gserviceaccount.com", team.ID),
 		}
 

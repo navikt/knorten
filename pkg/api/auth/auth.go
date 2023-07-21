@@ -80,7 +80,8 @@ func NewAzureClient(dryRun bool, clientID, clientSecret, tenantID, hostname stri
 	if dryRun {
 		log.Infof("NOOP: Running in dry run mode")
 		return &Azure{
-			dryRun: true,
+			dryRun: dryRun,
+			log:    log,
 		}
 	}
 

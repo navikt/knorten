@@ -26,11 +26,12 @@ func (c *client) setupUserRoutes() {
 		}
 
 		user = anyUser.(*auth.User)
-		services, err := c.repo.ServicesForUser(ctx, user.Email)
+		services, err := c.repo.ServicesForUser(ctx, user.Email, c.gcpProject)
 		c.htmlResponseWrapper(ctx, http.StatusOK, "oversikt/index", gin.H{
-			"errors":  err,
-			"flashes": flashes,
-			"user":    services,
+			"errors":     err,
+			"flashes":    flashes,
+			"user":       services,
+			"gcpProject": c.gcpProject,
 		})
 	})
 }

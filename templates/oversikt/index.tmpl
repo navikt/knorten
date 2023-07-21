@@ -33,7 +33,7 @@
                     <tr class="navds-table__row navds-table__row--shade-on-hover">
                         <th class="navds-table__header-cell navds-label navds-label--small">
                             <a class="navds-link" target="_blank"
-                               href="https://console.cloud.google.com/compute/instancesDetail/zones/europe-west1-b/instances/{{ .Name }}?project=knada-gcp">
+                               href="https://console.cloud.google.com/compute/instancesDetail/zones/europe-west1-b/instances/{{ .Name }}?project={{ $.gcpProject }}">
                                 {{ .Name }}
                             </a>
                         </th>
@@ -64,7 +64,7 @@
                     </p>
                 {{ end }}
                 <label for="machine_types" class="navds-form-field__label navds-label">Apper</label>
-                <table class="navds-table navds-table--small" name="Apper">
+                <table class="navds-table navds-table--small">
                     <thead class="navds-table__header">
                     <tr class="navds-table__row">
                         <th class="navds-table__header-cell navds-label navds-label--small">App</th>

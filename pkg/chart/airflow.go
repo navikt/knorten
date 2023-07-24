@@ -132,7 +132,7 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string) error {
 		return err
 	}
 
-	if err := c.deleteKubernetesSecret(ctx, k8sAirflowDatabaseSecretName, namespace); err != nil {
+	if err := c.deleteSecretFromKubernetes(ctx, k8sAirflowDatabaseSecretName, namespace); err != nil {
 		return err
 	}
 

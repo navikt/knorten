@@ -48,7 +48,7 @@ func (c Client) deleteCloudSQLProxyService(ctx context.Context, name, namespace 
 	return nil
 }
 
-func (c Client) deleteKubernetesSecret(ctx context.Context, name, namespace string) error {
+func (c Client) deleteSecretFromKubernetes(ctx context.Context, name, namespace string) error {
 	if c.dryRun {
 		return nil
 	}

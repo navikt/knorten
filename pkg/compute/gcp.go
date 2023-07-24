@@ -112,6 +112,15 @@ func (c Client) deleteComputeInstanceFromGCP(ctx context.Context, instanceName s
 		return nil
 	}
 
+	exists, err := c.computeInstanceExistsInGCP(instanceName)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return nil
+	}
+
 	cmd := exec.CommandContext(
 		ctx,
 		"gcloud",

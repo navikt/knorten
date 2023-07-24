@@ -53,17 +53,9 @@ func (c Client) Delete(ctx context.Context, email string, log logger.Logger) boo
 		return true
 	}
 
-	exists, err := c.computeInstanceExistsInGCP(instance.Name)
-	if err != nil {
-		log.WithError(err).Error("failed checking if compute instance exists in GCP")
+	if err := c.deleteComputeInstanceFromGCP(ctx, instance.Name); err != nil {
+		log.WithError(err).Error("failed deleting compute instance from GCP")
 		return true
-	}
-
-	if exists {
-		if err := c.deleteComputeInstanceFromGCP(ctx, instance.Name); err != nil {
-			log.WithError(err).Error("failed deleting compute instance from GCP")
-			return true
-		}
 	}
 
 	if err = c.repo.ComputeInstanceDelete(ctx, email); err != nil {

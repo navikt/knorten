@@ -319,7 +319,7 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 			Memory:      form.Memory,
 			ImageName:   form.ImageName,
 			ImageTag:    form.ImageTag,
-			CullTimeout: cullTimeout,
+			CullTimeout: strconv.FormatUint(cullTimeout, 10),
 		}
 
 		return c.repo.RegisterCreateJupyterEvent(ctx, values)
@@ -368,11 +368,6 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 			return err
 		}
 
-		cullTimeout, err := strconv.ParseUint(form.CullTimeout, 10, 64)
-		if err != nil {
-			return err
-		}
-
 		team, err := c.repo.TeamGet(ctx, teamSlug)
 		if err != nil {
 			return err
@@ -400,7 +395,7 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 			Memory:      memory,
 			ImageName:   form.ImageName,
 			ImageTag:    form.ImageTag,
-			CullTimeout: cullTimeout,
+			CullTimeout: form.CullTimeout,
 		}
 
 		return c.repo.RegisterUpdateJupyterEvent(ctx, values)

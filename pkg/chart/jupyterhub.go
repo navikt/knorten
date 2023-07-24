@@ -20,7 +20,7 @@ type JupyterConfigurableValues struct {
 	Memory      string
 	ImageName   string `helm:"singleuser.image.name"`
 	ImageTag    string `helm:"singleuser.image.tag"`
-	CullTimeout uint64 `helm:"cull.timeout"`
+	CullTimeout string `helm:"cull.timeout"`
 	AllowList   []string
 }
 

@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
-	"os"
 	"os/exec"
 	"time"
 
@@ -21,17 +19,16 @@ func removeSQLClientIAMBinding(gcpProject, teamID string) error {
 		"projects",
 		"remove-iam-policy-binding",
 		gcpProject,
-		"--member",
+		fmt.Sprintf("--member=serviceAccount:%v@%v.iam.gserviceaccount.com", teamID, gcpProject),
 		"--role=roles/cloudsql.client",
-		"--condition=None",
-		fmt.Sprintf("serviceAccount:%v@%v.iam.gserviceaccount.com", teamID, gcpProject))
+		"--condition=None")
 
-	buf := &bytes.Buffer{}
-	cmd.Stdout = buf
-	cmd.Stderr = os.Stderr
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
 	if err := cmd.Run(); err != nil {
-		io.Copy(os.Stdout, buf)
-		return err
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
 	}
 
 	return nil
@@ -109,11 +106,12 @@ func deleteCloudSQLInstance(instanceName, gcpProject string) error {
 	if err != nil {
 		return err
 	}
+
 	if !exisits {
 		return nil
 	}
 
-	deleteCmd := exec.Command(
+	cmd := exec.Command(
 		"gcloud",
 		"sql",
 		"instances",
@@ -121,18 +119,18 @@ func deleteCloudSQLInstance(instanceName, gcpProject string) error {
 		instanceName,
 		"--project", gcpProject)
 
-	buf := &bytes.Buffer{}
-	deleteCmd.Stdout = buf
-	deleteCmd.Stderr = os.Stderr
-	if err := deleteCmd.Run(); err != nil {
-		io.Copy(os.Stdout, buf)
-		return err
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
 	}
 
 	return nil
 }
 
-func createCloudSQLInstance(ctx context.Context, dbInstance, gcpProject, gcpRegion string) error {
+func createCloudSQLInstance(dbInstance, gcpProject, gcpRegion string) error {
 	exists, err := sqlInstanceExistsInGCP(dbInstance, gcpProject)
 	if err != nil {
 		return err
@@ -142,9 +140,7 @@ func createCloudSQLInstance(ctx context.Context, dbInstance, gcpProject, gcpRegi
 		return nil
 	}
 
-	ctxWithTimeout, cancel := context.WithTimeout(ctx, 25*time.Minute)
-	cmd := exec.CommandContext(
-		ctxWithTimeout,
+	cmd := exec.Command(
 		"gcloud",
 		"sql",
 		"instances",
@@ -159,16 +155,14 @@ func createCloudSQLInstance(ctx context.Context, dbInstance, gcpProject, gcpRegi
 		"--backup",
 		"--backup-start-time=02:00")
 
-	buf := &bytes.Buffer{}
-	cmd.Stdout = buf
-	cmd.Stderr = os.Stderr
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
 	if err := cmd.Run(); err != nil {
-		io.Copy(os.Stdout, buf)
-		cancel()
-		return err
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
 	}
 
-	cancel()
 	return nil
 }
 
@@ -191,12 +185,12 @@ func createCloudSQLDatabase(dbName, dbInstance, gcpProject string) error {
 		"--instance", dbInstance,
 		"--project", gcpProject)
 
-	buf := &bytes.Buffer{}
-	cmd.Stdout = buf
-	cmd.Stderr = os.Stderr
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
 	if err := cmd.Run(); err != nil {
-		io.Copy(os.Stdout, buf)
-		return err
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
 	}
 
 	return nil
@@ -226,12 +220,12 @@ func createSQLUser(user, password, dbInstance, gcpProject string) error {
 		"--instance", dbInstance,
 		"--project", gcpProject)
 
-	buf := &bytes.Buffer{}
-	cmd.Stdout = buf
-	cmd.Stderr = os.Stderr
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
 	if err := cmd.Run(); err != nil {
-		io.Copy(os.Stdout, buf)
-		return err
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
 	}
 
 	return nil
@@ -248,12 +242,12 @@ func setSQLClientIAMBinding(teamID, gcpProject string) error {
 		"--condition=None",
 		fmt.Sprintf("serviceAccount:%v@%v.iam.gserviceaccount.com", teamID, gcpProject))
 
-	buf := &bytes.Buffer{}
-	cmd.Stdout = buf
-	cmd.Stderr = os.Stderr
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
 	if err := cmd.Run(); err != nil {
-		io.Copy(os.Stdout, buf)
-		return err
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
 	}
 
 	return nil
@@ -269,15 +263,15 @@ func sqlInstanceExistsInGCP(instanceName, gcpProject string) (bool, error) {
 		"--project", gcpProject,
 		fmt.Sprintf("--filter=name=%v", instanceName))
 
-	buf := &bytes.Buffer{}
-	cmd.Stdout = buf
-	cmd.Stderr = os.Stderr
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
 	if err := cmd.Run(); err != nil {
-		io.Copy(os.Stdout, buf)
-		return false, err
+		return false, fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
 	}
 
-	return buf.String() != "", nil
+	return stdOut.String() != "", nil
 }
 
 func sqlDatabaseExistsInGCP(dbInstance, gcpProject, sqlDatabase string) (bool, error) {
@@ -291,15 +285,15 @@ func sqlDatabaseExistsInGCP(dbInstance, gcpProject, sqlDatabase string) (bool, e
 		"--project", gcpProject,
 		fmt.Sprintf("--filter=name=%v", sqlDatabase))
 
-	buf := &bytes.Buffer{}
-	cmd.Stdout = buf
-	cmd.Stderr = os.Stderr
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
 	if err := cmd.Run(); err != nil {
-		io.Copy(os.Stdout, buf)
-		return false, err
+		return false, fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
 	}
 
-	return buf.String() != "", nil
+	return stdOut.String() != "", nil
 }
 
 func sqlUserExistsInGCP(dbInstance, gcpProject, sqlUser string) (bool, error) {
@@ -313,15 +307,15 @@ func sqlUserExistsInGCP(dbInstance, gcpProject, sqlUser string) (bool, error) {
 		"--project", gcpProject,
 		fmt.Sprintf("--filter=name=%v", sqlUser))
 
-	buf := &bytes.Buffer{}
-	cmd.Stdout = buf
-	cmd.Stderr = os.Stderr
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
 	if err := cmd.Run(); err != nil {
-		io.Copy(os.Stdout, buf)
-		return false, err
+		return false, fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
 	}
 
-	return buf.String() != "", nil
+	return stdOut.String() != "", nil
 }
 
 func updateSQLUser(user, password, dbInstance, gcpProject string) error {
@@ -335,12 +329,12 @@ func updateSQLUser(user, password, dbInstance, gcpProject string) error {
 		"--project", gcpProject,
 		"--password", password)
 
-	buf := &bytes.Buffer{}
-	cmd.Stdout = buf
-	cmd.Stderr = os.Stderr
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
 	if err := cmd.Run(); err != nil {
-		io.Copy(os.Stdout, buf)
-		return err
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
 	}
 
 	return nil

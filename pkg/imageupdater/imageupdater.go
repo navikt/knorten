@@ -5,8 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"os"
 	"os/exec"
 	"time"
 
@@ -108,16 +106,16 @@ func getLatestImageInGAR(image, tagsFilter string) (*garImage, error) {
 		cmd.Args = append(cmd.Args, fmt.Sprintf("--filter=TAGS:%v", tagsFilter))
 	}
 
-	buf := &bytes.Buffer{}
-	cmd.Stdout = buf
-	cmd.Stderr = os.Stderr
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
 	if err := cmd.Run(); err != nil {
-		io.Copy(os.Stdout, buf)
-		return nil, err
+		return nil, fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
 	}
 
 	var images []*garImage
-	if err := json.Unmarshal(buf.Bytes(), &images); err != nil {
+	if err := json.Unmarshal(stdOut.Bytes(), &images); err != nil {
 		return nil, err
 	}
 

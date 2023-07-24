@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
-	"os"
 	"os/exec"
 	"strings"
 )
@@ -19,31 +17,34 @@ func (c Client) createComputeInstanceInGCP(ctx context.Context, name, email stri
 	if err != nil {
 		return err
 	}
-	if !exists {
-		cmd := exec.CommandContext(
-			ctx,
-			"gcloud",
-			"compute",
-			"instances",
-			"create",
-			name,
-			"--project", c.gcpProject,
-			"--zone", c.gcpZone,
-			"--machine-type", "n2-standard-2",
-			"--network-interface", "network=knada-vpc,subnet=knada,no-address",
-			fmt.Sprintf("--labels=created-by=knorten,user=%v", normalizeEmailToName(email)),
-			"--metadata=block-project-ssh-keys=TRUE",
-			"--no-service-account",
-			"--no-scopes",
-		)
 
-		buf := &bytes.Buffer{}
-		cmd.Stdout = buf
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			io.Copy(os.Stdout, buf)
-			return err
-		}
+	if exists {
+		return nil
+	}
+
+	cmd := exec.CommandContext(
+		ctx,
+		"gcloud",
+		"compute",
+		"instances",
+		"create",
+		name,
+		"--project", c.gcpProject,
+		"--zone", c.gcpZone,
+		"--machine-type", "n2-standard-2",
+		"--network-interface", "network=knada-vpc,subnet=knada,no-address",
+		fmt.Sprintf("--labels=created-by=knorten,user=%v", normalizeEmailToName(email)),
+		"--metadata=block-project-ssh-keys=TRUE",
+		"--no-service-account",
+		"--no-scopes",
+	)
+
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
 	}
 
 	if err := c.addGCPOwnerBinding(ctx, name, email); err != nil {
@@ -54,24 +55,25 @@ func (c Client) createComputeInstanceInGCP(ctx context.Context, name, email stri
 }
 
 func (c Client) computeInstanceExistsInGCP(name string) (bool, error) {
-	listCmd := exec.Command(
+	cmd := exec.Command(
 		"gcloud",
 		"compute",
 		"instances",
 		"list",
+		"--quiet",
 		"--format=get(name)",
 		"--project", c.gcpProject,
 		fmt.Sprintf("--filter=name=%v", name))
 
-	buf := &bytes.Buffer{}
-	listCmd.Stdout = buf
-	listCmd.Stderr = os.Stderr
-	if err := listCmd.Run(); err != nil {
-		io.Copy(os.Stdout, buf)
-		return false, err
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	if err := cmd.Run(); err != nil {
+		return false, fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
 	}
 
-	return buf.String() != "", nil
+	return stdOut.String() != "", nil
 }
 
 func (c Client) addGCPOwnerBinding(ctx context.Context, instanceName, user string) error {
@@ -79,7 +81,7 @@ func (c Client) addGCPOwnerBinding(ctx context.Context, instanceName, user strin
 		return nil
 	}
 
-	addCmd := exec.CommandContext(
+	cmd := exec.CommandContext(
 		ctx,
 		"gcloud",
 		"compute",
@@ -92,12 +94,12 @@ func (c Client) addGCPOwnerBinding(ctx context.Context, instanceName, user strin
 		fmt.Sprintf("--member=user:%v", user),
 	)
 
-	buf := &bytes.Buffer{}
-	addCmd.Stdout = buf
-	addCmd.Stderr = os.Stderr
-	if err := addCmd.Run(); err != nil {
-		io.Copy(os.Stdout, buf)
-		return err
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
 	}
 
 	return nil
@@ -121,12 +123,12 @@ func (c Client) deleteComputeInstanceFromGCP(ctx context.Context, instanceName s
 		"--project", c.gcpProject,
 	)
 
-	buf := &bytes.Buffer{}
-	cmd.Stdout = buf
-	cmd.Stderr = os.Stderr
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
 	if err := cmd.Run(); err != nil {
-		io.Copy(os.Stdout, buf)
-		return err
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
 	}
 
 	return nil

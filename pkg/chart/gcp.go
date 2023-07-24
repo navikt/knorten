@@ -5,35 +5,15 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/iam"
 	"cloud.google.com/go/storage"
 	gErrors "github.com/googleapis/gax-go/v2/apierror"
 	"google.golang.org/grpc/codes"
+	"k8s.io/utils/strings/slices"
 )
-
-func removeSQLClientIAMBinding(gcpProject, teamID string) error {
-	cmd := exec.Command(
-		"gcloud",
-		"--quiet",
-		"projects",
-		"remove-iam-policy-binding",
-		gcpProject,
-		fmt.Sprintf("--member=serviceAccount:%v@%v.iam.gserviceaccount.com", teamID, gcpProject),
-		"--role=roles/cloudsql.client",
-		"--condition=None")
-
-	stdOut := &bytes.Buffer{}
-	stdErr := &bytes.Buffer{}
-	cmd.Stdout = stdOut
-	cmd.Stderr = stdErr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
-	}
-
-	return nil
-}
 
 func createBucket(ctx context.Context, teamID, bucketName, gcpProject, gcpRegion string) error {
 	client, err := storage.NewClient(ctx)
@@ -97,6 +77,39 @@ func createServiceAccountObjectAdminBinding(ctx context.Context, teamID, bucketN
 	policy.Add(sa, role)
 	if err := handle.SetPolicy(ctx, policy); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func removeSQLClientIAMBinding(gcpProject, teamID string) error {
+	role := "roles/cloudsql.client"
+	exists, err := roleBindingExistsInGCP(gcpProject, teamID, role)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return nil
+	}
+
+	cmd := exec.Command(
+		"gcloud",
+		"--quiet",
+		"projects",
+		"remove-iam-policy-binding",
+		gcpProject,
+		fmt.Sprintf("--member=serviceAccount:%v@%v.iam.gserviceaccount.com", teamID, gcpProject),
+		"--role",
+		role,
+		"--condition=None")
+
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
 	}
 
 	return nil
@@ -213,6 +226,29 @@ func createOrUpdateCloudSQLUser(user, password, dbInstance, gcpProject string) e
 	return createSQLUser(user, password, dbInstance, gcpProject)
 }
 
+func updateSQLUser(user, password, dbInstance, gcpProject string) error {
+	cmd := exec.Command(
+		"gcloud",
+		"--quiet",
+		"sql",
+		"users",
+		"set-password",
+		user,
+		"--instance", dbInstance,
+		"--project", gcpProject,
+		"--password", password)
+
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	}
+
+	return nil
+}
+
 func createSQLUser(user, password, dbInstance, gcpProject string) error {
 	cmd := exec.Command(
 		"gcloud",
@@ -327,25 +363,25 @@ func sqlUserExistsInGCP(dbInstance, gcpProject, sqlUser string) (bool, error) {
 	return stdOut.String() != "", nil
 }
 
-func updateSQLUser(user, password, dbInstance, gcpProject string) error {
+func roleBindingExistsInGCP(gcpProject, teamID, role string) (bool, error) {
 	cmd := exec.Command(
 		"gcloud",
 		"--quiet",
-		"sql",
-		"users",
-		"set-password",
-		user,
-		"--instance", dbInstance,
-		"--project", gcpProject,
-		"--password", password)
+		"projects",
+		"get-iam-policy",
+		gcpProject,
+		"--format=get(bindings.role)",
+		"--flatten=bindings[].members",
+		fmt.Sprintf("--filter=bindings.members:%v@%v.iam.gserviceaccount.com", teamID, gcpProject))
 
 	stdOut := &bytes.Buffer{}
 	stdErr := &bytes.Buffer{}
 	cmd.Stdout = stdOut
 	cmd.Stderr = stdErr
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+		return false, fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
 	}
 
-	return nil
+	roles := strings.Split(stdOut.String(), "\n")
+	return slices.Contains(roles, role), nil
 }

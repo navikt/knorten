@@ -121,7 +121,7 @@ func (c Client) jupyterMergeValues(team gensql.TeamGetRow, configurableValues Ju
 		AdminUsers:                configurableValues.UserIdents,
 		AllowedUsers:              configurableValues.UserIdents,
 		Hosts:                     fmt.Sprintf(`["%v"]`, team.Slug+".jupyter.knada.io"),
-		IngressTLS:                fmt.Sprintf(`[{"hosts":["%v"], "secretName": "%v"}`, team.Slug+".jupyter.knada.io", "jupyterhub-certificate"),
+		IngressTLS:                fmt.Sprintf(`[{"hosts":["%v"], "secretName": "%v"}]`, team.Slug+".jupyter.knada.io", "jupyterhub-certificate"),
 		OAuthCallbackURL:          fmt.Sprintf("https://%v.jupyter.knada.io/hub/oauth_callback", team.Slug),
 		KnadaTeamSecret:           fmt.Sprintf("projects/%v/secrets/%v", c.gcpProject, team.ID),
 		ProfileList:               profileList,

@@ -16,7 +16,7 @@ const (
 	enableKnetpoller  = "knetpoller-enabled"
 )
 
-func (c Client) deleteCloudSQLProxy(ctx context.Context, namespace string) error {
+func (c Client) deleteCloudSQLProxyFromKubernetes(ctx context.Context, namespace string) error {
 	if c.dryRun {
 		return nil
 	}
@@ -48,7 +48,7 @@ func (c Client) deleteCloudSQLProxyService(ctx context.Context, name, namespace 
 	return nil
 }
 
-func (c Client) deleteSecret(ctx context.Context, name, namespace string) error {
+func (c Client) deleteKubernetesSecret(ctx context.Context, name, namespace string) error {
 	if c.dryRun {
 		return nil
 	}

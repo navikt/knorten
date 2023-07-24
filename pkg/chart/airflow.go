@@ -128,11 +128,11 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string) error {
 		return err
 	}
 
-	if err := c.deleteCloudSQLProxy(ctx, namespace); err != nil {
+	if err := c.deleteCloudSQLProxyFromKubernetes(ctx, namespace); err != nil {
 		return err
 	}
 
-	if err := c.deleteSecret(ctx, k8sAirflowDatabaseSecretName, namespace); err != nil {
+	if err := c.deleteKubernetesSecret(ctx, k8sAirflowDatabaseSecretName, namespace); err != nil {
 		return err
 	}
 

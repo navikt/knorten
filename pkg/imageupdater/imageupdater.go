@@ -92,6 +92,7 @@ type garImage struct {
 func getLatestImageInGAR(image, tagsFilter string) (*garImage, error) {
 	cmd := exec.Command(
 		"gcloud",
+		"--quiet",
 		"artifacts",
 		"docker",
 		"images",

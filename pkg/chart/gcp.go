@@ -16,6 +16,7 @@ import (
 func removeSQLClientIAMBinding(gcpProject, teamID string) error {
 	cmd := exec.Command(
 		"gcloud",
+		"--quiet",
 		"projects",
 		"remove-iam-policy-binding",
 		gcpProject,
@@ -113,6 +114,7 @@ func deleteCloudSQLInstance(instanceName, gcpProject string) error {
 
 	cmd := exec.Command(
 		"gcloud",
+		"--quiet",
 		"sql",
 		"instances",
 		"delete",
@@ -142,6 +144,7 @@ func createCloudSQLInstance(dbInstance, gcpProject, gcpRegion string) error {
 
 	cmd := exec.Command(
 		"gcloud",
+		"--quiet",
 		"sql",
 		"instances",
 		"create",
@@ -178,6 +181,7 @@ func createCloudSQLDatabase(dbName, dbInstance, gcpProject string) error {
 
 	cmd := exec.Command(
 		"gcloud",
+		"--quiet",
 		"sql",
 		"databases",
 		"create",
@@ -212,6 +216,7 @@ func createOrUpdateCloudSQLUser(user, password, dbInstance, gcpProject string) e
 func createSQLUser(user, password, dbInstance, gcpProject string) error {
 	cmd := exec.Command(
 		"gcloud",
+		"--quiet",
 		"sql",
 		"users",
 		"create",
@@ -234,6 +239,7 @@ func createSQLUser(user, password, dbInstance, gcpProject string) error {
 func setSQLClientIAMBinding(teamID, gcpProject string) error {
 	cmd := exec.Command(
 		"gcloud",
+		"--quiet",
 		"projects",
 		"add-iam-policy-binding",
 		gcpProject,
@@ -256,6 +262,7 @@ func setSQLClientIAMBinding(teamID, gcpProject string) error {
 func sqlInstanceExistsInGCP(instanceName, gcpProject string) (bool, error) {
 	cmd := exec.Command(
 		"gcloud",
+		"--quiet",
 		"sql",
 		"instances",
 		"list",
@@ -277,6 +284,7 @@ func sqlInstanceExistsInGCP(instanceName, gcpProject string) (bool, error) {
 func sqlDatabaseExistsInGCP(dbInstance, gcpProject, sqlDatabase string) (bool, error) {
 	cmd := exec.Command(
 		"gcloud",
+		"--quiet",
 		"sql",
 		"databases",
 		"list",
@@ -299,6 +307,7 @@ func sqlDatabaseExistsInGCP(dbInstance, gcpProject, sqlDatabase string) (bool, e
 func sqlUserExistsInGCP(dbInstance, gcpProject, sqlUser string) (bool, error) {
 	cmd := exec.Command(
 		"gcloud",
+		"--quiet",
 		"sql",
 		"users",
 		"list",
@@ -321,6 +330,7 @@ func sqlUserExistsInGCP(dbInstance, gcpProject, sqlUser string) (bool, error) {
 func updateSQLUser(user, password, dbInstance, gcpProject string) error {
 	cmd := exec.Command(
 		"gcloud",
+		"--quiet",
 		"sql",
 		"users",
 		"set-password",

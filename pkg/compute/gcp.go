@@ -25,6 +25,7 @@ func (c Client) createComputeInstanceInGCP(ctx context.Context, name, email stri
 	cmd := exec.CommandContext(
 		ctx,
 		"gcloud",
+		"--quiet",
 		"compute",
 		"instances",
 		"create",
@@ -57,10 +58,10 @@ func (c Client) createComputeInstanceInGCP(ctx context.Context, name, email stri
 func (c Client) computeInstanceExistsInGCP(name string) (bool, error) {
 	cmd := exec.Command(
 		"gcloud",
+		"--quiet",
 		"compute",
 		"instances",
 		"list",
-		"--quiet",
 		"--format=get(name)",
 		"--project", c.gcpProject,
 		fmt.Sprintf("--filter=name=%v", name))
@@ -84,6 +85,7 @@ func (c Client) addGCPOwnerBinding(ctx context.Context, instanceName, user strin
 	cmd := exec.CommandContext(
 		ctx,
 		"gcloud",
+		"--quiet",
 		"compute",
 		"instances",
 		"add-iam-policy-binding",
@@ -113,11 +115,11 @@ func (c Client) deleteComputeInstanceFromGCP(ctx context.Context, instanceName s
 	cmd := exec.CommandContext(
 		ctx,
 		"gcloud",
+		"--quiet",
 		"compute",
 		"instances",
 		"delete",
 		"--delete-disks=all",
-		"--quiet",
 		instanceName,
 		"--zone", c.gcpZone,
 		"--project", c.gcpProject,

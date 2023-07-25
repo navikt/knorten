@@ -58,10 +58,6 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 		return err
 	}
 
-	if team.PendingAirflowUpgrade {
-		return fmt.Errorf("pending airflow install")
-	}
-
 	if err := c.restrictAirflowEgress(ctx, configurableValues.RestrictEgress, team.ID); err != nil {
 		return err
 	}

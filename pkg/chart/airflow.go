@@ -22,7 +22,7 @@ const (
 )
 
 type AirflowConfigurableValues struct {
-	Slug           string
+	TeamID         string
 	DagRepo        string `helm:"webserver.extraContainers.[0].args.[0]"`
 	DagRepoBranch  string `helm:"webserver.extraContainers.[0].args.[1]"`
 	ApiAccess      bool
@@ -53,7 +53,7 @@ type AirflowValues struct {
 }
 
 func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfigurableValues) error {
-	team, err := c.repo.TeamGet(ctx, configurableValues.Slug)
+	team, err := c.repo.TeamGet(ctx, configurableValues.TeamID)
 	if err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func (c Client) mergeAirflowValues(bucketName string, team gensql.TeamGetRow, co
 	}
 
 	return AirflowValues{
-		IngressHosts:               fmt.Sprintf("[{\"name\":\"%v\",\"tls\":{\"enabled\":true,\"secretName\":\"%v\"}}]", configurableValues.Slug+".airflow.knada.io", "airflow-certificate"),
+		IngressHosts:               fmt.Sprintf("[{\"name\":\"%v\",\"tls\":{\"enabled\":true,\"secretName\":\"%v\"}}]", team.Slug+".airflow.knada.io", "airflow-certificate"),
 		WebserverServiceAccount:    team.ID,
 		WorkerServiceAccount:       team.ID,
 		MetadataSecretName:         k8sAirflowDatabaseSecretName,

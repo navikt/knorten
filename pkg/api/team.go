@@ -35,6 +35,7 @@ func formToTeam(ctx *gin.Context) (gensql.Team, error) {
 	}
 
 	return gensql.Team{
+		ID:        createTeamID(form.Slug),
 		Slug:      form.Slug,
 		Users:     form.Users,
 		ApiAccess: form.APIAccess == "on",
@@ -112,18 +113,18 @@ func (c *client) setupTeamRoutes() {
 		ctx.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 
-	c.router.GET("/team/:team/edit", func(ctx *gin.Context) {
-		teamName := ctx.Param("team")
-		team, err := c.repo.TeamGet(ctx, teamName)
+	c.router.GET("/team/:slug/edit", func(ctx *gin.Context) {
+		teamSlug := ctx.Param("slug")
+		team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				ctx.JSON(http.StatusNotFound, map[string]string{
 					"status":  strconv.Itoa(http.StatusNotFound),
-					"message": fmt.Sprintf("team %v does not exist", teamName),
+					"message": fmt.Sprintf("team %v does not exist", teamSlug),
 				})
 				return
 			}
-			c.log.WithError(err).Errorf("problem getting team %v", teamName)
+			c.log.WithError(err).Errorf("problem getting team %v", teamSlug)
 			ctx.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
@@ -146,7 +147,7 @@ func (c *client) setupTeamRoutes() {
 		})
 	})
 
-	c.router.POST("/team/:team/edit", func(ctx *gin.Context) {
+	c.router.POST("/team/:slug/edit", func(ctx *gin.Context) {
 		err := c.editTeam(ctx)
 		if err != nil {
 			c.log.WithError(err).Info("update team")
@@ -157,16 +158,17 @@ func (c *client) setupTeamRoutes() {
 				c.log.WithError(err).Error("problem saving session")
 				return
 			}
-			teamName := ctx.Param("team")
-			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/edit", teamName))
+
+			teamSlug := ctx.Param("slug")
+			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/edit", teamSlug))
 			return
 		}
 		ctx.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 
-	c.router.POST("/team/:team/delete", func(ctx *gin.Context) {
-		teamName := ctx.Param("team")
-		err := c.repo.RegisterDeleteTeamEvent(ctx, teamName)
+	c.router.POST("/team/:slug/delete", func(ctx *gin.Context) {
+		teamSlug := ctx.Param("slug")
+		err := c.repo.RegisterDeleteTeamEvent(ctx, teamSlug)
 		if err != nil {
 			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
@@ -249,7 +251,6 @@ func (c *client) newTeam(ctx *gin.Context) error {
 		return err
 	}
 
-	team.ID = createTeamID(team.Slug)
 	return c.repo.RegisterCreateTeamEvent(ctx, team)
 }
 
@@ -259,7 +260,7 @@ func (c *client) editTeam(ctx *gin.Context) error {
 		return err
 	}
 
-	existingTeam, err := c.repo.TeamGet(ctx, team.Slug)
+	existingTeam, err := c.repo.TeamBySlugGet(ctx, team.Slug)
 	if err != nil {
 		return err
 	}

@@ -72,7 +72,7 @@ func TestTeamsAPI(t *testing.T) {
 			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
-		team, err := repo.TeamGet(ctx, testTeam)
+		team, err := repo.TeamBySlugGet(ctx, testTeam)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -112,7 +112,7 @@ func TestTeamsAPI(t *testing.T) {
 			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
-		team, err := repo.TeamGet(ctx, apiAccessTeam)
+		team, err := repo.TeamBySlugGet(ctx, apiAccessTeam)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -151,7 +151,7 @@ func TestTeamsAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		team, err := repo.TeamGet(ctx, testTeam)
+		team, err := repo.TeamBySlugGet(ctx, testTeam)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -206,7 +206,7 @@ func TestTeamsAPI(t *testing.T) {
 			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
-		team, err := repo.TeamGet(ctx, testTeam)
+		team, err := repo.TeamBySlugGet(ctx, testTeam)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -232,7 +232,7 @@ func TestTeamsAPI(t *testing.T) {
 			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
-		team, err := repo.TeamGet(ctx, testTeam)
+		team, err := repo.TeamBySlugGet(ctx, testTeam)
 		if err != nil {
 			if !errors.Is(err, sql.ErrNoRows) {
 				t.Fatal(err)
@@ -258,7 +258,7 @@ func TestTeamsAPI(t *testing.T) {
 			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
-		team, err := repo.TeamGet(ctx, testTeam)
+		team, err := repo.TeamBySlugGet(ctx, testTeam)
 		if err != nil {
 			if !errors.Is(err, sql.ErrNoRows) {
 				t.Fatal(err)

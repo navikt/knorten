@@ -191,7 +191,7 @@ func TestChartsAPI(t *testing.T) {
 			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
-		team, err := repo.TeamGet(ctx, testTeam)
+		team, err := repo.TeamBySlugGet(ctx, testTeam)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -280,7 +280,7 @@ func TestChartsAPI(t *testing.T) {
 			t.Fatal("chart values out differs from expected")
 		}
 
-		team, err := repo.TeamGet(ctx, testTeam)
+		team, err := repo.TeamBySlugGet(ctx, testTeam)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -376,7 +376,7 @@ func TestChartsAPI(t *testing.T) {
 			t.Fatal("chart values out differs from expected")
 		}
 
-		team, err := repo.TeamGet(ctx, testTeam)
+		team, err := repo.TeamBySlugGet(ctx, testTeam)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -400,7 +400,7 @@ func TestChartsAPI(t *testing.T) {
 			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
-		team, err := repo.TeamGet(ctx, testTeam)
+		team, err := repo.TeamBySlugGet(ctx, testTeam)
 		if err != nil {
 			t.Fatal(err)
 		}

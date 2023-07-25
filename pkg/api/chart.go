@@ -22,7 +22,7 @@ const (
 	jupyterhubAnnotationKey = "singleuser.extraAnnotations"
 )
 
-type JupyterForm struct {
+type jupyterForm struct {
 	CPU         string   `form:"cpu"`
 	Memory      string   `form:"memory"`
 	ImageName   string   `form:"imagename"`
@@ -31,7 +31,7 @@ type JupyterForm struct {
 	Allowlist   []string `form:"allowlist[]"`
 }
 
-func (v JupyterForm) MemoryWithoutUnit() string {
+func (v jupyterForm) MemoryWithoutUnit() string {
 	if v.Memory == "" {
 		return ""
 	}
@@ -39,8 +39,7 @@ func (v JupyterForm) MemoryWithoutUnit() string {
 	return v.Memory[:len(v.Memory)-1]
 }
 
-type AirflowForm struct {
-	Slug           string
+type airflowForm struct {
 	DagRepo        string `form:"dagrepo" binding:"required,startswith=navikt/,validAirflowRepo"`
 	DagRepoBranch  string `form:"dagrepobranch" binding:"validRepoBranch"`
 	ApiAccess      string `form:"apiaccess"`
@@ -86,16 +85,16 @@ func (c *client) setupChartRoutes() {
 		}
 	}
 
-	c.router.GET("/team/:team/:chart/new", func(ctx *gin.Context) {
-		team := ctx.Param("team")
+	c.router.GET("/team/:slug/:chart/new", func(ctx *gin.Context) {
+		slug := ctx.Param("slug")
 		chartType := getChartType(ctx.Param("chart"))
 
 		var form any
 		switch chartType {
 		case gensql.ChartTypeJupyterhub:
-			form = JupyterForm{}
+			form = jupyterForm{}
 		case gensql.ChartTypeAirflow:
-			form = AirflowForm{}
+			form = airflowForm{}
 		default:
 			ctx.JSON(http.StatusBadRequest, map[string]string{
 				"status":  strconv.Itoa(http.StatusBadRequest),
@@ -108,7 +107,7 @@ func (c *client) setupChartRoutes() {
 		flashes := session.Flashes()
 		err := session.Save()
 		if err != nil {
-			c.log.WithField("team", team).WithField("chart", chartType).WithError(err).Error("problem saving session")
+			c.log.WithField("team", slug).WithField("chart", chartType).WithError(err).Error("problem saving session")
 			ctx.JSON(http.StatusInternalServerError, map[string]string{
 				"status":  strconv.Itoa(http.StatusInternalServerError),
 				"message": "Internal server error",
@@ -117,18 +116,18 @@ func (c *client) setupChartRoutes() {
 		}
 
 		c.htmlResponseWrapper(ctx, http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
-			"team":   team,
+			"team":   slug,
 			"form":   form,
 			"errors": flashes,
 		})
 	})
 
-	c.router.POST("/team/:team/:chart/new", func(ctx *gin.Context) {
-		team := ctx.Param("team")
+	c.router.POST("/team/:slug/:chart/new", func(ctx *gin.Context) {
+		slug := ctx.Param("slug")
 		chartType := getChartType(ctx.Param("chart"))
-		log := c.log.WithField("team", team).WithField("chart", chartType)
+		log := c.log.WithField("team", slug).WithField("chart", chartType)
 
-		err := c.newChart(ctx, team, chartType)
+		err := c.newChart(ctx, slug, chartType)
 		if err != nil {
 			session := sessions.Default(ctx)
 			var validationErrorse validator.ValidationErrors
@@ -145,25 +144,25 @@ func (c *client) setupChartRoutes() {
 			err := session.Save()
 			if err != nil {
 				log.WithError(err).Error("problem saving session")
-				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/new", team, chartType))
+				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/new", slug, chartType))
 				return
 			}
 
-			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/new", team, chartType))
+			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/new", slug, chartType))
 			return
 		}
 
 		ctx.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 
-	c.router.GET("/team/:team/:chart/edit", func(ctx *gin.Context) {
-		team := ctx.Param("team")
+	c.router.GET("/team/:slug/:chart/edit", func(ctx *gin.Context) {
+		teamSlug := ctx.Param("slug")
 		chartType := getChartType(ctx.Param("chart"))
-		log := c.log.WithField("team", team).WithField("chart", chartType)
+		log := c.log.WithField("team", teamSlug).WithField("chart", chartType)
 
 		session := sessions.Default(ctx)
 
-		form, err := c.getEditChart(ctx, team, chartType)
+		form, err := c.getEditChart(ctx, teamSlug, chartType)
 		if err != nil {
 			var validationErrorse validator.ValidationErrors
 			if errors.As(err, &validationErrorse) {
@@ -194,18 +193,18 @@ func (c *client) setupChartRoutes() {
 		}
 
 		c.htmlResponseWrapper(ctx, http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
-			"team":   team,
+			"team":   teamSlug,
 			"values": form,
 			"errors": flashes,
 		})
 	})
 
-	c.router.POST("/team/:team/:chart/edit", func(ctx *gin.Context) {
-		team := ctx.Param("team")
+	c.router.POST("/team/:slug/:chart/edit", func(ctx *gin.Context) {
+		teamSlug := ctx.Param("slug")
 		chartType := getChartType(ctx.Param("chart"))
-		log := c.log.WithField("team", team).WithField("chart", chartType)
+		log := c.log.WithField("team", teamSlug).WithField("chart", chartType)
 
-		err := c.editChart(ctx, team, chartType)
+		err := c.editChart(ctx, teamSlug, chartType)
 		if err != nil {
 			session := sessions.Default(ctx)
 			var validationErrorse validator.ValidationErrors
@@ -222,26 +221,26 @@ func (c *client) setupChartRoutes() {
 			err := session.Save()
 			if err != nil {
 				log.WithError(err).Error("problem saving session")
-				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", team, chartType))
+				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", teamSlug, chartType))
 				return
 			}
 
-			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", team, chartType))
+			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", teamSlug, chartType))
 			return
 		}
 
 		ctx.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 
-	c.router.POST("/team/:team/:chart/delete", func(ctx *gin.Context) {
-		team := ctx.Param("team")
+	c.router.POST("/team/:slug/:chart/delete", func(ctx *gin.Context) {
+		teamSlug := ctx.Param("slug")
 		chartType := getChartType(ctx.Param("chart"))
-		log := c.log.WithField("team", team).WithField("chart", chartType)
+		log := c.log.WithField("team", teamSlug).WithField("chart", chartType)
 
-		err := c.deleteChart(ctx, team, chartType)
+		err := c.deleteChart(ctx, teamSlug, chartType)
 
 		if err != nil {
-			log.WithError(err).Errorf("problem deleting chart %v for team %v", chartType, team)
+			log.WithError(err).Errorf("problem deleting chart %v for team %v", chartType, teamSlug)
 			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
@@ -278,20 +277,20 @@ func (c *client) getExistingAllowlist(ctx context.Context, teamID string) ([]str
 }
 
 func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.ChartType) error {
+	team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
+	if err != nil {
+		return err
+	}
+
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
-		var form JupyterForm
+		var form jupyterForm
 		err := ctx.ShouldBindWith(&form, binding.Form)
 		if err != nil {
 			return err
 		}
 
 		cullTimeout, err := strconv.ParseUint(form.CullTimeout, 10, 64)
-		if err != nil {
-			return err
-		}
-
-		team, err := c.repo.TeamGet(ctx, teamSlug)
 		if err != nil {
 			return err
 		}
@@ -312,7 +311,7 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 		}
 
 		values := chart.JupyterConfigurableValues{
-			Slug:        teamSlug,
+			TeamID:      team.ID,
 			UserIdents:  userIdents,
 			CPU:         cpu,
 			Memory:      memory,
@@ -323,7 +322,7 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 
 		return c.repo.RegisterCreateJupyterEvent(ctx, values)
 	case gensql.ChartTypeAirflow:
-		var form AirflowForm
+		var form airflowForm
 		err := ctx.ShouldBindWith(&form, binding.Form)
 		if err != nil {
 			return err
@@ -335,7 +334,7 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 		}
 
 		values := chart.AirflowConfigurableValues{
-			Slug:           teamSlug,
+			TeamID:         team.ID,
 			DagRepo:        form.DagRepo,
 			DagRepoBranch:  dagRepoBranch,
 			ApiAccess:      form.ApiAccess == "on",
@@ -348,8 +347,8 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 	return fmt.Errorf("chart type %v is not supported", chartType)
 }
 
-func (c *client) getEditChart(ctx *gin.Context, slug string, chartType gensql.ChartType) (any, error) {
-	team, err := c.repo.TeamGet(ctx, slug)
+func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensql.ChartType) (any, error) {
+	team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -378,7 +377,7 @@ func (c *client) getEditChart(ctx *gin.Context, slug string, chartType gensql.Ch
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
 		jupyterhubValues := chartObjects.(*chart.JupyterConfigurableValues)
-		form = JupyterForm{
+		form = jupyterForm{
 			CPU:         jupyterhubValues.CPU,
 			Memory:      jupyterhubValues.Memory,
 			ImageName:   jupyterhubValues.ImageName,
@@ -388,7 +387,7 @@ func (c *client) getEditChart(ctx *gin.Context, slug string, chartType gensql.Ch
 		}
 	case gensql.ChartTypeAirflow:
 		airflowValues := chartObjects.(*chart.AirflowConfigurableValues)
-		form = AirflowForm{
+		form = airflowForm{
 			DagRepo:        airflowValues.DagRepo,
 			DagRepoBranch:  airflowValues.DagRepoBranch,
 			ApiAccess:      strconv.FormatBool(team.ApiAccess),
@@ -400,15 +399,15 @@ func (c *client) getEditChart(ctx *gin.Context, slug string, chartType gensql.Ch
 }
 
 func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.ChartType) error {
+	team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
+	if err != nil {
+		return err
+	}
+
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
-		var form JupyterForm
+		var form jupyterForm
 		err := ctx.ShouldBindWith(&form, binding.Form)
-		if err != nil {
-			return err
-		}
-
-		team, err := c.repo.TeamGet(ctx, teamSlug)
 		if err != nil {
 			return err
 		}
@@ -429,7 +428,7 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 		}
 
 		values := chart.JupyterConfigurableValues{
-			Slug:        teamSlug,
+			TeamID:      team.ID,
 			UserIdents:  userIdents,
 			CPU:         cpu,
 			Memory:      memory,
@@ -440,7 +439,7 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 
 		return c.repo.RegisterUpdateJupyterEvent(ctx, values)
 	case gensql.ChartTypeAirflow:
-		var form AirflowForm
+		var form airflowForm
 		err := ctx.ShouldBindWith(&form, binding.Form)
 		if err != nil {
 			return err
@@ -462,7 +461,7 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 		}
 
 		values := chart.AirflowConfigurableValues{
-			Slug:           teamSlug,
+			TeamID:         team.ID,
 			DagRepo:        form.DagRepo,
 			DagRepoBranch:  dagRepoBranch,
 			ApiAccess:      apiAccess,

@@ -58,7 +58,7 @@ func (c *client) triggerSync(ctx context.Context, chartType gensql.ChartType) er
 	}
 
 	for _, team := range teams {
-		err := c.syncChart(ctx, team[:len(team)-5], chartType)
+		err := c.syncChart(ctx, team, chartType)
 		if err != nil {
 			return err
 		}
@@ -67,16 +67,16 @@ func (c *client) triggerSync(ctx context.Context, chartType gensql.ChartType) er
 	return nil
 }
 
-func (c *client) syncChart(ctx context.Context, team string, chartType gensql.ChartType) error {
+func (c *client) syncChart(ctx context.Context, teamID string, chartType gensql.ChartType) error {
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
 		values := chart.JupyterConfigurableValues{
-			Slug: team,
+			TeamID: teamID,
 		}
 		return c.repo.RegisterUpdateJupyterEvent(ctx, values)
 	case gensql.ChartTypeAirflow:
 		values := chart.AirflowConfigurableValues{
-			Slug: team,
+			TeamID: teamID,
 		}
 		return c.repo.RegisterUpdateAirflowEvent(ctx, values)
 	}

@@ -12,7 +12,7 @@ import (
 )
 
 type JupyterConfigurableValues struct {
-	Slug       string
+	TeamID     string
 	UserIdents []string
 
 	// User-configurable values
@@ -46,7 +46,7 @@ type jupyterValues struct {
 // TODO: Trenger en sync som henter ut eksisterende verdier fra databasen
 
 func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfigurableValues) error {
-	team, err := c.repo.TeamGet(ctx, configurableValues.Slug)
+	team, err := c.repo.TeamGet(ctx, configurableValues.TeamID)
 	if err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func (c Client) jupyterMergeValues(team gensql.TeamGetRow, configurableValues Ju
 	var profileList string
 	if configurableValues.ImageName != "" {
 		profileList = fmt.Sprintf(`{"display_name":"Custom image","description":"Custom image for team %v","kubespawner_override":{"image":"%v:%v"}}`,
-			configurableValues.Slug, configurableValues.ImageName, configurableValues.ImageTag)
+			configurableValues.TeamID, configurableValues.ImageName, configurableValues.ImageTag)
 	}
 
 	var allowList string

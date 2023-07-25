@@ -81,7 +81,7 @@ func TestOverviewAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		team, err := repo.TeamGet(ctx, teamName)
+		team, err := repo.TeamBySlugGet(ctx, teamName)
 		if err != nil {
 			t.Fatal(err)
 		}

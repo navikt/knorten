@@ -14,7 +14,12 @@ FROM teams
 WHERE "owner" = @email OR @email::TEXT = ANY ("users");
 
 -- name: TeamGet :one
-SELECT id, "owner", users, slug, pending_jupyter_upgrade, pending_airflow_upgrade, api_access, restrict_airflow_egress
+SELECT id, "owner", ("owner" || users)::text[] as users, slug, pending_jupyter_upgrade, pending_airflow_upgrade, api_access, restrict_airflow_egress
+FROM teams
+WHERE id = @id;
+
+-- name: TeamBySlugGet :one
+SELECT id, "owner", ("owner" || users)::text[] as users, slug, api_access, restrict_airflow_egress
 FROM teams
 WHERE slug = @slug;
 

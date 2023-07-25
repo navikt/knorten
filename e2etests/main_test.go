@@ -146,7 +146,7 @@ func minimizeHTML(in string) (string, error) {
 }
 
 func replaceGeneratedValues(expected []byte, teamName string) ([]byte, error) {
-	team, err := repo.TeamGet(context.Background(), teamName)
+	team, err := repo.TeamBySlugGet(context.Background(), teamName)
 	if err != nil {
 		return nil, err
 	}

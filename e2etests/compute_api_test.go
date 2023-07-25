@@ -72,7 +72,7 @@ func TestComputeAPI(t *testing.T) {
 			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
-		team, err := repo.TeamGet(ctx, team.Slug)
+		team, err := repo.TeamBySlugGet(ctx, team.Slug)
 		if err != nil {
 			t.Fatal(err)
 		}

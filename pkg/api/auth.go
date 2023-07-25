@@ -243,7 +243,7 @@ func (c *client) authMiddleware() gin.HandlerFunc {
 
 		teamSlug := ctx.Param("team")
 		if teamSlug != "" {
-			team, err := c.repo.TeamGet(ctx, teamSlug)
+			team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
 			if err != nil {
 				c.log.WithError(err).Errorf("problem checking for authorization %v", user.Email)
 				ctx.Redirect(http.StatusSeeOther, "/")

@@ -40,7 +40,7 @@ func (c Client) Create(ctx context.Context, team gensql.Team, log logger.Logger)
 	log = log.WithField("team", team.Slug)
 	log.Infof("Creating team %v", team.ID)
 
-	existingTeam, err := c.repo.TeamGet(ctx, team.Slug)
+	existingTeam, err := c.repo.TeamBySlugGet(ctx, team.Slug)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.WithError(err).Error("failed retrieving team from database")
 		return true
@@ -93,7 +93,7 @@ func (c Client) Update(ctx context.Context, team gensql.Team, log logger.Logger)
 
 	log.Info("Trigger update of Jupyter")
 	jupyterValues := chart.JupyterConfigurableValues{
-		Slug: team.Slug,
+		TeamID: team.ID,
 	}
 	if err := c.repo.RegisterUpdateJupyterEvent(ctx, jupyterValues); err != nil {
 		log.WithError(err).Error("failed while registering Jupyter update event")
@@ -102,7 +102,7 @@ func (c Client) Update(ctx context.Context, team gensql.Team, log logger.Logger)
 
 	log.Info("Trigger update of Airflow")
 	airflowValues := chart.AirflowConfigurableValues{
-		Slug: team.Slug,
+		TeamID: team.ID,
 	}
 	if err := c.repo.RegisterUpdateAirflowEvent(ctx, airflowValues); err != nil {
 		log.WithError(err).Error("failed while registering Airflow update event")
@@ -117,7 +117,7 @@ func (c Client) Delete(ctx context.Context, teamSlug string, log logger.Logger) 
 	log = log.WithField("team", teamSlug)
 	log.Infof("Deleting team %v", teamSlug)
 
-	team, err := c.repo.TeamGet(ctx, teamSlug)
+	team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
 		log.WithError(err).Error("failed retrieving team from database")
 		return true

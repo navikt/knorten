@@ -328,12 +328,12 @@ func (c *client) syncChart(ctx context.Context, team string, chartType gensql.Ch
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
 		values := chart.JupyterConfigurableValues{
-			Slug: team,
+			TeamID: team,
 		}
 		return c.repo.RegisterUpdateJupyterEvent(ctx, values)
 	case gensql.ChartTypeAirflow:
 		values := chart.AirflowConfigurableValues{
-			Slug: team,
+			TeamID: team,
 		}
 		return c.repo.RegisterUpdateAirflowEvent(ctx, values)
 	}

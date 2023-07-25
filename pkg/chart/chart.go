@@ -38,30 +38,31 @@ func NewClient(repo *database.Repo, dryRun, inCluster bool, airflowChartVersion,
 }
 
 func (c Client) UpdateJupyter(ctx context.Context, values JupyterConfigurableValues, log logger.Logger) bool {
-	log.WithField("team", values.Slug).WithField("chart", "jupyter").Info("Updating Jupyter")
-	apps, err := c.repo.AppsForTeamGet(ctx, values.Slug)
+	log.WithField("team", values.TeamID).WithField("chart", "jupyter").Info("Updating Jupyter")
+	apps, err := c.repo.AppsForTeamGet(ctx, values.TeamID)
 	if err != nil {
-		log.WithField("team", values.Slug).WithField("chart", "jupyter").WithError(err).Error("failed getting apps for team")
+		log.WithField("team", values.TeamID).WithField("chart", "jupyter").WithError(err).Error("failed getting apps for team")
 		return true
 	}
 
 	retry := false
 	for _, app := range apps {
-		if app == string(gensql.ChartTypeJupyterhub) {
+		if app == gensql.ChartTypeJupyterhub {
 			retry = c.SyncJupyter(ctx, values, log)
+			continue
 		}
 	}
 
-	log.WithField("team", values.Slug).WithField("chart", "jupyter").Info("Successfully updated Jupyter")
+	log.WithField("team", values.TeamID).WithField("chart", "jupyter").Info("Successfully updated Jupyter")
 	return retry
 }
 
 func (c Client) SyncJupyter(ctx context.Context, values JupyterConfigurableValues, log logger.Logger) bool {
-	log = log.WithField("team", values.Slug).WithField("chart", "jupyter")
+	log = log.WithField("team", values.TeamID).WithField("chart", "jupyter")
 	log.Info("Syncing Jupyter")
 
 	if err := c.syncJupyter(ctx, values); err != nil {
-		log.WithError(err).WithField("team", values.Slug).Error("failed syncing Jupyter")
+		log.WithError(err).WithField("team", values.TeamID).Error("failed syncing Jupyter")
 		return true
 	}
 
@@ -83,30 +84,31 @@ func (c Client) DeleteJupyter(ctx context.Context, teamID string, log logger.Log
 }
 
 func (c Client) UpdateAirflow(ctx context.Context, values AirflowConfigurableValues, log logger.Logger) bool {
-	log.WithField("team", values.Slug).WithField("chart", "jupyter").Info("Updating Airflow")
-	apps, err := c.repo.AppsForTeamGet(ctx, values.Slug)
+	log.WithField("team", values.TeamID).WithField("chart", "jupyter").Info("Updating Airflow")
+	apps, err := c.repo.AppsForTeamGet(ctx, values.TeamID)
 	if err != nil {
-		log.WithField("team", values.Slug).WithField("chart", "airflow").WithError(err).Error("failed getting apps for team")
+		log.WithField("team", values.TeamID).WithField("chart", "airflow").WithError(err).Error("failed getting apps for team")
 		return true
 	}
 
 	retry := false
 	for _, app := range apps {
-		if app == string(gensql.ChartTypeAirflow) {
+		if app == gensql.ChartTypeAirflow {
 			retry = c.SyncAirflow(ctx, values, log)
+			continue
 		}
 	}
 
-	log.WithField("team", values.Slug).WithField("chart", "airflow").Info("Successfully updated Airflow")
+	log.WithField("team", values.TeamID).WithField("chart", "airflow").Info("Successfully updated Airflow")
 	return retry
 }
 
 func (c Client) SyncAirflow(ctx context.Context, values AirflowConfigurableValues, log logger.Logger) bool {
-	log = log.WithField("team", values.Slug).WithField("chart", "airflow")
+	log = log.WithField("team", values.TeamID).WithField("chart", "airflow")
 	log.Info("Syncing Airflow")
 
 	if err := c.syncAirflow(ctx, values); err != nil {
-		log.WithError(err).WithField("team", values.Slug).Error("failed syncing Airflow")
+		log.WithError(err).WithField("team", values.TeamID).Error("failed syncing Airflow")
 		return true
 	}
 

@@ -27,14 +27,12 @@ func (r *Repo) TeamUpdate(ctx context.Context, team gensql.Team) error {
 		ApiAccess: team.ApiAccess,
 	})
 }
+func (r *Repo) TeamGet(ctx context.Context, teamID string) (gensql.TeamGetRow, error) {
+	return r.querier.TeamGet(ctx, teamID)
+}
 
-func (r *Repo) TeamGet(ctx context.Context, slug string) (gensql.TeamGetRow, error) {
-	team, err := r.querier.TeamGet(ctx, slug)
-	if err != nil {
-		return gensql.TeamGetRow{}, err
-	}
-	team.Users = append(team.Users, team.Owner)
-	return team, nil
+func (r *Repo) TeamBySlugGet(ctx context.Context, slug string) (gensql.TeamBySlugGetRow, error) {
+	return r.querier.TeamBySlugGet(ctx, slug)
 }
 
 func (r *Repo) TeamDelete(ctx context.Context, team string) error {

@@ -5,7 +5,6 @@ import (
 
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/helm"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/logger"
 	"k8s.io/client-go/kubernetes"
@@ -22,10 +21,6 @@ type Client struct {
 }
 
 func NewClient(repo *database.Repo, dryRun, inCluster bool, airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion string) (*Client, error) {
-	if err := helm.UpdateHelmRepositories(); err != nil {
-		return nil, err
-	}
-
 	k8sClient, err := k8s.CreateClientset(inCluster)
 	if err != nil {
 		return nil, err

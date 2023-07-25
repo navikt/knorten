@@ -1,53 +1,53 @@
 {{ define "team/edit" }}
     {{ template "head" . }}
-    <section class="w-full md:w-[64rem] flex flex-col gap-4 p-4">
-        <article class="bg-white rounded-md p-4">
-            <div class="flex gap-4 items-center pb-4">
-                <h2>Rediger {{ .team.Slug }}</h2>
-                <form action="delete" method="POST">
-                    <fieldset>
-                        <button type="submit"
-                                onclick="return confirm('Er du sikker på at du vil slette teamet? Dette vil samtidig slette teamets jupyterhub, airflow og compute instanser dersom det er satt opp og vil ikke kunne gjenopprettes senere.')"
-                                class="navds-button navds-button--danger navds-button--small bg-surface-danger"
-                        >
+    <article class="bg-white rounded-md p-4">
+        <div class="flex gap-4 items-center pb-4">
+            <h2>Rediger {{ .team.Slug }}</h2>
+            <form action="delete" method="POST">
+                <fieldset>
+                    <button type="submit"
+                            onclick="return confirm('Er du sikker på at du vil slette teamet? Dette vil samtidig slette teamets jupyterhub, airflow og compute instanser dersom det er satt opp og vil ikke kunne gjenopprettes senere.')"
+                            class="navds-button navds-button--danger navds-button--small bg-surface-danger"
+                    >
                                 <span class="navds-label">
                                     Slett {{ .team.Slug }}
                                 </span>
-                        </button>
-                    </fieldset>
-                </form>
-            </div>
-            {{ with .errors }}
-                {{ . }}
-            {{ end }}
-
-            <form action="" method="POST" class="flex flex-col gap-4 w-80">
-                <input type="text" name="team" id="team" value="{{ .team.Slug }}" readonly hidden/>
-                <div class="">
-                    <label for="owner" class="navds-form-field__label navds-label">Eier</label>
-                    <input style="background-color:#AAAFB4" readonly type="text" name="owner" id="owner" value="{{ .team.Owner }}"
-                           placeholder="Eieren av teamet"
-                           class="navds-text-field__input navds-body-short navds-body-medium"
-                    />
-                </div>
-                <fieldset id="users">
-                    <legend class="navds-form-field__label navds-label">Brukere</legend>
-                    <button type="button" class="mb-4 navds-button navds-button--secondary navds-button--small"
-                            onClick="addElement()">
-                        Legg til flere brukere
                     </button>
                 </fieldset>
-                <fieldset class="flex gap-2 items-center">
-                    <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action">
+            </form>
+        </div>
+
+        {{ with .errors }}
+            {{ . }}
+        {{ end }}
+
+        <form action="" method="POST" class="flex flex-col gap-4 w-80">
+            <input type="text" name="team" id="team" value="{{ .team.Slug }}" readonly hidden/>
+            <div class="">
+                <label for="owner" class="navds-form-field__label navds-label">Eier</label>
+                <input style="background-color:#AAAFB4" readonly type="text" name="owner" id="owner"
+                       value="{{ .team.Owner }}"
+                       placeholder="Eieren av teamet"
+                       class="navds-text-field__input navds-body-short navds-body-medium"
+                />
+            </div>
+            <fieldset id="users">
+                <legend class="navds-form-field__label navds-label">Brukere</legend>
+                <button type="button" class="mb-4 navds-button navds-button--secondary navds-button--small"
+                        onClick="addElement()">
+                    Legg til flere brukere
+                </button>
+            </fieldset>
+            <fieldset class="flex gap-2 items-center">
+                <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action">
                         <span class="navds-label">
                             Lagre
                         </span>
-                    </button>
-                    <a href="/oversikt" class="navds-link">Avbryt</a>
-                </fieldset>
-            </form>
-        </article>
-    </section>
+                </button>
+                <a href="/oversikt" class="navds-link">Avbryt</a>
+            </fieldset>
+        </form>
+    </article>
     <script>
         {{ template "team/script" }}
         {{ range .team.Users }}

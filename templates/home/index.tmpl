@@ -1,22 +1,19 @@
 {{ define "index" }}
     {{- template "head" . }}
-        {{- with .errors }}
-            <div id="banner" class="box container">
-                {{ . }}
+    {{- with .errors }}
+        <div id="banner" class="box container">
+            {{ . }}
+        </div>
+    {{ end }}
+
+    <article class="bg-white rounded-md p-4 h-72">
+        <h2>Velkommen til Knorten!</h2>
+        <p class="font-bold">Kodebasert analyse i skyen!</p>
+        {{ if not .loggedIn }}
+            <div>
+                <a href="/oauth2/login" class="navds-button navds-button--primary">Logg inn</a>
             </div>
         {{ end }}
-        <section class="bg-white w-full md:w-[64rem] h-72 flex flex-col justify-between p-4 rounded-md">
-            <div>
-                <h2 class="flex items-center gap-2">
-                    Velkommen til Knorten!
-                </h2>
-                <p class="font-bold">Kodebasert analyse i skyen!</p>
-            </div>
-            {{ if not .loggedIn }}
-                <div>
-                    <a href="/oauth2/login" class="navds-button navds-button--primary">Logg inn</a>
-                </div>
-            {{ end }}
-        </section>
+    </article>
     {{- template "footer" }}
 {{ end }}

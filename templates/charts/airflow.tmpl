@@ -1,76 +1,74 @@
 {{ define "charts/airflow" }}
     {{ template "head" . }}
-    <section class="w-full md:w-[64rem] flex flex-col gap-4 p-4">
-        <article class="bg-white rounded-md p-4">
-            {{ if .values }}
-                <div class="flex gap-4 items-center pb-4">
-                    <h2>Rediger {{ .team }} sin Airflow</h2>
-                    <form action="delete" method="POST">
-                        <fieldset>
-                            <button type="submit"
-                                    onclick="return confirm('Er du sikker på at du vil slette airflow? Det er ikke mulig å gjenopprette denne senere')"
-                                    class="navds-button navds-button--danger navds-button--small bg-surface-danger"
-                            >
-                                <span class="navds-label">Slett Airflow</span>
-                            </button>
-                        </fieldset>
-                    </form>
-                </div>
-            {{ else }}
-                <h2 class="pb-4">Ny Airflow Notebook for {{ .team }}</h2>
-            {{ end }}
-            {{ with .errors }}
-                {{ . }}
-            {{ end }}
-
-            <form class="w-80" action="" method="POST">
-                <fieldset class="flex flex-col gap-4">
-                    <div class="navds-form-field navds-form-field--medium">
-                        <label for="dagrepo" class="navds-form-field__label navds-label">DAG's repo</label>
-                        <input type="text" name="dagrepo" id="dagrepo" value="{{ or .values.DagRepo "" }}"
-                               placeholder="navikt/dags" required
-                               class="navds-text-field__input navds-body-short navds-body-medium"
-                        />
-                    </div>
-                    <div class="navds-form-field navds-form-field--medium">
-                        <label for="dagrepobranch" class="navds-form-field__label navds-label">DAG's repo branch</label>
-                        <input type="text" name="dagrepobranch" id="dagrepobranch" value="{{ or .values.DagRepoBranch "" }}"
-                               placeholder="main"
-                               class="navds-text-field__input navds-body-short navds-body-medium"
-                        />
-                    </div>
-                    <fieldset
-                            class="navds-checkbox-group navds-checkbox-group--medium navds-fieldset navds-fieldset--medium">
-                        <div class="navds-checkbox">
-                            <input type="checkbox" name="apiaccess" id="apiaccess" class="navds-checkbox__input"
-                                   {{ if .values.ApiAccess }}checked{{ end }}/>
-                            <label class="navds-checkbox__label" for="apiaccess">
-                                <span class="navds-checkbox__content">API-tilgang</span>
-                            </label>
-                            <div class="navds-checkbox navds-checkbox--medium">
-                                <input id="restrictairflowegress" name="restrictairflowegress" type="checkbox"
-                                       class="navds-checkbox__input" {{ if .values.RestrictEgress }}checked{{ end }}/>
-                                <label for="restrictairflowegress" class="navds-checkbox__label">Begrens trafikk fra
-                                    Airflow workere</label>
-                            </div>
-                        </div>
-                        <div class="navds-fieldset__description navds-body-long navds-body-long--small">
-                            <a class="navds-link" target="_blank"
-                               href="https://docs.knada.io/analyse/airflow/knada-airflow/#trafikk-fra-airflow-workere">
-                                Les mer om trafikk fra Airflow workere i dokumentasjonen vår
-                            </a>
-                        </div>
-                    </fieldset>
-
-                    <div class="flex gap-2 items-center">
-                        <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action">
-                            <span class="navds-label">Lagre</span>
+    <article class="bg-white rounded-md p-4">
+        {{ if .values }}
+            <div class="flex gap-4 items-center pb-4">
+                <h2>Rediger {{ .team }} sin Airflow</h2>
+                <form action="delete" method="POST">
+                    <fieldset>
+                        <button type="submit"
+                                onclick="return confirm('Er du sikker på at du vil slette airflow? Det er ikke mulig å gjenopprette denne senere')"
+                                class="navds-button navds-button--danger navds-button--small bg-surface-danger"
+                        >
+                            <span class="navds-label">Slett Airflow</span>
                         </button>
-                        <a href="/oversikt" class="navds-link">Avbryt</a>
+                    </fieldset>
+                </form>
+            </div>
+        {{ else }}
+            <h2 class="pb-4">Ny Airflow Notebook for {{ .team }}</h2>
+        {{ end }}
+        {{ with .errors }}
+            {{ . }}
+        {{ end }}
+
+        <form class="w-80" action="" method="POST">
+            <fieldset class="flex flex-col gap-4">
+                <div class="navds-form-field navds-form-field--medium">
+                    <label for="dagrepo" class="navds-form-field__label navds-label">DAG's repo</label>
+                    <input type="text" name="dagrepo" id="dagrepo" value="{{ or .values.DagRepo "" }}"
+                           placeholder="navikt/dags" required
+                           class="navds-text-field__input navds-body-short navds-body-medium"
+                    />
+                </div>
+                <div class="navds-form-field navds-form-field--medium">
+                    <label for="dagrepobranch" class="navds-form-field__label navds-label">DAG's repo branch</label>
+                    <input type="text" name="dagrepobranch" id="dagrepobranch" value="{{ or .values.DagRepoBranch "" }}"
+                           placeholder="main"
+                           class="navds-text-field__input navds-body-short navds-body-medium"
+                    />
+                </div>
+                <fieldset
+                        class="navds-checkbox-group navds-checkbox-group--medium navds-fieldset navds-fieldset--medium">
+                    <div class="navds-checkbox">
+                        <input type="checkbox" name="apiaccess" id="apiaccess" class="navds-checkbox__input"
+                               {{ if .values.ApiAccess }}checked{{ end }}/>
+                        <label class="navds-checkbox__label" for="apiaccess">
+                            <span class="navds-checkbox__content">API-tilgang</span>
+                        </label>
+                        <div class="navds-checkbox navds-checkbox--medium">
+                            <input id="restrictairflowegress" name="restrictairflowegress" type="checkbox"
+                                   class="navds-checkbox__input" {{ if .values.RestrictEgress }}checked{{ end }}/>
+                            <label for="restrictairflowegress" class="navds-checkbox__label">Begrens trafikk fra
+                                Airflow workere</label>
+                        </div>
+                    </div>
+                    <div class="navds-fieldset__description navds-body-long navds-body-long--small">
+                        <a class="navds-link" target="_blank"
+                           href="https://docs.knada.io/analyse/airflow/knada-airflow/#trafikk-fra-airflow-workere">
+                            Les mer om trafikk fra Airflow workere i dokumentasjonen vår
+                        </a>
                     </div>
                 </fieldset>
-            </form>
-        </article>
-    </section>
+
+                <div class="flex gap-2 items-center">
+                    <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action">
+                        <span class="navds-label">Lagre</span>
+                    </button>
+                    <a href="/oversikt" class="navds-link">Avbryt</a>
+                </div>
+            </fieldset>
+        </form>
+    </article>
     {{ template "footer" }}
 {{ end }}

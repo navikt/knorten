@@ -68,7 +68,7 @@ func SetupDB(ctx context.Context, dbURL, dbname string) error {
 		{"airflow", "images.airflow.tag", "latest"},
 		{"airflow", "config.kubernetes_executor.worker_container_repository", "europe-west1-docker.pkg.dev/knada-gcp/knada/airflow"},
 		{"airflow", "config.kubernetes_executor.worker_container_tag", "latest"},
-		{"jupyterhub", "singleuser.profileList", "[{\"display_name\":\"default\",\"description\":\"Default profile\",\"kubespawner_override\":{\"image\":\"europe-west1-docker.pkg.dev/knada-gcp/knada/jupyter:2023-07-17-0bd2ea4-3.9\"}}]"},
+		{"jupyterhub", "singleuser.profileList", "[]"},
 	}
 	_, err = db.CopyFrom(ctx,
 		pgx.Identifier{"chart_global_values"},

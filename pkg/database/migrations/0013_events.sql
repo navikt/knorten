@@ -47,7 +47,7 @@ CREATE TABLE Event_Logs
     message    TEXT                                NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY (id),
-    FOREIGN KEY (event_id) REFERENCES Events (id)
+    FOREIGN KEY (event_id) REFERENCES Events (id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_event_logs_event_id ON Event_Logs (event_id);

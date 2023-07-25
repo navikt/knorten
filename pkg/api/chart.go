@@ -316,16 +316,6 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 			return err
 		}
 
-		apiAccess, err := strconv.ParseBool(form.ApiAccess)
-		if err != nil {
-			return err
-		}
-
-		restrictEgress, err := strconv.ParseBool(form.RestrictEgress)
-		if err != nil {
-			return err
-		}
-
 		dagRepoBranch := form.DagRepoBranch
 		if dagRepoBranch == "" {
 			dagRepoBranch = "main"
@@ -335,8 +325,8 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 			Slug:           teamSlug,
 			DagRepo:        form.DagRepo,
 			DagRepoBranch:  dagRepoBranch,
-			ApiAccess:      apiAccess,
-			RestrictEgress: restrictEgress,
+			ApiAccess:      form.ApiAccess == "on",
+			RestrictEgress: form.RestrictEgress == "on",
 		}
 
 		return c.repo.RegisterCreateAirflowEvent(ctx, values)

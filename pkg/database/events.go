@@ -148,7 +148,7 @@ func (r *Repo) EventLogsForEventsGet(ctx context.Context) ([]Event, error) {
 func (r *Repo) EventLogsForOwnerGet(ctx context.Context, owner string) ([]Event, error) {
 	eventRows, err := r.querier.EventLogsForOwnerGet(ctx, gensql.EventLogsForOwnerGetParams{
 		Owner: owner,
-		Lim:   500,
+		Lim:   10,
 	})
 	if err != nil {
 		return nil, err

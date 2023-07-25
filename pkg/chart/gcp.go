@@ -279,10 +279,9 @@ func setSQLClientIAMBinding(teamID, gcpProject string) error {
 		"projects",
 		"add-iam-policy-binding",
 		gcpProject,
-		"--member",
 		"--role=roles/cloudsql.client",
 		"--condition=None",
-		fmt.Sprintf("serviceAccount:%v@%v.iam.gserviceaccount.com", teamID, gcpProject))
+		fmt.Sprintf("--member=serviceAccount:%v@%v.iam.gserviceaccount.com", teamID, gcpProject))
 
 	stdOut := &bytes.Buffer{}
 	stdErr := &bytes.Buffer{}

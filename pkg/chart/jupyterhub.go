@@ -16,19 +16,12 @@ type JupyterConfigurableValues struct {
 	UserIdents []string
 
 	// User-configurable values
-	CPU         string
-	Memory      string
+	CPU         string `helm:"singleuser.cpu.limit"`
+	Memory      string `helm:"singleuser.memory.limit"`
 	ImageName   string `helm:"singleuser.image.name"`
 	ImageTag    string `helm:"singleuser.image.tag"`
 	CullTimeout string `helm:"cull.timeout"`
 	AllowList   []string
-}
-
-func (v *JupyterConfigurableValues) MemoryWithoutUnit() string {
-	if v.Memory == "" {
-		return ""
-	}
-	return v.Memory[:len(v.Memory)-1]
 }
 
 type jupyterValues struct {

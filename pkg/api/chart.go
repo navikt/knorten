@@ -31,6 +31,14 @@ type JupyterForm struct {
 	Allowlist   []string `form:"allowlist[]"`
 }
 
+func (v JupyterForm) MemoryWithoutUnit() string {
+	if v.Memory == "" {
+		return ""
+	}
+
+	return v.Memory[:len(v.Memory)-1]
+}
+
 type AirflowForm struct {
 	Slug           string
 	DagRepo        string `form:"dagrepo" binding:"required,startswith=navikt/,validAirflowRepo"`

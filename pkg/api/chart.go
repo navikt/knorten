@@ -288,11 +288,21 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 			return err
 		}
 
+		cpu, err := parseCPU(form.CPU)
+		if err != nil {
+			return err
+		}
+
+		memory, err := parseMemory(form.Memory)
+		if err != nil {
+			return err
+		}
+
 		values := chart.JupyterConfigurableValues{
 			Slug:        teamSlug,
 			UserIdents:  userIdents,
-			CPU:         form.CPU,
-			Memory:      form.Memory,
+			CPU:         cpu,
+			Memory:      memory,
 			ImageName:   form.ImageName,
 			ImageTag:    form.ImageTag,
 			CullTimeout: strconv.FormatUint(cullTimeout, 10),

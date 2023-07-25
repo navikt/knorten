@@ -23,7 +23,7 @@ type diffValue struct {
 
 type teamInfo struct {
 	gensql.Team
-	Apps []string
+	Apps []gensql.ChartType
 }
 
 func (c *client) setupAdminRoutes() {

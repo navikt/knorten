@@ -47,18 +47,8 @@ func createAppService(slug string, chartType gensql.ChartType) *AppService {
 	}
 }
 
-func (r *Repo) AppsForTeamGet(ctx context.Context, team string) ([]string, error) {
-	get, err := r.querier.AppsForTeamGet(ctx, team)
-	if err != nil {
-		return nil, err
-	}
-
-	apps := make([]string, len(get))
-	for i, chartType := range get {
-		apps[i] = string(chartType)
-	}
-
-	return apps, nil
+func (r *Repo) AppsForTeamGet(ctx context.Context, teamID string) ([]gensql.ChartType, error) {
+	return r.querier.AppsForTeamGet(ctx, teamID)
 }
 
 func (r *Repo) AppDelete(ctx context.Context, teamID string, chartType gensql.ChartType) error {

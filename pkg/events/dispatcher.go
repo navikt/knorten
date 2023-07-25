@@ -27,51 +27,47 @@ type workerFunc func(context.Context, gensql.Event, logger.Logger) error
 
 func (e EventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 	switch eventType {
-	case gensql.EventTypeCreateTeam:
+	case gensql.EventTypeCreateTeam,
+		gensql.EventTypeUpdateTeam:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
-			return e.createTeam(event, logger)
-		}
-	case gensql.EventTypeUpdateTeam:
-		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
-			return e.updateTeam(event, logger)
+			var form gensql.Team
+			return e.processWork(event, logger, &form)
 		}
 	case gensql.EventTypeCreateCompute:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
-			return e.createCompute(event, logger)
+			var form gensql.ComputeInstance
+			return e.processWork(event, logger, &form)
 		}
 	case gensql.EventTypeCreateAirflow,
 		gensql.EventTypeUpdateAirflow:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
-			return e.airflowEvent(event, logger)
+			var values chart.AirflowConfigurableValues
+			return e.processWork(event, logger, &values)
 		}
 	case gensql.EventTypeCreateJupyter,
 		gensql.EventTypeUpdateJupyter:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
-			return e.jupyterEvent(event, logger)
+			var values chart.JupyterConfigurableValues
+			return e.processWork(event, logger, &values)
 		}
 	case gensql.EventTypeDeleteTeam,
 		gensql.EventTypeDeleteCompute,
 		gensql.EventTypeDeleteAirflow,
 		gensql.EventTypeDeleteJupyter:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
-			return e.deleteEvent(event, logger)
+			var team string
+			return e.processWork(event, logger, &team)
 		}
 	}
 
 	return nil
 }
 
-func (e EventHandler) deleteEvent(event gensql.Event, logger logger.Logger) error {
-	var teamID string
-	err := json.Unmarshal(event.Task, &teamID)
-	if err != nil {
+func (e EventHandler) processWork(event gensql.Event, logger logger.Logger, form any) error {
+	if err := json.Unmarshal(event.Task, &form); err != nil {
 		return err
 	}
 
-	return e.processWork(event, teamID, logger)
-}
-
-func (e EventHandler) processWork(event gensql.Event, form any, logger logger.Logger) error {
 	err := e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusProcessing)
 	if err != nil {
 		return err
@@ -80,27 +76,27 @@ func (e EventHandler) processWork(event gensql.Event, form any, logger logger.Lo
 	var retry bool
 	switch event.EventType {
 	case gensql.EventTypeCreateTeam:
-		retry = e.teamClient.Create(e.context, form.(gensql.Team), logger)
+		retry = e.teamClient.Create(e.context, *form.(*gensql.Team), logger)
 	case gensql.EventTypeUpdateTeam:
-		retry = e.teamClient.Update(e.context, form.(gensql.Team), logger)
+		retry = e.teamClient.Update(e.context, *form.(*gensql.Team), logger)
 	case gensql.EventTypeDeleteTeam:
-		retry = e.teamClient.Delete(e.context, form.(string), logger)
+		retry = e.teamClient.Delete(e.context, *form.(*string), logger)
 	case gensql.EventTypeCreateCompute:
-		retry = e.computeClient.Create(e.context, form.(gensql.ComputeInstance), logger)
+		retry = e.computeClient.Create(e.context, *form.(*gensql.ComputeInstance), logger)
 	case gensql.EventTypeDeleteCompute:
-		retry = e.computeClient.Delete(e.context, form.(string), logger)
+		retry = e.computeClient.Delete(e.context, *form.(*string), logger)
 	case gensql.EventTypeCreateAirflow:
-		retry = e.chartClient.SyncAirflow(e.context, form.(chart.AirflowConfigurableValues), logger)
+		retry = e.chartClient.SyncAirflow(e.context, *form.(*chart.AirflowConfigurableValues), logger)
 	case gensql.EventTypeUpdateAirflow:
-		retry = e.chartClient.UpdateAirflow(e.context, form.(chart.AirflowConfigurableValues), logger)
+		retry = e.chartClient.UpdateAirflow(e.context, *form.(*chart.AirflowConfigurableValues), logger)
 	case gensql.EventTypeDeleteAirflow:
-		retry = e.chartClient.DeleteAirflow(e.context, form.(string), logger)
+		retry = e.chartClient.DeleteAirflow(e.context, *form.(*string), logger)
 	case gensql.EventTypeCreateJupyter:
-		retry = e.chartClient.SyncJupyter(e.context, form.(chart.JupyterConfigurableValues), logger)
+		retry = e.chartClient.SyncJupyter(e.context, *form.(*chart.JupyterConfigurableValues), logger)
 	case gensql.EventTypeUpdateJupyter:
-		retry = e.chartClient.UpdateJupyter(e.context, form.(chart.JupyterConfigurableValues), logger)
+		retry = e.chartClient.UpdateJupyter(e.context, *form.(*chart.JupyterConfigurableValues), logger)
 	case gensql.EventTypeDeleteJupyter:
-		retry = e.chartClient.DeleteJupyter(e.context, form.(string), logger)
+		retry = e.chartClient.DeleteJupyter(e.context, *form.(*string), logger)
 	}
 
 	if retry {

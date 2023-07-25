@@ -62,9 +62,9 @@ SELECT events.event_type,
        events.created_at,
        events.updated_at,
        events.owner,
-       json_agg(to_jsonb(el) - 'event_id')
+       json_agg(el.*) AS json_logs
 FROM events
-         JOIN (SELECT event_id, message, log_type, created_at FROM event_logs ORDER BY event_logs.created_at DESC) el
+         JOIN (SELECT event_id, message, log_type, created_at::timestamptz FROM event_logs ORDER BY event_logs.created_at DESC) el
               ON el.event_id = events.id
 GROUP BY events.id, events.updated_at
 ORDER BY events.updated_at DESC
@@ -78,7 +78,7 @@ type EventLogsForEventsGetRow struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	Owner     string
-	JsonAgg   json.RawMessage
+	JsonLogs  json.RawMessage
 }
 
 func (q *Queries) EventLogsForEventsGet(ctx context.Context, lim int32) ([]EventLogsForEventsGetRow, error) {
@@ -97,7 +97,7 @@ func (q *Queries) EventLogsForEventsGet(ctx context.Context, lim int32) ([]Event
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Owner,
-			&i.JsonAgg,
+			&i.JsonLogs,
 		); err != nil {
 			return nil, err
 		}
@@ -119,9 +119,9 @@ SELECT events.event_type,
        events.created_at,
        events.updated_at,
        events.owner,
-       json_agg(to_jsonb(el) - 'event_id')
+       json_agg(el.*) AS json_logs
 FROM events
-         JOIN (SELECT event_id, message, log_type, created_at FROM event_logs ORDER BY event_logs.created_at DESC) el
+         JOIN (SELECT event_id, message, log_type, created_at::timestamptz FROM event_logs ORDER BY event_logs.created_at DESC) el
               ON el.event_id = events.id
 WHERE owner = $1
 GROUP BY events.id, events.updated_at
@@ -141,7 +141,7 @@ type EventLogsForOwnerGetRow struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	Owner     string
-	JsonAgg   json.RawMessage
+	JsonLogs  json.RawMessage
 }
 
 func (q *Queries) EventLogsForOwnerGet(ctx context.Context, arg EventLogsForOwnerGetParams) ([]EventLogsForOwnerGetRow, error) {
@@ -160,7 +160,7 @@ func (q *Queries) EventLogsForOwnerGet(ctx context.Context, arg EventLogsForOwne
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Owner,
-			&i.JsonAgg,
+			&i.JsonLogs,
 		); err != nil {
 			return nil, err
 		}

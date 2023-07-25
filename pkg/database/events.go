@@ -10,10 +10,9 @@ import (
 )
 
 type EventLog struct {
-	Message string
-	LogType gensql.LogType `json:"log_type"`
-	// TODO: Dette er egentlig en dato
-	CreatedAt string `json:"created_at"`
+	Message   string
+	LogType   gensql.LogType `json:"log_type"`
+	CreatedAt time.Time      `json:"created_at"`
 }
 
 type Event struct {
@@ -126,7 +125,7 @@ func (r *Repo) EventLogsForEventsGet(ctx context.Context) ([]Event, error) {
 	var events []Event
 	for _, row := range eventRows {
 		var logs []EventLog
-		err := json.Unmarshal(row.JsonAgg, &logs)
+		err := json.Unmarshal(row.JsonLogs, &logs)
 		if err != nil {
 			return nil, err
 		}
@@ -157,7 +156,7 @@ func (r *Repo) EventLogsForOwnerGet(ctx context.Context, owner string) ([]Event,
 	var events []Event
 	for _, row := range eventRows {
 		var logs []EventLog
-		err := json.Unmarshal(row.JsonAgg, &logs)
+		err := json.Unmarshal(row.JsonLogs, &logs)
 		if err != nil {
 			return nil, err
 		}

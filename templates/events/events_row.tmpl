@@ -6,7 +6,7 @@
             {{ .Message }}
         </td>
         <td class="navds-table__data-cell navds-body-short navds-body-short--small">
-            {{ .CreatedAt }}
+            {{ .CreatedAt.Format "02.01.2006 15:04:05" }}
         </td>
     </tr>
 {{ end }}

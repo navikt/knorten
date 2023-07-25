@@ -47,9 +47,9 @@ SELECT events.event_type,
        events.created_at,
        events.updated_at,
        events.owner,
-       json_agg(to_jsonb(el) - 'event_id')
+       json_agg(el.*) AS json_logs
 FROM events
-         JOIN (SELECT event_id, message, log_type, created_at FROM event_logs ORDER BY event_logs.created_at DESC) el
+         JOIN (SELECT event_id, message, log_type, created_at::timestamptz FROM event_logs ORDER BY event_logs.created_at DESC) el
               ON el.event_id = events.id
 GROUP BY events.id, events.updated_at
 ORDER BY events.updated_at DESC
@@ -62,9 +62,9 @@ SELECT events.event_type,
        events.created_at,
        events.updated_at,
        events.owner,
-       json_agg(to_jsonb(el) - 'event_id')
+       json_agg(el.*) AS json_logs
 FROM events
-         JOIN (SELECT event_id, message, log_type, created_at FROM event_logs ORDER BY event_logs.created_at DESC) el
+         JOIN (SELECT event_id, message, log_type, created_at::timestamptz FROM event_logs ORDER BY event_logs.created_at DESC) el
               ON el.event_id = events.id
 WHERE owner = @owner
 GROUP BY events.id, events.updated_at

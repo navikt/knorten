@@ -55,9 +55,10 @@ Bruk Docker Compose:
 
     docker-compose up -d
 
-eller Docker:
+eller Docker (med Adminer):
 
     docker run --name postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
+    docker run --link postgres:db -p 8081:8080 -d adminer
 
 Hvis du allerede har en Postgres-instans kjørende kan du bare lage en ny database for Knorten:
 

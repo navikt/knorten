@@ -33,7 +33,7 @@ func createKubeConfig(inCluster bool) (*rest.Config, error) {
 	}
 
 	configLoadingRules := &clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfig}
-	configOverrides := &clientcmd.ConfigOverrides{CurrentContext: "kind"}
+	configOverrides := &clientcmd.ConfigOverrides{CurrentContext: "minikube"}
 
 	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(configLoadingRules, configOverrides).ClientConfig()
 }

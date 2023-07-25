@@ -11,16 +11,19 @@ Ellers blir Knorten satt opp gjennom [nais/knada-gcp](https://github.com/nais/kn
 
 For å jobbe med Knorten lokalt trenger man å ha Postgres kjørende, og basen må prepouleres med litt data.
 I tillegg benytter vi et oppsett med Tailwind og Designsystemet.
-Kjør `make init` etter du har kjørt opp Postgres for å populere databasen.
-Kjør `npm install` for å sette opp nødvendig rammeverk for Tailwind.
+
+- Kjør `make init` etter du har kjørt opp Postgres for å populere databasen.
+- Kjør `npm install` for å sette opp nødvendig rammeverk for Tailwind.
 
 ### Lokalt uten tredjeparter
 
 Kjør `make local` for å kjøre Knorten uten kobling til noe annet enn Postgres.
 
-### Lokalt med tredjeparter
+### Lokalt med tredjeparter i eget cluster
 
-Har man behov for å teste mot et cluster så kan man bruke `make local-online`, bare husk å kjør `make env` for å hente ned variabler som trengs.
+Har man behov for å teste mot et cluster så kan man bruke `make local-online`, dette kobler deg opp til `nada-dev-db2e`, og et lokalt [Minikube](https://minikube.sigs.k8s.io/) cluster.
+
+Husk å skru på [gcp-auth](https://minikube.sigs.k8s.io/docs/handbook/addons/gcp-auth/) i Minikube.
 
 ### Generering av CSS
 
@@ -48,7 +51,17 @@ Siden vi importerer `@navikt/ds-css` kan disse klassene brukes verbatim i koden 
 
 ### Postgres
 
-Bruk enten `docker-compose up -d`, eller hvis du allerede har en Postgres-instans kjørende kan du bruke `psql -h localhost -U postgres -c 'CREATE DATABASE knorten;'` før du starter Knorten.
+Bruk Docker Compose:
+
+    docker-compose up -d
+
+eller Docker:
+
+    docker run --name postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
+
+Hvis du allerede har en Postgres-instans kjørende kan du bare lage en ny database for Knorten:
+
+    psql -h localhost -U postgres -c 'CREATE DATABASE knorten;'
 
 ## Tilgang til Postgres i prod
 

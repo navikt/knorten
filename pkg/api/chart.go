@@ -474,12 +474,17 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 	return fmt.Errorf("chart type %v is not supported", chartType)
 }
 
-func (c *client) deleteChart(ctx *gin.Context, team string, chartType gensql.ChartType) error {
+func (c *client) deleteChart(ctx *gin.Context, teamSlug string, chartType gensql.ChartType) error {
+	team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
+	if err != nil {
+		return err
+	}
+
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
-		return c.repo.RegisterDeleteJupyterEvent(ctx, team)
+		return c.repo.RegisterDeleteJupyterEvent(ctx, team.ID)
 	case gensql.ChartTypeAirflow:
-		return c.repo.RegisterDeleteAirflowEvent(ctx, team)
+		return c.repo.RegisterDeleteAirflowEvent(ctx, team.ID)
 	}
 
 	return fmt.Errorf("chart type %v is not supported", chartType)

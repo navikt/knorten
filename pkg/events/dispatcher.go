@@ -30,13 +30,13 @@ func (e EventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 	case gensql.EventTypeCreateTeam,
 		gensql.EventTypeUpdateTeam:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
-			var form gensql.Team
-			return e.processWork(event, logger, &form)
+			var team gensql.Team
+			return e.processWork(event, logger, &team)
 		}
 	case gensql.EventTypeCreateCompute:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
-			var form gensql.ComputeInstance
-			return e.processWork(event, logger, &form)
+			var instance gensql.ComputeInstance
+			return e.processWork(event, logger, &instance)
 		}
 	case gensql.EventTypeCreateAirflow,
 		gensql.EventTypeUpdateAirflow:
@@ -55,8 +55,8 @@ func (e EventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 		gensql.EventTypeDeleteAirflow,
 		gensql.EventTypeDeleteJupyter:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
-			var team string
-			return e.processWork(event, logger, &team)
+			var value string
+			return e.processWork(event, logger, &value)
 		}
 	}
 

@@ -168,7 +168,7 @@ func (c *client) setupTeamRoutes() {
 
 	c.router.POST("/team/:slug/delete", func(ctx *gin.Context) {
 		teamSlug := ctx.Param("slug")
-		err := c.repo.RegisterDeleteTeamEvent(ctx, teamSlug)
+		err := c.deleteTeam(ctx, teamSlug)
 		if err != nil {
 			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
@@ -284,4 +284,13 @@ func removeEmptyUsers(formUsers []string) []string {
 	return slices.Filter(nil, formUsers, func(s string) bool {
 		return s != ""
 	})
+}
+
+func (c *client) deleteTeam(ctx *gin.Context, teamSlug string) error {
+	team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
+	if err != nil {
+		return err
+	}
+
+	return c.repo.RegisterDeleteTeamEvent(ctx, team.ID)
 }

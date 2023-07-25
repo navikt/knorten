@@ -124,13 +124,11 @@ func TestChartsAPI(t *testing.T) {
 		expected, err := createExpectedHTML("charts/jupyterhub", map[string]any{
 			"team": testTeam,
 			"values": &chart.JupyterConfigurableValues{
-				CPULimit:        cpu,
-				CPUGuarantee:    cpu,
-				MemoryLimit:     memory,
-				MemoryGuarantee: memory,
-				ImageName:       "",
-				ImageTag:        "",
-				CullTimeout:     culltimeout,
+				CPU:         cpu,
+				Memory:      memory,
+				ImageName:   "",
+				ImageTag:    "",
+				CullTimeout: culltimeout,
 			},
 		})
 		if err != nil {

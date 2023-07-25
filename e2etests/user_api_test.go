@@ -90,10 +90,8 @@ func TestOverviewAPI(t *testing.T) {
 			// TODO: Legg inn ComputeInstance
 			"services": []database.TeamServices{
 				{
-					Slug:           teamName,
-					TeamID:         team.ID,
-					Secret:         fmt.Sprintf("https://console.cloud.google.com/security/secret-manager/secret/%v/versions?project=knada-gcp", team.ID),
-					ServiceAccount: fmt.Sprintf("%v@knada-gcp.iam.gserviceaccount.com", team.ID),
+					Slug:   teamName,
+					TeamID: team.ID,
 					Jupyterhub: &database.AppService{
 						App:     string(gensql.ChartTypeJupyterhub),
 						Ingress: "https://" + teamName + ".jupyter.knada.io",

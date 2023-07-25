@@ -58,16 +58,19 @@ func SetupDB(ctx context.Context, dbURL, dbname string) error {
 
 	db.TypeMap().RegisterType(&pgtype.Type{Name: "chart_type", OID: oid, Codec: &pgtype.EnumCodec{}})
 
+	airflowContainer := `[{"name": "git-sync","image": "navikt/knada-git-sync:2022-12-08-aaa15ba","command": ["/bin/sh", "/git-sync.sh"],"args": ["", "", "/dags", "60"]}]`
+
 	fmt.Println("Time to insert dummy data for local development")
 	rows := [][]interface{}{
-		{"airflow", "scheduler.extraContainers", `[{"name":"dummy","image":"navikt/dummy:aaa15ba","args":["","","/dags","60"]}]`},
-		{"airflow", "scheduler.extraInitContainers", `[{"name":"dummy","image":"navikt/dummy:aaa15ba","args":["","","/dags","60"]}]`},
-		{"airflow", "webserver.extraContainers", `[{"name":"dummy","image":"navikt/dummy:aaa15ba","args":["","","/dags","60"]}]`},
-		{"airflow", "workers.extraInitContainers", `[{"name":"dummy","image":"navikt/dummy:aaa15ba","args":["","","/dags","60"]}]`},
-		{"airflow", "images.airflow.repository", "europe-west1-docker.pkg.dev/knada-gcp/knada/airflow"},
-		{"airflow", "images.airflow.tag", "latest"},
-		{"airflow", "config.kubernetes_executor.worker_container_repository", "europe-west1-docker.pkg.dev/knada-gcp/knada/airflow"},
-		{"airflow", "config.kubernetes_executor.worker_container_tag", "latest"},
+		{"airflow", "createUserJob.serviceAccount.create", "false"},
+		{"airflow", "postgresql.enabled", "false"},
+		{"airflow", "scheduler.extraContainers", airflowContainer},
+		{"airflow", "scheduler.extraInitContainers", airflowContainer},
+		{"airflow", "webserver.extraContainers", airflowContainer},
+		{"airflow", "webserver.serviceAccount.create", "false"},
+		{"airflow", "webserverSecretKeySecretName", "airflow-webserver"},
+		{"airflow", "workers.extraInitContainers", airflowContainer},
+		{"airflow", "workers.serviceAccount.create", "false"},
 		{"jupyterhub", "singleuser.profileList", "[]"},
 	}
 	_, err = db.CopyFrom(ctx,

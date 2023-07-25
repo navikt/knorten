@@ -108,7 +108,7 @@ func (c *client) setupChartRoutes() {
 		flashes := session.Flashes()
 		err := session.Save()
 		if err != nil {
-			c.log.WithError(err).Error("problem saving session")
+			c.log.WithField("team", team).WithField("chart", chartType).WithError(err).Error("problem saving session")
 			ctx.JSON(http.StatusInternalServerError, map[string]string{
 				"status":  strconv.Itoa(http.StatusInternalServerError),
 				"message": "Internal server error",
@@ -126,6 +126,7 @@ func (c *client) setupChartRoutes() {
 	c.router.POST("/team/:team/:chart/new", func(ctx *gin.Context) {
 		team := ctx.Param("team")
 		chartType := getChartType(ctx.Param("chart"))
+		log := c.log.WithField("team", team).WithField("chart", chartType)
 
 		err := c.newChart(ctx, team, chartType)
 		if err != nil {
@@ -133,14 +134,17 @@ func (c *client) setupChartRoutes() {
 			var validationErrorse validator.ValidationErrors
 			if errors.As(err, &validationErrorse) {
 				for _, fieldError := range validationErrorse {
+					log.WithError(err).Infof("field error: %v", fieldError)
 					session.AddFlash(descriptiveMessageForChartError(fieldError))
 				}
 			} else {
+				log.WithError(err).Info("non-field error")
 				session.AddFlash(err.Error())
 			}
+
 			err := session.Save()
 			if err != nil {
-				c.log.WithError(err).Error("problem saving session")
+				log.WithError(err).Error("problem saving session")
 				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/new", team, chartType))
 				return
 			}
@@ -155,6 +159,7 @@ func (c *client) setupChartRoutes() {
 	c.router.GET("/team/:team/:chart/edit", func(ctx *gin.Context) {
 		team := ctx.Param("team")
 		chartType := getChartType(ctx.Param("chart"))
+		log := c.log.WithField("team", team).WithField("chart", chartType)
 
 		session := sessions.Default(ctx)
 
@@ -163,15 +168,17 @@ func (c *client) setupChartRoutes() {
 			var validationErrorse validator.ValidationErrors
 			if errors.As(err, &validationErrorse) {
 				for _, fieldError := range validationErrorse {
+					log.WithError(err).Infof("field error: %v", fieldError)
 					session.AddFlash(descriptiveMessageForChartError(fieldError))
 				}
 			} else {
+				log.WithError(err).Info("non-field error")
 				session.AddFlash(err.Error())
 			}
 
 			err := session.Save()
 			if err != nil {
-				c.log.WithError(err).Error("problem saving session")
+				log.WithError(err).Error("problem saving session")
 				ctx.Redirect(http.StatusSeeOther, "/oversikt")
 				return
 			}
@@ -182,7 +189,7 @@ func (c *client) setupChartRoutes() {
 		flashes := session.Flashes()
 		err = session.Save()
 		if err != nil {
-			c.log.WithError(err).Error("problem saving session")
+			log.WithError(err).Error("problem saving session")
 			return
 		}
 
@@ -194,46 +201,52 @@ func (c *client) setupChartRoutes() {
 	})
 
 	c.router.POST("/team/:team/:chart/edit", func(ctx *gin.Context) {
-		slug := ctx.Param("team")
+		team := ctx.Param("team")
 		chartType := getChartType(ctx.Param("chart"))
+		log := c.log.WithField("team", team).WithField("chart", chartType)
 
-		err := c.editChart(ctx, slug, chartType)
+		err := c.editChart(ctx, team, chartType)
 		if err != nil {
 			session := sessions.Default(ctx)
 			var validationErrorse validator.ValidationErrors
 			if errors.As(err, &validationErrorse) {
 				for _, fieldError := range validationErrorse {
+					log.WithError(err).Infof("field error: %v", fieldError)
 					session.AddFlash(descriptiveMessageForChartError(fieldError))
 				}
 			} else {
+				log.WithError(err).Info("non-field error")
 				session.AddFlash(err.Error())
 			}
 
 			err := session.Save()
 			if err != nil {
-				c.log.WithError(err).Error("problem saving session")
-				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", slug, chartType))
+				log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", team, chartType))
 				return
 			}
-			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", slug, chartType))
+
+			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", team, chartType))
 			return
 		}
+
 		ctx.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 
 	c.router.POST("/team/:team/:chart/delete", func(ctx *gin.Context) {
 		team := ctx.Param("team")
 		chartType := getChartType(ctx.Param("chart"))
+		log := c.log.WithField("team", team).WithField("chart", chartType)
 
 		err := c.deleteChart(ctx, team, chartType)
 
 		if err != nil {
-			c.log.WithError(err).Errorf("problem deleting chart %v for team %v", chartType, team)
+			log.WithError(err).Errorf("problem deleting chart %v for team %v", chartType, team)
 			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
 			if err != nil {
-				c.log.WithError(err).Error("problem saving session")
+				log.WithError(err).Error("problem saving session")
 				ctx.Redirect(http.StatusSeeOther, "/oversikt")
 				return
 			}

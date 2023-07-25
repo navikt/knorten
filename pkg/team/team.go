@@ -95,7 +95,7 @@ func (c Client) Update(ctx context.Context, team gensql.Team, log logger.Logger)
 	jupyterValues := chart.JupyterConfigurableValues{
 		TeamID: team.ID,
 	}
-	if err := c.repo.RegisterUpdateJupyterEvent(ctx, jupyterValues); err != nil {
+	if err := c.repo.RegisterUpdateJupyterEvent(ctx, team.ID, jupyterValues); err != nil {
 		log.WithError(err).Error("failed while registering Jupyter update event")
 		return true
 	}
@@ -104,7 +104,7 @@ func (c Client) Update(ctx context.Context, team gensql.Team, log logger.Logger)
 	airflowValues := chart.AirflowConfigurableValues{
 		TeamID: team.ID,
 	}
-	if err := c.repo.RegisterUpdateAirflowEvent(ctx, airflowValues); err != nil {
+	if err := c.repo.RegisterUpdateAirflowEvent(ctx, team.ID, airflowValues); err != nil {
 		log.WithError(err).Error("failed while registering Airflow update event")
 		return true
 	}

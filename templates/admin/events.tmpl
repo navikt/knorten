@@ -1,0 +1,39 @@
+{{ define "admin/events" }}
+    {{ template "head" . }}
+    <section class="w-full md:w-[64rem] flex flex-col gap-4 p-4">
+        <article class="bg-white rounded-md p-4 flex flex-col gap-2">
+            <h2 class="mb-2">Siste 500 events</h2>
+            {{ range .events }}
+                <article class="bg-white rounded-md p-4">
+                    <h2>
+                        {{ .Owner }}: {{ .Type }}, {{ .Status }}
+                    </h2>
+                    <p>
+                        <strong>Deadline:</strong> {{ .Deadline.Format "2006-01-02 15:04:05" }},
+                        <br>
+                        <strong>Created at:</strong> {{ .CreatedAt.Format "2006-01-02 15:04:05" }},
+                        <br>
+                        <strong>Updated at:</strong> {{ .UpdatedAt.Format "2006-01-02 15:04:05" }}
+                    </p>
+                    <label for="machine_types" class="navds-form-field__label navds-label">Eventlogs</label>
+                    <table class="navds-table navds-table--small">
+                        <thead class="navds-table__header">
+                        <tr class="navds-table__row">
+                            <th class="navds-table__header-cell navds-label navds-label--small">Level</th>
+                            <th class="navds-table__header-cell navds-label navds-label--small">Message</th>
+                            <th class="navds-table__header-cell navds-label navds-label--small">Created at</th>
+                        </tr>
+                        </thead>
+                        <tbody class="navds-table__body">
+                        {{ range .Logs }}
+                            {{ template "events/row" . }}
+                        {{ end }}
+                        </tbody>
+                    </table>
+                </article>
+            {{ end }}
+        </article>
+    </section>
+
+    {{ template "footer" }}
+{{ end }}

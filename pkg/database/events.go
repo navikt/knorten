@@ -9,13 +9,31 @@ import (
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
-func (r *Repo) registerEvent(ctx context.Context, eventType gensql.EventType, deadlineOffset time.Duration, data any) error {
+type EventLog struct {
+	Message string
+	LogType gensql.LogType `json:"log_type"`
+	// TODO: Dette er egentlig en dato
+	CreatedAt string `json:"created_at"`
+}
+
+type Event struct {
+	Owner     string
+	Type      gensql.EventType
+	Status    gensql.EventStatus
+	Deadline  time.Time
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Logs      []EventLog
+}
+
+func (r *Repo) registerEvent(ctx context.Context, eventType gensql.EventType, owner string, deadlineOffset time.Duration, data any) error {
 	jsonTask, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
 
 	err = r.querier.EventCreate(ctx, gensql.EventCreateParams{
+		Owner:     owner,
 		EventType: eventType,
 		Task:      jsonTask,
 		Deadline:  time.Now().Add(deadlineOffset),
@@ -28,53 +46,45 @@ func (r *Repo) registerEvent(ctx context.Context, eventType gensql.EventType, de
 }
 
 func (r *Repo) RegisterCreateTeamEvent(ctx context.Context, team gensql.Team) error {
-	return r.registerEvent(ctx, gensql.EventTypeCreateTeam, 5*time.Minute, team)
+	return r.registerEvent(ctx, gensql.EventTypeCreateTeam, team.ID, 5*time.Minute, team)
 }
 
 func (r *Repo) RegisterUpdateTeamEvent(ctx context.Context, team gensql.Team) error {
-	return r.registerEvent(ctx, gensql.EventTypeUpdateTeam, 5*time.Minute, team)
+	return r.registerEvent(ctx, gensql.EventTypeUpdateTeam, team.ID, 5*time.Minute, team)
 }
 
-func (r *Repo) RegisterDeleteTeamEvent(ctx context.Context, team string) error {
-	return r.registerEvent(ctx, gensql.EventTypeDeleteTeam, 5*time.Minute, team)
+func (r *Repo) RegisterDeleteTeamEvent(ctx context.Context, teamID string) error {
+	return r.registerEvent(ctx, gensql.EventTypeDeleteTeam, teamID, 5*time.Minute, teamID)
 }
-func (r *Repo) RegisterDeleteComputeEvent(ctx context.Context, user string) error {
-	return r.registerEvent(ctx, gensql.EventTypeDeleteCompute, 5*time.Minute, user)
+func (r *Repo) RegisterDeleteComputeEvent(ctx context.Context, email string) error {
+	return r.registerEvent(ctx, gensql.EventTypeDeleteCompute, email, 5*time.Minute, email)
 }
 func (r *Repo) RegisterCreateComputeEvent(ctx context.Context, instance gensql.ComputeInstance) error {
-	return r.registerEvent(ctx, gensql.EventTypeCreateCompute, 5*time.Minute, instance)
+	return r.registerEvent(ctx, gensql.EventTypeCreateCompute, instance.Email, 5*time.Minute, instance)
 }
 
-func (r *Repo) RegisterCreateAirflowEvent(ctx context.Context, values any) error {
-	return r.registerEvent(ctx, gensql.EventTypeCreateAirflow, 5*time.Minute, values)
+func (r *Repo) RegisterCreateAirflowEvent(ctx context.Context, teamID string, values any) error {
+	return r.registerEvent(ctx, gensql.EventTypeCreateAirflow, teamID, 5*time.Minute, values)
 }
 
-func (r *Repo) RegisterUpdateAirflowEvent(ctx context.Context, values any) error {
-	return r.registerEvent(ctx, gensql.EventTypeUpdateAirflow, 5*time.Minute, values)
+func (r *Repo) RegisterUpdateAirflowEvent(ctx context.Context, teamID string, values any) error {
+	return r.registerEvent(ctx, gensql.EventTypeUpdateAirflow, teamID, 5*time.Minute, values)
 }
 
-func (r *Repo) RegisterDeleteAirflowEvent(ctx context.Context, team string) error {
-	return r.registerEvent(ctx, gensql.EventTypeDeleteAirflow, 5*time.Minute, team)
+func (r *Repo) RegisterDeleteAirflowEvent(ctx context.Context, teamID string) error {
+	return r.registerEvent(ctx, gensql.EventTypeDeleteAirflow, teamID, 5*time.Minute, teamID)
 }
 
-func (r *Repo) RegisterCreateJupyterEvent(ctx context.Context, values any) error {
-	return r.registerEvent(ctx, gensql.EventTypeCreateJupyter, 5*time.Minute, values)
+func (r *Repo) RegisterCreateJupyterEvent(ctx context.Context, teamID string, values any) error {
+	return r.registerEvent(ctx, gensql.EventTypeCreateJupyter, teamID, 5*time.Minute, values)
 }
 
-func (r *Repo) RegisterUpdateJupyterEvent(ctx context.Context, values any) error {
-	return r.registerEvent(ctx, gensql.EventTypeUpdateJupyter, 5*time.Minute, values)
+func (r *Repo) RegisterUpdateJupyterEvent(ctx context.Context, teamID string, values any) error {
+	return r.registerEvent(ctx, gensql.EventTypeUpdateJupyter, teamID, 5*time.Minute, values)
 }
 
-func (r *Repo) RegisterDeleteJupyterEvent(ctx context.Context, team string) error {
-	return r.registerEvent(ctx, gensql.EventTypeDeleteJupyter, 5*time.Minute, team)
-}
-
-func (r *Repo) EventLogCreate(ctx context.Context, id uuid.UUID, message string, logType gensql.LogType) error {
-	return r.querier.EventLogCreate(ctx, gensql.EventLogCreateParams{
-		EventID: id,
-		Message: message,
-		LogType: logType,
-	})
+func (r *Repo) RegisterDeleteJupyterEvent(ctx context.Context, teamID string) error {
+	return r.registerEvent(ctx, gensql.EventTypeDeleteJupyter, teamID, 5*time.Minute, teamID)
 }
 
 func (r *Repo) EventSetDeadline(ctx context.Context, deadline time.Time) error {
@@ -97,4 +107,71 @@ func (r *Repo) EventsGetOverdue(ctx context.Context) ([]gensql.Event, error) {
 
 func (r *Repo) EventsGetPending(ctx context.Context) ([]gensql.Event, error) {
 	return r.querier.EventsGetPending(ctx)
+}
+
+func (r *Repo) EventLogCreate(ctx context.Context, id uuid.UUID, message string, logType gensql.LogType) error {
+	return r.querier.EventLogCreate(ctx, gensql.EventLogCreateParams{
+		EventID: id,
+		Message: message,
+		LogType: logType,
+	})
+}
+
+func (r *Repo) EventLogsForEventsGet(ctx context.Context) ([]Event, error) {
+	eventRows, err := r.querier.EventLogsForEventsGet(ctx, 500)
+	if err != nil {
+		return nil, err
+	}
+
+	var events []Event
+	for _, row := range eventRows {
+		var logs []EventLog
+		err := json.Unmarshal(row.JsonAgg, &logs)
+		if err != nil {
+			return nil, err
+		}
+
+		events = append(events, Event{
+			Owner:     row.Owner,
+			Type:      row.EventType,
+			Status:    row.Status,
+			Deadline:  row.Deadline,
+			CreatedAt: row.CreatedAt,
+			UpdatedAt: row.UpdatedAt,
+			Logs:      logs,
+		})
+	}
+
+	return events, nil
+}
+
+func (r *Repo) EventLogsForOwnerGet(ctx context.Context, owner string) ([]Event, error) {
+	eventRows, err := r.querier.EventLogsForOwnerGet(ctx, gensql.EventLogsForOwnerGetParams{
+		Owner: owner,
+		Lim:   500,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var events []Event
+	for _, row := range eventRows {
+		var logs []EventLog
+		err := json.Unmarshal(row.JsonAgg, &logs)
+		if err != nil {
+			return nil, err
+		}
+
+		events = append(events, Event{
+			Owner:     row.Owner,
+			Type:      row.EventType,
+			Status:    row.Status,
+			Deadline:  row.Deadline,
+			CreatedAt: row.CreatedAt,
+			UpdatedAt: row.UpdatedAt,
+			Logs:      logs,
+		})
+	}
+
+	return events, nil
 }

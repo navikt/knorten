@@ -40,7 +40,6 @@ func (e EventLogger) Error(messages ...any) {
 		messageAsString := fmt.Sprint(message)
 
 		e.log.Error(messageAsString)
-		fmt.Println(e.log.String())
 		err := e.repo.EventLogCreate(e.context, e.eventID, messageAsString, gensql.LogTypeError)
 		if err != nil {
 			e.log.WithError(err).Error("can't write event to database")

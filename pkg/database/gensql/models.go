@@ -225,6 +225,7 @@ type Event struct {
 	Deadline  time.Time
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	Owner     string
 }
 
 type EventLog struct {

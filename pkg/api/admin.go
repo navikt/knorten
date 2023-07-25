@@ -290,6 +290,24 @@ func (c *client) setupAdminRoutes() {
 
 		ctx.Redirect(http.StatusSeeOther, "/admin")
 	})
+
+	c.router.GET("/admin/events", func(ctx *gin.Context) {
+		events, err := c.repo.EventLogsForEventsGet(ctx)
+		if err != nil {
+			c.log.WithError(err).Errorf("getting event logs")
+			session := sessions.Default(ctx)
+			session.AddFlash(err.Error())
+			err = session.Save()
+			if err != nil {
+				c.log.WithError(err).Error("problem saving session")
+			}
+			ctx.Redirect(http.StatusSeeOther, "/admin")
+		}
+
+		c.htmlResponseWrapper(ctx, http.StatusOK, "admin/events", gin.H{
+			"events": events,
+		})
+	})
 }
 
 func (c *client) syncTeams(ctx context.Context) error {
@@ -324,18 +342,18 @@ func (c *client) syncChartForAllTeams(ctx context.Context, chartType gensql.Char
 	return nil
 }
 
-func (c *client) syncChart(ctx context.Context, team string, chartType gensql.ChartType) error {
+func (c *client) syncChart(ctx context.Context, teamID string, chartType gensql.ChartType) error {
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
 		values := chart.JupyterConfigurableValues{
-			TeamID: team,
+			TeamID: teamID,
 		}
-		return c.repo.RegisterUpdateJupyterEvent(ctx, values)
+		return c.repo.RegisterUpdateJupyterEvent(ctx, teamID, values)
 	case gensql.ChartTypeAirflow:
 		values := chart.AirflowConfigurableValues{
-			TeamID: team,
+			TeamID: teamID,
 		}
-		return c.repo.RegisterUpdateAirflowEvent(ctx, values)
+		return c.repo.RegisterUpdateAirflowEvent(ctx, teamID, values)
 	}
 
 	return nil

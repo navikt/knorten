@@ -6,8 +6,6 @@ package gensql
 
 import (
 	"context"
-
-	"github.com/google/uuid"
 )
 
 type Querier interface {
@@ -18,9 +16,9 @@ type Querier interface {
 	ComputeInstanceDelete(ctx context.Context, email string) error
 	ComputeInstanceGet(ctx context.Context, email string) (ComputeInstance, error)
 	EventCreate(ctx context.Context, arg EventCreateParams) error
-	EventGet(ctx context.Context, id uuid.UUID) (Event, error)
 	EventLogCreate(ctx context.Context, arg EventLogCreateParams) error
-	EventLogsForEventGet(ctx context.Context, eventID uuid.UUID) ([]EventLog, error)
+	EventLogsForEventsGet(ctx context.Context, lim int32) ([]EventLogsForEventsGetRow, error)
+	EventLogsForOwnerGet(ctx context.Context, arg EventLogsForOwnerGetParams) ([]EventLogsForOwnerGetRow, error)
 	EventSetDeadline(ctx context.Context, arg EventSetDeadlineParams) error
 	EventSetStatus(ctx context.Context, arg EventSetStatusParams) error
 	EventsGetNew(ctx context.Context) ([]Event, error)

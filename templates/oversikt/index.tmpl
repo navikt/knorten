@@ -16,10 +16,12 @@
                 {{ end }}
             </div>
 
-            <p class="flex items-center gap-4 pb-4">Vi har endret det slik at man kun ha private Compute instances (også kalt Knorten VM/Kve-em). Dette betyr
+            <p class="flex items-center gap-4 pb-4">Vi har endret det slik at man kun ha private Compute instances (også
+                kalt Knorten VM/Kve-em). Dette betyr
                 at man må migrere seg vekk fra team baserte maskiner til hver sin private.
             </p>
-            <p class="flex items-center gap-4 pb-4">Vi vil ta kontakt med dere som har team-baserte VM-er i løpet av måneden.</p>
+            <p class="flex items-center gap-4 pb-4">Vi vil ta kontakt med dere som har team-baserte VM-er i løpet av
+                måneden.</p>
 
             {{ with .user.Compute }}
                 <table class="navds-table navds-table--small">
@@ -44,6 +46,24 @@
                     </tr>
                     </tbody>
                 </table>
+                <br>
+                <label for="machine_types" class="navds-form-field__label navds-label">Eventlogs</label>
+                <table class="navds-table navds-table--small">
+                    <thead class="navds-table__header">
+                    <tr class="navds-table__row">
+                        <th class="navds-table__header-cell navds-label navds-label--small">Level</th>
+                        <th class="navds-table__header-cell navds-label navds-label--small">Message</th>
+                        <th class="navds-table__header-cell navds-label navds-label--small">Created at</th>
+                    </tr>
+                    </thead>
+                    <tbody class="navds-table__body">
+                    {{ range .Events }}
+                        {{ range .Logs }}
+                            {{ template "events/row" . }}
+                        {{ end }}
+                    {{ end }}
+                    </tbody>
+                </table>
             {{ else }}
                 <a class="navds-button--small navds-button--secondary" href="compute/new">Opprett</a>
             {{ end }}
@@ -58,11 +78,13 @@
                     <a class="navds-button--small navds-button--secondary" href="team/{{ .Slug }}/edit">Rediger</a>
                 </div>
                 {{ with .Airflow }}
-                    <a class="navds-link" target="_blank" href="https://console.cloud.google.com/security/secret-manager/secret/{{ .TeamID }}/versions?project={{ $.gcpProject }}">
+                    <a class="navds-link" target="_blank"
+                       href="https://console.cloud.google.com/security/secret-manager/secret/{{ $.TeamID }}/versions?project={{ $.gcpProject }}">
                         Secret Manager
                     </a>
                     <p class="pb-4 flex items-center gap-2">
-                        <b>Service account:</b> <code class="text-base p-1 bg-gray-50">{{ .TeamID }}@{{ $.gcpProject }}.iam.gserviceaccount.com</code>
+                        <b>Service account:</b> <code class="text-base p-1 bg-gray-50">{{ $.TeamID }}@{{ $.gcpProject }}
+                            .iam.gserviceaccount.com</code>
                     </p>
                 {{ end }}
                 <label for="machine_types" class="navds-form-field__label navds-label">Apper</label>
@@ -96,6 +118,24 @@
                                 <a class="navds-link" href="/team/{{ .Slug }}/airflow/new">Installer</a>
                             </td>
                         </tr>
+                    {{ end }}
+                    </tbody>
+                </table>
+                <br>
+                <label for="machine_types" class="navds-form-field__label navds-label">Eventlogs</label>
+                <table class="navds-table navds-table--small">
+                    <thead class="navds-table__header">
+                    <tr class="navds-table__row">
+                        <th class="navds-table__header-cell navds-label navds-label--small">Level</th>
+                        <th class="navds-table__header-cell navds-label navds-label--small">Message</th>
+                        <th class="navds-table__header-cell navds-label navds-label--small">Created at</th>
+                    </tr>
+                    </thead>
+                    <tbody class="navds-table__body">
+                    {{ range .Events }}
+                        {{ range .Logs }}
+                            {{ template "events/row" . }}
+                        {{ end }}
                     {{ end }}
                     </tbody>
                 </table>

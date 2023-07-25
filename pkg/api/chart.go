@@ -320,7 +320,7 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 			CullTimeout: strconv.FormatUint(cullTimeout, 10),
 		}
 
-		return c.repo.RegisterCreateJupyterEvent(ctx, values)
+		return c.repo.RegisterCreateJupyterEvent(ctx, team.ID, values)
 	case gensql.ChartTypeAirflow:
 		var form airflowForm
 		err := ctx.ShouldBindWith(&form, binding.Form)
@@ -341,7 +341,7 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 			RestrictEgress: form.RestrictEgress == "on",
 		}
 
-		return c.repo.RegisterCreateAirflowEvent(ctx, values)
+		return c.repo.RegisterCreateAirflowEvent(ctx, team.ID, values)
 	}
 
 	return fmt.Errorf("chart type %v is not supported", chartType)
@@ -437,7 +437,7 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 			CullTimeout: form.CullTimeout,
 		}
 
-		return c.repo.RegisterUpdateJupyterEvent(ctx, values)
+		return c.repo.RegisterUpdateJupyterEvent(ctx, team.ID, values)
 	case gensql.ChartTypeAirflow:
 		var form airflowForm
 		err := ctx.ShouldBindWith(&form, binding.Form)
@@ -468,7 +468,7 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 			RestrictEgress: restrictEgress,
 		}
 
-		return c.repo.RegisterUpdateAirflowEvent(ctx, values)
+		return c.repo.RegisterUpdateAirflowEvent(ctx, team.ID, values)
 	}
 
 	return fmt.Errorf("chart type %v is not supported", chartType)

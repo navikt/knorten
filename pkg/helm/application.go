@@ -247,8 +247,7 @@ func mutateGlobalListValue(pKeys []string, key string, idx int, value any, value
 	}
 
 	if len(parentList) == 0 {
-		parentList = append(parentList, value)
-		return value, nil
+		parentList = append(parentList, map[string]any{})
 	}
 
 	if parent, ok := parentList[idx].(map[string]any); ok {
@@ -268,7 +267,17 @@ func findParentList(pKeys []string, values map[string]any) []any {
 	key := pKeys[0]
 
 	if len(pKeys) > 1 {
+		_, ok := values[key].(map[string]any)
+		if !ok {
+			values[key] = map[string]any{}
+		}
+
 		return findParentList(pKeys[1:], values[key].(map[string]any))
+	}
+
+	_, ok := values[key].([]any)
+	if !ok {
+		values[key] = []any{}
 	}
 
 	return values[key].([]any)

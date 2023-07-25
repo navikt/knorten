@@ -26,6 +26,24 @@ func Test_parseTeamValue(t *testing.T) {
 			want: map[string]any{"webserver": map[string]any{"image": "ghcr.io/org/repo:tag", "name": "flowtheair"}},
 		},
 		{
+			name: "Quoted value",
+			args: args{
+				key:    "ingress.web.path",
+				value:  `"/*"`,
+				values: map[string]any{"ingress": map[string]any{"web": map[string]any{}}},
+			},
+			want: map[string]any{"ingress": map[string]any{"web": map[string]any{"path": "/*"}}},
+		},
+		{
+			name: "Quoted keys and value",
+			args: args{
+				key:    "ingress.web.annotations.kubernetes\\.io/ingress\\.allow-http",
+				value:  `"true"`,
+				values: map[string]any{},
+			},
+			want: map[string]any{"ingress": map[string]any{"web": map[string]any{"annotations": map[string]any{"kubernetes.io/ingress.allow-http": "true"}}}},
+		},
+		{
 			name: "Replace nested value test",
 			args: args{
 				key:    "webserver.extraContainers.[0].args",

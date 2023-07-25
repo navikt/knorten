@@ -246,6 +246,11 @@ func mutateGlobalListValue(pKeys []string, key string, idx int, value any, value
 		return nil, err
 	}
 
+	if len(parentList) == 0 {
+		parentList = append(parentList, value)
+		return value, nil
+	}
+
 	if parent, ok := parentList[idx].(map[string]any); ok {
 		parent, err := parseTeamValue(key, value, parent)
 		if err != nil {
@@ -254,6 +259,7 @@ func mutateGlobalListValue(pKeys []string, key string, idx int, value any, value
 
 		return parent, nil
 	}
+
 	parentList[idx] = value
 	return parentList[idx], nil
 }

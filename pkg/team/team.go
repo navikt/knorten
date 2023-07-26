@@ -37,10 +37,10 @@ func NewClient(repo *database.Repo, gcpProject, gcpRegion string, dryRun, inClus
 }
 
 func (c Client) Create(ctx context.Context, team gensql.Team, log logger.Logger) bool {
-	log = log.WithField("team", team.Slug)
+	log = log.WithField("team", team.ID)
 	log.Infof("Creating team %v", team.ID)
 
-	existingTeam, err := c.repo.TeamBySlugGet(ctx, team.Slug)
+	existingTeam, err := c.repo.TeamGet(ctx, team.ID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.WithError(err).Error("failed retrieving team from database")
 		return true
@@ -77,8 +77,8 @@ func (c Client) Create(ctx context.Context, team gensql.Team, log logger.Logger)
 }
 
 func (c Client) Update(ctx context.Context, team gensql.Team, log logger.Logger) bool {
-	log = log.WithField("team", team.Slug)
-	log.Infof("Updating team %v", team.Slug)
+	log = log.WithField("team", team.ID)
+	log.Infof("Updating team %v", team.ID)
 
 	err := c.repo.TeamUpdate(ctx, team)
 	if err != nil {
@@ -113,11 +113,11 @@ func (c Client) Update(ctx context.Context, team gensql.Team, log logger.Logger)
 	return false
 }
 
-func (c Client) Delete(ctx context.Context, teamSlug string, log logger.Logger) bool {
-	log = log.WithField("team", teamSlug)
-	log.Infof("Deleting team %v", teamSlug)
+func (c Client) Delete(ctx context.Context, teamID string, log logger.Logger) bool {
+	log = log.WithField("team", teamID)
+	log.Infof("Deleting team %v", teamID)
 
-	team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
+	team, err := c.repo.TeamGet(ctx, teamID)
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
 		log.WithError(err).Error("failed retrieving team from database")
 		return true
@@ -145,6 +145,6 @@ func (c Client) Delete(ctx context.Context, teamSlug string, log logger.Logger) 
 		return true
 	}
 
-	log.Infof("Successfully deleted team %v", teamSlug)
+	log.Infof("Successfully deleted team %v", teamID)
 	return false
 }

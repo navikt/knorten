@@ -22,7 +22,6 @@ type Querier interface {
 	EventSetStatus(ctx context.Context, arg EventSetStatusParams) error
 	EventsGetNew(ctx context.Context) ([]Event, error)
 	EventsGetOverdue(ctx context.Context) ([]Event, error)
-	EventsGetPending(ctx context.Context) ([]Event, error)
 	GlobalValueDelete(ctx context.Context, arg GlobalValueDeleteParams) error
 	GlobalValueGet(ctx context.Context, arg GlobalValueGetParams) (ChartGlobalValue, error)
 	GlobalValueInsert(ctx context.Context, arg GlobalValueInsertParams) error

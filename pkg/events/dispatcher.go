@@ -135,9 +135,6 @@ func (e EventHandler) Run() {
 		func() ([]gensql.Event, error) {
 			return e.repo.EventsGetOverdue(e.context)
 		},
-		func() ([]gensql.Event, error) {
-			return e.repo.EventsGetPending(e.context)
-		},
 	}
 
 	go func() {

@@ -101,10 +101,6 @@ func (r *Repo) EventsGetOverdue(ctx context.Context) ([]gensql.Event, error) {
 	return r.querier.EventsGetOverdue(ctx)
 }
 
-func (r *Repo) EventsGetPending(ctx context.Context) ([]gensql.Event, error) {
-	return r.querier.EventsGetPending(ctx)
-}
-
 func (r *Repo) EventLogCreate(ctx context.Context, id uuid.UUID, message string, logType gensql.LogType) error {
 	return r.querier.EventLogCreate(ctx, gensql.EventLogCreateParams{
 		EventID: id,

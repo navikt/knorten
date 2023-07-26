@@ -35,8 +35,8 @@ func (r *Repo) TeamBySlugGet(ctx context.Context, slug string) (gensql.TeamBySlu
 	return r.querier.TeamBySlugGet(ctx, slug)
 }
 
-func (r *Repo) TeamDelete(ctx context.Context, team string) error {
-	return r.querier.TeamDelete(ctx, team)
+func (r *Repo) TeamDelete(ctx context.Context, teamID string) error {
+	return r.querier.TeamDelete(ctx, teamID)
 }
 
 func (r *Repo) TeamsGet(ctx context.Context) ([]gensql.Team, error) {
@@ -95,40 +95,40 @@ func (r *Repo) TeamSetApiAccess(ctx context.Context, teamID string, apiAccess bo
 	})
 }
 
-func (r *Repo) TeamChartValueInsert(ctx context.Context, key, value, team string, chartType gensql.ChartType) error {
+func (r *Repo) TeamChartValueInsert(ctx context.Context, key, value, teamID string, chartType gensql.ChartType) error {
 	return r.querier.TeamValueInsert(ctx, gensql.TeamValueInsertParams{
 		Key:       key,
 		Value:     value,
-		TeamID:    team,
+		TeamID:    teamID,
 		ChartType: chartType,
 	})
 }
 
-func (r *Repo) TeamValuesGet(ctx context.Context, chartType gensql.ChartType, team string) ([]gensql.ChartTeamValue, error) {
+func (r *Repo) TeamValuesGet(ctx context.Context, chartType gensql.ChartType, teamID string) ([]gensql.ChartTeamValue, error) {
 	return r.querier.TeamValuesGet(ctx, gensql.TeamValuesGetParams{
 		ChartType: chartType,
-		TeamID:    team,
+		TeamID:    teamID,
 	})
 }
 
-func (r *Repo) TeamValueGet(ctx context.Context, key, team string) (gensql.ChartTeamValue, error) {
+func (r *Repo) TeamValueGet(ctx context.Context, key, teamID string) (gensql.ChartTeamValue, error) {
 	return r.querier.TeamValueGet(ctx, gensql.TeamValueGetParams{
 		Key:    key,
-		TeamID: team,
+		TeamID: teamID,
 	})
 }
 
-func (r *Repo) TeamValueDelete(ctx context.Context, key, team string) error {
+func (r *Repo) TeamValueDelete(ctx context.Context, key, teamID string) error {
 	return r.querier.TeamValueDelete(ctx, gensql.TeamValueDeleteParams{
 		Key:    key,
-		TeamID: team,
+		TeamID: teamID,
 	})
 }
 
-func (r *Repo) TeamConfigurableValuesGet(ctx context.Context, chartType gensql.ChartType, team string, obj any) error {
+func (r *Repo) TeamConfigurableValuesGet(ctx context.Context, chartType gensql.ChartType, teamID string, obj any) error {
 	teamValues, err := r.querier.TeamValuesGet(ctx, gensql.TeamValuesGetParams{
 		ChartType: chartType,
-		TeamID:    team,
+		TeamID:    teamID,
 	})
 	if err != nil {
 		return err

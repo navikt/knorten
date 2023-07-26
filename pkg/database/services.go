@@ -71,8 +71,14 @@ func (r *Repo) ServicesForUser(ctx context.Context, email string) (UserServices,
 		return UserServices{}, err
 	}
 
-	slices.SortFunc(teamsForUser, func(a, b gensql.TeamsForUserGetRow) bool {
-		return a.ID < b.ID
+	slices.SortFunc(teamsForUser, func(a, b gensql.TeamsForUserGetRow) int {
+		if a.ID < b.ID {
+			return -1
+		} else if a.ID > b.ID {
+			return 1
+		} else {
+			return 0
+		}
 	})
 
 	var userServices UserServices

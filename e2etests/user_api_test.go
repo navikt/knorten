@@ -89,20 +89,63 @@ func TestOverviewAPI(t *testing.T) {
 		}
 
 		expected, err := createExpectedHTML("oversikt/index", map[string]any{
-			// TODO: Legg inn ComputeInstance
-			"services": []database.TeamServices{
+			"services": []database.UserServices{
 				{
-					Slug:   teamName,
-					TeamID: team.ID,
-					Jupyterhub: &database.AppService{
-						App:     string(gensql.ChartTypeJupyterhub),
-						Ingress: "https://" + teamName + ".jupyter.knada.io",
-						Slug:    teamName,
+					Services: []database.TeamServices{
+						{
+							Slug:   team.Slug,
+							TeamID: team.ID,
+							Jupyterhub: &database.AppService{
+								App:     string(gensql.ChartTypeJupyterhub),
+								Ingress: "https://" + teamSlug + ".jupyter.knada.io",
+								Slug:    teamSlug,
+							},
+							Airflow: &database.AppService{
+								App:     string(gensql.ChartTypeAirflow),
+								Ingress: "https://" + teamSlug + ".airflow.knada.io",
+								Slug:    teamSlug,
+							},
+							Events: []database.Event{
+								{
+									ID:        uuid.New(),
+									Owner:     team.ID,
+									Type:      gensql.EventTypeUpdateJupyter,
+									Status:    gensql.EventStatusCompleted,
+									Deadline:  "30m",
+									CreatedAt: time.Now(),
+									UpdatedAt: time.Now(),
+									Logs: []database.EventLog{
+										{
+											Message:   "test services",
+											LogType:   gensql.LogTypeInfo,
+											CreatedAt: time.Now(),
+										},
+									},
+								},
+							},
+						},
 					},
-					Airflow: &database.AppService{
-						App:     string(gensql.ChartTypeAirflow),
-						Ingress: "https://" + teamName + ".airflow.knada.io",
-						Slug:    teamName,
+					Compute: &database.ComputeService{
+						Email: "dummy@nav.no",
+						Name:  "compute-dummy",
+						Events: []database.Event{
+							{
+								ID:        uuid.New(),
+								Owner:     team.ID,
+								Type:      gensql.EventTypeCreateCompute,
+								Status:    gensql.EventStatusCompleted,
+								Deadline:  "30m",
+								CreatedAt: time.Now(),
+								UpdatedAt: time.Now(),
+								Logs: []database.EventLog{
+									{
+										Message:   "test compute",
+										LogType:   gensql.LogTypeInfo,
+										CreatedAt: time.Now(),
+									},
+								},
+							},
+						},
 					},
 				},
 			},

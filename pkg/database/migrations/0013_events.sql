@@ -50,9 +50,21 @@ CREATE TABLE Event_Logs
     FOREIGN KEY (event_id) REFERENCES Events (id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_event_logs_event_id ON Event_Logs (event_id);
+-- +goose StatementBegin
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+    RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+-- +goose StatementEnd
+
+CREATE TRIGGER update_events_updated_at BEFORE UPDATE ON events FOR EACH ROW EXECUTE PROCEDURE  update_updated_at_column();
 
 -- +goose Down
+DROP FUNCTION update_updated_at_column();
+
 DROP TABLE Event_Logs;
 
 DROP TABLE Events;

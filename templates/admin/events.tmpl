@@ -14,6 +14,16 @@
                     <br>
                     <strong>Updated at:</strong> {{ .UpdatedAt.Format "2006-01-02 15:04:05" }}
                 </p>
+                {{ if eq .Status "pending" }}
+                    <form action="/admin/events/ID?status=new" method="POST">
+                        <button
+                                type="submit"
+                                onclick="return confirm('Er du sikker på at du vil sette status til new?')"
+                                class="mb-4 navds-button navds-button--secondary navds-button--small">
+                            <span class="navds-label">Sett status til new</span>
+                        </button>
+                    </form>
+                {{ end }}
                 <label for="machine_types" class="navds-form-field__label navds-label">Eventlogs</label>
                 <table class="navds-table navds-table--small">
                     <thead class="navds-table__header">

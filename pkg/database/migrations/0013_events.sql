@@ -32,10 +32,10 @@ CREATE TABLE Events
     event_type event_type                             NOT NULL,
     task       JSONB                                  NOT NULL,
     status     event_status DEFAULT 'new'             NOT NULL,
-    deadline   TIMESTAMP                              NOT NULL,
+    deadline   TEXT                                   NOT NULL,
     created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    owner      text                                   NOT NULL,
+    owner      TEXT                                   NOT NULL,
     PRIMARY KEY (id)
 );
 

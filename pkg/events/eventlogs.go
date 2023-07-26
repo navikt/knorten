@@ -3,7 +3,6 @@ package events
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/nais/knorten/pkg/database"
@@ -44,11 +43,6 @@ func (e EventLogger) Error(messages ...any) {
 		if err != nil {
 			e.log.WithError(err).Error("can't write event to database")
 		}
-	}
-
-	err := e.repo.EventSetDeadline(e.context, time.Now().Add(3*time.Minute))
-	if err != nil {
-		e.log.WithError(err).Errorf("can't extend the deadline for event")
 	}
 }
 

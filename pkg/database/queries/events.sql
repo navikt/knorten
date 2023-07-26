@@ -21,14 +21,8 @@ ORDER BY created_at DESC;
 -- name: EventsGetOverdue :many
 SELECT *
 FROM Events
-WHERE status = 'new'
-  AND deadline < NOW();
-
--- name: EventSetDeadline :exec
-UPDATE
-    Events
-SET deadline = @deadline
-WHERE id = @id;
+WHERE status = 'pending'
+  AND updated_at + deadline::interval < NOW();
 
 -- name: EventSetStatus :exec
 UPDATE
@@ -49,7 +43,7 @@ SELECT events.event_type,
        events.owner,
        json_agg(el.*) AS json_logs
 FROM events
-         JOIN (SELECT event_id, message, log_type, created_at::timestamptz FROM event_logs ORDER BY event_logs.created_at DESC) el
+         JOIN (SELECT event_id, message, log_type, created_at::timestamptz FROM event_logs ORDER BY event_logs.created_at DESC LIMIT @lim) el
               ON el.event_id = events.id
 GROUP BY events.id, events.updated_at
 ORDER BY events.updated_at DESC
@@ -64,7 +58,7 @@ SELECT events.event_type,
        events.owner,
        json_agg(el.*) AS json_logs
 FROM events
-         JOIN (SELECT event_id, message, log_type, created_at::timestamptz FROM event_logs ORDER BY event_logs.created_at DESC) el
+         JOIN (SELECT event_id, message, log_type, created_at::timestamptz FROM event_logs ORDER BY event_logs.created_at DESC LIMIT @lim) el
               ON el.event_id = events.id
 WHERE owner = @owner
 GROUP BY events.id, events.updated_at

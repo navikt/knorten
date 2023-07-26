@@ -19,7 +19,7 @@ type Event struct {
 	Owner     string
 	Type      gensql.EventType
 	Status    gensql.EventStatus
-	Deadline  time.Time
+	Deadline  string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	Logs      []EventLog
@@ -35,7 +35,7 @@ func (r *Repo) registerEvent(ctx context.Context, eventType gensql.EventType, ow
 		Owner:     owner,
 		EventType: eventType,
 		Task:      jsonTask,
-		Deadline:  time.Now().Add(deadlineOffset),
+		Deadline:  string(deadlineOffset),
 	})
 	if err != nil {
 		return err
@@ -86,9 +86,6 @@ func (r *Repo) RegisterDeleteJupyterEvent(ctx context.Context, teamID string) er
 	return r.registerEvent(ctx, gensql.EventTypeDeleteJupyter, teamID, 5*time.Minute, teamID)
 }
 
-func (r *Repo) EventSetDeadline(ctx context.Context, deadline time.Time) error {
-	return r.querier.EventSetDeadline(ctx, gensql.EventSetDeadlineParams{Deadline: deadline})
-}
 func (r *Repo) EventSetStatus(ctx context.Context, id uuid.UUID, status gensql.EventStatus) error {
 	return r.querier.EventSetStatus(ctx, gensql.EventSetStatusParams{
 		Status: status,

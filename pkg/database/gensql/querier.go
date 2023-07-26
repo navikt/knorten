@@ -19,7 +19,6 @@ type Querier interface {
 	EventLogCreate(ctx context.Context, arg EventLogCreateParams) error
 	EventLogsForEventsGet(ctx context.Context, lim int32) ([]EventLogsForEventsGetRow, error)
 	EventLogsForOwnerGet(ctx context.Context, arg EventLogsForOwnerGetParams) ([]EventLogsForOwnerGetRow, error)
-	EventSetDeadline(ctx context.Context, arg EventSetDeadlineParams) error
 	EventSetStatus(ctx context.Context, arg EventSetStatusParams) error
 	EventsGetNew(ctx context.Context) ([]Event, error)
 	EventsGetOverdue(ctx context.Context) ([]Event, error)

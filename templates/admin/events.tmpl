@@ -15,7 +15,7 @@
                     <strong>Updated at:</strong> {{ .UpdatedAt.Format "2006-01-02 15:04:05" }}
                 </p>
                 {{ if eq .Status "pending" }}
-                    <form action="/admin/events/ID?status=new" method="POST">
+                    <form action="/admin/events/{{ .ID }}?status=new" method="POST">
                         <button
                                 type="submit"
                                 onclick="return confirm('Er du sikker på at du vil sette status til new?')"

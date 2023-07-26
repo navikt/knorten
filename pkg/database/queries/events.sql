@@ -29,7 +29,8 @@ INSERT INTO Event_Logs (event_id, log_type, message)
 VALUES (@event_id, @log_type, @message);
 
 -- name: EventLogsForEventsGet :many
-SELECT events.event_type,
+SELECT events.id,
+       events.event_type,
        events.status,
        events.deadline,
        events.created_at,
@@ -37,7 +38,10 @@ SELECT events.event_type,
        events.owner,
        json_agg(el.*) AS json_logs
 FROM events
-         JOIN (SELECT event_id, message, log_type, created_at::timestamptz FROM event_logs ORDER BY event_logs.created_at DESC LIMIT @lim) el
+         JOIN (SELECT event_id, message, log_type, created_at::timestamptz
+               FROM event_logs
+               ORDER BY event_logs.created_at DESC
+               LIMIT @lim) el
               ON el.event_id = events.id
 GROUP BY events.id, events.updated_at
 ORDER BY events.updated_at DESC
@@ -52,7 +56,10 @@ SELECT events.event_type,
        events.owner,
        json_agg(el.*) AS json_logs
 FROM events
-         JOIN (SELECT event_id, message, log_type, created_at::timestamptz FROM event_logs ORDER BY event_logs.created_at DESC LIMIT @lim) el
+         JOIN (SELECT event_id, message, log_type, created_at::timestamptz
+               FROM event_logs
+               ORDER BY event_logs.created_at DESC
+               LIMIT @lim) el
               ON el.event_id = events.id
 WHERE owner = @owner
 GROUP BY events.id, events.updated_at

@@ -16,6 +16,7 @@ type EventLog struct {
 }
 
 type Event struct {
+	ID        uuid.UUID
 	Owner     string
 	Type      gensql.EventType
 	Status    gensql.EventStatus
@@ -124,6 +125,7 @@ func (r *Repo) EventLogsForEventsGet(ctx context.Context) ([]Event, error) {
 		}
 
 		events = append(events, Event{
+			ID:        row.ID,
 			Owner:     row.Owner,
 			Type:      row.EventType,
 			Status:    row.Status,

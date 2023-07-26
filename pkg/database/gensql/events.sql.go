@@ -56,7 +56,8 @@ func (q *Queries) EventLogCreate(ctx context.Context, arg EventLogCreateParams) 
 }
 
 const eventLogsForEventsGet = `-- name: EventLogsForEventsGet :many
-SELECT events.event_type,
+SELECT events.id,
+       events.event_type,
        events.status,
        events.deadline,
        events.created_at,
@@ -64,7 +65,10 @@ SELECT events.event_type,
        events.owner,
        json_agg(el.*) AS json_logs
 FROM events
-         JOIN (SELECT event_id, message, log_type, created_at::timestamptz FROM event_logs ORDER BY event_logs.created_at DESC LIMIT $1) el
+         JOIN (SELECT event_id, message, log_type, created_at::timestamptz
+               FROM event_logs
+               ORDER BY event_logs.created_at DESC
+               LIMIT $1) el
               ON el.event_id = events.id
 GROUP BY events.id, events.updated_at
 ORDER BY events.updated_at DESC
@@ -72,6 +76,7 @@ LIMIT $1
 `
 
 type EventLogsForEventsGetRow struct {
+	ID        uuid.UUID
 	EventType EventType
 	Status    EventStatus
 	Deadline  string
@@ -91,6 +96,7 @@ func (q *Queries) EventLogsForEventsGet(ctx context.Context, lim int32) ([]Event
 	for rows.Next() {
 		var i EventLogsForEventsGetRow
 		if err := rows.Scan(
+			&i.ID,
 			&i.EventType,
 			&i.Status,
 			&i.Deadline,
@@ -121,7 +127,10 @@ SELECT events.event_type,
        events.owner,
        json_agg(el.*) AS json_logs
 FROM events
-         JOIN (SELECT event_id, message, log_type, created_at::timestamptz FROM event_logs ORDER BY event_logs.created_at DESC LIMIT $1) el
+         JOIN (SELECT event_id, message, log_type, created_at::timestamptz
+               FROM event_logs
+               ORDER BY event_logs.created_at DESC
+               LIMIT $1) el
               ON el.event_id = events.id
 WHERE owner = $2
 GROUP BY events.id, events.updated_at

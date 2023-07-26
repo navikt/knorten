@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database/gensql"
 
@@ -308,6 +309,22 @@ func (c *client) setupAdminRoutes() {
 			"events": events,
 		})
 	})
+
+	c.router.POST("/admin/events/:id", func(ctx *gin.Context) {
+		err := c.setEventStatus(ctx)
+		if err != nil {
+			c.log.WithError(err).Errorf("setting event status")
+			session := sessions.Default(ctx)
+			session.AddFlash(err.Error())
+			err = session.Save()
+			if err != nil {
+				c.log.WithError(err).Error("problem saving session")
+			}
+			ctx.Redirect(http.StatusSeeOther, "/admin/events")
+		}
+
+		ctx.Redirect(http.StatusSeeOther, "/admin/events")
+	})
 }
 
 func (c *client) syncTeams(ctx context.Context) error {
@@ -502,4 +519,21 @@ func keyForValue(values map[string]diffValue, needle string) string {
 	}
 
 	return ""
+}
+
+func (c *client) setEventStatus(ctx *gin.Context) error {
+	eventID, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		return err
+	}
+
+	var status gensql.EventStatus
+	switch ctx.Query("status") {
+	case "new":
+		status = gensql.EventStatusNew
+	default:
+		return fmt.Errorf("invalid status %v", ctx.PostForm("status"))
+	}
+
+	return c.repo.EventSetStatus(ctx, eventID, status)
 }

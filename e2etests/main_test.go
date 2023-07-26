@@ -23,6 +23,7 @@ import (
 	"github.com/nais/knorten/pkg/api"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/events"
+
 	"github.com/ory/dockertest/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/tdewolff/minify/v2"
@@ -88,7 +89,8 @@ func TestMain(m *testing.M) {
 
 	logger := logrus.NewEntry(logrus.StandardLogger())
 
-	dbRepo, err := database.New(dbString, "jegersekstentegn", logger)
+	var err error
+	repo, err = database.New(dbString, "jegersekstentegn", logger)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -97,13 +99,13 @@ func TestMain(m *testing.M) {
 		log.Fatalf("setting up knorten db: %v", err)
 	}
 
-	eventHandler, err := events.NewHandler(context.Background(), dbRepo, "", "", "", "", "", true, false, logger)
+	eventHandler, err := events.NewHandler(context.Background(), repo, "", "", "", "", "", true, false, logger)
 	if err != nil {
 		log.Fatalf("creating googleClient: %v", err)
 	}
 	eventHandler.Run()
 
-	srv, err := api.New(dbRepo, true, "", "", " ", "", "", "nada@nav.no", "", "", logrus.NewEntry(logrus.StandardLogger()))
+	srv, err := api.New(repo, true, "", "", " ", "", "", "nada@nav.no", "", "", logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatalf("creating api: %v", err)
 	}

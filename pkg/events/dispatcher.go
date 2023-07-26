@@ -127,7 +127,7 @@ func NewHandler(ctx context.Context, repo *database.Repo, gcpProject, gcpRegion,
 	}, nil
 }
 
-func (e EventHandler) Run() {
+func (e EventHandler) Run(tickDuration time.Duration) {
 	eventRetrievers := []func() ([]gensql.Event, error){
 		func() ([]gensql.Event, error) {
 			return e.repo.EventsGetNew(e.context)
@@ -140,7 +140,7 @@ func (e EventHandler) Run() {
 	go func() {
 		for {
 			select {
-			case <-time.Tick(10 * time.Second):
+			case <-time.Tick(tickDuration):
 				e.log.Debug("Event dispatcher run!")
 			case <-e.context.Done():
 				e.log.Debug("Context cancelled, stopping the event dispatcher.")

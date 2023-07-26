@@ -80,7 +80,7 @@ func main() {
 		log.WithError(err).Fatal("starting event watcher")
 		return
 	}
-	eventHandler.Run()
+	eventHandler.Run(10 * time.Second)
 
 	router, err := api.New(dbClient, cfg.DryRun, cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, cfg.SessionKey, cfg.AdminGroup, cfg.GCPProject, cfg.GCPZone, log.WithField("subsystem", "api"))
 	if err != nil {

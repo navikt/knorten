@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
@@ -50,8 +51,8 @@ func TestAdminAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if receivedMinimized != expectedMinimized {
-			t.Fatal("Received and expected HTML response are different")
+		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 
@@ -93,8 +94,8 @@ func TestAdminAPI(t *testing.T) {
 				team.ID: map[string]any{
 					"ID":    team.ID,
 					"Slug":  team.Slug,
-					"Owner": "dummy@nav.no",
-					"Users": []string{"annenbruker@nav.no"},
+					"Owner": user.Email,
+					"Users": []string{"user.userson@nav.no"},
 					"Apps":  []string{"jupyterhub", "airflow"},
 				},
 			},
@@ -107,8 +108,8 @@ func TestAdminAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if receivedMinimized != expectedMinimized {
-			t.Fatal("Received and expected HTML response are different")
+		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 
@@ -138,8 +139,13 @@ func TestAdminAPI(t *testing.T) {
 		}
 
 		expected, err := createExpectedHTML("admin/chart", map[string]any{
-			"chart":  gensql.ChartTypeJupyterhub,
-			"values": []gensql.ChartGlobalValue{},
+			"chart": gensql.ChartTypeJupyterhub,
+			"values": []gensql.ChartGlobalValue{
+				{
+					Key:   "singleuser.profileList",
+					Value: "[]",
+				},
+			},
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -149,8 +155,8 @@ func TestAdminAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if receivedMinimized != expectedMinimized {
-			t.Fatal("Received and expected HTML response are different")
+		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 
@@ -158,6 +164,7 @@ func TestAdminAPI(t *testing.T) {
 		"global.key1": "value",
 		"global.key2": "value",
 	}
+
 	if err := createJupyterGlobalValues(ctx, exisitingJupyterGlobals); err != nil {
 		t.Fatal(err)
 	}
@@ -198,6 +205,10 @@ func TestAdminAPI(t *testing.T) {
 					Key:   "global.key2",
 					Value: "value",
 				},
+				{
+					Key:   "singleuser.profileList",
+					Value: "[]",
+				},
 			},
 		})
 		if err != nil {
@@ -208,8 +219,8 @@ func TestAdminAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if receivedMinimized != expectedMinimized {
-			t.Fatal("Received and expected HTML response are different")
+		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 

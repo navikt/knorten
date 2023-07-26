@@ -2,29 +2,20 @@ package e2etests
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
-	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestComputeAPI(t *testing.T) {
-	ctx := context.Background()
-	team := gensql.Team{
-		ID:    "compute-team-1234",
-		Slug:  "compute-team",
-		Users: []string{"bruker.en@nav.no", "bruker.to@nav.no"},
-		Owner: "bruker.en@nav.no",
-	}
-
-	if err := repo.TeamCreate(ctx, team); err != nil {
-		t.Fatal(err)
-	}
-
 	t.Run("get new compute html", func(t *testing.T) {
-		resp, err := server.Client().Get(fmt.Sprintf("%v/team/%v/compute/new", server.URL, team.Slug))
+		resp, err := server.Client().Get(fmt.Sprintf("%v/compute/new", server.URL))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -57,8 +48,8 @@ func TestComputeAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if receivedMinimized != expectedMinimized {
-			t.Fatal("Received and expected HTML response are different")
+		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 
@@ -72,24 +63,23 @@ func TestComputeAPI(t *testing.T) {
 			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
-		team, err := repo.TeamBySlugGet(ctx, team.Slug)
+		instance, err := waitForComputeInstanceInDatabase(user.Email)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
-		instance, err := repo.ComputeInstanceGet(ctx, team.ID)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		expectedInstanceName := fmt.Sprintf("compute-%v", team.ID)
+		expectedInstanceName := fmt.Sprintf("compute-dummy")
 		if instance.Name != expectedInstanceName {
 			t.Fatalf("expected compute instance name %v, got %v", expectedInstanceName, instance.Name)
+		}
+
+		if instance.Email != user.Email {
+			t.Fatalf("expected compute email to be %v, got %v", user.Email, instance.Email)
 		}
 	})
 
 	t.Run("get edit compute html", func(t *testing.T) {
-		resp, err := server.Client().Get(fmt.Sprintf("%v/team/%v/compute/edit", server.URL, team.Slug))
+		resp, err := server.Client().Get(fmt.Sprintf("%v/compute/edit", server.URL))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -114,22 +104,64 @@ func TestComputeAPI(t *testing.T) {
 		}
 
 		expected, err := createExpectedHTML("compute/edit", map[string]any{
-			"name": team.ID,
+			"name":       "compute-dummy",
+			"gcpZone":    "",
+			"gcpProject": "",
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		expectedMinimized, err := minimizeHTML(expected)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if receivedMinimized != expectedMinimized {
-			t.Fatal("Received and expected HTML response are different")
+		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 
-	if err := repo.TeamDelete(ctx, team.ID); err != nil {
-		t.Fatal(err)
-	}
+	t.Run("post delete compute", func(t *testing.T) {
+		_, err := repo.ComputeInstanceGet(context.Background(), user.Email)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				t.Errorf("expected compute instance to exisits in database, but it does not")
+			}
+			t.Error(err)
+		}
+
+		resp, err := server.Client().Post(fmt.Sprintf("%v/compute/delete", server.URL), jsonContentType, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+		}
+
+		if resp.Header.Get("Content-Type") != htmlContentType {
+			t.Fatalf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
+		}
+
+		timeout := 60
+		for timeout > 0 {
+			_, err := repo.ComputeInstanceGet(context.Background(), user.Email)
+			if err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					break
+				}
+
+				t.Error(err)
+			}
+
+			time.Sleep(1 * time.Second)
+			timeout--
+		}
+
+		if timeout == 0 {
+			t.Errorf("timed out waiting for compute instance to be deleted")
+		}
+	})
 }

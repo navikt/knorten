@@ -6,13 +6,15 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
 func TestOverviewAPI(t *testing.T) {
-	teamName := "team"
+	teamSlug := "team"
 	ctx := context.Background()
 
 	t.Run("get overview html", func(t *testing.T) {
@@ -53,7 +55,7 @@ func TestOverviewAPI(t *testing.T) {
 		}
 	})
 
-	if err := createTeamAndApps(teamName); err != nil {
+	if err := createTeamAndApps(teamSlug); err != nil {
 		t.Fatalf("creating team and apps for overview tests: %v", err)
 	}
 
@@ -81,7 +83,7 @@ func TestOverviewAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		team, err := repo.TeamBySlugGet(ctx, teamName)
+		team, err := repo.TeamBySlugGet(ctx, teamSlug)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -118,7 +120,7 @@ func TestOverviewAPI(t *testing.T) {
 		}
 	})
 
-	if err := cleanupTeamAndApps(teamName); err != nil {
+	if err := cleanupTeamAndApps(teamSlug); err != nil {
 		t.Fatalf("cleaning up team and apps for overview tests: %v", err)
 	}
 }

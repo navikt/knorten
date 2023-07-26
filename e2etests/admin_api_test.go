@@ -11,7 +11,7 @@ import (
 )
 
 func TestAdminAPI(t *testing.T) {
-	teamName := "admintest"
+	teamSlug := "admintest"
 	ctx := context.Background()
 
 	t.Run("get admin html", func(t *testing.T) {
@@ -44,6 +44,7 @@ func TestAdminAPI(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		expectedMinimized, err := minimizeHTML(expected)
 		if err != nil {
 			t.Fatal(err)
@@ -54,7 +55,7 @@ func TestAdminAPI(t *testing.T) {
 		}
 	})
 
-	if err := createTeamAndApps(teamName); err != nil {
+	if err := createTeamAndApps(teamSlug); err != nil {
 		t.Fatal(err)
 	}
 
@@ -82,7 +83,7 @@ func TestAdminAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		team, err := repo.TeamBySlugGet(ctx, teamName)
+		team, err := repo.TeamBySlugGet(ctx, teamSlug)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -91,7 +92,7 @@ func TestAdminAPI(t *testing.T) {
 			"teams": map[string]any{
 				team.ID: map[string]any{
 					"ID":    team.ID,
-					"Slug":  teamName,
+					"Slug":  team.Slug,
 					"Owner": "dummy@nav.no",
 					"Users": []string{"annenbruker@nav.no"},
 					"Apps":  []string{"jupyterhub", "airflow"},
@@ -216,7 +217,7 @@ func TestAdminAPI(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := cleanupTeamAndApps(teamName); err != nil {
+	if err := cleanupTeamAndApps(teamSlug); err != nil {
 		t.Fatal(err)
 	}
 }

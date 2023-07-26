@@ -371,7 +371,7 @@ func roleBindingExistsInGCP(gcpProject, teamID, role string) (bool, error) {
 		gcpProject,
 		"--format=get(bindings.role)",
 		"--flatten=bindings[].members",
-		fmt.Sprintf("--filter=bindings.members:%v@%v.iam.gserviceaccount.com", teamID, gcpProject))
+		fmt.Sprintf("--filter=bindings.members:%v@%v.iam.gserviceaccount.com AND not deleted", teamID, gcpProject))
 
 	stdOut := &bytes.Buffer{}
 	stdErr := &bytes.Buffer{}

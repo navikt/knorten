@@ -58,18 +58,21 @@ func SetupDB(ctx context.Context, dbURL, dbname string) error {
 
 	db.TypeMap().RegisterType(&pgtype.Type{Name: "chart_type", OID: oid, Codec: &pgtype.EnumCodec{}})
 
-	airflowContainer := `[{"name": "git-sync","image": "navikt/knada-git-sync:2022-12-08-aaa15ba","command": ["/bin/sh", "/git-sync.sh"],"args": ["", "", "/dags", "60"]}]`
+	airflowContainer := func(name string) string {
+		return fmt.Sprintf(`[{"name": "%v", "image": "registry.k8s.io/git-sync/git-sync:v3.6.3","args": ["", "", "/dags", "60"], "volumeMounts":[{"mountPath":"/dags","name":"dags"}]}]`, name)
+	}
 
 	fmt.Println("Time to insert dummy data for local development")
 	rows := [][]interface{}{
+		{"airflow", "config.core.dags_folder", `"/dags"`},
 		{"airflow", "createUserJob.serviceAccount.create", "false"},
 		{"airflow", "postgresql.enabled", "false"},
-		{"airflow", "scheduler.extraContainers", airflowContainer},
-		{"airflow", "scheduler.extraInitContainers", airflowContainer},
-		{"airflow", "webserver.extraContainers", airflowContainer},
+		{"airflow", "scheduler.extraContainers", airflowContainer("git-nada")},
+		{"airflow", "scheduler.extraInitContainers", airflowContainer("git-nada-clone")},
+		{"airflow", "webserver.extraContainers", airflowContainer("git-nada")},
 		{"airflow", "webserver.serviceAccount.create", "false"},
 		{"airflow", "webserverSecretKeySecretName", "airflow-webserver"},
-		{"airflow", "workers.extraInitContainers", airflowContainer},
+		{"airflow", "workers.extraInitContainers", airflowContainer("git-nada")},
 		{"airflow", "workers.serviceAccount.create", "false"},
 		{"jupyterhub", "singleuser.profileList", "[]"},
 	}

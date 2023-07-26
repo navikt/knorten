@@ -36,7 +36,7 @@ func (r *Repo) registerEvent(ctx context.Context, eventType gensql.EventType, ow
 		Owner:     owner,
 		EventType: eventType,
 		Task:      jsonTask,
-		Deadline:  string(deadlineOffset),
+		Deadline:  deadlineOffset.String(),
 	})
 	if err != nil {
 		return err

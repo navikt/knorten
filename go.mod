@@ -20,7 +20,6 @@ require (
 	github.com/pressly/goose/v3 v3.7.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/tdewolff/minify/v2 v2.12.7
-	github.com/thanhpk/randstr v1.0.6
 	golang.org/x/exp v0.0.0-20230725093048-515e97ebf090
 	golang.org/x/oauth2 v0.10.0
 	google.golang.org/api v0.133.0

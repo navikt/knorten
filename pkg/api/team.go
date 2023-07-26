@@ -1,7 +1,9 @@
 package api
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/http"
@@ -16,7 +18,6 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/thanhpk/randstr"
 	"k8s.io/utils/strings/slices"
 )
 
@@ -34,8 +35,13 @@ func formToTeam(ctx *gin.Context) (gensql.Team, error) {
 		return gensql.Team{}, err
 	}
 
+	id, err := createTeamID(form.Slug)
+	if err != nil {
+		return gensql.Team{}, err
+	}
+
 	return gensql.Team{
-		ID:        createTeamID(form.Slug),
+		ID:        id,
 		Slug:      form.Slug,
 		Users:     form.Users,
 		ApiAccess: form.APIAccess == "on",
@@ -231,12 +237,18 @@ var ValidateTeamUsers validator.Func = func(fl validator.FieldLevel) bool {
 	return true
 }
 
-func createTeamID(slug string) string {
+func createTeamID(slug string) (string, error) {
 	if len(slug) > 25 {
 		slug = slug[:25]
 	}
 
-	return slug + "-" + strings.ToLower(randstr.String(4))
+	randomBytes := make([]byte, 2)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		return "", err
+	}
+
+	return slug + "-" + hex.EncodeToString(randomBytes), nil
 }
 
 func (c *client) newTeam(ctx *gin.Context) error {

@@ -234,24 +234,20 @@ func (c *client) setupChartRoutes() {
 
 	c.router.POST("/team/:slug/:chart/delete", func(ctx *gin.Context) {
 		teamSlug := ctx.Param("slug")
-		chartType := getChartType(ctx.Param("chart"))
-		log := c.log.WithField("team", teamSlug).WithField("chart", chartType)
+		chartTypeString := ctx.Param("chart")
+		log := c.log.WithField("team", teamSlug).WithField("chart", chartTypeString)
 
-		err := c.deleteChart(ctx, teamSlug, chartType)
-
+		err := c.deleteChart(ctx, teamSlug, chartTypeString)
 		if err != nil {
-			log.WithError(err).Errorf("problem deleting chart %v for team %v", chartType, teamSlug)
+			log.WithError(err).Errorf("problem deleting chart %v for team %v", chartTypeString, teamSlug)
 			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
 			if err != nil {
 				log.WithError(err).Error("problem saving session")
-				ctx.Redirect(http.StatusSeeOther, "/oversikt")
-				return
 			}
-			ctx.Redirect(http.StatusSeeOther, "/oversikt")
-			return
 		}
+
 		ctx.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 }
@@ -474,11 +470,14 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 	return fmt.Errorf("chart type %v is not supported", chartType)
 }
 
-func (c *client) deleteChart(ctx *gin.Context, teamSlug string, chartType gensql.ChartType) error {
+func (c *client) deleteChart(ctx *gin.Context, teamSlug, chartTypeString string) error {
 	team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
 	if err != nil {
 		return err
 	}
+
+	// TODO: Dette er litt tullete, vi kan like gjerne sende med hva vi skal gjøre til den metoden, eller noe i den dur.
+	chartType := getChartType(chartTypeString)
 
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
@@ -487,7 +486,7 @@ func (c *client) deleteChart(ctx *gin.Context, teamSlug string, chartType gensql
 		return c.repo.RegisterDeleteAirflowEvent(ctx, team.ID)
 	}
 
-	return fmt.Errorf("chart type %v is not supported", chartType)
+	return fmt.Errorf("chart type %v is not supported", chartTypeString)
 }
 
 func parseCPU(cpu string) (string, error) {

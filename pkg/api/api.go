@@ -26,7 +26,7 @@ type client struct {
 	gcpZone         string
 }
 
-func New(repo *database.Repo, dryRun bool, clientID, clientSecret, tenantID, hostname, sessionKey, adminGroupEmail, gcpProject, gcpZone string, log *logrus.Entry) (*gin.Engine, error) {
+func New(repo *database.Repo, dryRun bool, clientID, clientSecret, tenantID, sessionKey, adminGroupEmail, gcpProject, gcpZone string, log *logrus.Entry) (*gin.Engine, error) {
 	adminClient := admin.New(repo)
 
 	router := gin.New()
@@ -37,7 +37,7 @@ func New(repo *database.Repo, dryRun bool, clientID, clientSecret, tenantID, hos
 	})
 
 	api := client{
-		azureClient: auth.NewAzureClient(dryRun, clientID, clientSecret, tenantID, hostname, log.WithField("subsystem", "auth")),
+		azureClient: auth.NewAzureClient(dryRun, clientID, clientSecret, tenantID, log.WithField("subsystem", "auth")),
 		router:      router,
 		repo:        repo,
 		adminClient: adminClient,

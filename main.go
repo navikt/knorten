@@ -42,7 +42,6 @@ func main() {
 	log.SetFormatter(&logrus.JSONFormatter{})
 
 	cfg := Config{}
-	flag.StringVar(&cfg.Hostname, "hostname", os.Getenv("HOSTNAME"), "Hostname the application is served from")
 	flag.StringVar(&cfg.ClientID, "oauth2-client-id", os.Getenv("AZURE_APP_CLIENT_ID"), "Client ID for azure app")
 	flag.StringVar(&cfg.ClientSecret, "oauth2-client-secret", os.Getenv("AZURE_APP_CLIENT_SECRET"), "Client secret for azure app")
 	flag.StringVar(&cfg.TenantID, "oauth2-tenant-id", os.Getenv("AZURE_APP_TENANT_ID"), "OAuth2 tenant ID")
@@ -82,7 +81,7 @@ func main() {
 	}
 	eventHandler.Run(10 * time.Second)
 
-	router, err := api.New(dbClient, cfg.DryRun, cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, cfg.SessionKey, cfg.AdminGroup, cfg.GCPProject, cfg.GCPZone, log.WithField("subsystem", "api"))
+	router, err := api.New(dbClient, cfg.DryRun, cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.SessionKey, cfg.AdminGroup, cfg.GCPProject, cfg.GCPZone, log.WithField("subsystem", "api"))
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return

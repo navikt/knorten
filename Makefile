@@ -21,7 +21,6 @@ netpol:
 
 local-online:
 	go run -race . \
-	  --hostname=localhost \
 	  --oauth2-client-id=$(AZURE_APP_CLIENT_ID) \
 	  --oauth2-client-secret=$(AZURE_APP_CLIENT_SECRET) \
 	  --oauth2-tenant-id=$(AZURE_APP_TENANT_ID) \
@@ -37,8 +36,7 @@ local-online:
 
 local:
 	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" \
-    go run -race . \
-	  --hostname=localhost \
+	go run -race . \
 	  --airflow-chart-version=1.10.0 \
 	  --jupyter-chart-version=2.0.0 \
 	  --db-enc-key=jegersekstentegn \

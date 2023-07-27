@@ -110,7 +110,7 @@ func TestMain(m *testing.M) {
 	}
 	eventHandler.Run(1 * time.Second)
 
-	srv, err := api.New(repo, true, "", "", " ", "", "", "nada@nav.no", "", "", logrus.NewEntry(logrus.StandardLogger()))
+	srv, err := api.New(repo, true, "", "", " ", "", "nada@nav.no", "", "", logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatalf("creating api: %v", err)
 	}

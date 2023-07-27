@@ -25,7 +25,6 @@ type OauthConfig struct {
 	ClientID     string
 	ClientSecret string
 	TenantID     string
-	Hostname     string
 }
 
 type Session struct {
@@ -43,7 +42,6 @@ type Azure struct {
 	clientID     string
 	clientSecret string
 	tenantID     string
-	hostname     string
 	dryRun       bool
 	provider     *oidc.Provider
 	log          *logrus.Entry
@@ -76,7 +74,7 @@ const (
 	AzureGroupsEndpoint = "https://graph.microsoft.com/v1.0/groups"
 )
 
-func NewAzureClient(dryRun bool, clientID, clientSecret, tenantID, hostname string, log *logrus.Entry) *Azure {
+func NewAzureClient(dryRun bool, clientID, clientSecret, tenantID string, log *logrus.Entry) *Azure {
 	if dryRun {
 		log.Infof("NOOP: Running in dry run mode")
 		return &Azure{
@@ -94,7 +92,6 @@ func NewAzureClient(dryRun bool, clientID, clientSecret, tenantID, hostname stri
 		clientID:     clientID,
 		clientSecret: clientSecret,
 		tenantID:     tenantID,
-		hostname:     hostname,
 		provider:     provider,
 		dryRun:       dryRun,
 		log:          log,
@@ -105,18 +102,16 @@ func NewAzureClient(dryRun bool, clientID, clientSecret, tenantID, hostname stri
 }
 
 func (a *Azure) setupOAuth2() {
-	var callbackURL string
-	if a.hostname == "localhost" {
-		callbackURL = "http://localhost:8080/oauth2/callback"
-	} else {
-		callbackURL = fmt.Sprintf("https://%v/oauth2/callback", a.hostname)
+	redirectURL := "https://knorten.knada.io/oauth2/callback"
+	if a.dryRun {
+		redirectURL = "http://localhost:8080/oauth2/callback"
 	}
 
 	a.Config = oauth2.Config{
 		ClientID:     a.clientID,
 		ClientSecret: a.clientSecret,
 		Endpoint:     a.provider.Endpoint(),
-		RedirectURL:  callbackURL,
+		RedirectURL:  redirectURL,
 		Scopes:       []string{"openid", fmt.Sprintf("%s/.default", a.clientID)},
 	}
 }

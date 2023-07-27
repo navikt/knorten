@@ -14,7 +14,6 @@ import (
 	"os"
 	"path"
 	"runtime"
-	"strings"
 	"testing"
 	"text/template"
 	"time"
@@ -151,24 +150,6 @@ func minimizeHTML(in string) (string, error) {
 	}
 
 	return out, nil
-}
-
-func replaceGeneratedValues(expected []byte, teamName string) ([]byte, error) {
-	team, err := repo.TeamBySlugGet(context.Background(), teamName)
-	if err != nil {
-		return nil, err
-	}
-
-	fernetKey, err := repo.TeamValueGet(context.Background(), "fernetKey", team.ID)
-	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
-		}
-	}
-
-	updated := strings.ReplaceAll(string(expected), "${TEAM_ID}", team.ID)
-	updated = strings.ReplaceAll(updated, "${FERNET_KEY}", fernetKey.Value)
-	return []byte(updated), nil
 }
 
 func createTeamAndApps(teamSlug string) error {

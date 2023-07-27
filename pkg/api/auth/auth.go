@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -103,7 +104,7 @@ func NewAzureClient(dryRun bool, clientID, clientSecret, tenantID string, log *l
 
 func (a *Azure) setupOAuth2() {
 	redirectURL := "https://knorten.knada.io/oauth2/callback"
-	if a.dryRun {
+	if os.Getenv("GIN_MODE") != "release" {
 		redirectURL = "http://localhost:8080/oauth2/callback"
 	}
 

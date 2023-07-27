@@ -6,7 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -14,19 +14,17 @@ import (
 	"os"
 	"path"
 	"runtime"
-	"strings"
 	"testing"
 	"text/template"
 	"time"
 
 	"github.com/nais/knorten/local/dbsetup"
 	"github.com/nais/knorten/pkg/api"
-	"github.com/nais/knorten/pkg/auth"
+	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/google"
-	"github.com/nais/knorten/pkg/k8s"
+	"github.com/nais/knorten/pkg/events"
+
 	"github.com/ory/dockertest/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/tdewolff/minify/v2"
@@ -36,12 +34,15 @@ import (
 var (
 	repo   *database.Repo
 	server *httptest.Server
+	user   = auth.User{
+		Name:  "Dum My",
+		Email: "dummy@nav.no",
+	}
 )
 
 const (
 	htmlContentType = "text/html; charset=utf-8"
 	jsonContentType = "application/json; charset=utf-8"
-	formContentType = "application/x-www-form-urlencoded"
 )
 
 func init() {
@@ -78,7 +79,10 @@ func TestMain(m *testing.M) {
 		if err != nil {
 			log.Fatalf("Could not start resource: %s", err)
 		}
-		resource.Expire(120) // setting resource timeout as postgres container is not terminated automatically
+		err = resource.Expire(120) // setting resource timeout as postgres container is not terminated automatically
+		if err != nil {
+			log.Fatalf("failed creating postgres expire: %v", err)
+		}
 		dbPort = resource.GetPort("5432/tcp")
 		dbHost = "localhost"
 		dbString = fmt.Sprintf("user=postgres dbname=knorten sslmode=disable password=postgres host=localhost port=%v", dbPort)
@@ -86,11 +90,12 @@ func TestMain(m *testing.M) {
 
 	if err := waitForDB(dbString); err != nil {
 		log.Fatal(err)
-		os.Exit(1)
 	}
 
+	logger := logrus.NewEntry(logrus.StandardLogger())
+
 	var err error
-	repo, err = database.New(dbString, logrus.NewEntry(logrus.StandardLogger()))
+	repo, err = database.New(dbString, "jegersekstentegn", logger)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -99,27 +104,13 @@ func TestMain(m *testing.M) {
 		log.Fatalf("setting up knorten db: %v", err)
 	}
 
-	cryptoClient := crypto.New("jegersekstentegn")
-
-	k8sClient, err := k8s.New(logrus.NewEntry(logrus.StandardLogger()), cryptoClient, repo, true, false, "", "", "", "", "")
+	eventHandler, err := events.NewHandler(context.Background(), repo, "", "", "", "", "", true, false, logger)
 	if err != nil {
-		log.Fatalf("creating k8sClient: %v", err)
+		log.Fatalf("creating googleClient: %v", err)
 	}
+	eventHandler.Run(1 * time.Second)
 
-	azureClient := auth.New(true, "", "", "", "", logrus.NewEntry(logrus.StandardLogger()))
-
-	srv, err := api.New(
-		repo,
-		azureClient,
-		google.New(logrus.NewEntry(logrus.StandardLogger()), repo, "", "", "", true),
-		k8sClient,
-		cryptoClient,
-		true,
-		"1.8.0",
-		"2.0.0",
-		"nada@nav.no",
-		"session",
-		logrus.NewEntry(logrus.StandardLogger()))
+	srv, err := api.New(repo, true, "", "", " ", "", "", "nada@nav.no", "", "", logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatalf("creating api: %v", err)
 	}
@@ -161,26 +152,8 @@ func minimizeHTML(in string) (string, error) {
 	return out, nil
 }
 
-func replaceGeneratedValues(expected []byte, teamName string) ([]byte, error) {
-	team, err := repo.TeamGet(context.Background(), teamName)
-	if err != nil {
-		return nil, err
-	}
-
-	fernetKey, err := repo.TeamValueGet(context.Background(), "fernetKey", team.ID)
-	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
-		}
-	}
-
-	updated := strings.ReplaceAll(string(expected), "${TEAM_ID}", team.ID)
-	updated = strings.ReplaceAll(string(updated), "${FERNET_KEY}", fernetKey.Value)
-	return []byte(updated), nil
-}
-
-func createTeamAndApps(teamName string) error {
-	data := url.Values{"team": {teamName}, "owner": {"dummy@nav.no"}, "users[]": {"annenbruker@nav.no"}, "apiaccess": {""}}
+func createTeamAndApps(teamSlug string) error {
+	data := url.Values{"team": {teamSlug}, "owner": {user.Email}, "users[]": {"user.userson@nav.no"}, "apiaccess": {""}}
 	resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/new", server.URL), data)
 	if err != nil {
 		return fmt.Errorf("creating team: %v", err)
@@ -190,50 +163,147 @@ func createTeamAndApps(teamName string) error {
 		return fmt.Errorf("creating team returned status code %v", resp.StatusCode)
 	}
 
-	data = url.Values{"cpu": {"1.0"}, "memory": {"1G"}, "imagename": {""}, "imagetag": {""}, "culltimeout": {"3600"}}
-	resp, err = server.Client().PostForm(fmt.Sprintf("%v/team/%v/jupyterhub/new", server.URL, teamName), data)
+	team, err := waitForTeamInDatabase(teamSlug)
 	if err != nil {
-		return fmt.Errorf("creating jupyterhub for team %v: %v", teamName, err)
+		return err
+	}
+
+	data = url.Values{"cpu": {"1.0"}, "memory": {"1G"}, "imagename": {""}, "imagetag": {""}, "culltimeout": {"3600"}}
+	resp, err = server.Client().PostForm(fmt.Sprintf("%v/team/%v/jupyterhub/new", server.URL, teamSlug), data)
+	if err != nil {
+		return fmt.Errorf("creating jupyterhub for team %v: %v", teamSlug, err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("creating jupyterhub for team %v returned status code: %v", teamName, resp.StatusCode)
+		return fmt.Errorf("creating jupyterhub for team %v returned status code: %v", teamSlug, resp.StatusCode)
+	}
+
+	if err := waitForChartInDatabase(gensql.ChartTypeJupyterhub, team.ID); err != nil {
+		return err
 	}
 
 	data = url.Values{"dagrepo": {"navikt/repo"}, "dagrepobranch": {"main"}, "apiaccess": {""}, "restrictairflowegress": {""}}
-	resp, err = server.Client().PostForm(fmt.Sprintf("%v/team/%v/airflow/new", server.URL, teamName), data)
+	resp, err = server.Client().PostForm(fmt.Sprintf("%v/team/%v/airflow/new", server.URL, teamSlug), data)
 	if err != nil {
-		return fmt.Errorf("creating airflow for team %v: %v", teamName, err)
+		return fmt.Errorf("creating airflow for team %v: %v", teamSlug, err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("creating airflow for team %v returned status code: %v", teamName, resp.StatusCode)
+		return fmt.Errorf("creating airflow for team %v returned status code: %v", teamSlug, resp.StatusCode)
 	}
 
-	data = url.Values{"machine_type": {string(gensql.ComputeMachineTypeC2Standard4)}}
-	resp, err = server.Client().PostForm(fmt.Sprintf("%v/team/%v/compute/new", server.URL, teamName), data)
+	if err := waitForChartInDatabase(gensql.ChartTypeAirflow, team.ID); err != nil {
+		return err
+	}
+
+	resp, err = server.Client().Post(fmt.Sprintf("%v/compute/new", server.URL), jsonContentType, nil)
 	if err != nil {
-		return fmt.Errorf("creating compute instance for team %v: %v", teamName, err)
+		return fmt.Errorf("creating compute instance for user %v: %v", user.Email, err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("creating compute instance for team %v returned status code %v", teamName, resp.StatusCode)
+		return fmt.Errorf("creating compute instance for user %v returned status code %v", user, resp.StatusCode)
+	}
+
+	_, err = waitForComputeInstanceInDatabase(user.Email)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func cleanupTeamAndApps(teamName string) error {
-	resp, err := server.Client().Post(fmt.Sprintf("%v/team/%v/delete", server.URL, teamName), jsonContentType, nil)
+func waitForComputeInstanceInDatabase(email string) (gensql.ComputeInstance, error) {
+	timeout := 60
+	for timeout > 0 {
+		instance, err := repo.ComputeInstanceGet(context.Background(), email)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				time.Sleep(1 * time.Second)
+				timeout--
+				continue
+			}
+
+			return gensql.ComputeInstance{}, err
+		}
+
+		return instance, nil
+	}
+
+	return gensql.ComputeInstance{}, fmt.Errorf("timed out waiting for compute instance for user %v to be created", email)
+}
+
+func waitForTeamInDatabase(teamSlug string) (gensql.TeamBySlugGetRow, error) {
+	timeout := 60
+	for timeout > 0 {
+		team, err := repo.TeamBySlugGet(context.Background(), teamSlug)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				time.Sleep(1 * time.Second)
+				timeout--
+				continue
+			}
+
+			return gensql.TeamBySlugGetRow{}, err
+		}
+
+		return team, nil
+	}
+
+	return gensql.TeamBySlugGetRow{}, fmt.Errorf("timed out waiting for team %v to be created", teamSlug)
+}
+
+func waitForChartInDatabase(chartType gensql.ChartType, teamID string) error {
+	timeout := 60
+	for timeout > 0 {
+		apps, err := repo.AppsForTeamGet(context.Background(), teamID)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+
+		for _, app := range apps {
+			if app == chartType {
+				return nil
+			}
+		}
+
+		time.Sleep(1 * time.Second)
+		timeout--
+	}
+
+	return fmt.Errorf("timed out waiting for chart %v to be created", chartType)
+}
+
+func waitForTeamToBeDeletedFromDatabase(teamSlug string) error {
+	timeout := 60
+	for timeout > 0 {
+		_, err := repo.TeamBySlugGet(context.Background(), teamSlug)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil
+			}
+
+			return err
+		}
+
+		time.Sleep(1 * time.Second)
+		timeout--
+	}
+
+	return fmt.Errorf("timed out waiting for team %v to be deleted", teamSlug)
+}
+
+func cleanupTeamAndApps(teamSlug string) error {
+	resp, err := server.Client().Post(fmt.Sprintf("%v/team/%v/delete", server.URL, teamSlug), jsonContentType, nil)
 	if err != nil {
-		return fmt.Errorf("deleting team %v: %v", teamName, err)
+		return fmt.Errorf("deleting team %v: %v", teamSlug, err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("deleting team returned status code %v", resp.StatusCode)
 	}
 
-	return nil
+	return waitForTeamToBeDeletedFromDatabase(teamSlug)
 }
 
 func createExpectedHTML(t string, values map[string]any) (string, error) {
@@ -246,7 +316,7 @@ func createExpectedHTML(t string, values map[string]any) (string, error) {
 		return "", err
 	}
 
-	dataBytes, err := ioutil.ReadAll(buff)
+	dataBytes, err := io.ReadAll(buff)
 	if err != nil {
 		panic(err)
 	}

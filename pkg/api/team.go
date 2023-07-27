@@ -1,95 +1,137 @@
 package api
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/http"
+	"net/mail"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
-	"github.com/nais/knorten/pkg/auth"
-	"github.com/nais/knorten/pkg/team"
+	"github.com/nais/knorten/pkg/api/auth"
+	"github.com/nais/knorten/pkg/database/gensql"
 	"k8s.io/utils/strings/slices"
 )
 
-func (a *API) setupTeamRoutes() {
+type teamForm struct {
+	Slug      string   `form:"team" binding:"required,validTeamName"`
+	Owner     string   `form:"owner" binding:"required"`
+	Users     []string `form:"users[]" binding:"validEmail"`
+	APIAccess string   `form:"apiaccess"`
+}
+
+func formToTeam(ctx *gin.Context) (gensql.Team, error) {
+	var form teamForm
+	err := ctx.ShouldBindWith(&form, binding.Form)
+	if err != nil {
+		return gensql.Team{}, err
+	}
+
+	id, err := createTeamID(form.Slug)
+	if err != nil {
+		return gensql.Team{}, err
+	}
+
+	return gensql.Team{
+		ID:        id,
+		Slug:      form.Slug,
+		Users:     form.Users,
+		ApiAccess: form.APIAccess == "on",
+		Owner:     form.Owner,
+	}, nil
+}
+
+func (c *client) setupTeamRoutes() {
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-		err := v.RegisterValidation("validEmail", team.ValidateTeamUsers)
+		err := v.RegisterValidation("validEmail", ValidateTeamUsers)
 		if err != nil {
-			a.log.WithError(err).Error("can't register validator")
+			c.log.WithError(err).Error("can't register validator")
 			return
 		}
 
-		err = v.RegisterValidation("validTeamName", team.ValidateTeamName)
+		err = v.RegisterValidation("validTeamName", ValidateTeamName)
 		if err != nil {
-			a.log.WithError(err).Error("can't register validator")
+			c.log.WithError(err).Error("can't register validator")
 			return
 		}
 	}
 
-	a.router.GET("/team/new", func(c *gin.Context) {
-		var form team.Form
-		session := sessions.Default(c)
+	c.router.GET("/team/new", func(ctx *gin.Context) {
+		var form teamForm
+		session := sessions.Default(ctx)
 		flashes := session.Flashes()
 		err := session.Save()
 		if err != nil {
-			a.log.WithError(err).Error("problem saving session")
+			c.log.WithError(err).Error("problem saving session")
 			return
 		}
 
-		user, exists := c.Get("user")
+		user, exists := ctx.Get("user")
 		if !exists {
-			a.log.Errorf("unable to identify logged in user when creating team")
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "unable to identify logged in user when creating team"})
+			c.log.Errorf("unable to identify logged in user when creating team")
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "unable to identify logged in user when creating team"})
 			return
 		}
 		owner, ok := user.(*auth.User)
 		if !ok {
-			a.log.Errorf("unable to identify logged in user when creating team, user object %v", user)
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "unable to identify logged in user when creating team"})
+			c.log.Errorf("unable to identify logged in user when creating team, user object %v", user)
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "unable to identify logged in user when creating team"})
 			return
 		}
 
-		a.htmlResponseWrapper(c, http.StatusOK, "team/new", gin.H{
+		c.htmlResponseWrapper(ctx, http.StatusOK, "team/new", gin.H{
 			"form":   form,
 			"owner":  owner.Email,
 			"errors": flashes,
 		})
 	})
 
-	a.router.POST("/team/new", func(c *gin.Context) {
-		err := a.teamClient.Create(c)
+	c.router.POST("/team/new", func(ctx *gin.Context) {
+		err := c.newTeam(ctx)
 		if err != nil {
-			session := sessions.Default(c)
-			session.AddFlash(err.Error())
-			err := session.Save()
+			c.log.WithError(err).Info("create team")
+
+			session := sessions.Default(ctx)
+			var validationErrorse validator.ValidationErrors
+			if errors.As(err, &validationErrorse) {
+				for _, fieldError := range validationErrorse {
+					session.AddFlash(descriptiveMessageForTeamError(fieldError))
+				}
+			} else {
+				session.AddFlash(err.Error())
+			}
+			err = session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
+				c.log.WithError(err).Error("problem saving session")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, "/team/new")
+			ctx.Redirect(http.StatusSeeOther, "/team/new")
 			return
 		}
-		c.Redirect(http.StatusSeeOther, "/oversikt")
+		ctx.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 
-	a.router.GET("/team/:team/edit", func(c *gin.Context) {
-		teamName := c.Param("team")
-		team, err := a.repo.TeamGet(c, teamName)
+	c.router.GET("/team/:slug/edit", func(ctx *gin.Context) {
+		teamSlug := ctx.Param("slug")
+		team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				c.JSON(http.StatusNotFound, map[string]string{
+				ctx.JSON(http.StatusNotFound, map[string]string{
 					"status":  strconv.Itoa(http.StatusNotFound),
-					"message": fmt.Sprintf("team %v does not exist", teamName),
+					"message": fmt.Sprintf("team %v does not exist", teamSlug),
 				})
 				return
 			}
-			a.log.WithError(err).Errorf("problem getting team %v", teamName)
-			c.Redirect(http.StatusSeeOther, "/oversikt")
+			c.log.WithError(err).Errorf("problem getting team %v", teamSlug)
+			ctx.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
 
@@ -98,51 +140,169 @@ func (a *API) setupTeamRoutes() {
 			return s != team.Owner
 		})
 
-		session := sessions.Default(c)
+		session := sessions.Default(ctx)
 		flashes := session.Flashes()
 		err = session.Save()
 		if err != nil {
-			a.log.WithError(err).Error("problem saving session")
+			c.log.WithError(err).Error("problem saving session")
 			return
 		}
-		a.htmlResponseWrapper(c, http.StatusOK, "team/edit", gin.H{
+		c.htmlResponseWrapper(ctx, http.StatusOK, "team/edit", gin.H{
 			"team":   team,
 			"errors": flashes,
 		})
 	})
 
-	a.router.POST("/team/:team/edit", func(c *gin.Context) {
-		teamName := c.Param("team")
-		err := a.teamClient.Update(c)
+	c.router.POST("/team/:slug/edit", func(ctx *gin.Context) {
+		err := c.editTeam(ctx)
 		if err != nil {
-			session := sessions.Default(c)
+			c.log.WithError(err).Info("update team")
+			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
+				c.log.WithError(err).Error("problem saving session")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/edit", teamName))
+
+			teamSlug := ctx.Param("slug")
+			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/edit", teamSlug))
 			return
 		}
-		c.Redirect(http.StatusSeeOther, "/oversikt")
+		ctx.Redirect(http.StatusSeeOther, "/oversikt")
 	})
 
-	a.router.POST("/team/:team/delete", func(c *gin.Context) {
-		teamName := c.Param("team")
-
-		err := a.teamClient.Delete(c, teamName)
+	c.router.POST("/team/:slug/delete", func(ctx *gin.Context) {
+		teamSlug := ctx.Param("slug")
+		err := c.deleteTeam(ctx, teamSlug)
 		if err != nil {
-			session := sessions.Default(c)
+			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
+				c.log.WithError(err).Error("problem saving session")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, "/oversikt")
+			ctx.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
-		c.Redirect(http.StatusSeeOther, "/oversikt")
+		ctx.Redirect(http.StatusSeeOther, "/oversikt")
 	})
+}
+
+func descriptiveMessageForTeamError(fieldError validator.FieldError) string {
+	switch fieldError.Tag() {
+	case "required":
+		field := fieldError.Field()
+		if field == "Slug" {
+			field = "Teamnavn"
+		}
+
+		return fmt.Sprintf("%v er et påkrevd felt", field)
+	case "validEmail":
+		return fmt.Sprintf("'%v' er ikke en godkjent NAV-bruker", fieldError.Value())
+	case "validTeamName":
+		return "Teamnavn må være med små bokstaver og bindestrek"
+	default:
+		return fieldError.Error()
+	}
+}
+
+var ValidateTeamName validator.Func = func(fl validator.FieldLevel) bool {
+	teamSlug := fl.Field().Interface().(string)
+
+	r, _ := regexp.Compile("^[a-z-]+$")
+	return r.MatchString(teamSlug)
+}
+
+var ValidateTeamUsers validator.Func = func(fl validator.FieldLevel) bool {
+	users, ok := fl.Field().Interface().([]string)
+	if !ok {
+		return false
+	}
+
+	for _, user := range users {
+		if user == "" {
+			continue
+		}
+		_, err := mail.ParseAddress(user)
+		if err != nil {
+			return false
+		}
+		if !strings.HasSuffix(strings.ToLower(user), "nav.no") {
+			return false
+		}
+	}
+
+	return true
+}
+
+func createTeamID(slug string) (string, error) {
+	if len(slug) > 25 {
+		slug = slug[:25]
+	}
+
+	randomBytes := make([]byte, 2)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		return "", err
+	}
+
+	return slug + "-" + hex.EncodeToString(randomBytes), nil
+}
+
+func (c *client) newTeam(ctx *gin.Context) error {
+	team, err := formToTeam(ctx)
+	if err != nil {
+		return err
+	}
+
+	team.Users = removeEmptyUsers(team.Users)
+	err = c.ensureUsersExists(team.Users)
+	if err != nil {
+		return err
+	}
+
+	return c.repo.RegisterCreateTeamEvent(ctx, team)
+}
+
+func (c *client) editTeam(ctx *gin.Context) error {
+	team, err := formToTeam(ctx)
+	if err != nil {
+		return err
+	}
+
+	existingTeam, err := c.repo.TeamBySlugGet(ctx, team.Slug)
+	if err != nil {
+		return err
+	}
+
+	team.ID = existingTeam.ID
+	team.Users = removeEmptyUsers(team.Users)
+	return c.repo.RegisterUpdateTeamEvent(ctx, team)
+}
+
+func (c *client) ensureUsersExists(users []string) error {
+	for _, u := range users {
+		if err := c.azureClient.UserExistsInAzureAD(u); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func removeEmptyUsers(formUsers []string) []string {
+	return slices.Filter(nil, formUsers, func(s string) bool {
+		return s != ""
+	})
+}
+
+func (c *client) deleteTeam(ctx *gin.Context, teamSlug string) error {
+	team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
+	if err != nil {
+		return err
+	}
+
+	return c.repo.RegisterDeleteTeamEvent(ctx, team.ID)
 }

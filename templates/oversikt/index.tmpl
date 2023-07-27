@@ -1,93 +1,148 @@
 {{ define "oversikt/index" }}
     {{ template "head" . }}
-    <section class="w-full md:w-[64rem] flex flex-col gap-4 p-4">
-            {{ with .errors }}
-                {{ . }}
-            {{ end }}
-            {{ with .flashes }}
-                {{ . }}
-            {{ end }}
+    {{ with .errors }}
+        {{ . }}
+    {{ end }}
+    {{ with .flashes }}
+        {{ . }}
+    {{ end }}
 
-            {{ range .services }}
-                <article class="bg-white rounded-md p-4">
-                    <div class="flex items-center gap-4 pb-4">
-                        <h2>
-                            {{ .Slug }}
-                        </h2>    
-                        <a class="navds-button--small navds-button--secondary" href="team/{{ .Slug }}/edit">Rediger</a>
-                    </div>
-                    <a class="navds-link" target="_blank"  href="{{ .Secret }}">Secret Manager</a>
-                    <p class="pb-4 flex items-center gap-2">
-                        <b>Service account:</b> <code class="text-base p-1 bg-gray-50">{{ .ServiceAccount }}</code>
-                    </p>
-                    <label for="machine_types" class="navds-form-field__label navds-label">Apper</label>
-                    <table class="navds-table navds-table--small" name="Apper">
-                        <thead class="navds-table__header">
-                        <tr class="navds-table__row">
-                            <th class="navds-table__header-cell navds-label navds-label--small">App</th>
-                            <th class="navds-table__header-cell navds-label navds-label--small">Adresse</th>
-                            <th class="navds-table__header-cell navds-label navds-label--small"></th>
-                        </tr>
-                        </thead>
-                        <tbody class="navds-table__body">
-                        {{ with .Jupyterhub }}
-                            {{ template "oversikt/row" . }}
-                        {{ else }}
-                            <tr class="navds-table__row navds-table__row--shade-on-hover">
-                                <th class="navds-table__header-cell navds-label navds-label--small">Jupyterhub</th>
-                                <td class="navds-table__data-cell navds-body-short navds-body-short--small"></td>
-                                <td class="navds-table__data-cell navds-body-short navds-body-short--small"><a class="navds-link" href="/team/{{ .Slug }}/jupyterhub/new">Installer</a></td>
-                            </tr>
-                        {{ end }}
-                        {{ with .Airflow }}
-                            {{ template "oversikt/row" . }}
-                        {{ else }}
-                            <tr class="navds-table__row navds-table__row--shade-on-hover">
-                                <th class="navds-table__header-cell navds-label navds-label--small">Airflow</th>
-                                <td class="navds-table__data-cell navds-body-short navds-body-short--small"></td>
-                                <td class="navds-table__data-cell navds-body-short navds-body-short--small"><a class="navds-link" href="/team/{{ .Slug }}/airflow/new">Installer</a></td>
-                            </tr>
-                        {{ end }}
-                        </tbody>
-                    </table>
-                    <br/>
-                    <label for="machine_types" class="navds-form-field__label navds-label">Compute</label>
-                    <br/>
-                    {{ with .Compute }}
-                        <table class="navds-table navds-table--small">
-                            <thead class="navds-table__header">
-                            <tr class="navds-table__row">
-                                <th class="navds-table__header-cell navds-label navds-label--small">Instans</th>
-                                <th class="navds-table__header-cell navds-label navds-label--small">Tilkobling</th>
-                                <th class="navds-table__header-cell navds-label navds-label--small"></th>
-                            </tr>
-                            </thead>
-                            <tbody class="navds-table__body">
-                                <tr class="navds-table__row navds-table__row--shade-on-hover">
-                                    <th class="navds-table__header-cell navds-label navds-label--small">
-                                    <a class="navds-link" target="_blank" 
-                                    href="https://console.cloud.google.com/compute/instancesDetail/zones/europe-west1-b/instances/{{ .Name }}?project=knada-gcp">
-                                        {{ .Name }}
-                                    </a>
-                                    </th>
-                                    <td class="navds-table__data-cell navds-body-short navds-body-short--small">
-                                        <a class="navds-link" target="_blank" href="https://docs.knada.io/analyse/knada-vm/#koble-til-vm-i-knada-gcp-fra-vs-code-lokalt">Doc</a>
-                                    </td>
-                                    <td class="navds-table__data-cell navds-body-short navds-body-short--small">
-                                        <a class="navds-link" href="/team/{{ .Slug }}/compute/edit">Rediger</a>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    {{ else }}
-                        <a class="navds-link" href="/team/{{ .Slug }}/compute/new">Opprett</a>
-                    {{ end }}
-                </article>
+    <article class="bg-white rounded-md p-4">
+        <div class="flex items-center gap-4 pb-4">
+            <h2>Privat compute instance</h2>
+            {{ if .user.Compute }}
+                <a class="navds-button--small navds-button--secondary" href="compute/edit">Rediger</a>
             {{ end }}
-            <div>
-                <a class="navds-button navds-button--secondary" href="/team/new">Legg til nytt team</a>
-            </div>
         </div>
-    </section>
+
+        <p class="flex items-center gap-4 pb-4">Vi har endret det slik at man kun ha private Compute instances (også
+            kalt Knorten VM/Kve-em). Dette betyr
+            at man må migrere seg vekk fra team baserte maskiner til hver sin private.
+        </p>
+        <p class="flex items-center gap-4 pb-4">Vi vil ta kontakt med dere som har team-baserte VM-er i løpet av
+            måneden.</p>
+
+        {{ with .user.Compute }}
+            <table class="navds-table navds-table--small">
+                <thead class="navds-table__header">
+                <tr class="navds-table__row">
+                    <th class="navds-table__header-cell navds-label navds-label--small">Instans</th>
+                    <th class="navds-table__header-cell navds-label navds-label--small">Tilkobling</th>
+                </tr>
+                </thead>
+                <tbody class="navds-table__body">
+                <tr class="navds-table__row navds-table__row--shade-on-hover">
+                    <th class="navds-table__header-cell navds-label navds-label--small">
+                        <a class="navds-link" target="_blank"
+                           href="https://console.cloud.google.com/compute/instancesDetail/zones/{{ $.gcpZone }}/instances/{{ .Name }}?project={{ $.gcpProject }}">
+                            {{ .Name }}
+                        </a>
+                    </th>
+                    <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+                        <a class="navds-link" target="_blank"
+                           href="https://docs.knada.io/analyse/knada-vm/#koble-til-vm-i-knada-gcp-fra-vs-code-lokalt">Doc</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <br>
+            <label for="machine_types" class="navds-form-field__label navds-label">Eventlogs</label>
+            <table class="navds-table navds-table--small">
+                <thead class="navds-table__header">
+                <tr class="navds-table__row">
+                    <th class="navds-table__header-cell navds-label navds-label--small">Level</th>
+                    <th class="navds-table__header-cell navds-label navds-label--small">Message</th>
+                    <th class="navds-table__header-cell navds-label navds-label--small">Created at</th>
+                </tr>
+                </thead>
+                <tbody class="navds-table__body">
+                {{ range .Events }}
+                    {{ range .Logs }}
+                        {{ template "events/row" . }}
+                    {{ end }}
+                {{ end }}
+                </tbody>
+            </table>
+        {{ else }}
+            <a class="navds-button--small navds-button--secondary" href="compute/new">Opprett</a>
+        {{ end }}
+    </article>
+
+    {{ range .user.Services }}
+        <article class="bg-white rounded-md p-4">
+            <div class="flex items-center gap-4 pb-4">
+                <h2>
+                    {{ .Slug }}
+                </h2>
+                <a class="navds-button--small navds-button--secondary" href="team/{{ .Slug }}/edit">Rediger</a>
+            </div>
+            {{ with .Airflow }}
+                <a class="navds-link" target="_blank"
+                   href="https://console.cloud.google.com/security/secret-manager/secret/{{ $.TeamID }}/versions?project={{ $.gcpProject }}">
+                    Secret Manager
+                </a>
+                <p class="pb-4 flex items-center gap-2">
+                    <b>Service account:</b> <code class="text-base p-1 bg-gray-50">{{ $.TeamID }}@{{ $.gcpProject }}
+                        .iam.gserviceaccount.com</code>
+                </p>
+            {{ end }}
+            <label for="machine_types" class="navds-form-field__label navds-label">Apper</label>
+            <table class="navds-table navds-table--small">
+                <thead class="navds-table__header">
+                <tr class="navds-table__row">
+                    <th class="navds-table__header-cell navds-label navds-label--small">App</th>
+                    <th class="navds-table__header-cell navds-label navds-label--small">Adresse</th>
+                    <th class="navds-table__header-cell navds-label navds-label--small"></th>
+                </tr>
+                </thead>
+                <tbody class="navds-table__body">
+                {{ with .Jupyterhub }}
+                    {{ template "oversikt/row" . }}
+                {{ else }}
+                    <tr class="navds-table__row navds-table__row--shade-on-hover">
+                        <th class="navds-table__header-cell navds-label navds-label--small">Jupyterhub</th>
+                        <td class="navds-table__data-cell navds-body-short navds-body-short--small"></td>
+                        <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+                            <a class="navds-link" href="/team/{{ .Slug }}/jupyterhub/new">Installer</a>
+                        </td>
+                    </tr>
+                {{ end }}
+                {{ with .Airflow }}
+                    {{ template "oversikt/row" . }}
+                {{ else }}
+                    <tr class="navds-table__row navds-table__row--shade-on-hover">
+                        <th class="navds-table__header-cell navds-label navds-label--small">Airflow</th>
+                        <td class="navds-table__data-cell navds-body-short navds-body-short--small"></td>
+                        <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+                            <a class="navds-link" href="/team/{{ .Slug }}/airflow/new">Installer</a>
+                        </td>
+                    </tr>
+                {{ end }}
+                </tbody>
+            </table>
+            <br>
+            <label for="machine_types" class="navds-form-field__label navds-label">Eventlogs</label>
+            <table class="navds-table navds-table--small">
+                <thead class="navds-table__header">
+                <tr class="navds-table__row">
+                    <th class="navds-table__header-cell navds-label navds-label--small">Level</th>
+                    <th class="navds-table__header-cell navds-label navds-label--small">Message</th>
+                    <th class="navds-table__header-cell navds-label navds-label--small">Created at</th>
+                </tr>
+                </thead>
+                <tbody class="navds-table__body">
+                {{ range .Events }}
+                    {{ range .Logs }}
+                        {{ template "events/row" . }}
+                    {{ end }}
+                {{ end }}
+                </tbody>
+            </table>
+        </article>
+    {{ end }}
+
+    <article class="bg-white rounded-md p-4">
+        <a class="navds-button navds-button--secondary" href="/team/new">Legg til nytt team</a>
+    </article>
     {{ template "footer" }}
 {{ end }}

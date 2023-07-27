@@ -3,153 +3,160 @@ package e2etests
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
 func TestAdminAPI(t *testing.T) {
-	teamName := "admintest"
+	teamSlug := "admintest"
 	ctx := context.Background()
 
 	t.Run("get admin html", func(t *testing.T) {
 		resp, err := server.Client().Get(fmt.Sprintf("%v/admin", server.URL))
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
 		}
 
 		if resp.Header.Get("Content-Type") != htmlContentType {
-			t.Fatalf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
+			t.Errorf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 
-		received, err := ioutil.ReadAll(resp.Body)
+		received, err := io.ReadAll(resp.Body)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		receivedMinimized, err := minimizeHTML(string(received))
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		expected, err := createExpectedHTML("admin/index", map[string]any{
 			"teams": map[string]any{},
 		})
 		if err != nil {
-			t.Fatal(err)
-		}
-		expectedMinimized, err := minimizeHTML(expected)
-		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
-		if receivedMinimized != string(expectedMinimized) {
-			t.Fatal("Received and expected HTML response are different")
+		expectedMinimized, err := minimizeHTML(expected)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 
-	if err := createTeamAndApps(teamName); err != nil {
+	if err := createTeamAndApps(teamSlug); err != nil {
 		t.Fatal(err)
 	}
 
 	t.Run("get admin html after team and app creation", func(t *testing.T) {
 		resp, err := server.Client().Get(fmt.Sprintf("%v/admin", server.URL))
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
 		}
 
 		if resp.Header.Get("Content-Type") != htmlContentType {
-			t.Fatalf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
+			t.Errorf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 
-		received, err := ioutil.ReadAll(resp.Body)
+		received, err := io.ReadAll(resp.Body)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		receivedMinimized, err := minimizeHTML(string(received))
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
-		team, err := repo.TeamGet(ctx, teamName)
+		team, err := repo.TeamBySlugGet(ctx, teamSlug)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		expected, err := createExpectedHTML("admin/index", map[string]any{
 			"teams": map[string]any{
 				team.ID: map[string]any{
 					"ID":    team.ID,
-					"Slug":  teamName,
-					"Owner": "dummy@nav.no",
-					"Users": []string{"annenbruker@nav.no"},
+					"Slug":  team.Slug,
+					"Owner": user.Email,
+					"Users": []string{"user.userson@nav.no"},
 					"Apps":  []string{"jupyterhub", "airflow"},
 				},
 			},
 		})
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		expectedMinimized, err := minimizeHTML(expected)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
-		if receivedMinimized != string(expectedMinimized) {
-			t.Fatal("Received and expected HTML response are different")
+		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 
 	t.Run("get jupyterhub values html", func(t *testing.T) {
 		resp, err := server.Client().Get(fmt.Sprintf("%v/admin/jupyterhub", server.URL))
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
 		}
 
 		if resp.Header.Get("Content-Type") != htmlContentType {
-			t.Fatalf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
+			t.Errorf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 
-		received, err := ioutil.ReadAll(resp.Body)
+		received, err := io.ReadAll(resp.Body)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		receivedMinimized, err := minimizeHTML(string(received))
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		expected, err := createExpectedHTML("admin/chart", map[string]any{
-			"chart":  gensql.ChartTypeJupyterhub,
-			"values": []gensql.ChartGlobalValue{},
+			"chart": gensql.ChartTypeJupyterhub,
+			"values": []gensql.ChartGlobalValue{
+				{
+					Key:   "singleuser.profileList",
+					Value: "[]",
+				},
+			},
 		})
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		expectedMinimized, err := minimizeHTML(expected)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
-		if receivedMinimized != string(expectedMinimized) {
-			t.Fatal("Received and expected HTML response are different")
+		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 
@@ -157,33 +164,34 @@ func TestAdminAPI(t *testing.T) {
 		"global.key1": "value",
 		"global.key2": "value",
 	}
+
 	if err := createJupyterGlobalValues(ctx, exisitingJupyterGlobals); err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	t.Run("get jupyterhub values html adding", func(t *testing.T) {
 		resp, err := server.Client().Get(fmt.Sprintf("%v/admin/jupyterhub", server.URL))
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
 		}
 
 		if resp.Header.Get("Content-Type") != htmlContentType {
-			t.Fatalf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
+			t.Errorf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 
-		received, err := ioutil.ReadAll(resp.Body)
+		received, err := io.ReadAll(resp.Body)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		receivedMinimized, err := minimizeHTML(string(received))
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		expected, err := createExpectedHTML("admin/chart", map[string]any{
@@ -197,18 +205,22 @@ func TestAdminAPI(t *testing.T) {
 					Key:   "global.key2",
 					Value: "value",
 				},
+				{
+					Key:   "singleuser.profileList",
+					Value: "[]",
+				},
 			},
 		})
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		expectedMinimized, err := minimizeHTML(expected)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
-		if receivedMinimized != string(expectedMinimized) {
-			t.Fatal("Received and expected HTML response are different")
+		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 
@@ -216,7 +228,7 @@ func TestAdminAPI(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := cleanupTeamAndApps(teamName); err != nil {
+	if err := cleanupTeamAndApps(teamSlug); err != nil {
 		t.Fatal(err)
 	}
 }

@@ -3,137 +3,112 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/nais/knorten/pkg/google"
+	"github.com/nais/knorten/pkg/api/auth"
+	"github.com/nais/knorten/pkg/database/gensql"
 )
 
-func (a *API) setupComputeRoutes() {
-	a.router.GET("/team/:team/compute/new", func(c *gin.Context) {
-		slug := c.Param("team")
-		machineTypes, err := a.repo.SupportedComputeMachineTypes(c)
+func (c *client) setupComputeRoutes() {
+	c.router.GET("/compute/new", func(ctx *gin.Context) {
+		c.htmlResponseWrapper(ctx, http.StatusOK, "compute/new", gin.H{})
+	})
+
+	c.router.POST("/compute/new", func(ctx *gin.Context) {
+		err := c.createComputeInstance(ctx)
 		if err != nil {
-			session := sessions.Default(c)
+			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/compute/new", slug))
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, "/compute/new")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/compute/new", slug))
+			ctx.Redirect(http.StatusSeeOther, "/compute/new")
 			return
 		}
 
-		a.htmlResponseWrapper(c, http.StatusOK, "gcp/compute", gin.H{
-			"team":          slug,
-			"machine_types": machineTypes,
+		ctx.Redirect(http.StatusSeeOther, "/oversikt")
+	})
+
+	c.router.GET("/compute/edit", func(ctx *gin.Context) {
+		user, err := getUser(ctx)
+		if err != nil {
+			session := sessions.Default(ctx)
+			session.AddFlash(err.Error())
+			err := session.Save()
+			if err != nil {
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, "/oversikt")
+				return
+			}
+			ctx.Redirect(http.StatusSeeOther, "/oversikt")
+			return
+		}
+
+		c.htmlResponseWrapper(ctx, http.StatusOK, "compute/edit", gin.H{
+			"name": "compute-" + getNormalizedNameFromEmail(user.Email),
 		})
 	})
 
-	a.router.POST("/team/:team/compute/new", func(c *gin.Context) {
-		slug := c.Param("team")
-		err := a.googleClient.CreateComputeInstance(c, slug)
+	c.router.POST("/compute/delete", func(ctx *gin.Context) {
+		err := c.deleteComputeInstance(ctx)
 		if err != nil {
-			session := sessions.Default(c)
+			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/compute/new", slug))
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, "/oversikt")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/compute/new", slug))
+			ctx.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
 
-		c.Redirect(http.StatusSeeOther, "/oversikt")
+		ctx.Redirect(http.StatusSeeOther, "/oversikt")
 	})
+}
 
-	a.router.GET("/team/:team/compute/edit", func(c *gin.Context) {
-		slug := c.Param("team")
+func (c *client) deleteComputeInstance(ctx *gin.Context) error {
+	user, err := getUser(ctx)
+	if err != nil {
+		return err
+	}
 
-		machineTypes, err := a.repo.SupportedComputeMachineTypes(c)
-		if err != nil {
-			session := sessions.Default(c)
-			session.AddFlash(err.Error())
-			err := session.Save()
-			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, "/oversikt")
-				return
-			}
-			c.Redirect(http.StatusSeeOther, "/oversikt")
-			return
-		}
+	return c.repo.RegisterDeleteComputeEvent(ctx, user.Email)
+}
 
-		team, err := a.repo.TeamGet(c, slug)
-		if err != nil {
-			session := sessions.Default(c)
-			session.AddFlash(err.Error())
-			err := session.Save()
-			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, "/oversikt")
-				return
-			}
-			c.Redirect(http.StatusSeeOther, "/oversikt")
-			return
-		}
+func (c *client) createComputeInstance(ctx *gin.Context) error {
+	user, err := getUser(ctx)
+	if err != nil {
+		return err
+	}
 
-		instance, err := a.repo.ComputeInstanceGet(c, team.ID)
-		if err != nil {
-			session := sessions.Default(c)
-			session.AddFlash(err.Error())
-			err := session.Save()
-			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, "/oversikt")
-				return
-			}
-			c.Redirect(http.StatusSeeOther, "/oversikt")
-			return
-		}
+	instance := gensql.ComputeInstance{
+		Email: user.Email,
+		Name:  "compute-" + getNormalizedNameFromEmail(user.Email),
+	}
 
-		session := sessions.Default(c)
-		flashes := session.Flashes()
-		err = session.Save()
-		if err != nil {
-			a.log.WithError(err).Error("problem saving session")
-			return
-		}
+	return c.repo.RegisterCreateComputeEvent(ctx, instance)
+}
 
-		values := &google.ComputeForm{
-			Name:        instance.InstanceName,
-			MachineType: string(instance.MachineType),
-		}
+func getUser(ctx *gin.Context) (*auth.User, error) {
+	var user *auth.User
+	anyUser, exists := ctx.Get("user")
+	if !exists {
+		return nil, fmt.Errorf("can't verify user")
+	}
+	user = anyUser.(*auth.User)
 
-		a.htmlResponseWrapper(c, http.StatusOK, "gcp/compute", gin.H{
-			"team":          slug,
-			"values":        values,
-			"machine_types": machineTypes,
-			"errors":        flashes,
-		})
-	})
+	return user, nil
+}
 
-	a.router.POST("/team/:team/compute/delete", func(c *gin.Context) {
-		slug := c.Param("team")
-
-		err := a.googleClient.DeleteComputeInstance(c, slug)
-		if err != nil {
-			session := sessions.Default(c)
-			session.AddFlash(err.Error())
-			err := session.Save()
-			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/compute/new", slug))
-				return
-			}
-			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/compute/new", slug))
-			return
-		}
-
-		c.Redirect(http.StatusSeeOther, "/oversikt")
-	})
+func getNormalizedNameFromEmail(name string) string {
+	name = strings.Split(name, "@")[0]
+	name = strings.Replace(name, ".", "-", -1)
+	return strings.ToLower(name)
 }

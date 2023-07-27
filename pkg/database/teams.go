@@ -7,37 +7,36 @@ import (
 	"strings"
 
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/reflect"
 )
 
-func (r *Repo) TeamCreate(ctx context.Context, team, slug, owner string, users []string, apiAccess bool) error {
+func (r *Repo) TeamCreate(ctx context.Context, team gensql.Team) error {
 	return r.querier.TeamCreate(ctx, gensql.TeamCreateParams{
-		ID:        team,
-		Users:     stringSliceToLower(users),
-		Slug:      slug,
-		ApiAccess: apiAccess,
-		Owner:     owner,
+		ID:        team.ID,
+		Users:     stringSliceToLower(team.Users),
+		Slug:      team.Slug,
+		ApiAccess: team.ApiAccess,
+		Owner:     team.Owner,
 	})
 }
 
-func (r *Repo) TeamUpdate(ctx context.Context, team string, users []string, apiAccess bool) error {
+func (r *Repo) TeamUpdate(ctx context.Context, team gensql.Team) error {
 	return r.querier.TeamUpdate(ctx, gensql.TeamUpdateParams{
-		ID:        team,
-		Users:     stringSliceToLower(users),
-		ApiAccess: apiAccess,
+		ID:        team.ID,
+		Users:     stringSliceToLower(team.Users),
+		ApiAccess: team.ApiAccess,
 	})
 }
-
-func (r *Repo) TeamGet(ctx context.Context, slug string) (gensql.TeamGetRow, error) {
-	team, err := r.querier.TeamGet(ctx, slug)
-	if err != nil {
-		return gensql.TeamGetRow{}, err
-	}
-	team.Users = append(team.Users, team.Owner)
-	return team, nil
+func (r *Repo) TeamGet(ctx context.Context, teamID string) (gensql.TeamGetRow, error) {
+	return r.querier.TeamGet(ctx, teamID)
 }
 
-func (r *Repo) TeamDelete(ctx context.Context, team string) error {
-	return r.querier.TeamDelete(ctx, team)
+func (r *Repo) TeamBySlugGet(ctx context.Context, slug string) (gensql.TeamBySlugGetRow, error) {
+	return r.querier.TeamBySlugGet(ctx, slug)
+}
+
+func (r *Repo) TeamDelete(ctx context.Context, teamID string) error {
+	return r.querier.TeamDelete(ctx, teamID)
 }
 
 func (r *Repo) TeamsGet(ctx context.Context) ([]gensql.Team, error) {
@@ -96,8 +95,55 @@ func (r *Repo) TeamSetApiAccess(ctx context.Context, teamID string, apiAccess bo
 	})
 }
 
+func (r *Repo) TeamChartValueInsert(ctx context.Context, key, value, teamID string, chartType gensql.ChartType) error {
+	return r.querier.TeamValueInsert(ctx, gensql.TeamValueInsertParams{
+		Key:       key,
+		Value:     value,
+		TeamID:    teamID,
+		ChartType: chartType,
+	})
+}
+
+func (r *Repo) TeamValuesGet(ctx context.Context, chartType gensql.ChartType, teamID string) ([]gensql.ChartTeamValue, error) {
+	return r.querier.TeamValuesGet(ctx, gensql.TeamValuesGetParams{
+		ChartType: chartType,
+		TeamID:    teamID,
+	})
+}
+
+func (r *Repo) TeamValueGet(ctx context.Context, key, teamID string) (gensql.ChartTeamValue, error) {
+	return r.querier.TeamValueGet(ctx, gensql.TeamValueGetParams{
+		Key:    key,
+		TeamID: teamID,
+	})
+}
+
+func (r *Repo) TeamValueDelete(ctx context.Context, key, teamID string) error {
+	return r.querier.TeamValueDelete(ctx, gensql.TeamValueDeleteParams{
+		Key:    key,
+		TeamID: teamID,
+	})
+}
+
+func (r *Repo) TeamConfigurableValuesGet(ctx context.Context, chartType gensql.ChartType, teamID string, obj any) error {
+	teamValues, err := r.querier.TeamValuesGet(ctx, gensql.TeamValuesGetParams{
+		ChartType: chartType,
+		TeamID:    teamID,
+	})
+	if err != nil {
+		return err
+	}
+
+	values := map[string]string{}
+	for _, value := range teamValues {
+		values[value.Key] = value.Value
+	}
+
+	return reflect.InterfaceToStruct(obj, values)
+}
+
 func stringSliceToLower(vals []string) []string {
-	out := []string{}
+	var out []string
 	for _, v := range vals {
 		out = append(out, strings.ToLower(v))
 	}

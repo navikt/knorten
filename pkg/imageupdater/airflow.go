@@ -1,12 +1,8 @@
 package imageupdater
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"io"
-	"os"
-	"os/exec"
+	"fmt"
 
 	"github.com/nais/knorten/pkg/database/gensql"
 )
@@ -19,19 +15,19 @@ const (
 	airflowWorkerDefaultImageTagKey  = "config.kubernetes_executor.worker_container_tag"
 )
 
-func (d *ImageUpdater) updateAirflowImages(ctx context.Context) error {
-	baseUpdated, err := d.updateAirflowBaseImage(ctx)
+func (c *client) updateAirflowImages(ctx context.Context) error {
+	baseUpdated, err := c.updateAirflowBaseImage(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("updating airflow base image: %w", err)
 	}
 
-	workerUpdated, err := d.updateAirflowWorkerDefaultImage(ctx)
+	workerUpdated, err := c.updateAirflowWorkerDefaultImage(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("updating airflow worker default image: %w", err)
 	}
 
 	if baseUpdated || workerUpdated {
-		if err := d.triggerSync(ctx, gensql.ChartTypeAirflow); err != nil {
+		if err := c.triggerSync(ctx, gensql.ChartTypeAirflow); err != nil {
 			return err
 		}
 	}
@@ -39,24 +35,24 @@ func (d *ImageUpdater) updateAirflowImages(ctx context.Context) error {
 	return nil
 }
 
-func (d *ImageUpdater) updateAirflowBaseImage(ctx context.Context) (bool, error) {
-	imageName, err := d.repo.GlobalValueGet(ctx, gensql.ChartTypeAirflow, airflowImageNameKey)
+func (c *client) updateAirflowBaseImage(ctx context.Context) (bool, error) {
+	imageName, err := c.repo.GlobalValueGet(ctx, gensql.ChartTypeAirflow, airflowImageNameKey)
 	if err != nil {
 		return false, err
 	}
 
-	imageTag, err := d.repo.GlobalValueGet(ctx, gensql.ChartTypeAirflow, airflowImageTagKey)
+	imageTag, err := c.repo.GlobalValueGet(ctx, gensql.ChartTypeAirflow, airflowImageTagKey)
 	if err != nil {
 		return false, err
 	}
 
-	garImage, err := getLatestAirflowImageInGAR(imageName.Value)
+	garImage, err := getLatestImageInGAR(imageName.Value, "")
 	if err != nil {
 		return false, err
 	}
 
 	if imageTag.Value != garImage.Tag {
-		if err := d.repo.GlobalChartValueInsert(ctx, airflowImageTagKey, garImage.Tag, false, gensql.ChartTypeAirflow); err != nil {
+		if err := c.repo.GlobalChartValueInsert(ctx, airflowImageTagKey, garImage.Tag, false, gensql.ChartTypeAirflow); err != nil {
 			return false, err
 		}
 
@@ -66,24 +62,24 @@ func (d *ImageUpdater) updateAirflowBaseImage(ctx context.Context) (bool, error)
 	return false, nil
 }
 
-func (d *ImageUpdater) updateAirflowWorkerDefaultImage(ctx context.Context) (bool, error) {
-	imageName, err := d.repo.GlobalValueGet(ctx, gensql.ChartTypeAirflow, airflowWorkerDefaultImageNameKey)
+func (c *client) updateAirflowWorkerDefaultImage(ctx context.Context) (bool, error) {
+	imageName, err := c.repo.GlobalValueGet(ctx, gensql.ChartTypeAirflow, airflowWorkerDefaultImageNameKey)
 	if err != nil {
 		return false, err
 	}
 
-	imageTag, err := d.repo.GlobalValueGet(ctx, gensql.ChartTypeAirflow, airflowWorkerDefaultImageTagKey)
+	imageTag, err := c.repo.GlobalValueGet(ctx, gensql.ChartTypeAirflow, airflowWorkerDefaultImageTagKey)
 	if err != nil {
 		return false, err
 	}
 
-	garImage, err := getLatestAirflowImageInGAR(imageName.Value)
+	garImage, err := getLatestImageInGAR(imageName.Value, "")
 	if err != nil {
 		return false, err
 	}
 
 	if imageTag.Value != garImage.Tag {
-		if err := d.repo.GlobalChartValueInsert(ctx, airflowWorkerDefaultImageTagKey, garImage.Tag, false, gensql.ChartTypeAirflow); err != nil {
+		if err := c.repo.GlobalChartValueInsert(ctx, airflowWorkerDefaultImageTagKey, garImage.Tag, false, gensql.ChartTypeAirflow); err != nil {
 			return false, err
 		}
 
@@ -91,33 +87,4 @@ func (d *ImageUpdater) updateAirflowWorkerDefaultImage(ctx context.Context) (boo
 	}
 
 	return false, nil
-}
-
-func getLatestAirflowImageInGAR(image string) (*garImage, error) {
-	listCmd := exec.Command(
-		"gcloud",
-		"artifacts",
-		"docker",
-		"images",
-		"list",
-		image,
-		"--include-tags",
-		"--sort-by=~Update_Time",
-		"--limit=1",
-		"--format=json")
-
-	buf := &bytes.Buffer{}
-	listCmd.Stdout = buf
-	listCmd.Stderr = os.Stderr
-	if err := listCmd.Run(); err != nil {
-		io.Copy(os.Stdout, buf)
-		return nil, err
-	}
-
-	var images []*garImage
-	if err := json.Unmarshal(buf.Bytes(), &images); err != nil {
-		return nil, err
-	}
-
-	return images[0], nil
 }

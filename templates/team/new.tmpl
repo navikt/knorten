@@ -1,46 +1,44 @@
 {{ define "team/new" }}
     {{ template "head" . }}
-    <section class="w-full md:w-[64rem] flex flex-col gap-4 p-4">
-        <article class="bg-white rounded-md p-4">
-            <h2 class="pb-4">Nytt team</h2>
-            {{ with .errors }}
-                {{ . }}
-            {{ end }}
-            <form class="flex flex-col gap-4 w-80" action="" method="POST">
-                <div class="">
-                    <label for="team" class="navds-form-field__label navds-label">Teamnavn</label>
-                    <input type="text" name="team" id="team" value="{{ or .team "" }}"
-                           placeholder="Små bokstaver med bindestrek"
-                           class="navds-text-field__input navds-body-short navds-body-medium"
-                    />
-                </div>
-                <div class="">
-                    <label for="owner" class="navds-form-field__label navds-label">Eier</label>
-                    <input style="background-color:#AAAFB4" readonly type="text" name="owner" id="owner" value="{{ .owner }}"
-                           placeholder="Eieren av teamet"
-                           class="navds-text-field__input navds-body-short navds-body-medium"
-                    />
-                </div>
-                <fieldset id="users">
-                    <legend class="navds-form-field__label navds-label">Brukere</legend>
-                    <button type="button" class="mb-4 navds-button navds-button--secondary navds-button--small" onClick="addElement()">
-                        Legg til flere brukere
-                    </button>
-                </fieldset>
+    <article class="bg-white rounded-md p-4">
+        <h2 class="pb-4">Nytt team</h2>
+        {{ with .errors }}
+            {{ . }}
+        {{ end }}
+        <form class="flex flex-col gap-4 w-80" action="" method="POST">
+            <div class="">
+                <label for="team" class="navds-form-field__label navds-label">Teamnavn</label>
+                <input type="text" name="team" id="team" value="{{ or .team "" }}"
+                       placeholder="Små bokstaver med bindestrek"
+                       class="navds-text-field__input navds-body-short navds-body-medium"
+                />
+            </div>
+            <div class="">
+                <label for="owner" class="navds-form-field__label navds-label">Eier</label>
+                <input style="background-color:#AAAFB4" readonly type="text" name="owner" id="owner"
+                       value="{{ .owner }}"
+                       placeholder="Eieren av teamet"
+                       class="navds-text-field__input navds-body-short navds-body-medium"
+                />
+            </div>
+            <fieldset id="users">
+                <legend class="navds-form-field__label navds-label">Brukere</legend>
+                <button type="button" class="mb-4 navds-button navds-button--secondary navds-button--small"
+                        onClick="addElement()">
+                    Legg til flere brukere
+                </button>
+            </fieldset>
 
-                <fieldset class="flex gap-2 items-center">
-                    <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action"
-                            {{ if or .pending_jupyterhub .pending_airflow }}disabled{{ end }}
-                    >
+            <fieldset class="flex gap-2 items-center">
+                <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action">
                         <span class="navds-label">
                             Lagre
                         </span>
-                    </button>
-                    <a href="/oversikt" class="navds-link">Avbryt</a>
-                </fieldset>
-            </form>
-        </article>
-    </section>
+                </button>
+                <a href="/oversikt" class="navds-link">Avbryt</a>
+            </fieldset>
+        </form>
+    </article>
     <script>
         {{ template "team/script" }}
         addElement()

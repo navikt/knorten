@@ -2,38 +2,53 @@
 <html lang="en">
 <head>
     <title>Knorten by nada</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
     <link rel="icon" sizes="32x32" href="/assets/img/knorten.svg">
     <link
-        rel="preload"
-        href="https://cdn.nav.no/aksel/fonts/SourceSans3-normal.woff2"
-        as="font"
-        type="font/woff2"
-        crossorigin
+            rel="preload"
+            href="https://cdn.nav.no/aksel/fonts/SourceSans3-normal.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
     />
-    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="stylesheet" href="/assets/css/main.css"/>
 </head>
 <body class="w-full flex flex-col items-center min-h-screen bg-gradient-to-br from-purple-500 via-red-200 to-orange-500">
-    <header class="w-full bg-[#00374F] flex justify-center">
-        <div class="max-w-2xl grow flex justify-between py-2 text-white">
-            <a href="/" class="flex gap-2 items-center">
-                <img class="hover:animate-spin w-12 h-12" src="/assets/img/knorten.svg" />
-                <h1 class="text-2xl font-bold">KNORTEN</h1>
-                <span class="text-">by nada</span>
-            </a>
-            <nav class="flex items-center gap-2">
-                {{ if .isAdmin }}
-                    <a href="/admin" class="navds-button navds-button--small navds-button--secondary">Admin</a>
-                {{ end }}
-                {{ if .loggedIn }}
-                    <a href="/oversikt" class="navds-button navds-button--small navds-button--secondary bg-initial">Teams</a>
-                    <a href="/oauth2/logout" class="navds-button navds-button--small navds-button--secondary bg-initial">Logg ut</a>
-                {{ else }}
-                    <a href="/oauth2/login" class="navds-button navds-button--small navds-button--secondary bg-initial">Logg inn</a>
-                {{ end }}
-            </nav>
-        </div>
-    </header>
-    <div class="max-w-screen-md flex my-8 grow"> {{/* main container start */}}
-{{ end }}
+<header class="w-full bg-[#00374F] flex justify-center">
+    <div class="max-w-2xl grow flex justify-between py-2 text-white">
+        <a href="/" class="flex gap-2 items-center">
+            <img class="hover:animate-spin w-12 h-12" src="/assets/img/knorten.svg"/>
+            <h1 class="text-2xl font-bold">KNORTEN</h1>
+            <span class="text-">by nada</span>
+        </a>
+        <nav class="flex items-center gap-2">
+            {{ if .isAdmin }}
+                <a href="/admin" class="navds-button navds-button--small navds-button--secondary">Admin</a>
+            {{ end }}
+            {{ if .loggedIn }}
+                <a href="/oversikt"
+                   class="navds-button navds-button--small navds-button--secondary bg-initial">Teams</a>
+                <a href="/oauth2/logout" class="navds-button navds-button--small navds-button--secondary bg-initial">Logg
+                    ut</a>
+            {{ else }}
+                <a href="/oauth2/login" class="navds-button navds-button--small navds-button--secondary bg-initial">Logg
+                    inn</a>
+            {{ end }}
+        </nav>
+    </div>
+</header>
+<div class="max-w-screen-md flex my-8 grow"> {{/* main container start */}}
+    <section class="w-full md:w-[64rem] flex flex-col gap-4 p-4"> {{/* main section start */}}
+        <article class="bg-white rounded-md p-4">
+            <h2 class="pb-4">Viktig melding!</h2>
+            <p class="flex items-center gap-4 pb-4">
+                NADA holder på å skrive Knorten om til å være hendelsesbasert! Dette betyr at i en periode vil
+                frontenden henge litt etter hva som skjer i backenden. For deg betyr det at du må oppdatere nettsiden
+                for å kunne se endringer.
+            </p>
+            <p>For eksempel; hvis du lager et nytt team, så vil du bli tatt tilbake til oversikts-siden uten at det nye
+                teamet vises. Neste gang du oppdaterer vil teamet sannsynligvis være der. Det tar ca. 1 minutt å gjøre
+                alt som kreves for et nytt team.</p>
+        </article>
+        {{ end }}

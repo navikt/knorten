@@ -1,33 +1,31 @@
 {{ define "admin/chart" }}
     {{ template "head" . }}
-    <section class="w-full md:w-[64rem] flex flex-col gap-4 p-4">
-        <article class="bg-white rounded-md p-4 flex flex-col gap-2">
-            <h2>Rediger globale {{ .chart }} verdier</h2>
-            {{ with .errors }}
-                {{ . }}
-            {{ end }}
-            <form action="" method="POST">
-                <fieldset>
-                    <div id="values"></div>
-                    <div>
-                        <button type="button"
-                            class="mb-4 navds-button navds-button--secondary navds-button--small" 
+    <article class="bg-white rounded-md p-4 flex flex-col gap-2">
+        <h2>Rediger globale {{ .chart }} verdier</h2>
+        {{ with .errors }}
+            {{ . }}
+        {{ end }}
+        <form action="" method="POST">
+            <fieldset>
+                <div id="values"></div>
+                <div>
+                    <button type="button"
+                            class="mb-4 navds-button navds-button--secondary navds-button--small"
                             onClick="addNewElement()"
-                        >
-                            <span class="navds-label">Nytt felt</span>
-                        </button>
-                    </div>
-                </fieldset>
-                <div class="pure-controls">
-                    <button type="submit" 
-                        class="navds-button navds-button--primary bg-surface-action"
                     >
-                        <span class="navds-label">Lagre</span>
+                        <span class="navds-label">Nytt felt</span>
                     </button>
                 </div>
-            </form>
-        </article>
-    </section>
+            </fieldset>
+            <div class="pure-controls">
+                <button type="submit"
+                        class="navds-button navds-button--primary bg-surface-action"
+                >
+                    <span class="navds-label">Lagre</span>
+                </button>
+            </div>
+        </form>
+    </article>
 
     <script>
         let inputCounter = 0
@@ -39,7 +37,7 @@
 
         function addNewElement() {
             const valuesDiv = document.getElementById("values");
-            valuesDiv.insertAdjacentHTML("beforeend", 
+            valuesDiv.insertAdjacentHTML("beforeend",
                 `<div class="mb-4 flex flex-col gap-2">
                     <input
                         class="navds-text-field__input navds-body-short navds-body-medium" 
@@ -93,7 +91,7 @@
 
             const valueDiv = document.createElement("div");
             valueDiv.setAttribute("class", "flex gap-2");
-            
+
             var valueInput = document.createElement("input");
             valueInput.setAttribute("class", "navds-text-field__input navds-body-short navds-body-medium");
             valueInput.setAttribute("type", "text");

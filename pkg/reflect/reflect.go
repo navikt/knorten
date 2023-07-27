@@ -58,6 +58,10 @@ func InterfaceToStruct(obj any, values map[string]string) error {
 	fields := reflect.VisibleFields(structValue.Type())
 	for _, field := range fields {
 		fieldTag := field.Tag.Get("helm")
+		if fieldTag == "" {
+			continue
+		}
+
 		value := values[fieldTag]
 
 		structValue := reflect.ValueOf(obj).Elem()

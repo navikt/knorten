@@ -1,48 +1,50 @@
 {{ define "admin/index" }}
     {{ template "head" . }}
-    <section class="w-full md:w-[64rem] flex flex-col gap-4 p-4">
-        <article class="bg-white rounded-md p-4 flex flex-col gap-2">
-            <h2 class="mb-2">Adminpanel</h2>
-            {{ with .errors }}
-                {{ . }}
-            {{ end }}
-            <ul class="list-disc ml-4">
-                <li><a 
-                    class="navds-link"
-                    href="/admin/jupyterhub">Rediger globale Jupyter verdier</a></li>
-                <li><a 
-                    class="navds-link"
-                    href="/admin/airflow">Rediger globale Airflow verdier</a></li>
-            </ul>
-            <form action="/admin/team/sync/all" method="POST">
-                <button
-                        type="submit"
-                        onclick="return confirm('Er du sikker på at du vil resynce alle team?')"
-                        class="mb-4 navds-button navds-button--secondary navds-button--small"
-                >
-                    <span class="navds-label">Resync alle team</span>
-                </button>
-            </form>
-            <form action="/admin/jupyterhub/sync/all" method="POST">
-                <button 
-                    type="submit" 
+    <article class="bg-white rounded-md p-4 flex flex-col gap-2">
+        <h2 class="mb-2">Adminpanel</h2>
+        {{ with .errors }}
+            {{ . }}
+        {{ end }}
+        <ul class="list-disc ml-4">
+            <li><a
+                        class="navds-link"
+                        href="/admin/jupyterhub">Rediger globale Jupyter verdier</a></li>
+            <li><a
+                        class="navds-link"
+                        href="/admin/airflow">Rediger globale Airflow verdier</a></li>
+            <li><a
+                        class="navds-link"
+                        href="/admin/events">Se de siste 500 events</a></li>
+        </ul>
+        <form action="/admin/team/sync/all" method="POST">
+            <button
+                    type="submit"
+                    onclick="return confirm('Er du sikker på at du vil resynce alle team?')"
+                    class="mb-4 navds-button navds-button--secondary navds-button--small"
+            >
+                <span class="navds-label">Resync alle team</span>
+            </button>
+        </form>
+        <form action="/admin/jupyterhub/sync/all" method="POST">
+            <button
+                    type="submit"
                     onclick="return confirm('Er du sikker på at du vil resynce alle instanser av jupyterhub?')"
                     class="mb-4 navds-button navds-button--secondary navds-button--small"
-                >
-                    <span class="navds-label">Resync alle jupyterhubs</span>
-                </button>
-            </form>
-            <form action="/admin/airflow/sync/all" method="POST">
-                <button 
+            >
+                <span class="navds-label">Resync alle jupyterhubs</span>
+            </button>
+        </form>
+        <form action="/admin/airflow/sync/all" method="POST">
+            <button
                     type="submit"
                     onclick="return confirm('Er du sikker på at du vil resynce alle instanser av airflow?')"
                     class="mb-4 navds-button navds-button--secondary navds-button--small"
-                >
-                    <span class="navds-label">Resync alle airflow</span>
-                </button>
-            </form>
-            <h3 class="text-2xl font-bold">{{ len .teams }} team bruker Knada </h3>
-            <div class="divide-y divide-border-divider divide-solid">
+            >
+                <span class="navds-label">Resync alle airflow</span>
+            </button>
+        </form>
+        <h3 class="text-2xl font-bold">{{ len .teams }} teams</h3>
+        <div class="divide-y divide-border-divider divide-solid">
             {{ range .teams }}
                 <div class="p-4">
                     <h4 class="text-xl font-bold">{{ .ID }}</h4>
@@ -59,9 +61,7 @@
                     </ul>
                 </div>
             {{ end }}
-            </div>
-        </article>
-    </section>
-
+        </div>
+    </article>
     {{ template "footer" }}
 {{ end }}

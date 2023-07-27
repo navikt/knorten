@@ -4,250 +4,147 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
-	"strings"
 
-	"github.com/sirupsen/logrus"
-
-	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
-	"github.com/nais/knorten/pkg/auth"
 	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/google"
 	"github.com/nais/knorten/pkg/k8s"
-	"github.com/thanhpk/randstr"
-	"k8s.io/utils/strings/slices"
+	"github.com/nais/knorten/pkg/logger"
+	"k8s.io/client-go/kubernetes"
 )
 
 type Client struct {
-	repo         *database.Repo
-	googleClient *google.Google
-	k8sClient    *k8s.Client
-	chartClient  *chart.Client
-	azureClient  *auth.Azure
-	dryRun       bool
-	log          *logrus.Entry
+	repo       *database.Repo
+	k8sClient  *kubernetes.Clientset
+	gcpProject string
+	gcpRegion  string
+	dryRun     bool
 }
 
-func NewClient(repo *database.Repo, googleClient *google.Google, k8sClient *k8s.Client, chartClient *chart.Client, azureClient *auth.Azure, dryRun bool, log *logrus.Entry) *Client {
+func NewClient(repo *database.Repo, gcpProject, gcpRegion string, dryRun, inCluster bool) (*Client, error) {
+	k8sClient, err := k8s.CreateClientset(inCluster)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Client{
-		repo:         repo,
-		googleClient: googleClient,
-		k8sClient:    k8sClient,
-		chartClient:  chartClient,
-		azureClient:  azureClient,
-		dryRun:       dryRun,
-		log:          log,
-	}
+		repo:       repo,
+		k8sClient:  k8sClient,
+		gcpProject: gcpProject,
+		gcpRegion:  gcpRegion,
+		dryRun:     dryRun,
+	}, nil
 }
 
-type Form struct {
-	Slug      string   `form:"team" binding:"required,validTeamName"`
-	Owner     string   `form:"owner" binding:"required"`
-	Users     []string `form:"users[]" binding:"validEmail"`
-	APIAccess string   `form:"apiaccess"`
-}
+func (c Client) Create(ctx context.Context, team gensql.Team, log logger.Logger) bool {
+	log = log.WithField("team", team.ID)
+	log.Infof("Creating team %v", team.ID)
 
-func (c Client) Create(ctx *gin.Context) error {
-	var form Form
-	err := ctx.ShouldBindWith(&form, binding.Form)
-	if err != nil {
-		return err
-	}
-
-	team, err := c.repo.TeamGet(ctx, form.Slug)
-	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			return err
-		}
-	}
-	if team.Slug == form.Slug {
-		return fmt.Errorf("there already exists a team with name %v", form.Slug)
-	}
-
-	c.log.Infof("Creating team: %v", form.Slug)
-	teamID := createTeamID(form.Slug)
-	users := removeEmptyUsers(form.Users)
-	if err := c.ensureUsersExists(users); err != nil {
-		return err
-	}
-
-	if err := c.repo.TeamCreate(ctx, teamID, form.Slug, form.Owner, users, form.APIAccess == "on"); err != nil {
-		return err
-	}
-
-	go c.createExternalResources(ctx, form.Slug, teamID, form.Users)
-
-	return nil
-}
-
-func (c Client) Update(ctx *gin.Context) error {
-	var form Form
-	form.Slug = ctx.Param("team")
-	err := ctx.ShouldBindWith(&form, binding.Form)
-	if err != nil {
-		return err
-	}
-
-	team, err := c.repo.TeamGet(ctx, form.Slug)
-	if err != nil {
-		return err
-	}
-	users := removeEmptyUsers(form.Users)
-	if err := c.ensureUsersExists(users); err != nil {
-		return err
-	}
-
-	err = c.repo.TeamUpdate(ctx, team.ID, users, form.APIAccess == "on")
-	if err != nil {
-		return err
-	}
-
-	go c.updateExternalResources(ctx, team.Slug)
-
-	apps, err := c.repo.AppsForTeamGet(ctx, team.ID)
-	if err != nil {
-		return err
-	}
-
-	if slices.Contains(apps, string(gensql.ChartTypeJupyterhub)) {
-		configValues := chart.JupyterConfigurableValues{}
-		if err := c.repo.TeamConfigurableValuesGet(ctx, gensql.ChartTypeJupyterhub, team.ID, &configValues); err != nil {
-			return err
-		}
-
-		jupyterForm := chart.JupyterForm{
-			Slug: form.Slug,
-			JupyterValues: chart.JupyterValues{
-				JupyterConfigurableValues: configValues,
-			},
-		}
-
-		err = c.chartClient.Jupyterhub.Update(ctx, jupyterForm)
-		if err != nil {
-			return err
-		}
-	}
-
-	if slices.Contains(apps, string(gensql.ChartTypeAirflow)) {
-		airflowForm := chart.AirflowForm{
-			Slug: form.Slug,
-		}
-
-		err = c.chartClient.Airflow.Update(ctx, airflowForm)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (c Client) Delete(ctx context.Context, teamSlug string) error {
-	team, err := c.repo.TeamGet(ctx, teamSlug)
-	if err != nil {
-		return err
-	}
-
-	apps, err := c.repo.AppsForTeamGet(ctx, team.ID)
-	if err != nil {
-		return err
-	}
-
-	instance, err := c.repo.ComputeInstanceGet(ctx, team.ID)
+	existingTeam, err := c.repo.TeamGet(ctx, team.ID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return err
+		log.WithError(err).Error("failed retrieving team from database")
+		return true
 	}
 
-	if err := c.repo.TeamDelete(ctx, team.ID); err != nil {
-		return err
+	if existingTeam.Slug == team.Slug {
+		log.Errorf("there already exists a team with name %v", team.Slug)
+		return false
 	}
 
-	go c.deleteExternalResources(ctx, team, apps, instance)
+	if err := c.createGCPTeamResources(ctx, team); err != nil {
+		log.WithError(err).Error("failed creating GCP resources")
+		return true
+	}
 
-	return nil
+	namespace := k8s.TeamIDToNamespace(team.ID)
+	if err := c.createK8sNamespace(ctx, namespace); err != nil {
+		log.WithError(err).Error("failed creating team namespace")
+		return true
+	}
+
+	if err := c.createK8sServiceAccount(ctx, team.ID, namespace); err != nil {
+		log.WithError(err).Error("failed creating k8s service account")
+		return true
+	}
+
+	if err := c.repo.TeamCreate(ctx, team); err != nil {
+		log.WithError(err).Error("failed saving team to database")
+		return true
+	}
+
+	log.Infof("Successfully created team %v", team.ID)
+	return false
 }
 
-func (c Client) createExternalResources(ctx *gin.Context, slug, teamID string, users []string) {
-	if err := c.googleClient.CreateGCPTeamResources(ctx, slug, teamID, users); err != nil {
-		c.log.WithError(err).Error("failed while creating external resources")
-		return
+func (c Client) Update(ctx context.Context, team gensql.Team, log logger.Logger) bool {
+	log = log.WithField("team", team.ID)
+	log.Infof("Updating team %v", team.ID)
+
+	err := c.repo.TeamUpdate(ctx, team)
+	if err != nil {
+		log.WithError(err).Error("failed updating team in database")
+		return true
 	}
 
-	if err := c.k8sClient.CreateTeamNamespace(ctx, k8s.NameToNamespace(teamID)); err != nil {
-		c.log.WithError(err).Error("failed while creating external resources")
-		return
+	if err := c.updateGCPTeamResources(ctx, team); err != nil {
+		log.WithError(err).Error("failed while updating GCP resources")
+		return true
 	}
 
-	if err := c.k8sClient.CreateTeamServiceAccount(ctx, teamID, k8s.NameToNamespace(teamID)); err != nil {
-		c.log.WithError(err).Error("failed while creating external resources")
-		return
+	log.Info("Trigger update of Jupyter")
+	jupyterValues := chart.JupyterConfigurableValues{
+		TeamID: team.ID,
 	}
+	if err := c.repo.RegisterUpdateJupyterEvent(ctx, team.ID, jupyterValues); err != nil {
+		log.WithError(err).Error("failed while registering Jupyter update event")
+		return true
+	}
+
+	log.Info("Trigger update of Airflow")
+	airflowValues := chart.AirflowConfigurableValues{
+		TeamID: team.ID,
+	}
+	if err := c.repo.RegisterUpdateAirflowEvent(ctx, team.ID, airflowValues); err != nil {
+		log.WithError(err).Error("failed while registering Airflow update event")
+		return true
+	}
+
+	log.Infof("Successfully updated team %v", team.Slug)
+	return false
 }
 
-func (c Client) updateExternalResources(ctx context.Context, teamSlug string) {
-	if err := c.googleClient.Update(ctx, teamSlug); err != nil {
-		c.log.WithError(err).Error("failed while updating google resources")
-		return
-	}
-}
+func (c Client) Delete(ctx context.Context, teamID string, log logger.Logger) bool {
+	log = log.WithField("team", teamID)
+	log.Infof("Deleting team %v", teamID)
 
-func (c Client) deleteExternalResources(ctx context.Context, team gensql.TeamGetRow, apps []string, instance gensql.ComputeInstance) {
-	if err := c.googleClient.DeleteGCPTeamResources(ctx, team, instance); err != nil {
-		c.log.WithError(err).Error("failed while deleting external resources")
-		return
+	team, err := c.repo.TeamGet(ctx, teamID)
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
+		log.WithError(err).Error("failed retrieving team from database")
+		return true
 	}
 
-	namespace := k8s.NameToNamespace(team.ID)
-
-	if slices.Contains(apps, string(gensql.ChartTypeJupyterhub)) {
-		releaseName := chart.JupyterReleaseName(namespace)
-		if err := c.k8sClient.CreateHelmUninstallJob(ctx, team.ID, releaseName); err != nil {
-			c.log.WithError(err).Error("create helm uninstall job")
-			return
-		}
+	if err = c.deleteGCPTeamResources(ctx, team.ID); err != nil {
+		log.WithError(err).Error("failed while deleting GCP resources")
+		return true
 	}
 
-	if slices.Contains(apps, string(gensql.ChartTypeAirflow)) {
-		if err := c.googleClient.DeleteCloudSQLInstance(ctx, chart.CreateAirflowDBInstanceName(team.ID)); err != nil {
-			c.log.WithError(err).Error("failed while deleting external resources")
-			return
-		}
+	if err = c.deleteK8sNamespace(ctx, k8s.TeamIDToNamespace(team.ID)); err != nil {
+		log.WithError(err).Error("failed while deleting k8s namespace")
+		return true
 	}
 
-	if err := c.k8sClient.DeleteTeamNamespace(ctx, namespace); err != nil {
-		c.log.WithError(err).Error("failed while deleting external resources")
-		return
-	}
-}
-
-func (c Client) ensureUsersExists(users []string) error {
-	if c.dryRun {
-		c.log.Infof("NOOP: Running in dry run mode")
-		return nil
+	if err = c.repo.TeamDelete(ctx, team.ID); err != nil && errors.Is(err, sql.ErrNoRows) {
+		log.WithError(err).Error("failed deleting team from database")
+		return true
 	}
 
-	for _, u := range users {
-		if err := c.azureClient.UserExistsInAzureAD(u); err != nil {
-			return err
-		}
+	log.Info("Trigger delete of Airflow")
+	// Kun Airflow som har ressurser utenfor clusteret
+	if err := c.repo.RegisterDeleteAirflowEvent(ctx, team.ID); err != nil {
+		log.WithError(err).Error("failed while registering Airflow delete event")
+		return true
 	}
 
-	return nil
-}
-
-func removeEmptyUsers(formUsers []string) []string {
-	return slices.Filter(nil, formUsers, func(s string) bool {
-		return s != ""
-	})
-}
-
-func createTeamID(slug string) string {
-	if len(slug) > 25 {
-		slug = slug[:25]
-	}
-
-	return slug + "-" + strings.ToLower(randstr.String(4))
+	log.Infof("Successfully deleted team %v", teamID)
+	return false
 }

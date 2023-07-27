@@ -40,8 +40,6 @@ spec:
                 key: jupyter_chart_version
           - name: AIRFLOW_EGRESS_NETPOL
             value: /root/.config/netpol/default-egress-airflow-worker.yaml
-          - name: "KNELM_IMAGE"
-            value: europe-west1-docker.pkg.dev/knada-gcp/knada/knelm:2023-06-30-a48491a
           - name: ADMIN_GROUP
             value: nada@nav.no
         envFrom:
@@ -58,7 +56,7 @@ spec:
         - --address=0.0.0.0
         - --port=5432
         - knada-gcp:europe-west1:knorten
-        image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.1.1-alpine
+        image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.6.0-alpine
         ports:
         - containerPort: 5432
           protocol: TCP

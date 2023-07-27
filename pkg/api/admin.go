@@ -1,53 +1,64 @@
 package api
 
 import (
+	"context"
 	"encoding/gob"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 
+	"github.com/google/uuid"
+	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database/gensql"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
-type teamInfo struct {
-	gensql.Team
-	Apps []string
+type diffValue struct {
+	Old       string
+	New       string
+	Encrypted string
 }
 
-func (a *API) setupAdminRoutes() {
-	a.router.GET("/admin", func(c *gin.Context) {
-		session := sessions.Default(c)
+type teamInfo struct {
+	gensql.Team
+	Apps []gensql.ChartType
+}
+
+func (c *client) setupAdminRoutes() {
+	c.router.GET("/admin", func(ctx *gin.Context) {
+		session := sessions.Default(ctx)
 		flashes := session.Flashes()
 		err := session.Save()
 		if err != nil {
-			a.log.WithError(err).Error("problem saving session")
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err})
+			c.log.WithError(err).Error("problem saving session")
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err})
 			return
 		}
 
-		teams, err := a.repo.TeamsGet(c)
+		teams, err := c.repo.TeamsGet(ctx)
 		if err != nil {
-			session := sessions.Default(c)
+			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err = session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err})
+				c.log.WithError(err).Error("problem saving session")
+				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err})
 				return
 			}
 
-			c.Redirect(http.StatusSeeOther, "/admin")
+			ctx.Redirect(http.StatusSeeOther, "/admin")
 			return
 		}
 
 		teamApps := map[string]teamInfo{}
 		for _, team := range teams {
-			apps, err := a.repo.AppsForTeamGet(c, team.ID)
+			apps, err := c.repo.AppsForTeamGet(ctx, team.ID)
 			if err != nil {
-				a.log.WithError(err).Error("problem retrieving apps for teams")
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err})
+				c.log.WithError(err).Error("problem retrieving apps for teams")
+				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err})
 				return
 			}
 			teamApps[team.ID] = teamInfo{
@@ -56,75 +67,75 @@ func (a *API) setupAdminRoutes() {
 			}
 		}
 
-		a.htmlResponseWrapper(c, http.StatusOK, "admin/index", gin.H{
+		c.htmlResponseWrapper(ctx, http.StatusOK, "admin/index", gin.H{
 			"errors": flashes,
 			"teams":  teamApps,
 		})
 	})
 
-	a.router.GET("/admin/:chart", func(c *gin.Context) {
-		chartType := getChartType(c.Param("chart"))
+	c.router.GET("/admin/:chart", func(ctx *gin.Context) {
+		chartType := getChartType(ctx.Param("chart"))
 
-		values, err := a.repo.GlobalValuesGet(c, chartType)
+		values, err := c.repo.GlobalValuesGet(ctx, chartType)
 		if err != nil {
-			session := sessions.Default(c)
+			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err = session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, "/admin")
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, "/admin")
 				return
 			}
 
-			c.Redirect(http.StatusSeeOther, "/admin")
+			ctx.Redirect(http.StatusSeeOther, "/admin")
 			return
 		}
 
-		session := sessions.Default(c)
+		session := sessions.Default(ctx)
 		flashes := session.Flashes()
 		err = session.Save()
 		if err != nil {
-			a.log.WithError(err).Error("problem saving session")
-			c.Redirect(http.StatusSeeOther, "/admin")
+			c.log.WithError(err).Error("problem saving session")
+			ctx.Redirect(http.StatusSeeOther, "/admin")
 			return
 		}
 
-		a.htmlResponseWrapper(c, http.StatusOK, "admin/chart", gin.H{
+		c.htmlResponseWrapper(ctx, http.StatusOK, "admin/chart", gin.H{
 			"values": values,
 			"errors": flashes,
 			"chart":  string(chartType),
 		})
 	})
 
-	a.router.POST("/admin/:chart", func(c *gin.Context) {
-		session := sessions.Default(c)
-		chartType := getChartType(c.Param("chart"))
+	c.router.POST("/admin/:chart", func(ctx *gin.Context) {
+		session := sessions.Default(ctx)
+		chartType := getChartType(ctx.Param("chart"))
 
-		err := c.Request.ParseForm()
+		err := ctx.Request.ParseForm()
 		if err != nil {
 			session.AddFlash(err.Error())
 			err = session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, "admin")
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, "admin")
 				return
 			}
-			c.Redirect(http.StatusSeeOther, "admin")
+			ctx.Redirect(http.StatusSeeOther, "admin")
 			return
 		}
 
-		changedValues, err := a.adminClient.FindGlobalValueChanges(c, c.Request.PostForm, chartType)
+		changedValues, err := c.findGlobalValueChanges(ctx, ctx.Request.PostForm, chartType)
 		if err != nil {
-			session := sessions.Default(c)
+			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err = session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
 				return
 			}
 
-			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
+			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
 			return
 		}
 
@@ -132,11 +143,11 @@ func (a *API) setupAdminRoutes() {
 			session.AddFlash("Ingen endringer lagret")
 			err = session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
 				return
 			}
-			c.Redirect(http.StatusSeeOther, "/admin")
+			ctx.Redirect(http.StatusSeeOther, "/admin")
 			return
 		}
 
@@ -144,154 +155,385 @@ func (a *API) setupAdminRoutes() {
 		session.AddFlash(changedValues)
 		err = session.Save()
 		if err != nil {
-			a.log.WithError(err).Error("problem saving session")
-			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
+			c.log.WithError(err).Error("problem saving session")
+			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
 			return
 		}
-		c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v/confirm", chartType))
+		ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v/confirm", chartType))
 	})
 
-	a.router.GET("/admin/:chart/confirm", func(c *gin.Context) {
-		chartType := getChartType(c.Param("chart"))
-		session := sessions.Default(c)
+	c.router.GET("/admin/:chart/confirm", func(ctx *gin.Context) {
+		chartType := getChartType(ctx.Param("chart"))
+		session := sessions.Default(ctx)
 		changedValues := session.Flashes()
 		err := session.Save()
 		if err != nil {
-			a.log.WithError(err).Error("problem saving session")
-			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
+			c.log.WithError(err).Error("problem saving session")
+			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
 			return
 		}
 
-		a.htmlResponseWrapper(c, http.StatusOK, "admin/confirm", gin.H{
+		c.htmlResponseWrapper(ctx, http.StatusOK, "admin/confirm", gin.H{
 			"changedValues": changedValues,
 			"chart":         string(chartType),
 		})
 	})
 
-	a.router.POST("/admin/:chart/confirm", func(c *gin.Context) {
-		session := sessions.Default(c)
-		chartType := getChartType(c.Param("chart"))
+	c.router.POST("/admin/:chart/confirm", func(ctx *gin.Context) {
+		session := sessions.Default(ctx)
+		chartType := getChartType(ctx.Param("chart"))
 
-		err := c.Request.ParseForm()
+		err := ctx.Request.ParseForm()
 		if err != nil {
-			a.log.WithError(err)
+			c.log.WithError(err)
 			session.AddFlash(err.Error())
 			err = session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v/confirm", chartType))
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v/confirm", chartType))
 				return
 			}
-			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v/confirm", chartType))
+			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v/confirm", chartType))
 			return
 		}
 
-		if err := a.adminClient.UpdateGlobalValues(c, c.Request.PostForm, chartType); err != nil {
-			a.log.WithError(err)
+		if err := c.updateGlobalValues(ctx, ctx.Request.PostForm, chartType); err != nil {
+			c.log.WithError(err)
 			session.AddFlash(err.Error())
 			err = session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
 				return
 			}
-			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
+			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
 			return
 		}
 
 		if err != nil {
-			a.log.WithError(err)
+			c.log.WithError(err)
 			session.AddFlash(err.Error())
 			err = session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-				c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v/confirm", chartType))
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v/confirm", chartType))
 				return
 			}
-			c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v/confirm", chartType))
+			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v/confirm", chartType))
 			return
 		}
 
-		c.Redirect(http.StatusSeeOther, "/admin")
+		ctx.Redirect(http.StatusSeeOther, "/admin")
 	})
 
-	a.router.POST("/admin/:chart/sync", func(c *gin.Context) {
-		session := sessions.Default(c)
-		chartType := getChartType(c.Param("chart"))
-		team := c.PostForm("team")
+	c.router.POST("/admin/:chart/sync", func(ctx *gin.Context) {
+		session := sessions.Default(ctx)
+		chartType := getChartType(ctx.Param("chart"))
+		team := ctx.PostForm("team")
 
-		switch chartType {
-		case gensql.ChartTypeJupyterhub:
-			err := a.chartClient.Jupyterhub.Sync(c, team)
+		if err := c.syncChart(ctx, team, chartType); err != nil {
+			c.log.WithError(err).Errorf("syncing %v", chartType)
+			session.AddFlash(err.Error())
+			err = session.Save()
 			if err != nil {
-				a.log.WithError(err).Error("syncing Jupyterhub")
-				session.AddFlash(err.Error())
-				err = session.Save()
-				if err != nil {
-					a.log.WithError(err).Error("problem saving session")
+				c.log.WithError(err).Error("problem saving session")
+			}
+		}
+
+		ctx.Redirect(http.StatusSeeOther, "/admin")
+	})
+
+	c.router.POST("/admin/:chart/sync/all", func(ctx *gin.Context) {
+		session := sessions.Default(ctx)
+		chartType := getChartType(ctx.Param("chart"))
+
+		if err := c.syncChartForAllTeams(ctx, chartType); err != nil {
+			c.log.WithError(err).Errorf("resyncing all instances of %v", chartType)
+			session.AddFlash(err.Error())
+			err = session.Save()
+			if err != nil {
+				c.log.WithError(err).Error("problem saving session")
+			}
+		}
+
+		ctx.Redirect(http.StatusSeeOther, "/admin")
+	})
+
+	c.router.POST("/admin/:chart/unlock", func(ctx *gin.Context) {
+		session := sessions.Default(ctx)
+		chartType := getChartType(ctx.Param("chart"))
+		team := ctx.PostForm("team")
+
+		err := c.repo.TeamSetPendingUpgrade(ctx, team, string(chartType), false)
+		if err != nil {
+			c.log.WithError(err).Errorf("unlocking %v", chartType)
+			session.AddFlash(err.Error())
+			err = session.Save()
+			if err != nil {
+				c.log.WithError(err).Error("problem saving session")
+			}
+		}
+
+		ctx.Redirect(http.StatusSeeOther, "/admin")
+	})
+
+	c.router.POST("/admin/team/sync/all", func(ctx *gin.Context) {
+		session := sessions.Default(ctx)
+
+		if err := c.syncTeams(ctx); err != nil {
+			c.log.WithError(err).Errorf("resyncing all teams")
+			session.AddFlash(err.Error())
+			err = session.Save()
+			if err != nil {
+				c.log.WithError(err).Error("problem saving session")
+			}
+		}
+
+		ctx.Redirect(http.StatusSeeOther, "/admin")
+	})
+
+	c.router.GET("/admin/events", func(ctx *gin.Context) {
+		events, err := c.repo.EventLogsForEventsGet(ctx)
+		if err != nil {
+			c.log.WithError(err).Errorf("getting event logs")
+			session := sessions.Default(ctx)
+			session.AddFlash(err.Error())
+			err = session.Save()
+			if err != nil {
+				c.log.WithError(err).Error("problem saving session")
+			}
+			ctx.Redirect(http.StatusSeeOther, "/admin")
+		}
+
+		c.htmlResponseWrapper(ctx, http.StatusOK, "admin/events", gin.H{
+			"events": events,
+		})
+	})
+
+	c.router.POST("/admin/events/:id", func(ctx *gin.Context) {
+		err := c.setEventStatus(ctx)
+		if err != nil {
+			c.log.WithError(err).Errorf("setting event status")
+			session := sessions.Default(ctx)
+			session.AddFlash(err.Error())
+			err = session.Save()
+			if err != nil {
+				c.log.WithError(err).Error("problem saving session")
+			}
+			ctx.Redirect(http.StatusSeeOther, "/admin/events")
+		}
+
+		ctx.Redirect(http.StatusSeeOther, "/admin/events")
+	})
+}
+
+func (c *client) syncTeams(ctx context.Context) error {
+	teams, err := c.repo.TeamsGet(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, team := range teams {
+		err := c.repo.RegisterUpdateTeamEvent(ctx, team)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *client) syncChartForAllTeams(ctx context.Context, chartType gensql.ChartType) error {
+	teams, err := c.repo.TeamsForAppGet(ctx, chartType)
+	if err != nil {
+		return err
+	}
+
+	for _, team := range teams {
+		err := c.syncChart(ctx, team[:len(team)-5], chartType)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *client) syncChart(ctx context.Context, teamID string, chartType gensql.ChartType) error {
+	switch chartType {
+	case gensql.ChartTypeJupyterhub:
+		values := chart.JupyterConfigurableValues{
+			TeamID: teamID,
+		}
+		return c.repo.RegisterUpdateJupyterEvent(ctx, teamID, values)
+	case gensql.ChartTypeAirflow:
+		values := chart.AirflowConfigurableValues{
+			TeamID: teamID,
+		}
+		return c.repo.RegisterUpdateAirflowEvent(ctx, teamID, values)
+	}
+
+	return nil
+}
+
+func (c *client) findGlobalValueChanges(ctx context.Context, formValues url.Values, chartType gensql.ChartType) (map[string]diffValue, error) {
+	originals, err := c.repo.GlobalValuesGet(ctx, chartType)
+	if err != nil {
+		return nil, err
+	}
+
+	changed := findChangedValues(originals, formValues)
+	findDeletedValues(changed, originals, formValues)
+
+	return changed, nil
+}
+
+func (c *client) updateGlobalValues(ctx context.Context, formValues url.Values, chartType gensql.ChartType) error {
+	for key, values := range formValues {
+		if values[0] == "" {
+			err := c.repo.GlobalValueDelete(ctx, key, chartType)
+			if err != nil {
+				return err
+			}
+		} else {
+			value, encrypted, err := c.parseValue(values)
+			if err != nil {
+				return err
+			}
+
+			err = c.repo.GlobalChartValueInsert(ctx, key, value, encrypted, chartType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return c.syncChartForAllTeams(ctx, chartType)
+}
+
+func (c *client) parseValue(values []string) (string, bool, error) {
+	if len(values) == 2 {
+		value, err := c.repo.EncryptValue(values[0])
+		if err != nil {
+			return "", false, err
+		}
+		return value, true, nil
+	}
+
+	return values[0], false, nil
+}
+
+func findDeletedValues(changedValues map[string]diffValue, originals []gensql.ChartGlobalValue, formValues url.Values) {
+	for _, original := range originals {
+		notFound := true
+		for key := range formValues {
+			if original.Key == key {
+				notFound = false
+				break
+			}
+		}
+
+		if notFound {
+			changedValues[original.Key] = diffValue{
+				Old: original.Value,
+			}
+		}
+	}
+}
+
+func findChangedValues(originals []gensql.ChartGlobalValue, formValues url.Values) map[string]diffValue {
+	changedValues := map[string]diffValue{}
+
+	for key, values := range formValues {
+		var encrypted string
+		value := values[0]
+		if len(values) == 2 {
+			encrypted = values[1]
+		}
+
+		if strings.HasPrefix(key, "key") {
+			correctValue := valueForKey(changedValues, key)
+			if correctValue != nil {
+				changedValues[value] = *correctValue
+				delete(changedValues, key)
+			} else {
+				key := strings.Replace(key, "key", "value", 1)
+				diff := diffValue{
+					New:       key,
+					Encrypted: encrypted,
+				}
+				changedValues[value] = diff
+			}
+		} else if strings.HasPrefix(key, "value") {
+			correctKey := keyForValue(changedValues, key)
+			if correctKey != "" {
+				diff := diffValue{
+					New:       value,
+					Encrypted: encrypted,
+				}
+				changedValues[correctKey] = diff
+			} else {
+				key := strings.Replace(key, "value", "key", 1)
+				diff := diffValue{
+					New:       value,
+					Encrypted: encrypted,
+				}
+				changedValues[key] = diff
+			}
+		} else {
+			for _, originalValue := range originals {
+				if originalValue.Key == key {
+					if originalValue.Value != value {
+						// TODO: Kan man endre krypterte verdier? Hvordan?
+						diff := diffValue{
+							Old:       originalValue.Value,
+							New:       value,
+							Encrypted: encrypted,
+						}
+						changedValues[key] = diff
+						break
+					}
 				}
 			}
-		case gensql.ChartTypeAirflow:
-			err := a.chartClient.Airflow.Sync(c, team)
-			if err != nil {
-				a.log.WithError(err).Error("syncing Airflow")
-				session.AddFlash(err.Error())
-				err = session.Save()
-				if err != nil {
-					a.log.WithError(err).Error("problem saving session")
-				}
-			}
 		}
+	}
 
-		c.Redirect(http.StatusSeeOther, "/admin")
-	})
+	return changedValues
+}
 
-	a.router.POST("/admin/:chart/sync/all", func(c *gin.Context) {
-		session := sessions.Default(c)
-		chartType := getChartType(c.Param("chart"))
-
-		if err := a.adminClient.ResyncAll(c, chartType); err != nil {
-			a.log.WithError(err).Errorf("resyncing all instances of %v", chartType)
-			session.AddFlash(err.Error())
-			err = session.Save()
-			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-			}
+func valueForKey(values map[string]diffValue, needle string) *diffValue {
+	for key, value := range values {
+		if key == needle {
+			return &value
 		}
+	}
 
-		c.Redirect(http.StatusSeeOther, "/admin")
-	})
+	return nil
+}
 
-	a.router.POST("/admin/:chart/unlock", func(c *gin.Context) {
-		session := sessions.Default(c)
-		chartType := getChartType(c.Param("chart"))
-		team := c.PostForm("team")
-
-		err := a.repo.TeamSetPendingUpgrade(c, team, string(chartType), false)
-		if err != nil {
-			a.log.WithError(err).Errorf("unlocking %v", chartType)
-			session.AddFlash(err.Error())
-			err = session.Save()
-			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-			}
+func keyForValue(values map[string]diffValue, needle string) string {
+	for key, value := range values {
+		if value.New == needle {
+			return key
 		}
+	}
 
-		c.Redirect(http.StatusSeeOther, "/admin")
-	})
+	return ""
+}
 
-	a.router.POST("/admin/team/sync/all", func(c *gin.Context) {
-		session := sessions.Default(c)
+func (c *client) setEventStatus(ctx *gin.Context) error {
+	eventID, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		return err
+	}
 
-		if err := a.adminClient.ResyncTeams(c); err != nil {
-			a.log.WithError(err).Errorf("resyncing all teams")
-			session.AddFlash(err.Error())
-			err = session.Save()
-			if err != nil {
-				a.log.WithError(err).Error("problem saving session")
-			}
-		}
+	var status gensql.EventStatus
+	switch ctx.Query("status") {
+	case "new":
+		status = gensql.EventStatusNew
+	default:
+		return fmt.Errorf("invalid status %v", ctx.PostForm("status"))
+	}
 
-		c.Redirect(http.StatusSeeOther, "/admin")
-	})
+	return c.repo.EventSetStatus(ctx, eventID, status)
 }

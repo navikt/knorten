@@ -1,18 +1,18 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/nais/knorten/pkg/api"
-	"github.com/nais/knorten/pkg/auth"
+	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/database/crypto"
-	"github.com/nais/knorten/pkg/google"
+	"github.com/nais/knorten/pkg/events"
+	"github.com/nais/knorten/pkg/helm"
 	"github.com/nais/knorten/pkg/imageupdater"
-	"github.com/nais/knorten/pkg/k8s"
 	"github.com/sirupsen/logrus"
 )
 
@@ -29,10 +29,10 @@ type Config struct {
 	InCluster           bool
 	GCPProject          string
 	GCPRegion           string
+	GCPZone             string
 	KnelmImage          string
 	AirflowChartVersion string
 	JupyterChartVersion string
-	VMNetworkConfig     string
 	AdminGroup          string
 	SessionKey          string
 }
@@ -52,38 +52,37 @@ func main() {
 	flag.BoolVar(&cfg.InCluster, "in-cluster", true, "In cluster configuration for go client")
 	flag.StringVar(&cfg.GCPProject, "project", os.Getenv("GCP_PROJECT"), "GCP project")
 	flag.StringVar(&cfg.GCPRegion, "region", os.Getenv("GCP_REGION"), "GCP region")
+	flag.StringVar(&cfg.GCPZone, "zone", os.Getenv("GCP_ZONE"), "GCP zone")
 	flag.StringVar(&cfg.KnelmImage, "knelm-image", os.Getenv("KNELM_IMAGE"), "Knelm image")
 	flag.StringVar(&cfg.AirflowChartVersion, "airflow-chart-version", os.Getenv("AIRFLOW_CHART_VERSION"), "The chart version for airflow")
 	flag.StringVar(&cfg.JupyterChartVersion, "jupyter-chart-version", os.Getenv("JUPYTER_CHART_VERSION"), "The chart version for jupyter")
 	flag.StringVar(&cfg.AdminGroup, "admin-group", os.Getenv("ADMIN_GROUP"), "Email of admin group used to authenticate Knorten administrators")
-	flag.StringVar(&cfg.VMNetworkConfig, "vm-network-config", os.Getenv("VM_NETWORK_CONFIG"), "Network configuration for compute instances created by knorten")
 	flag.StringVar(&cfg.SessionKey, "session-key", os.Getenv("SESSION_KEY"), "The session key for Knorten")
 	flag.Parse()
 
-	repo, err := database.New(fmt.Sprintf("%v?sslmode=disable", cfg.DBConnString), log.WithField("subsystem", "repo"))
+	dbClient, err := database.New(fmt.Sprintf("%v?sslmode=disable", cfg.DBConnString), cfg.DBEncKey, log.WithField("subsystem", "db"))
 	if err != nil {
 		log.WithError(err).Fatal("setting up database")
 		return
 	}
 
-	azureClient := auth.New(cfg.DryRun, cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, log.WithField("subsystem", "auth"))
+	if !cfg.DryRun {
+		imageUpdater := imageupdater.NewClient(dbClient, log.WithField("subsystem", "imageupdater"))
+		go imageUpdater.Run(imageUpdaterFrequency)
 
-	googleClient := google.New(log.WithField("subsystem", "google"), repo, cfg.GCPProject, cfg.GCPRegion, cfg.VMNetworkConfig, cfg.DryRun)
+		if err := helm.UpdateHelmRepositories(); err != nil {
+			log.WithError(err).Fatal("updating helm repositories")
+		}
+	}
 
-	cryptClient := crypto.New(cfg.DBEncKey)
-
-	k8sClient, err := k8s.New(log.WithField("subsystem", "k8sClient"), cryptClient, repo, cfg.DryRun, cfg.InCluster, cfg.GCPProject, cfg.GCPRegion, cfg.KnelmImage, cfg.AirflowChartVersion, cfg.JupyterChartVersion)
+	eventHandler, err := events.NewHandler(context.Background(), dbClient, cfg.GCPProject, cfg.GCPRegion, cfg.GCPZone, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.DryRun, cfg.InCluster, log.WithField("subsystem", "events"))
 	if err != nil {
-		log.WithError(err).Fatal("creating k8s client")
+		log.WithError(err).Fatal("starting event watcher")
 		return
 	}
+	eventHandler.Run(10 * time.Second)
 
-	if !cfg.DryRun {
-		imageUpdater := imageupdater.New(repo, googleClient, k8sClient, azureClient, cryptClient, cfg.JupyterChartVersion, cfg.AirflowChartVersion, log.WithField("subsystem", "imageupdater"))
-		go imageUpdater.Run(imageUpdaterFrequency)
-	}
-
-	router, err := api.New(repo, azureClient, googleClient, k8sClient, cryptClient, cfg.DryRun, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.SessionKey, cfg.AdminGroup, log.WithField("subsystem", "api"))
+	router, err := api.New(dbClient, cfg.DryRun, cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.Hostname, cfg.SessionKey, cfg.AdminGroup, cfg.GCPProject, cfg.GCPZone, log.WithField("subsystem", "api"))
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return

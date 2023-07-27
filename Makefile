@@ -15,39 +15,38 @@ env:
 	echo "GCP_PROJECT=$(shell kubectl get secret --context=knada --namespace=knada-system knorten -o jsonpath='{.data.GCP_PROJECT}' | base64 -d)" >> .env
 	echo "GCP_REGION=$(shell kubectl get secret --context=knada --namespace=knada-system knorten -o jsonpath='{.data.GCP_REGION}' | base64 -d)" >> .env
 	echo "DB_ENC_KEY=$(shell kubectl get secret --context=knada --namespace=knada-system knorten -o jsonpath='{.data.DB_ENC_KEY}' | base64 -d)" >> .env
-	echo "VM_NETWORK_CONFIG"=$(shell kubectl get secret --context=knada --namespace=knada-system knorten -o jsonpath='{.data.VM_NETWORK_CONFIG}' | base64 -d) >> .env
 
 netpol:
 	$(shell kubectl get --context=knada --namespace=knada-system configmap/airflow-network-policy -o json | jq -r '.data."default-egress-airflow-worker.yaml"' > .default-egress-airflow-worker.yaml)
 
 local-online:
-	go run . \
+	go run -race . \
 	  --hostname=localhost \
 	  --oauth2-client-id=$(AZURE_APP_CLIENT_ID) \
 	  --oauth2-client-secret=$(AZURE_APP_CLIENT_SECRET) \
 	  --oauth2-tenant-id=$(AZURE_APP_TENANT_ID) \
-	  --project=$(GCP_PROJECT) \
-	  --region=$(GCP_REGION) \
-	  --db-enc-key=$(DB_ENC_KEY) \
+	  --project=nada-dev-db2e \
+	  --region=europe-west1 \
+	  --zone=europe-west1-b \
 	  --airflow-chart-version=1.10.0 \
 	  --jupyter-chart-version=2.0.0 \
 	  --in-cluster=false \
-	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knada/knelm:2023-06-30-a48491a \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
 	  --admin-group=nada@nav.no \
-	  --vm-network-config=$(VM_NETWORK_CONFIG) \
 	  --session-key online-session
 
 local:
 	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" \
-    go run . \
+    go run -race . \
 	  --hostname=localhost \
 	  --airflow-chart-version=1.10.0 \
 	  --jupyter-chart-version=2.0.0 \
 	  --db-enc-key=jegersekstentegn \
 	  --dry-run \
 	  --in-cluster=false \
-	  --knelm-image=europe-west1-docker.pkg.dev/knada-gcp/knada/knelm:2023-06-30-a48491a \
+	  --project=nada-dev-db2e \
+	  --region=europe-west1 \
+	  --zone=europe-west1-b \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
 	  --admin-group=nada@nav.no \
 	  --session-key offline-session

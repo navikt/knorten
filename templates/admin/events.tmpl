@@ -1,0 +1,46 @@
+{{ define "admin/events" }}
+    {{ template "head" . }}
+    <article class="bg-white rounded-md p-4 flex flex-col gap-2">
+        <h2 class="mb-2">Siste 500 events</h2>
+        {{ range .events }}
+            <article class="bg-white rounded-md p-4">
+                <h2>
+                    {{ .Owner }}: {{ .Type }}, {{ .Status }}
+                </h2>
+                <p>
+                    <strong>Deadline:</strong> {{ .Deadline }},
+                    <br>
+                    <strong>Created at:</strong> {{ .CreatedAt.Format "2006-01-02 15:04:05" }},
+                    <br>
+                    <strong>Updated at:</strong> {{ .UpdatedAt.Format "2006-01-02 15:04:05" }}
+                </p>
+                {{ if eq .Status "pending" }}
+                    <form action="/admin/events/{{ .ID }}?status=new" method="POST">
+                        <button
+                                type="submit"
+                                onclick="return confirm('Er du sikker på at du vil sette status til new?')"
+                                class="mb-4 navds-button navds-button--secondary navds-button--small">
+                            <span class="navds-label">Sett status til new</span>
+                        </button>
+                    </form>
+                {{ end }}
+                <label for="machine_types" class="navds-form-field__label navds-label">Eventlogs</label>
+                <table class="navds-table navds-table--small">
+                    <thead class="navds-table__header">
+                    <tr class="navds-table__row">
+                        <th class="navds-table__header-cell navds-label navds-label--small">Level</th>
+                        <th class="navds-table__header-cell navds-label navds-label--small">Message</th>
+                        <th class="navds-table__header-cell navds-label navds-label--small">Created at</th>
+                    </tr>
+                    </thead>
+                    <tbody class="navds-table__body">
+                    {{ range .Logs }}
+                        {{ template "events/row" . }}
+                    {{ end }}
+                    </tbody>
+                </table>
+            </article>
+        {{ end }}
+    </article>
+    {{ template "footer" }}
+{{ end }}

@@ -4,17 +4,18 @@
             <div class="flex gap-4 items-center">
                 <img src="/assets/img/airflow.svg" alt="Airflow logo">
                 <div>
-                    <p>Airflow status: {{ if $.PendingAirflowUpgrade }}<strong>Upgrading</strong>{{ else }}<strong>Running</strong>{{ end }}</p>
+                    <p>Airflow status: {{ if $.PendingAirflowUpgrade }}<strong>Upgrading</strong>{{ else }}<strong>Running</strong>{{ end }}
+                    </p>
                     <form action="/admin/airflow/sync" method="POST">
-                        <input type="hidden" name="team" value="{{ $.ID }}" />
+                        <input type="hidden" name="team" value="{{ $.Slug }}"/>
                         <button type="submit" class="mb-4 navds-button navds-button--secondary navds-button--small">
                             <span class="navds-label">Resync Airflow for {{ $.Slug }}</span></button>
                     </form>
                     {{ if $.PendingAirflowUpgrade }}
                         <form action="/admin/airflow/unlock" method="POST">
-                                <button type="submit" class="mb-4 navds-button navds-button--secondary navds-button--small">
-                                    <span class="navds-label">Lås opp Airflow</span></button>
-                                <input type="hidden" name="team" value="{{ $.ID }}" />
+                            <button type="submit" class="mb-4 navds-button navds-button--secondary navds-button--small">
+                                <span class="navds-label">Lås opp Airflow</span></button>
+                            <input type="hidden" name="team" value="{{ $.Slug }}"/>
                         </form>
                     {{ end }}
                 </div>
@@ -23,17 +24,18 @@
             <div class="flex gap-4 items-center">
                 <img src="/assets/img/jupyter.svg" alt="Jupyter logo">
                 <div>
-                    <p>Jupyterhub status: {{ if $.PendingJupyterUpgrade }}<strong>Upgrading</strong>{{ else }}<strong>Running</strong>{{ end }}</p>
+                    <p>Jupyterhub status: {{ if $.PendingJupyterUpgrade }}<strong>Upgrading</strong>{{ else }}<strong>Running</strong>{{ end }}
+                    </p>
                     <form action="/admin/jupyterhub/sync" method="POST">
-                            <button type="submit" class="mb-4 navds-button navds-button--secondary navds-button--small">
-                                <span class="navds-label">Resync Jupyterhub for {{ $.Slug }}</span></button>
-                            <input type="hidden" name="team" value="{{ $.ID }}" />
+                        <button type="submit" class="mb-4 navds-button navds-button--secondary navds-button--small">
+                            <span class="navds-label">Resync Jupyterhub for {{ $.Slug }}</span></button>
+                        <input type="hidden" name="team" value="{{ $.ID }}"/>
                     </form>
                     {{ if $.PendingJupyterUpgrade }}
                         <form action="/admin/jupyterhub/unlock" method="POST">
-                                <button type="submit" class="mb-4 navds-button navds-button--secondary navds-button--small">
-                                    <span class="navds-label">Lås opp Jupyterhub</span></button>
-                                <input type="hidden" name="team" value="{{ $.ID }}" />
+                            <button type="submit" class="mb-4 navds-button navds-button--secondary navds-button--small">
+                                <span class="navds-label">Lås opp Jupyterhub</span></button>
+                            <input type="hidden" name="team" value="{{ $.ID }}"/>
                         </form>
                     {{ end }}
                 </div>

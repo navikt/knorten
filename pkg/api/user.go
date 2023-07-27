@@ -5,30 +5,34 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/nais/knorten/pkg/auth"
+	"github.com/nais/knorten/pkg/api/auth"
 )
 
-func (a *API) setupUserRoutes() {
-	a.router.GET("/oversikt", func(c *gin.Context) {
+func (c *client) setupUserRoutes() {
+	c.router.GET("/oversikt", func(ctx *gin.Context) {
 		var user *auth.User
-		anyUser, exists := c.Get("user")
-		if exists {
-			user = anyUser.(*auth.User)
-		}
-
-		session := sessions.Default(c)
-		flashes := session.Flashes()
-		err := session.Save()
-		if err != nil {
-			a.log.WithError(err).Error("problem saving session")
+		anyUser, exists := ctx.Get("user")
+		if !exists {
+			ctx.Redirect(http.StatusSeeOther, "/")
 			return
 		}
 
-		services, err := a.repo.ServicesForUser(c, user.Email)
-		a.htmlResponseWrapper(c, http.StatusOK, "oversikt/index", gin.H{
-			"errors":   err,
-			"flashes":  flashes,
-			"services": services,
+		session := sessions.Default(ctx)
+		flashes := session.Flashes()
+		err := session.Save()
+		if err != nil {
+			c.log.WithError(err).Error("problem saving session")
+			return
+		}
+
+		user = anyUser.(*auth.User)
+		services, err := c.repo.ServicesForUser(ctx, user.Email)
+		c.htmlResponseWrapper(ctx, http.StatusOK, "oversikt/index", gin.H{
+			"errors":     err,
+			"flashes":    flashes,
+			"user":       services,
+			"gcpProject": c.gcpProject,
+			"gcpZone":    c.gcpZone,
 		})
 	})
 }

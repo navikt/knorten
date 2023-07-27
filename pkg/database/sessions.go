@@ -6,7 +6,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/nais/knorten/pkg/auth"
+	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 

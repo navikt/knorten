@@ -1,13 +1,9 @@
 package imageupdater
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/nais/knorten/pkg/database/gensql"
@@ -25,24 +21,24 @@ type profile struct {
 	} `json:"kubespawner_override"`
 }
 
-func (d *ImageUpdater) updateJupyterhubImages(ctx context.Context) error {
-	profilesDB, err := d.repo.GlobalValueGet(ctx, gensql.ChartTypeJupyterhub, profileListHelmKey)
+func (c *client) updateJupyterhubImages(ctx context.Context) error {
+	profilesDB, err := c.repo.GlobalValueGet(ctx, gensql.ChartTypeJupyterhub, profileListHelmKey)
 	if err != nil {
-		d.log.WithError(err).Error("getting jupyterhub singleuser profiles from database")
+		c.log.WithError(err).Error("getting jupyterhub singleuser profiles from database")
 		return err
 	}
 
-	profiles := []*profile{}
+	var profiles []*profile
 	if err := json.Unmarshal([]byte(profilesDB.Value), &profiles); err != nil {
-		d.log.WithError(err).Error("unmarshalling profiles")
+		c.log.WithError(err).Error("unmarshalling profiles")
 		return err
 	}
 
-	profilesStatus := []bool{}
+	var profilesStatus []bool
 	for _, p := range profiles {
 		updated, err := updateIfNeeded(p)
 		if err != nil {
-			d.log.WithError(err).Error("checking image up to date with GAR")
+			c.log.WithError(err).Error("checking image up to date with GAR")
 		}
 		profilesStatus = append(profilesStatus, updated)
 	}
@@ -50,16 +46,16 @@ func (d *ImageUpdater) updateJupyterhubImages(ctx context.Context) error {
 	if hasUpdates(profilesStatus) {
 		profilesBytes, err := json.Marshal(profiles)
 		if err != nil {
-			d.log.WithError(err).Error("marshalling updated profiles")
+			c.log.WithError(err).Error("marshalling updated profiles")
 			return err
 		}
 
-		if err := d.repo.GlobalChartValueInsert(ctx, profileListHelmKey, string(profilesBytes), false, gensql.ChartTypeJupyterhub); err != nil {
-			d.log.WithError(err).Error("inserting updated profile list in db")
+		if err := c.repo.GlobalChartValueInsert(ctx, profileListHelmKey, string(profilesBytes), false, gensql.ChartTypeJupyterhub); err != nil {
+			c.log.WithError(err).Error("inserting updated profile list in db")
 			return err
 		}
 
-		if err := d.triggerSync(ctx, gensql.ChartTypeJupyterhub); err != nil {
+		if err := c.triggerSync(ctx, gensql.ChartTypeJupyterhub); err != nil {
 			return err
 		}
 	}
@@ -81,7 +77,7 @@ func updateIfNeeded(p *profile) (bool, error) {
 	}
 	pythonVersion := tagParts[4]
 
-	garImage, err := getLatestJupyterImageInGAR(image, pythonVersion)
+	garImage, err := getLatestImageInGAR(image, pythonVersion)
 	if err != nil {
 		return false, err
 	}
@@ -92,41 +88,6 @@ func updateIfNeeded(p *profile) (bool, error) {
 	}
 
 	return false, nil
-}
-
-func getLatestJupyterImageInGAR(image, pythonVersion string) (*garImage, error) {
-	listCmd := exec.Command(
-		"gcloud",
-		"artifacts",
-		"docker",
-		"images",
-		"list",
-		image,
-		"--include-tags",
-		"--filter",
-		fmt.Sprintf("TAGS:-%v", pythonVersion),
-		"--sort-by=~Update_Time",
-		"--limit=1",
-		"--format=json")
-
-	buf := &bytes.Buffer{}
-	listCmd.Stdout = buf
-	listCmd.Stderr = os.Stderr
-	if err := listCmd.Run(); err != nil {
-		io.Copy(os.Stdout, buf)
-		return nil, err
-	}
-
-	var images []*garImage
-	if err := json.Unmarshal(buf.Bytes(), &images); err != nil {
-		return nil, err
-	}
-
-	if len(images) != 1 {
-		return nil, fmt.Errorf("gar image list command should return one (and only one) image with the filters set, received %v images", len(images))
-	}
-
-	return images[0], nil
 }
 
 func hasUpdates(statuses []bool) bool {

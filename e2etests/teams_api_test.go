@@ -24,41 +24,41 @@ func TestTeamsAPI(t *testing.T) {
 	t.Run("get new team html", func(t *testing.T) {
 		resp, err := server.Client().Get(fmt.Sprintf("%v/team/new", server.URL))
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
 		}
 
 		if resp.Header.Get("Content-Type") != htmlContentType {
-			t.Fatalf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
+			t.Errorf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 
 		received, err := io.ReadAll(resp.Body)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		receivedMinimized, err := minimizeHTML(string(received))
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		expected, err := createExpectedHTML("team/new", map[string]any{
 			"owner": user.Email,
 		})
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		expectedMinimized, err := minimizeHTML(expected)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if receivedMinimized != expectedMinimized {
-			t.Fatal("Received and expected HTML response are different")
+			t.Error("Received and expected HTML response are different")
 		}
 	})
 
@@ -67,11 +67,11 @@ func TestTeamsAPI(t *testing.T) {
 		data := url.Values{"team": {teamSlug}, "owner": {user.Email}, "users[]": teamMembers, "apiaccess": {""}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/new", server.URL), data)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
+			t.Errorf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
 		team, err := waitForTeamInDatabase(teamSlug)
@@ -80,25 +80,25 @@ func TestTeamsAPI(t *testing.T) {
 		}
 
 		if teamSlug != team.Slug {
-			t.Fatalf("team slug in db should be %v, got %v", teamSlug, team.Slug)
+			t.Errorf("team slug in db should be %v, got %v", teamSlug, team.Slug)
 		}
 
 		if !strings.HasPrefix(team.ID+"-", teamSlug) {
-			t.Fatalf("team id should have prefix %v-, got %v", teamSlug, team.ID)
+			t.Errorf("team id should have prefix %v-, got %v", teamSlug, team.ID)
 		}
 
 		for _, m := range teamMembers {
 			if !slices.Contains(team.Users, m) {
-				t.Fatalf("team member %v not registered in db for team %v", m, teamSlug)
+				t.Errorf("team member %v not registered in db for team %v", m, teamSlug)
 			}
 		}
 
 		if team.ApiAccess {
-			t.Fatalf("team api access should be %v, got %v", false, team.ApiAccess)
+			t.Errorf("team api access should be %v, got %v", false, team.ApiAccess)
 		}
 
 		if team.RestrictAirflowEgress {
-			t.Fatalf("restrict airflow egress should be %v, got %v", false, team.ApiAccess)
+			t.Errorf("restrict airflow egress should be %v, got %v", false, team.ApiAccess)
 		}
 	})
 
@@ -107,55 +107,55 @@ func TestTeamsAPI(t *testing.T) {
 		data := url.Values{"team": {apiAccessTeam}, "owner": {user.Email}, "users[]": teamMembers, "apiaccess": {"on"}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/new", server.URL), data)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
+			t.Errorf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
 		team, err := waitForTeamInDatabase(apiAccessTeam)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if !team.ApiAccess {
-			t.Fatalf("team api access should be %v, got %v", true, team.ApiAccess)
+			t.Errorf("team api access should be %v, got %v", true, team.ApiAccess)
 		}
 
 		if err := cleanupTeamAndApps(apiAccessTeam); err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 	})
 
 	t.Run("get edit team html", func(t *testing.T) {
 		resp, err := server.Client().Get(fmt.Sprintf("%v/team/%v/edit", server.URL, teamSlug))
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
 		}
 
 		if resp.Header.Get("Content-Type") != htmlContentType {
-			t.Fatalf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
+			t.Errorf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 
 		received, err := io.ReadAll(resp.Body)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		receivedMinimized, err := minimizeHTML(string(received))
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		team, err := repo.TeamBySlugGet(ctx, teamSlug)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		expected, err := createExpectedHTML("team/edit", map[string]any{
@@ -167,12 +167,12 @@ func TestTeamsAPI(t *testing.T) {
 			},
 		})
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		expectedMinimized, err := minimizeHTML(expected)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
@@ -183,16 +183,16 @@ func TestTeamsAPI(t *testing.T) {
 	t.Run("get edit team html team does not exist", func(t *testing.T) {
 		resp, err := server.Client().Get(fmt.Sprintf("%v/team/%v/edit", server.URL, "noexist"))
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusNotFound {
-			t.Fatalf("Status code is %v, should be %v", resp.StatusCode, http.StatusNotFound)
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusNotFound)
 		}
 
 		if resp.Header.Get("Content-Type") != jsonContentType {
-			t.Fatalf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
+			t.Errorf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 	})
 
@@ -202,11 +202,11 @@ func TestTeamsAPI(t *testing.T) {
 		data := url.Values{"team": {teamSlug}, "owner": {user.Email}, "users[]": append(teamMembers, "third.sirname@nav.no"), "apiaccess": {"on"}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/%v/edit", server.URL, teamSlug), data)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
+			t.Errorf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
 		_, err = waitForTeamInDatabase(teamSlug)
@@ -235,18 +235,18 @@ func TestTeamsAPI(t *testing.T) {
 		}
 
 		if !team.ApiAccess {
-			t.Fatalf("team api access should be %v, got %v", true, team.ApiAccess)
+			t.Errorf("team api access should be %v, got %v", true, team.ApiAccess)
 		}
 	})
 
 	t.Run("delete team", func(t *testing.T) {
 		resp, err := server.Client().Post(fmt.Sprintf("%v/team/%v/delete", server.URL, teamSlug), jsonContentType, nil)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
+			t.Errorf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
 		if err := waitForTeamToBeDeletedFromDatabase(teamSlug); err != nil {
@@ -266,11 +266,11 @@ func TestTeamsAPI(t *testing.T) {
 
 		resp, err := server.Client().Post(fmt.Sprintf("%v/team/%v/delete", server.URL, teamSlug), jsonContentType, nil)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
+			t.Errorf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
 		if err := waitForTeamToBeDeletedFromDatabase(teamSlug); err != nil {
@@ -279,24 +279,24 @@ func TestTeamsAPI(t *testing.T) {
 
 		jupyterValues, err := repo.TeamValuesGet(ctx, gensql.ChartTypeJupyterhub, team.ID)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if len(jupyterValues) != 0 {
-			t.Fatalf("jupyter team values are not removed from db when team %v is deleted", teamSlug)
+			t.Errorf("jupyter team values are not removed from db when team %v is deleted", teamSlug)
 		}
 
 		airflowValues, err := repo.TeamValuesGet(ctx, gensql.ChartTypeAirflow, team.ID)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if len(airflowValues) != 0 {
-			t.Fatalf("airflow team values are not removed from db when team %v is deleted", teamSlug)
+			t.Errorf("airflow team values are not removed from db when team %v is deleted", teamSlug)
 		}
 	})
 
 	if err := cleanupTeamAndApps(teamSlug); err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 }

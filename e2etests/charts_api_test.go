@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"testing"
@@ -17,42 +16,42 @@ func TestChartsAPI(t *testing.T) {
 	ctx := context.Background()
 	team, err := prepareChartTests("chartteam")
 	if err != nil {
-		log.Fatalf("preparing chart tests: %v", err)
+		t.Fatalf("preparing chart tests: %v", err)
 	}
 
 	t.Run("get new jupyterhub html", func(t *testing.T) {
 		resp, err := server.Client().Get(fmt.Sprintf("%v/team/%v/jupyterhub/new", server.URL, team.Slug))
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
 		}
 
 		if resp.Header.Get("Content-Type") != htmlContentType {
-			t.Fatalf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
+			t.Errorf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 
 		received, err := io.ReadAll(resp.Body)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		receivedMinimized, err := minimizeHTML(string(received))
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		expected, err := createExpectedHTML("charts/jupyterhub", map[string]any{
 			"team": team.Slug,
 		})
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		expectedMinimized, err := minimizeHTML(expected)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
@@ -63,36 +62,36 @@ func TestChartsAPI(t *testing.T) {
 	t.Run("get new airflow html", func(t *testing.T) {
 		resp, err := server.Client().Get(fmt.Sprintf("%v/team/%v/airflow/new", server.URL, team.Slug))
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
 		}
 
 		if resp.Header.Get("Content-Type") != htmlContentType {
-			t.Fatalf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
+			t.Errorf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 
 		received, err := io.ReadAll(resp.Body)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		receivedMinimized, err := minimizeHTML(string(received))
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		expected, err := createExpectedHTML("charts/airflow", map[string]any{
 			"team": team.Slug,
 		})
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		expectedMinimized, err := minimizeHTML(expected)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
@@ -103,25 +102,25 @@ func TestChartsAPI(t *testing.T) {
 	t.Run("delete airflow", func(t *testing.T) {
 		resp, err := server.Client().Post(fmt.Sprintf("%v/team/%v/airflow/delete", server.URL, team.Slug), jsonContentType, nil)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
+			t.Errorf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
 		team, err := repo.TeamBySlugGet(ctx, team.Slug)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		airflowValues, err := repo.TeamValuesGet(ctx, gensql.ChartTypeAirflow, team.ID)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if len(airflowValues) != 0 {
-			t.Fatalf("there should be no airflow team values after chart deletion, got %v values", len(airflowValues))
+			t.Errorf("there should be no airflow team values after chart deletion, got %v values", len(airflowValues))
 		}
 	})
 

@@ -117,9 +117,7 @@ func TestMain(m *testing.M) {
 
 	server = httptest.NewServer(srv)
 
-	code := m.Run()
-
-	os.Exit(code)
+	os.Exit(m.Run())
 }
 
 func waitForDB(dbString string) error {

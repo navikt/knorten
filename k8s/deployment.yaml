@@ -40,6 +40,14 @@ spec:
             value: /root/.config/netpol/default-egress-airflow-worker.yaml
           - name: ADMIN_GROUP
             value: nada@nav.no
+          - name: VM_NETWORK_CONFIG
+            value: network=knada-vpc,subnet=knada,no-address
+          - name: GCP_PROJECT
+            value: knada-gcp
+          - name: GCP_REGION
+            value: europe-west1
+          - name: GCP_ZONE
+            value: europe-west1-b
         envFrom:
         - secretRef:
             name: knorten

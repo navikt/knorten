@@ -110,6 +110,10 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 		return err
 	}
 
+	if c.dryRun {
+		return nil
+	}
+
 	return helm.InstallOrUpgrade(ctx, string(gensql.ChartTypeAirflow), namespace, team.ID, "airflow", "apache-airflow", c.chartVersionAirflow, gensql.ChartTypeAirflow, c.repo)
 }
 

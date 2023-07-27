@@ -63,6 +63,10 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfi
 		return err
 	}
 
+	if c.dryRun {
+		return nil
+	}
+
 	namespace := k8s.TeamIDToNamespace(team.ID)
 	releaseName := jupyterReleaseName(namespace)
 	return helm.InstallOrUpgrade(ctx, releaseName, namespace, team.ID, "jupyterhub", "jupyterhub", c.chartVersionJupyter, gensql.ChartTypeJupyterhub, c.repo)

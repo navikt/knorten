@@ -13,7 +13,11 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-func CreateClientset(inCluster bool) (*kubernetes.Clientset, error) {
+func CreateClientset(dryRun, inCluster bool) (*kubernetes.Clientset, error) {
+	if dryRun {
+		return nil, nil
+	}
+
 	config, err := createKubeConfig(inCluster)
 	if err != nil {
 		return nil, err

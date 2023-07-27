@@ -21,7 +21,7 @@ type Client struct {
 }
 
 func NewClient(repo *database.Repo, dryRun, inCluster bool, airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion string) (*Client, error) {
-	k8sClient, err := k8s.CreateClientset(inCluster)
+	k8sClient, err := k8s.CreateClientset(dryRun, inCluster)
 	if err != nil {
 		return nil, err
 	}

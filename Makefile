@@ -18,33 +18,32 @@ netpol:
 
 local-online:
 	go run -race . \
+	  --admin-group=nada@nav.no \
+	  --airflow-chart-version=1.10.0 \
+	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
+	  --in-cluster=false \
+	  --jupyter-chart-version=2.0.0 \
 	  --oauth2-client-id=$(AZURE_APP_CLIENT_ID) \
 	  --oauth2-client-secret=$(AZURE_APP_CLIENT_SECRET) \
 	  --oauth2-tenant-id=$(AZURE_APP_TENANT_ID) \
 	  --project=nada-dev-db2e \
 	  --region=europe-west1 \
-	  --zone=europe-west1-b \
-	  --airflow-chart-version=1.10.0 \
-	  --jupyter-chart-version=2.0.0 \
-	  --in-cluster=false \
-	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
-	  --admin-group=nada@nav.no \
 	  --session-key online-session
+	  --zone=europe-west1-b \
 
 local:
 	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" \
 	go run -race . \
+	  --admin-group=nada@nav.no \
 	  --airflow-chart-version=1.10.0 \
-	  --jupyter-chart-version=2.0.0 \
-	  --db-enc-key=jegersekstentegn \
+	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
 	  --dry-run \
 	  --in-cluster=false \
+	  --jupyter-chart-version=2.0.0 \
 	  --project=nada-dev-db2e \
 	  --region=europe-west1 \
-	  --zone=europe-west1-b \
-	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
-	  --admin-group=nada@nav.no \
 	  --session-key offline-session
+	  --zone=europe-west1-b \
 
 generate-sql:
 	$(GOBIN)/sqlc generate

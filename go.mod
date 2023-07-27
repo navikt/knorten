@@ -11,6 +11,7 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-playground/validator/v10 v10.14.1
 	github.com/golang-jwt/jwt/v4 v4.5.0
+	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.0
 	github.com/googleapis/gax-go/v2 v2.12.0
 	github.com/jackc/pgx/v5 v5.4.2
@@ -26,9 +27,9 @@ require (
 	google.golang.org/grpc v1.56.2
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.12.2
-	k8s.io/api v0.27.2
-	k8s.io/apimachinery v0.27.2
-	k8s.io/client-go v0.27.2
+	k8s.io/api v0.27.4
+	k8s.io/apimachinery v0.27.4
+	k8s.io/client-go v0.27.4
 	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5
 )
 
@@ -87,7 +88,6 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/btree v1.0.1 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
-	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.4 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect

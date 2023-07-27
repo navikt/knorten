@@ -21,6 +21,7 @@ local-online:
 	  --admin-group=nada@nav.no \
 	  --airflow-chart-version=1.10.0 \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
+	  --db-enc-key=jegersekstentegn \
 	  --in-cluster=false \
 	  --jupyter-chart-version=2.0.0 \
 	  --oauth2-client-id=$(AZURE_APP_CLIENT_ID) \
@@ -37,6 +38,7 @@ local:
 	  --admin-group=nada@nav.no \
 	  --airflow-chart-version=1.10.0 \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
+	  --db-enc-key=jegersekstentegn \
 	  --dry-run \
 	  --in-cluster=false \
 	  --jupyter-chart-version=2.0.0 \

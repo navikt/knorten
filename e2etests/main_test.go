@@ -106,7 +106,7 @@ func TestMain(m *testing.M) {
 
 	eventHandler, err := events.NewHandler(context.Background(), repo, "", "", "", "", "", true, false, logger)
 	if err != nil {
-		log.Fatalf("creating googleClient: %v", err)
+		log.Fatalf("creating eventhandler: %v", err)
 	}
 	eventHandler.Run(1 * time.Second)
 

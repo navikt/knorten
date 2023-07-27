@@ -20,6 +20,8 @@ import (
 func TestTeamsAPI(t *testing.T) {
 	ctx := context.Background()
 	teamSlug := "myteam"
+	teamMembers := []string{"first.sirname@nav.no", "second.sirname@nav.no"}
+	thirdMember := "third.sirname@nav.no"
 
 	t.Run("get new team html", func(t *testing.T) {
 		resp, err := server.Client().Get(fmt.Sprintf("%v/team/new", server.URL))
@@ -62,7 +64,6 @@ func TestTeamsAPI(t *testing.T) {
 		}
 	})
 
-	teamMembers := []string{"first.sirname@nav.no", "second.sirname@nav.no"}
 	t.Run("create new team", func(t *testing.T) {
 		data := url.Values{"team": {teamSlug}, "owner": {user.Email}, "users[]": teamMembers, "apiaccess": {""}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/new", server.URL), data)
@@ -195,8 +196,6 @@ func TestTeamsAPI(t *testing.T) {
 			t.Errorf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 	})
-
-	thirdMember := "third.sirname@nav.no"
 
 	t.Run("update team", func(t *testing.T) {
 		data := url.Values{"team": {teamSlug}, "owner": {user.Email}, "users[]": append(teamMembers, "third.sirname@nav.no"), "apiaccess": {"on"}}

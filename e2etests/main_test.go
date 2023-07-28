@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -54,8 +53,12 @@ func init() {
 	}
 }
 
-func NoTestMain(m *testing.M) {
-	repo = setupDatabase()
+func TestMain(m *testing.M) {
+	repo, err := setupDatabase()
+	if err != nil {
+		log.Fatalf("setting up database: %v", err)
+	}
+
 	eventHandler, err := events.NewHandler(context.Background(), repo, "", "", "", "", "", true, false, logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatalf("creating eventhandler: %v", err)
@@ -72,10 +75,11 @@ func NoTestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func setupDatabase() *database.Repo {
+func setupDatabase() (*database.Repo, error) {
 	dbPort := "5432"
 	dbHost := "db"
-	dbString := fmt.Sprintf("user=postgres dbname=knorten-%v sslmode=disable password=postgres host=db port=5432", rand.Intn(20000))
+	dbName := "knorten"
+	dbString := fmt.Sprintf("user=postgres dbname=%v sslmode=disable password=postgres host=%v port=%v", dbName, dbHost, dbPort)
 
 	if os.Getenv("CI") != "true" {
 		dockerHost := os.Getenv("HOME") + "/.colima/docker.sock"
@@ -89,38 +93,39 @@ func setupDatabase() *database.Repo {
 
 		pool, err := dockertest.NewPool(dockerHost)
 		if err != nil {
-			log.Fatalf("Could not connect to docker: %s", err)
+			return nil, fmt.Errorf("could not connect to docker: %s", err)
 		}
 
 		// pulls an image, creates a container based on it and runs it
 		resource, err := pool.Run("postgres", "14", []string{"POSTGRES_PASSWORD=postgres", "POSTGRES_DB=knorten"})
 		if err != nil {
-			log.Fatalf("Could not start resource: %s", err)
+			return nil, fmt.Errorf("could not start resource: %s", err)
 		}
-		err = resource.Expire(120) // setting resource timeout as postgres container is not terminated automatically
-		if err != nil {
-			log.Fatalf("failed creating postgres expire: %v", err)
+
+		// setting resource timeout as postgres container is not terminated automatically
+		if err := resource.Expire(120); err != nil {
+			return nil, fmt.Errorf("failed creating postgres expire: %v", err)
 		}
+
 		dbPort = resource.GetPort("5432/tcp")
 		dbHost = "localhost"
-		dbString = fmt.Sprintf("user=postgres dbname=knorten sslmode=disable password=postgres host=localhost port=%v", dbPort)
+		dbString = fmt.Sprintf("user=postgres dbname=%v sslmode=disable password=postgres host=localhost port=%v", dbName, dbPort)
 	}
 
 	if err := waitForDB(dbString); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	var err error
 	repo, err := database.New(dbString, "jegersekstentegn", logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	if err := dbsetup.SetupDB(context.Background(), fmt.Sprintf("postgres://postgres:postgres@%v:%v", dbHost, dbPort), "knorten"); err != nil {
-		log.Fatalf("setting up knorten db: %v", err)
+	if err := dbsetup.SetupDB(context.Background(), fmt.Sprintf("postgres://postgres:postgres@%v:%v", dbHost, dbPort), dbName); err != nil {
+		return nil, fmt.Errorf("setting up knorten db: %v", err)
 	}
 
-	return repo
+	return repo, nil
 }
 
 func waitForDB(dbString string) error {

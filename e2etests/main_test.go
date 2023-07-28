@@ -54,7 +54,8 @@ func init() {
 }
 
 func TestMain(m *testing.M) {
-	repo, err := setupDatabase()
+	var err error
+	repo, err = setupDatabase()
 	if err != nil {
 		log.Fatalf("setting up database: %v", err)
 	}

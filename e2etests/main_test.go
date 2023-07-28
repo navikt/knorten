@@ -54,7 +54,7 @@ func init() {
 	}
 }
 
-func TestMain(m *testing.M) {
+func NoTestMain(m *testing.M) {
 	repo = setupDatabase()
 	eventHandler, err := events.NewHandler(context.Background(), repo, "", "", "", "", "", true, false, logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {

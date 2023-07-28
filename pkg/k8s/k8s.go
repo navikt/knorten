@@ -37,6 +37,7 @@ func createKubeConfig(inCluster bool) (*rest.Config, error) {
 	}
 
 	configLoadingRules := &clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfig}
+	// TODO: Virker ikke som at man får satt context på denne måten
 	configOverrides := &clientcmd.ConfigOverrides{CurrentContext: "minikube"}
 
 	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(configLoadingRules, configOverrides).ClientConfig()

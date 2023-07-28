@@ -41,10 +41,11 @@ func createBucket(ctx context.Context, teamID, bucketName, gcpProject, gcpRegion
 	if err := bucket.Create(ctx, gcpProject, storageClassAndLocation); err != nil {
 		apiError, ok := gErrors.FromError(err)
 		if ok {
-			if apiError.GRPCStatus().Code() == codes.OK {
+			if apiError.GRPCStatus().Code() == codes.OK || apiError.GRPCStatus().Code() == codes.AlreadyExists {
 				return nil
 			}
 		}
+
 		return err
 	}
 

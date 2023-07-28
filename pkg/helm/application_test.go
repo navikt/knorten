@@ -70,10 +70,22 @@ func Test_parseTeamValue(t *testing.T) {
 			},
 			want: map[string]any{"webserver": map[string]any{"extraContainers": []any{map[string]any{"name": "hello", "args": []any{"navikt/repo", "main", "/dags", "60"}}}}, "unaffected": "value"},
 		},
+		{
+			name: "Handle omitted values",
+			args: args{
+				key:    "fernetKey,omit",
+				value:  "secret-password",
+				values: map[string]any{},
+			},
+			want: map[string]any{},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			parseTeamValue(tt.args.key, tt.args.value, tt.args.values)
+			_, err := parseTeamValue(tt.args.key, tt.args.value, tt.args.values)
+			if err != nil {
+				t.Error(err)
+			}
 			if !reflect.DeepEqual(tt.args.values, tt.want) {
 				t.Errorf("parse() = %v, want %v", tt.args.values, tt.want)
 			}
@@ -178,6 +190,39 @@ func Test_SetChartValue(t *testing.T) {
 			SetChartValue(tt.args.keys, tt.args.value, tt.args.chart)
 			if !reflect.DeepEqual(tt.args.chart, tt.want) {
 				t.Errorf("setChartValue() = %v, want %v", tt.args.chart, tt.want)
+			}
+		})
+	}
+}
+
+func Test_parseKey(t *testing.T) {
+	tests := []struct {
+		name     string
+		key      string
+		wantKey  string
+		wantOpts []string
+	}{
+		{
+			name:     "Key without options",
+			key:      "someHelmKey",
+			wantKey:  "someHelmKey",
+			wantOpts: []string{},
+		},
+		{
+			name:     "Key with options",
+			key:      "noKey,omit",
+			wantKey:  "noKey",
+			wantOpts: []string{"omit"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			key, opts := parseKey(tt.key)
+			if key != tt.wantKey {
+				t.Errorf("parseKey() key = %v, want %v", key, tt.wantKey)
+			}
+			if !reflect.DeepEqual(opts, tt.wantOpts) {
+				t.Errorf("parseKey() opts = %v, want %v", opts, tt.wantOpts)
 			}
 		})
 	}

@@ -12,6 +12,7 @@ import (
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli"
+	"k8s.io/utils/strings/slices"
 
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
@@ -173,7 +174,8 @@ func (a *Application) globalValues(ctx context.Context) (map[string]any, error) 
 				return nil, err
 			}
 		}
-		keys := KeySplitHandleEscape(v.Key)
+
+		keys := keySplitHandleEscape(v.Key)
 		value, err := ParseValue(v.Value)
 		if err != nil {
 			return nil, err
@@ -191,6 +193,10 @@ func (a *Application) enrichWithTeamValues(ctx context.Context, values map[strin
 	}
 
 	for _, v := range dbValues {
+		if slices.Contains([]string{"fernetKey", "databasePassword", "webserverSecretKey"}, v.Key) {
+			continue
+		}
+
 		_, err = parseTeamValue(v.Key, v.Value, values)
 		if err != nil {
 			return err
@@ -200,8 +206,18 @@ func (a *Application) enrichWithTeamValues(ctx context.Context, values map[strin
 	return nil
 }
 
+func parseKey(key string) (string, []string) {
+	opts := strings.Split(key, ",")
+	return opts[0], opts[1:]
+}
+
 func parseTeamValue(key string, value any, values map[string]any) (any, error) {
-	keys := KeySplitHandleEscape(key)
+	key, opts := parseKey(key)
+	if slices.Contains(opts, "omit") {
+		return nil, nil
+	}
+
+	keys := keySplitHandleEscape(key)
 
 	if pKeys, cKeys, idx, mutate := isMutation(keys); mutate {
 		return mutateGlobalListValue(pKeys, cKeys, idx, value, values)
@@ -314,7 +330,7 @@ func releaseExists(actionConfig *action.Configuration, releaseName string) (bool
 	return false, nil
 }
 
-func KeySplitHandleEscape(key string) []string {
+func keySplitHandleEscape(key string) []string {
 	escape := false
 	keys := strings.FieldsFunc(key, func(r rune) bool {
 		if r == '\\' {

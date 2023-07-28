@@ -349,8 +349,8 @@ func (c *client) syncChartForAllTeams(ctx context.Context, chartType gensql.Char
 		return err
 	}
 
-	for _, team := range teams {
-		err := c.syncChart(ctx, team[:len(team)-5], chartType)
+	for _, teamID := range teams {
+		err := c.syncChart(ctx, teamID, chartType)
 		if err != nil {
 			return err
 		}

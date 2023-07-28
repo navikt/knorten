@@ -6,33 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/nais/knorten/pkg/api"
-	"github.com/nais/knorten/pkg/events"
-	"github.com/sirupsen/logrus"
 )
 
 func TestComputeAPI(t *testing.T) {
-	repo := setUpPrivateDatabase()
-	eventHandler, err := events.NewHandler(context.Background(), repo, "", "", "", "", "", true, false, logrus.NewEntry(logrus.StandardLogger()))
-	if err != nil {
-		log.Fatalf("creating eventhandler: %v", err)
-	}
-	eventHandler.Run(1 * time.Second)
-
-	srv, err := api.New(repo, true, "", "", " ", "", "nada@nav.no", "", "", logrus.NewEntry(logrus.StandardLogger()))
-	if err != nil {
-		log.Fatalf("creating api: %v", err)
-	}
-
-	server := httptest.NewServer(srv)
-
 	t.Run("get new compute html", func(t *testing.T) {
 		resp, err := server.Client().Get(fmt.Sprintf("%v/compute/new", server.URL))
 		if err != nil {

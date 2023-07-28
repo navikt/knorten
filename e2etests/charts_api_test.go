@@ -4,38 +4,19 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/nais/knorten/pkg/api"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/events"
-	"github.com/sirupsen/logrus"
 )
 
 func TestChartsAPI(t *testing.T) {
-	repo := setUpPrivateDatabase()
-	eventHandler, err := events.NewHandler(context.Background(), repo, "", "", "", "", "", true, false, logrus.NewEntry(logrus.StandardLogger()))
-	if err != nil {
-		log.Fatalf("creating eventhandler: %v", err)
-	}
-	eventHandler.Run(1 * time.Second)
-
-	srv, err := api.New(repo, true, "", "", " ", "", "nada@nav.no", "", "", logrus.NewEntry(logrus.StandardLogger()))
-	if err != nil {
-		log.Fatalf("creating api: %v", err)
-	}
-
-	server := httptest.NewServer(srv)
-
 	ctx := context.Background()
-	team, err := prepareChartTests(repo, server, "chartteam")
+	team, err := prepareCharts(repo, server, "chartteam")
 	if err != nil {
 		t.Fatalf("preparing chart tests: %v", err)
 	}
@@ -150,7 +131,7 @@ func TestChartsAPI(t *testing.T) {
 	}
 }
 
-func prepareChartTests(repo *database.Repo, server *httptest.Server, teamSlug string) (gensql.TeamBySlugGetRow, error) {
+func prepareCharts(repo *database.Repo, server *httptest.Server, teamSlug string) (gensql.TeamBySlugGetRow, error) {
 	data := url.Values{"team": {teamSlug}, "owner": {user.Email}, "users[]": {"user.userson@nav.no"}, "apiaccess": {""}}
 	resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/new", server.URL), data)
 	if err != nil {

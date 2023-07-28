@@ -20,9 +20,11 @@ import (
 	"time"
 
 	"github.com/nais/knorten/local/dbsetup"
+	"github.com/nais/knorten/pkg/api"
 	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/events"
 	"github.com/ory/dockertest/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/tdewolff/minify/v2"
@@ -30,7 +32,9 @@ import (
 )
 
 var (
-	user = auth.User{
+	repo   *database.Repo
+	server *httptest.Server
+	user   = auth.User{
 		Name:  "Dum My",
 		Email: "dummy@nav.no",
 	}
@@ -51,10 +55,24 @@ func init() {
 }
 
 func TestMain(m *testing.M) {
+	repo = setupDatabase()
+	eventHandler, err := events.NewHandler(context.Background(), repo, "", "", "", "", "", true, false, logrus.NewEntry(logrus.StandardLogger()))
+	if err != nil {
+		log.Fatalf("creating eventhandler: %v", err)
+	}
+	eventHandler.Run(1 * time.Second)
+
+	srv, err := api.New(repo, true, "", "", " ", "", "nada@nav.no", "", "", logrus.NewEntry(logrus.StandardLogger()))
+	if err != nil {
+		log.Fatalf("creating api: %v", err)
+	}
+
+	server = httptest.NewServer(srv)
+
 	os.Exit(m.Run())
 }
 
-func setUpPrivateDatabase() *database.Repo {
+func setupDatabase() *database.Repo {
 	dbPort := "5432"
 	dbHost := "db"
 	dbString := fmt.Sprintf("user=postgres dbname=knorten-%v sslmode=disable password=postgres host=db port=5432", rand.Intn(20000))

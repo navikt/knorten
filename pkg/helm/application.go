@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"gopkg.in/yaml.v3"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli"
@@ -42,11 +44,25 @@ func newApplication(chartName, chartRepo, teamID, chartVersion string, chartType
 	}
 }
 
-func InstallOrUpgrade(ctx context.Context, releaseName, namespace, teamID, chartName, chartRepo, chartVersion string, chartType gensql.ChartType, repo *database.Repo) error {
+func InstallOrUpgrade(ctx context.Context, dryRun bool, releaseName, namespace, teamID, chartName, chartRepo, chartVersion string, chartType gensql.ChartType, repo *database.Repo) error {
 	application := newApplication(chartName, chartRepo, teamID, chartVersion, chartType, repo)
 	teamValues, err := application.chartValues(ctx)
 	if err != nil {
 		return err
+	}
+
+	if dryRun {
+		out, err := yaml.Marshal(teamValues)
+		if err != nil {
+			return fmt.Errorf("error while marshaling chart for %v", chartType)
+		}
+
+		err = os.WriteFile(fmt.Sprintf("charts/%v-%v.yaml", chartType, time.Now().Format("2006.01.02-15:04")), out, 0o644)
+		if err != nil {
+			return fmt.Errorf("error while writing to file %v.yaml", chartType)
+		}
+
+		return nil
 	}
 
 	settings := cli.New()

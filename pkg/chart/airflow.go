@@ -190,7 +190,7 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 			return AirflowValues{}, err
 		}
 
-		configurableValues.DagRepo = dagRepoBranch.Value
+		configurableValues.DagRepoBranch = dagRepoBranch.Value
 
 		configurableValues.ApiAccess = team.ApiAccess
 		configurableValues.ApiAccess = team.RestrictAirflowEgress

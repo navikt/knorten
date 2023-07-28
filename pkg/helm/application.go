@@ -209,7 +209,7 @@ func (a *Application) enrichWithTeamValues(ctx context.Context, values map[strin
 	}
 
 	for _, v := range dbValues {
-		if slices.Contains([]string{"fernetKey", "databasePassword", "webserverSecretKey"}, v.Key) {
+		if slices.Contains([]string{"fernetKey", "webserverSecretKey"}, v.Key) {
 			continue
 		}
 

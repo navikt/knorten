@@ -17,7 +17,7 @@ require (
 	github.com/jackc/pgx/v5 v5.4.2
 	github.com/kyleconroy/sqlc v1.19.1
 	github.com/lib/pq v1.10.9
-	github.com/ory/dockertest/v3 v3.9.1
+	github.com/ory/dockertest/v3 v3.10.0
 	github.com/pressly/goose/v3 v3.7.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/tdewolff/minify/v2 v2.12.7

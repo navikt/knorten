@@ -134,7 +134,16 @@ func (r *Repo) ServicesForUser(ctx context.Context, email string) (UserServices,
 	return userServices, nil
 }
 
-func (r *Repo) TeamValuesInsert(ctx context.Context, chartType gensql.ChartType, chartValues map[string]string, team string) error {
+func (r *Repo) TeamValueInsert(ctx context.Context, chartType gensql.ChartType, key, value, teamID string) error {
+	return r.querier.TeamValueInsert(ctx, gensql.TeamValueInsertParams{
+		Key:       key,
+		Value:     value,
+		TeamID:    teamID,
+		ChartType: chartType,
+	})
+}
+
+func (r *Repo) HelmChartValuesInsert(ctx context.Context, chartType gensql.ChartType, chartValues map[string]string, teamID string) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -145,7 +154,7 @@ func (r *Repo) TeamValuesInsert(ctx context.Context, chartType gensql.ChartType,
 		err := querier.TeamValueInsert(ctx, gensql.TeamValueInsertParams{
 			Key:       key,
 			Value:     value,
-			TeamID:    team,
+			TeamID:    teamID,
 			ChartType: chartType,
 		})
 		if err != nil {

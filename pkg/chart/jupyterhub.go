@@ -43,8 +43,6 @@ type jupyterValues struct {
 	ExtraAnnotations string   `helm:"singleuser.extraAnnotations"`
 }
 
-// TODO: Trenger en sync som henter ut eksisterende verdier fra databasen
-
 func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfigurableValues) error {
 	team, err := c.repo.TeamGet(ctx, configurableValues.TeamID)
 	if err != nil {
@@ -58,18 +56,14 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfi
 		return err
 	}
 
-	err = c.repo.TeamValuesInsert(ctx, gensql.ChartTypeJupyterhub, chartValues, team.ID)
+	err = c.repo.HelmChartValuesInsert(ctx, gensql.ChartTypeJupyterhub, chartValues, team.ID)
 	if err != nil {
 		return err
 	}
 
-	if c.dryRun {
-		return nil
-	}
-
 	namespace := k8s.TeamIDToNamespace(team.ID)
 	releaseName := jupyterReleaseName(namespace)
-	return helm.InstallOrUpgrade(ctx, releaseName, namespace, team.ID, "jupyterhub", "jupyterhub", c.chartVersionJupyter, gensql.ChartTypeJupyterhub, c.repo)
+	return helm.InstallOrUpgrade(ctx, c.dryRun, releaseName, namespace, team.ID, "jupyterhub", "jupyterhub", c.chartVersionJupyter, gensql.ChartTypeJupyterhub, c.repo)
 }
 
 func (c Client) deleteJupyter(ctx context.Context, teamID string) error {

@@ -14,16 +14,15 @@ import (
 )
 
 type client struct {
-	azureClient     *auth.Azure
-	router          *gin.Engine
-	repo            *database.Repo
-	log             *logrus.Entry
-	adminClient     *admin.Client
-	adminGroupEmail string
-	dryRun          bool
-	adminGroupID    string
-	gcpProject      string
-	gcpZone         string
+	azureClient  *auth.Azure
+	router       *gin.Engine
+	repo         *database.Repo
+	log          *logrus.Entry
+	adminClient  *admin.Client
+	dryRun       bool
+	adminGroupID string
+	gcpProject   string
+	gcpZone      string
 }
 
 func New(repo *database.Repo, dryRun bool, clientID, clientSecret, tenantID, sessionKey, adminGroupEmail, gcpProject, gcpZone string, log *logrus.Entry) (*gin.Engine, error) {
@@ -64,6 +63,7 @@ func New(repo *database.Repo, dryRun bool, clientID, clientSecret, tenantID, ses
 	if err != nil {
 		return nil, err
 	}
+
 	return router, nil
 }
 

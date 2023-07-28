@@ -7,10 +7,7 @@ import (
 )
 
 func (r *Repo) ComputeInstanceCreate(ctx context.Context, instance gensql.ComputeInstance) error {
-	return r.querier.ComputeInstanceCreate(ctx, gensql.ComputeInstanceCreateParams{
-		Email: instance.Email,
-		Name:  instance.Name,
-	})
+	return r.querier.ComputeInstanceCreate(ctx, gensql.ComputeInstanceCreateParams(instance))
 }
 
 func (r *Repo) ComputeInstanceGet(ctx context.Context, email string) (gensql.ComputeInstance, error) {

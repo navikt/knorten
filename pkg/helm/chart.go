@@ -2,10 +2,8 @@ package helm
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
 
-	"gopkg.in/yaml.v2"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -43,40 +41,6 @@ func FetchChart(repo, chartName, version string) (*chart.Chart, error) {
 	}
 
 	return loader.Load(fmt.Sprintf("%v/%v-%v.tgz", destDir, chartName, version))
-}
-
-func addHelmRepository(url, chartName, repoFile string, settings *cli.EnvSettings) error {
-	bytes, err := os.ReadFile(repoFile)
-	if err != nil && !os.IsNotExist(err) {
-		return err
-	}
-
-	var f repo.File
-	if err := yaml.Unmarshal(bytes, &f); err != nil {
-		return err
-	}
-
-	c := repo.Entry{
-		Name: chartName,
-		URL:  url,
-	}
-
-	r, err := repo.NewChartRepository(&c, getter.All(settings))
-	if err != nil {
-		return err
-	}
-
-	if _, err := r.DownloadIndexFile(); err != nil {
-		return fmt.Errorf("looks like %q is not a valid chart repository or cannot be reached: %v", url, err)
-	}
-
-	f.Update(&c)
-
-	if err := f.WriteFile(repoFile, fs.ModeAppend); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func UpdateHelmRepositories() error {

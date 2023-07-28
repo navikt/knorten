@@ -140,7 +140,7 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 	go func() {
 		for {
 			select {
-			case <-time.Tick(tickDuration):
+			case <-time.NewTicker(tickDuration).C:
 				e.log.Debug("Event dispatcher run!")
 			case <-e.context.Done():
 				e.log.Debug("Context cancelled, stopping the event dispatcher.")

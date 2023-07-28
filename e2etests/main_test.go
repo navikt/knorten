@@ -171,6 +171,7 @@ func createTeamAndApps(teamSlug string) error {
 	if err != nil {
 		return fmt.Errorf("creating jupyterhub for team %v: %v", teamSlug, err)
 	}
+	resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("creating jupyterhub for team %v returned status code: %v", teamSlug, resp.StatusCode)
@@ -185,6 +186,7 @@ func createTeamAndApps(teamSlug string) error {
 	if err != nil {
 		return fmt.Errorf("creating airflow for team %v: %v", teamSlug, err)
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("creating airflow for team %v returned status code: %v", teamSlug, resp.StatusCode)
@@ -198,6 +200,7 @@ func createTeamAndApps(teamSlug string) error {
 	if err != nil {
 		return fmt.Errorf("creating compute instance for user %v: %v", user.Email, err)
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("creating compute instance for user %v returned status code %v", user, resp.StatusCode)

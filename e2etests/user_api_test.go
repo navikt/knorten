@@ -37,6 +37,10 @@ func TestOverviewAPI(t *testing.T) {
 		}
 
 		services, err := repo.ServicesForUser(context.Background(), user.Email)
+		if err != nil {
+			t.Error(err)
+		}
+
 		expected, err := createExpectedHTML("oversikt/index", map[string]any{
 			"user":       services,
 			"gcpProject": "",

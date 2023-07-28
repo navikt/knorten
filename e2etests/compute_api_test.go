@@ -68,7 +68,7 @@ func TestComputeAPI(t *testing.T) {
 			t.Error(err)
 		}
 
-		expectedInstanceName := fmt.Sprintf("compute-dummy")
+		expectedInstanceName := "compute-dummy"
 		if instance.Name != expectedInstanceName {
 			t.Fatalf("expected compute instance name %v, got %v", expectedInstanceName, instance.Name)
 		}

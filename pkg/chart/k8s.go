@@ -7,6 +7,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -178,6 +179,16 @@ func (c Client) createCloudSQLProxyDeployment(ctx context.Context, name, namespa
 								"--address=0.0.0.0",
 								fmt.Sprintf("--port=%v", port),
 								fmt.Sprintf("%v:%v:%v", c.gcpProject, c.gcpRegion, dbInstance),
+							},
+							Resources: v1.ResourceRequirements{
+								Requests: v1.ResourceList{
+									v1.ResourceCPU:    resource.MustParse("20m"),
+									v1.ResourceMemory: resource.MustParse("32Mi"),
+								},
+								Limits: v1.ResourceList{
+									v1.ResourceCPU:    resource.MustParse("100m"),
+									v1.ResourceMemory: resource.MustParse("128Mi"),
+								},
 							},
 						},
 					},

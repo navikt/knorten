@@ -1,45 +1,62 @@
 {{ define "admin/row" }}
-    {{ range .Apps }}
-        {{ if eq . "airflow" }}
-            <div class="flex gap-4 items-center">
-                <img src="/assets/img/airflow.svg" alt="Airflow logo">
-                <div>
-                    <p>Airflow status: {{ if $.PendingAirflowUpgrade }}<strong>Upgrading</strong>{{ else }}<strong>Running</strong>{{ end }}
-                    </p>
-                    <form action="/admin/airflow/sync" method="POST">
-                        <input type="hidden" name="team" value="{{ $.Slug }}"/>
-                        <button type="submit" class="mb-4 navds-button navds-button--secondary navds-button--small">
-                            <span class="navds-label">Resync Airflow for {{ $.Slug }}</span></button>
-                    </form>
-                    {{ if $.PendingAirflowUpgrade }}
-                        <form action="/admin/airflow/unlock" method="POST">
+    <div class="p-4">
+        <h4 class="text-xl font-bold">{{ .ID }}</h4>
+        {{ range .Apps }}
+            {{ if eq . "airflow" }}
+                <div class="flex gap-4 items-center">
+                    <img src="/assets/img/airflow.svg" alt="Airflow logo">
+                    <div>
+                        <p>Airflow status: {{ if $.PendingAirflowUpgrade }}<strong>Upgrading</strong>{{ else }}<strong>Running</strong>{{ end }}
+                        </p>
+                        <form action="/admin/airflow/sync" method="POST">
+                            <input type="hidden" name="team" value="{{ $.ID }}"/>
                             <button type="submit" class="mb-4 navds-button navds-button--secondary navds-button--small">
-                                <span class="navds-label">Lås opp Airflow</span></button>
-                            <input type="hidden" name="team" value="{{ $.Slug }}"/>
+                                <span class="navds-label">Resync Airflow for {{ $.Slug }}</span></button>
                         </form>
-                    {{ end }}
+                        {{ if $.PendingAirflowUpgrade }}
+                            <form action="/admin/airflow/unlock" method="POST">
+                                <button type="submit"
+                                        class="mb-4 navds-button navds-button--secondary navds-button--small">
+                                    <span class="navds-label">Lås opp Airflow</span></button>
+                                <input type="hidden" name="team" value="{{ $.Slug }}"/>
+                            </form>
+                        {{ end }}
+                    </div>
                 </div>
-            </div>
-        {{ else if eq . "jupyterhub" }}
-            <div class="flex gap-4 items-center">
-                <img src="/assets/img/jupyter.svg" alt="Jupyter logo">
-                <div>
-                    <p>Jupyterhub status: {{ if $.PendingJupyterUpgrade }}<strong>Upgrading</strong>{{ else }}<strong>Running</strong>{{ end }}
-                    </p>
-                    <form action="/admin/jupyterhub/sync" method="POST">
-                        <button type="submit" class="mb-4 navds-button navds-button--secondary navds-button--small">
-                            <span class="navds-label">Resync Jupyterhub for {{ $.Slug }}</span></button>
-                        <input type="hidden" name="team" value="{{ $.ID }}"/>
-                    </form>
-                    {{ if $.PendingJupyterUpgrade }}
-                        <form action="/admin/jupyterhub/unlock" method="POST">
+            {{ else if eq . "jupyterhub" }}
+                <div class="flex gap-4 items-center">
+                    <img src="/assets/img/jupyter.svg" alt="Jupyter logo">
+                    <div>
+                        <p>Jupyterhub status: {{ if $.PendingJupyterUpgrade }}<strong>Upgrading</strong>{{ else }}
+                            <strong>Running</strong>{{ end }}
+                        </p>
+                        <form action="/admin/jupyterhub/sync" method="POST">
                             <button type="submit" class="mb-4 navds-button navds-button--secondary navds-button--small">
-                                <span class="navds-label">Lås opp Jupyterhub</span></button>
+                                <span class="navds-label">Resync Jupyterhub for {{ $.Slug }}</span></button>
                             <input type="hidden" name="team" value="{{ $.ID }}"/>
                         </form>
-                    {{ end }}
+                        {{ if $.PendingJupyterUpgrade }}
+                            <form action="/admin/jupyterhub/unlock" method="POST">
+                                <button type="submit"
+                                        class="mb-4 navds-button navds-button--secondary navds-button--small">
+                                    <span class="navds-label">Lås opp Jupyterhub</span></button>
+                                <input type="hidden" name="team" value="{{ $.ID }}"/>
+                            </form>
+                        {{ end }}
+                    </div>
                 </div>
-            </div>
+            {{ end }}
         {{ end }}
-    {{ end }}
+
+        <h5 class="font-bold">Eier</h5>
+        <ul class="list-disc ml-4">
+            {{ .Owner }}
+        </ul>
+        <h5 class="font-bold">Brukere</h5>
+        <ul class="list-disc ml-4">
+            {{ range .Users }}
+                <li>{{ . }}</li>
+            {{ end }}
+        </ul>
+    </div>
 {{ end }}

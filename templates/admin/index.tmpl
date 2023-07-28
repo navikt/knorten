@@ -46,20 +46,7 @@
         <h3 class="text-2xl font-bold">{{ len .teams }} teams</h3>
         <div class="divide-y divide-border-divider divide-solid">
             {{ range .teams }}
-                <div class="p-4">
-                    <h4 class="text-xl font-bold">{{ .ID }}</h4>
-                    {{ template "admin/row" . }}
-                    <h5 class="font-bold">Eier</h5>
-                    <ul class="list-disc ml-4">
-                        {{ .Owner }}
-                    </ul>
-                    <h5 class="font-bold">Brukere</h5>
-                    <ul class="list-disc ml-4">
-                        {{ range .Users }}
-                            <li>{{ . }}</li>
-                        {{ end }}
-                    </ul>
-                </div>
+                {{ template "admin/row" . }}
             {{ end }}
         </div>
     </article>

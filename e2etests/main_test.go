@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -29,7 +30,6 @@ import (
 )
 
 var (
-	repo *database.Repo
 	user = auth.User{
 		Name:  "Dum My",
 		Email: "dummy@nav.no",
@@ -51,9 +51,13 @@ func init() {
 }
 
 func TestMain(m *testing.M) {
+	os.Exit(m.Run())
+}
+
+func setUpPrivateDatabase() *database.Repo {
 	dbPort := "5432"
 	dbHost := "db"
-	dbString := "user=postgres dbname=knorten sslmode=disable password=postgres host=db port=5432"
+	dbString := fmt.Sprintf("user=postgres dbname=knorten-%v sslmode=disable password=postgres host=db port=5432", rand.Intn(20000))
 
 	if os.Getenv("CI") != "true" {
 		dockerHost := os.Getenv("HOME") + "/.colima/docker.sock"
@@ -89,7 +93,7 @@ func TestMain(m *testing.M) {
 	}
 
 	var err error
-	repo, err = database.New(dbString, "jegersekstentegn", logrus.NewEntry(logrus.StandardLogger()))
+	repo, err := database.New(dbString, "jegersekstentegn", logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -98,7 +102,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("setting up knorten db: %v", err)
 	}
 
-	os.Exit(m.Run())
+	return repo
 }
 
 func waitForDB(dbString string) error {
@@ -131,7 +135,7 @@ func minimizeHTML(in string) (string, error) {
 	return out, nil
 }
 
-func createTeamAndApps(server *httptest.Server, teamSlug string) error {
+func createTeamAndApps(repo *database.Repo, server *httptest.Server, teamSlug string) error {
 	data := url.Values{"team": {teamSlug}, "owner": {user.Email}, "users[]": {"user.userson@nav.no"}, "apiaccess": {""}}
 	resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/new", server.URL), data)
 	if err != nil {
@@ -142,7 +146,7 @@ func createTeamAndApps(server *httptest.Server, teamSlug string) error {
 		return fmt.Errorf("creating team returned status code %v", resp.StatusCode)
 	}
 
-	team, err := waitForTeamInDatabase(teamSlug)
+	team, err := waitForTeamInDatabase(repo, teamSlug)
 	if err != nil {
 		return err
 	}
@@ -158,7 +162,7 @@ func createTeamAndApps(server *httptest.Server, teamSlug string) error {
 		return fmt.Errorf("creating jupyterhub for team %v returned status code: %v", teamSlug, resp.StatusCode)
 	}
 
-	if err := waitForChartInDatabase(gensql.ChartTypeJupyterhub, team.ID); err != nil {
+	if err := waitForChartInDatabase(repo, gensql.ChartTypeJupyterhub, team.ID); err != nil {
 		return err
 	}
 
@@ -173,7 +177,7 @@ func createTeamAndApps(server *httptest.Server, teamSlug string) error {
 		return fmt.Errorf("creating airflow for team %v returned status code: %v", teamSlug, resp.StatusCode)
 	}
 
-	if err := waitForChartInDatabase(gensql.ChartTypeAirflow, team.ID); err != nil {
+	if err := waitForChartInDatabase(repo, gensql.ChartTypeAirflow, team.ID); err != nil {
 		return err
 	}
 
@@ -187,7 +191,7 @@ func createTeamAndApps(server *httptest.Server, teamSlug string) error {
 		return fmt.Errorf("creating compute instance for user %v returned status code %v", user, resp.StatusCode)
 	}
 
-	_, err = waitForComputeInstanceInDatabase(user.Email)
+	_, err = waitForComputeInstanceInDatabase(repo, user.Email)
 	if err != nil {
 		return err
 	}
@@ -195,7 +199,7 @@ func createTeamAndApps(server *httptest.Server, teamSlug string) error {
 	return nil
 }
 
-func waitForComputeInstanceInDatabase(email string) (gensql.ComputeInstance, error) {
+func waitForComputeInstanceInDatabase(repo *database.Repo, email string) (gensql.ComputeInstance, error) {
 	timeout := 60
 	for timeout > 0 {
 		instance, err := repo.ComputeInstanceGet(context.Background(), email)
@@ -215,7 +219,7 @@ func waitForComputeInstanceInDatabase(email string) (gensql.ComputeInstance, err
 	return gensql.ComputeInstance{}, fmt.Errorf("timed out waiting for compute instance for user %v to be created", email)
 }
 
-func waitForTeamInDatabase(teamSlug string) (gensql.TeamBySlugGetRow, error) {
+func waitForTeamInDatabase(repo *database.Repo, teamSlug string) (gensql.TeamBySlugGetRow, error) {
 	timeout := 60
 	for timeout > 0 {
 		team, err := repo.TeamBySlugGet(context.Background(), teamSlug)
@@ -235,7 +239,7 @@ func waitForTeamInDatabase(teamSlug string) (gensql.TeamBySlugGetRow, error) {
 	return gensql.TeamBySlugGetRow{}, fmt.Errorf("timed out waiting for team %v to be created", teamSlug)
 }
 
-func waitForChartInDatabase(chartType gensql.ChartType, teamID string) error {
+func waitForChartInDatabase(repo *database.Repo, chartType gensql.ChartType, teamID string) error {
 	timeout := 60
 	for timeout > 0 {
 		apps, err := repo.AppsForTeamGet(context.Background(), teamID)
@@ -256,7 +260,7 @@ func waitForChartInDatabase(chartType gensql.ChartType, teamID string) error {
 	return fmt.Errorf("timed out waiting for chart %v to be created", chartType)
 }
 
-func waitForTeamToBeDeletedFromDatabase(teamSlug string) error {
+func waitForTeamToBeDeletedFromDatabase(repo *database.Repo, teamSlug string) error {
 	timeout := 60
 	for timeout > 0 {
 		_, err := repo.TeamBySlugGet(context.Background(), teamSlug)
@@ -275,7 +279,7 @@ func waitForTeamToBeDeletedFromDatabase(teamSlug string) error {
 	return fmt.Errorf("timed out waiting for team %v to be deleted", teamSlug)
 }
 
-func cleanupTeamAndApps(server *httptest.Server, teamSlug string) error {
+func cleanupTeamAndApps(repo *database.Repo, server *httptest.Server, teamSlug string) error {
 	resp, err := server.Client().Post(fmt.Sprintf("%v/team/%v/delete", server.URL, teamSlug), jsonContentType, nil)
 	if err != nil {
 		return fmt.Errorf("deleting team %v: %v", teamSlug, err)
@@ -285,7 +289,7 @@ func cleanupTeamAndApps(server *httptest.Server, teamSlug string) error {
 		return fmt.Errorf("deleting team returned status code %v", resp.StatusCode)
 	}
 
-	return waitForTeamToBeDeletedFromDatabase(teamSlug)
+	return waitForTeamToBeDeletedFromDatabase(repo, teamSlug)
 }
 
 func createExpectedHTML(t string, values map[string]any) (string, error) {

@@ -23,6 +23,7 @@ import (
 )
 
 func TestTeamsAPI(t *testing.T) {
+	repo := setUpPrivateDatabase()
 	eventHandler, err := events.NewHandler(context.Background(), repo, "", "", "", "", "", true, false, logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatalf("creating eventhandler: %v", err)
@@ -93,7 +94,7 @@ func TestTeamsAPI(t *testing.T) {
 			t.Errorf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
-		team, err := waitForTeamInDatabase(teamSlug)
+		team, err := waitForTeamInDatabase(repo, teamSlug)
 		if err != nil {
 			t.Error(err)
 		}
@@ -133,7 +134,7 @@ func TestTeamsAPI(t *testing.T) {
 			t.Errorf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
-		team, err := waitForTeamInDatabase(apiAccessTeam)
+		team, err := waitForTeamInDatabase(repo, apiAccessTeam)
 		if err != nil {
 			t.Error(err)
 		}
@@ -142,7 +143,7 @@ func TestTeamsAPI(t *testing.T) {
 			t.Errorf("team api access should be %v, got %v", true, team.ApiAccess)
 		}
 
-		if err := cleanupTeamAndApps(server, apiAccessTeam); err != nil {
+		if err := cleanupTeamAndApps(repo, server, apiAccessTeam); err != nil {
 			t.Error(err)
 		}
 	})
@@ -226,7 +227,7 @@ func TestTeamsAPI(t *testing.T) {
 			t.Errorf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
-		_, err = waitForTeamInDatabase(teamSlug)
+		_, err = waitForTeamInDatabase(repo, teamSlug)
 		if err != nil {
 			t.Error(err)
 		}
@@ -266,12 +267,12 @@ func TestTeamsAPI(t *testing.T) {
 			t.Errorf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
-		if err := waitForTeamToBeDeletedFromDatabase(teamSlug); err != nil {
+		if err := waitForTeamToBeDeletedFromDatabase(repo, teamSlug); err != nil {
 			t.Error(err)
 		}
 	})
 
-	if err := createTeamAndApps(server, teamSlug); err != nil {
+	if err := createTeamAndApps(repo, server, teamSlug); err != nil {
 		t.Fatalf("creating team and apps: %v", err)
 	}
 
@@ -290,7 +291,7 @@ func TestTeamsAPI(t *testing.T) {
 			t.Errorf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
-		if err := waitForTeamToBeDeletedFromDatabase(teamSlug); err != nil {
+		if err := waitForTeamToBeDeletedFromDatabase(repo, teamSlug); err != nil {
 			t.Error(err)
 		}
 
@@ -313,7 +314,7 @@ func TestTeamsAPI(t *testing.T) {
 		}
 	})
 
-	if err := cleanupTeamAndApps(server, teamSlug); err != nil {
+	if err := cleanupTeamAndApps(repo, server, teamSlug); err != nil {
 		t.Fatal(err)
 	}
 }

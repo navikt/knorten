@@ -12,12 +12,14 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/nais/knorten/pkg/api"
+	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/events"
 	"github.com/sirupsen/logrus"
 )
 
 func TestAdminAPI(t *testing.T) {
+	repo := setUpPrivateDatabase()
 	eventHandler, err := events.NewHandler(context.Background(), repo, "", "", "", "", "", true, false, logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatalf("creating eventhandler: %v", err)
@@ -75,7 +77,7 @@ func TestAdminAPI(t *testing.T) {
 		}
 	})
 
-	if err := createTeamAndApps(server, teamSlug); err != nil {
+	if err := createTeamAndApps(repo, server, teamSlug); err != nil {
 		t.Fatal(err)
 	}
 
@@ -184,7 +186,7 @@ func TestAdminAPI(t *testing.T) {
 		"global.key2": "value",
 	}
 
-	if err := createJupyterGlobalValues(ctx, exisitingJupyterGlobals); err != nil {
+	if err := createJupyterGlobalValues(ctx, repo, exisitingJupyterGlobals); err != nil {
 		t.Error(err)
 	}
 
@@ -243,16 +245,16 @@ func TestAdminAPI(t *testing.T) {
 		}
 	})
 
-	if err := deleteJupyterGlobalValues(ctx, exisitingJupyterGlobals); err != nil {
+	if err := deleteJupyterGlobalValues(ctx, repo, exisitingJupyterGlobals); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := cleanupTeamAndApps(server, teamSlug); err != nil {
+	if err := cleanupTeamAndApps(repo, server, teamSlug); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func createJupyterGlobalValues(ctx context.Context, values map[string]string) error {
+func createJupyterGlobalValues(ctx context.Context, repo *database.Repo, values map[string]string) error {
 	for k, v := range values {
 		if err := repo.GlobalChartValueInsert(ctx, k, v, false, gensql.ChartTypeJupyterhub); err != nil {
 			return err
@@ -262,7 +264,7 @@ func createJupyterGlobalValues(ctx context.Context, values map[string]string) er
 	return nil
 }
 
-func deleteJupyterGlobalValues(ctx context.Context, values map[string]string) error {
+func deleteJupyterGlobalValues(ctx context.Context, repo *database.Repo, values map[string]string) error {
 	for k := range values {
 		if err := repo.GlobalValueDelete(ctx, k, gensql.ChartTypeJupyterhub); err != nil {
 			return err

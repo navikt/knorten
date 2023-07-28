@@ -17,6 +17,7 @@ import (
 )
 
 func TestOverviewAPI(t *testing.T) {
+	repo := setUpPrivateDatabase()
 	eventHandler, err := events.NewHandler(context.Background(), repo, "", "", "", "", "", true, false, logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatalf("creating eventhandler: %v", err)

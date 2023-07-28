@@ -19,6 +19,7 @@ import (
 )
 
 func TestComputeAPI(t *testing.T) {
+	repo := setUpPrivateDatabase()
 	eventHandler, err := events.NewHandler(context.Background(), repo, "", "", "", "", "", true, false, logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatalf("creating eventhandler: %v", err)
@@ -81,7 +82,7 @@ func TestComputeAPI(t *testing.T) {
 			t.Fatalf("expected status code %v, got %v", http.StatusOK, resp.StatusCode)
 		}
 
-		instance, err := waitForComputeInstanceInDatabase(user.Email)
+		instance, err := waitForComputeInstanceInDatabase(repo, user.Email)
 		if err != nil {
 			t.Error(err)
 		}

@@ -18,10 +18,6 @@ import (
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
-const (
-	jupyterhubAnnotationKey = "singleuser.extraAnnotations"
-)
-
 type jupyterForm struct {
 	CPU         string   `form:"cpu"`
 	Memory      string   `form:"memory"`
@@ -253,7 +249,7 @@ func (c *client) setupChartRoutes() {
 }
 
 func (c *client) getExistingAllowlist(ctx context.Context, teamID string) ([]string, error) {
-	extraAnnotations, err := c.repo.TeamValueGet(ctx, jupyterhubAnnotationKey, teamID)
+	extraAnnotations, err := c.repo.TeamValueGet(ctx, "singleuser.extraAnnotations", teamID)
 	if err != nil {
 		return nil, err
 	}

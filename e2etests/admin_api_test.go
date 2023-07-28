@@ -4,14 +4,33 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/nais/knorten/pkg/api"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/events"
+	"github.com/sirupsen/logrus"
 )
 
 func TestAdminAPI(t *testing.T) {
+	eventHandler, err := events.NewHandler(context.Background(), repo, "", "", "", "", "", true, false, logrus.NewEntry(logrus.StandardLogger()))
+	if err != nil {
+		log.Fatalf("creating eventhandler: %v", err)
+	}
+	eventHandler.Run(1 * time.Second)
+
+	srv, err := api.New(repo, true, "", "", " ", "", "nada@nav.no", "", "", logrus.NewEntry(logrus.StandardLogger()))
+	if err != nil {
+		log.Fatalf("creating api: %v", err)
+	}
+
+	server := httptest.NewServer(srv)
+
 	teamSlug := "admintest"
 	ctx := context.Background()
 
@@ -56,7 +75,7 @@ func TestAdminAPI(t *testing.T) {
 		}
 	})
 
-	if err := createTeamAndApps(teamSlug); err != nil {
+	if err := createTeamAndApps(server, teamSlug); err != nil {
 		t.Fatal(err)
 	}
 
@@ -228,7 +247,7 @@ func TestAdminAPI(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := cleanupTeamAndApps(teamSlug); err != nil {
+	if err := cleanupTeamAndApps(server, teamSlug); err != nil {
 		t.Fatal(err)
 	}
 }

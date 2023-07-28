@@ -19,12 +19,9 @@ import (
 	"time"
 
 	"github.com/nais/knorten/local/dbsetup"
-	"github.com/nais/knorten/pkg/api"
 	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/events"
-
 	"github.com/ory/dockertest/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/tdewolff/minify/v2"
@@ -32,9 +29,8 @@ import (
 )
 
 var (
-	repo   *database.Repo
-	server *httptest.Server
-	user   = auth.User{
+	repo *database.Repo
+	user = auth.User{
 		Name:  "Dum My",
 		Email: "dummy@nav.no",
 	}
@@ -92,10 +88,8 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	logger := logrus.NewEntry(logrus.StandardLogger())
-
 	var err error
-	repo, err = database.New(dbString, "jegersekstentegn", logger)
+	repo, err = database.New(dbString, "jegersekstentegn", logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -103,19 +97,6 @@ func TestMain(m *testing.M) {
 	if err := dbsetup.SetupDB(context.Background(), fmt.Sprintf("postgres://postgres:postgres@%v:%v", dbHost, dbPort), "knorten"); err != nil {
 		log.Fatalf("setting up knorten db: %v", err)
 	}
-
-	eventHandler, err := events.NewHandler(context.Background(), repo, "", "", "", "", "", true, false, logger)
-	if err != nil {
-		log.Fatalf("creating eventhandler: %v", err)
-	}
-	eventHandler.Run(1 * time.Second)
-
-	srv, err := api.New(repo, true, "", "", " ", "", "nada@nav.no", "", "", logrus.NewEntry(logrus.StandardLogger()))
-	if err != nil {
-		log.Fatalf("creating api: %v", err)
-	}
-
-	server = httptest.NewServer(srv)
 
 	os.Exit(m.Run())
 }
@@ -150,7 +131,7 @@ func minimizeHTML(in string) (string, error) {
 	return out, nil
 }
 
-func createTeamAndApps(teamSlug string) error {
+func createTeamAndApps(server *httptest.Server, teamSlug string) error {
 	data := url.Values{"team": {teamSlug}, "owner": {user.Email}, "users[]": {"user.userson@nav.no"}, "apiaccess": {""}}
 	resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/new", server.URL), data)
 	if err != nil {
@@ -294,7 +275,7 @@ func waitForTeamToBeDeletedFromDatabase(teamSlug string) error {
 	return fmt.Errorf("timed out waiting for team %v to be deleted", teamSlug)
 }
 
-func cleanupTeamAndApps(teamSlug string) error {
+func cleanupTeamAndApps(server *httptest.Server, teamSlug string) error {
 	resp, err := server.Client().Post(fmt.Sprintf("%v/team/%v/delete", server.URL, teamSlug), jsonContentType, nil)
 	if err != nil {
 		return fmt.Errorf("deleting team %v: %v", teamSlug, err)

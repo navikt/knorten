@@ -7,23 +7,20 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"path"
 	"runtime"
-	"testing"
 	"text/template"
 	"time"
 
 	"github.com/nais/knorten/local/dbsetup"
-	"github.com/nais/knorten/pkg/api"
 	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/events"
 	"github.com/ory/dockertest/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/tdewolff/minify/v2"
@@ -53,33 +50,10 @@ func init() {
 	}
 }
 
-func TestMain(m *testing.M) {
-	var err error
-	repo, err = setupDatabase()
-	if err != nil {
-		log.Fatalf("setting up database: %v", err)
-	}
-
-	eventHandler, err := events.NewHandler(context.Background(), repo, "", "", "", "", "", true, false, logrus.NewEntry(logrus.StandardLogger()))
-	if err != nil {
-		log.Fatalf("creating eventhandler: %v", err)
-	}
-	eventHandler.Run(1 * time.Second)
-
-	srv, err := api.New(repo, true, "", "", " ", "", "nada@nav.no", "", "", logrus.NewEntry(logrus.StandardLogger()))
-	if err != nil {
-		log.Fatalf("creating api: %v", err)
-	}
-
-	server = httptest.NewServer(srv)
-
-	os.Exit(m.Run())
-}
-
 func setupDatabase() (*database.Repo, error) {
 	dbPort := "5432"
 	dbHost := "db"
-	dbName := "knorten"
+	dbName := fmt.Sprintf("knorten-%v", rand.Intn(10000))
 	dbString := fmt.Sprintf("user=postgres dbname=%v sslmode=disable password=postgres host=%v port=%v", dbName, dbHost, dbPort)
 
 	if os.Getenv("CI") != "true" {
@@ -110,6 +84,7 @@ func setupDatabase() (*database.Repo, error) {
 
 		dbPort = resource.GetPort("5432/tcp")
 		dbHost = "localhost"
+		dbName = "knorten"
 		dbString = fmt.Sprintf("user=postgres dbname=%v sslmode=disable password=postgres host=localhost port=%v", dbName, dbPort)
 	}
 

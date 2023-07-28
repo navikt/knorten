@@ -6,18 +6,41 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/nais/knorten/pkg/api"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/events"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/exp/slices"
 )
 
 func TestTeamsAPI(t *testing.T) {
+	repo, err := setupDatabase()
+	if err != nil {
+		log.Fatalf("setting up database: %v", err)
+	}
+
+	eventHandler, err := events.NewHandler(context.Background(), repo, "", "", "", "", "", true, false, logrus.NewEntry(logrus.StandardLogger()))
+	if err != nil {
+		log.Fatalf("creating eventhandler: %v", err)
+	}
+	eventHandler.Run(1 * time.Second)
+
+	srv, err := api.New(repo, true, "", "", " ", "", "nada@nav.no", "", "", logrus.NewEntry(logrus.StandardLogger()))
+	if err != nil {
+		log.Fatalf("creating api: %v", err)
+	}
+
+	server = httptest.NewServer(srv)
+
 	ctx := context.Background()
 	teamSlug := "myteam"
 	teamMembers := []string{"first.sirname@nav.no", "second.sirname@nav.no"}

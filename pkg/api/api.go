@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/nais/knorten/pkg/admin"
 	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/sirupsen/logrus"
@@ -18,7 +17,6 @@ type client struct {
 	router       *gin.Engine
 	repo         *database.Repo
 	log          *logrus.Entry
-	adminClient  *admin.Client
 	dryRun       bool
 	adminGroupID string
 	gcpProject   string
@@ -26,8 +24,6 @@ type client struct {
 }
 
 func New(repo *database.Repo, dryRun bool, clientID, clientSecret, tenantID, sessionKey, adminGroupEmail, gcpProject, gcpZone string, log *logrus.Entry) (*gin.Engine, error) {
-	adminClient := admin.New(repo)
-
 	router := gin.New()
 
 	router.Use(gin.Recovery())
@@ -39,7 +35,6 @@ func New(repo *database.Repo, dryRun bool, clientID, clientSecret, tenantID, ses
 		azureClient: auth.NewAzureClient(dryRun, clientID, clientSecret, tenantID, log.WithField("subsystem", "auth")),
 		router:      router,
 		repo:        repo,
-		adminClient: adminClient,
 		log:         log,
 		dryRun:      dryRun,
 		gcpProject:  gcpProject,

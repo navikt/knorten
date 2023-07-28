@@ -42,8 +42,8 @@ func (v jupyterForm) MemoryWithoutUnit() string {
 type airflowForm struct {
 	DagRepo        string `form:"dagrepo" binding:"required,startswith=navikt/,validAirflowRepo"`
 	DagRepoBranch  string `form:"dagrepobranch" binding:"validRepoBranch"`
-	ApiAccess      string `form:"apiaccess"`
-	RestrictEgress string `form:"restrictegress"`
+	ApiAccess      bool   `form:"apiaccess"`
+	RestrictEgress bool   `form:"restrictegress"`
 }
 
 func getChartType(chartType string) gensql.ChartType {
@@ -333,8 +333,8 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 			TeamID:         team.ID,
 			DagRepo:        form.DagRepo,
 			DagRepoBranch:  dagRepoBranch,
-			ApiAccess:      form.ApiAccess == "on",
-			RestrictEgress: form.RestrictEgress == "on",
+			ApiAccess:      form.ApiAccess,
+			RestrictEgress: form.RestrictEgress,
 		}
 
 		return c.repo.RegisterCreateAirflowEvent(ctx, team.ID, values)
@@ -386,8 +386,8 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 		form = airflowForm{
 			DagRepo:        airflowValues.DagRepo,
 			DagRepoBranch:  airflowValues.DagRepoBranch,
-			ApiAccess:      strconv.FormatBool(team.ApiAccess),
-			RestrictEgress: strconv.FormatBool(team.RestrictAirflowEgress),
+			ApiAccess:      team.ApiAccess,
+			RestrictEgress: team.RestrictAirflowEgress,
 		}
 	}
 
@@ -441,16 +441,6 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 			return err
 		}
 
-		apiAccess, err := strconv.ParseBool(form.ApiAccess)
-		if err != nil {
-			return err
-		}
-
-		restrictEgress, err := strconv.ParseBool(form.RestrictEgress)
-		if err != nil {
-			return err
-		}
-
 		dagRepoBranch := form.DagRepoBranch
 		if dagRepoBranch == "" {
 			dagRepoBranch = "main"
@@ -460,8 +450,8 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 			TeamID:         team.ID,
 			DagRepo:        form.DagRepo,
 			DagRepoBranch:  dagRepoBranch,
-			ApiAccess:      apiAccess,
-			RestrictEgress: restrictEgress,
+			ApiAccess:      form.ApiAccess,
+			RestrictEgress: form.RestrictEgress,
 		}
 
 		return c.repo.RegisterUpdateAirflowEvent(ctx, team.ID, values)

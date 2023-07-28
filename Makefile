@@ -67,4 +67,4 @@ css-watch:
 	npx tailwindcss --postcss -i local/tailwind.css -o assets/css/main.css -w
 
 test:
-	go test ./... -count=1
+	go test -v ./... -count=1

@@ -41,8 +41,15 @@ func createBucket(ctx context.Context, teamID, bucketName, gcpProject, gcpRegion
 	if err := bucket.Create(ctx, gcpProject, storageClassAndLocation); err != nil {
 		apiError, ok := gErrors.FromError(err)
 		if ok {
-			if apiError.GRPCStatus().Code() == codes.OK || apiError.GRPCStatus().Code() == codes.AlreadyExists {
+			if apiError.GRPCStatus().Code() == codes.OK {
 				return nil
+			}
+
+			if apiError.GRPCStatus().Code() == codes.Unknown {
+				if strings.Contains(apiError.GRPCStatus().Message(), "Error 409") {
+					// Error 409: Your previous request to create the named bucket succeeded and you already own it., conflict
+					return nil
+				}
 			}
 		}
 

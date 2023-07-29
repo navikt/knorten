@@ -92,6 +92,9 @@ func jupyterReleaseName(namespace string) string {
 }
 
 func (c Client) jupyterMergeValues(team gensql.TeamGetRow, configurableValues JupyterConfigurableValues) jupyterValues {
+	// TODO: Her må vi sjekke om configurableValues er tom, og hente fra databasen hvis det er tilfelle
+	// configurableValues er tom hvis den kommer fra team-endringer eller som en sync fra admin.
+
 	var profileList string
 	if configurableValues.ImageName != "" {
 		profileList = fmt.Sprintf(`{"display_name":"Custom image","description":"Custom image for team %v","kubespawner_override":{"image":"%v:%v"}}`,

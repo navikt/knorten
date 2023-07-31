@@ -123,7 +123,7 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 		return err
 	}
 
-	secretStringData = map[string]string{"fernet-key": values.WebserverSecretKey}
+	secretStringData = map[string]string{"fernet-key": values.FernetKey}
 	if err := c.createOrUpdateSecret(ctx, k8sAirflowFernetKeySecretName, namespace, secretStringData); err != nil {
 		return err
 	}
@@ -376,7 +376,6 @@ func (c Client) getOrGeneratePassword(ctx context.Context, teamID, key string, g
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return generator()
-
 		}
 		return "", err
 	}
@@ -386,5 +385,4 @@ func (c Client) getOrGeneratePassword(ctx context.Context, teamID, key string, g
 	}
 
 	return "", fmt.Errorf("a %v exisits for %v, but it's empty or doesn't belong to Airflow", key, teamID)
-
 }

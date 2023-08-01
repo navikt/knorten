@@ -241,7 +241,7 @@ func (c *client) authMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		teamSlug := ctx.Param("team")
+		teamSlug := ctx.Param("slug")
 		if teamSlug != "" {
 			team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
 			if err != nil {
@@ -259,7 +259,7 @@ func (c *client) authMiddleware() gin.HandlerFunc {
 					ctx.Redirect(http.StatusSeeOther, "/")
 					return
 				}
-				ctx.Redirect(http.StatusUnauthorized, "/")
+				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": fmt.Sprintf("%v is not part of team %v", user.Email, teamSlug)})
 				return
 			}
 		}

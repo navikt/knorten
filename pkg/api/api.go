@@ -23,7 +23,7 @@ type client struct {
 	gcpZone      string
 }
 
-func New(repo *database.Repo, dryRun bool, clientID, clientSecret, tenantID, sessionKey, adminGroupEmail, gcpProject, gcpZone string, log *logrus.Entry) (*gin.Engine, error) {
+func New(repo *database.Repo, azureClient *auth.Azure, dryRun bool, sessionKey, adminGroupEmail, gcpProject, gcpZone string, log *logrus.Entry) (*gin.Engine, error) {
 	router := gin.New()
 
 	router.Use(gin.Recovery())
@@ -32,7 +32,7 @@ func New(repo *database.Repo, dryRun bool, clientID, clientSecret, tenantID, ses
 	})
 
 	api := client{
-		azureClient: auth.NewAzureClient(dryRun, clientID, clientSecret, tenantID, log.WithField("subsystem", "auth")),
+		azureClient: azureClient,
 		router:      router,
 		repo:        repo,
 		log:         log,
@@ -150,16 +150,4 @@ func (c *client) fetchAdminGroupID(adminGroupEmail string) error {
 
 	c.adminGroupID = id
 	return nil
-}
-
-func (c *client) convertEmailsToIdents(emails []string) ([]string, error) {
-	var idents []string
-	for _, e := range emails {
-		ident, err := c.azureClient.IdentForEmail(e)
-		if err != nil {
-			return nil, err
-		}
-		idents = append(idents, ident)
-	}
-	return idents, nil
 }

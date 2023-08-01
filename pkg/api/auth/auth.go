@@ -75,18 +75,18 @@ const (
 	AzureGroupsEndpoint = "https://graph.microsoft.com/v1.0/groups"
 )
 
-func NewAzureClient(dryRun bool, clientID, clientSecret, tenantID string, log *logrus.Entry) *Azure {
+func NewAzureClient(dryRun bool, clientID, clientSecret, tenantID string, log *logrus.Entry) (*Azure, error) {
 	if dryRun {
 		log.Infof("NOOP: Running in dry run mode")
 		return &Azure{
 			dryRun: dryRun,
 			log:    log,
-		}
+		}, nil
 	}
 
 	provider, err := oidc.NewProvider(context.Background(), fmt.Sprintf("https://login.microsoftonline.com/%v/v2.0", tenantID))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	a := &Azure{
@@ -99,7 +99,7 @@ func NewAzureClient(dryRun bool, clientID, clientSecret, tenantID string, log *l
 	}
 
 	a.setupOAuth2()
-	return a
+	return a, nil
 }
 
 func (a *Azure) setupOAuth2() {
@@ -211,7 +211,19 @@ func (a *Azure) UserExistsInAzureAD(user string) error {
 	}
 }
 
-func (a *Azure) IdentForEmail(email string) (string, error) {
+func (a *Azure) ConvertEmailsToIdents(emails []string) ([]string, error) {
+	var idents []string
+	for _, e := range emails {
+		ident, err := a.identForEmail(e)
+		if err != nil {
+			return nil, err
+		}
+		idents = append(idents, ident)
+	}
+	return idents, nil
+}
+
+func (a *Azure) identForEmail(email string) (string, error) {
 	if a.dryRun {
 		a.log.Infof("NOOP: Running in dry run mode")
 		return fmt.Sprintf("d%v", rand.Intn(10000)+100000), nil

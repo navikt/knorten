@@ -362,9 +362,6 @@ func (c *client) syncChartForAllTeams(ctx context.Context, chartType gensql.Char
 func (c *client) syncChart(ctx context.Context, teamID string, chartType gensql.ChartType) error {
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
-		// TODO: Dette er ikke implementert på chart.Jupyterhub siden, se TODO der.
-		return fmt.Errorf("chart type %v not implemented", chartType)
-
 		values := chart.JupyterConfigurableValues{
 			TeamID: teamID,
 		}

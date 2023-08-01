@@ -49,7 +49,10 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfi
 		return err
 	}
 
-	values := c.jupyterMergeValues(team, configurableValues)
+	values, err := c.jupyterMergeValues(ctx, team, configurableValues)
+	if err != nil {
+		return err
+	}
 
 	chartValues, err := reflect.CreateChartValues(values)
 	if err != nil {
@@ -91,9 +94,12 @@ func jupyterReleaseName(namespace string) string {
 	return fmt.Sprintf("%v-%v", string(gensql.ChartTypeJupyterhub), namespace)
 }
 
-func (c Client) jupyterMergeValues(team gensql.TeamGetRow, configurableValues JupyterConfigurableValues) jupyterValues {
-	// TODO: Her må vi sjekke om configurableValues er tom, og hente fra databasen hvis det er tilfelle
-	// configurableValues er tom hvis den kommer fra team-endringer eller som en sync fra admin.
+func (c Client) jupyterMergeValues(ctx context.Context, team gensql.TeamGetRow, configurableValues JupyterConfigurableValues) (jupyterValues, error) {
+	if len(configurableValues.UserIdents) == 0 {
+		if err := c.getJupyterConfigurableValues(ctx, team, &configurableValues); err != nil {
+			return jupyterValues{}, err
+		}
+	}
 
 	var profileList string
 	if configurableValues.ImageName != "" {
@@ -120,5 +126,19 @@ func (c Client) jupyterMergeValues(team gensql.TeamGetRow, configurableValues Ju
 		KnadaTeamSecret:           fmt.Sprintf("projects/%v/secrets/%v", c.gcpProject, team.ID),
 		ProfileList:               profileList,
 		ExtraAnnotations:          allowList,
+	}, nil
+}
+
+func (c Client) getJupyterConfigurableValues(ctx context.Context, team gensql.TeamGetRow, configurableValues *JupyterConfigurableValues) error {
+	err := c.repo.TeamConfigurableValuesGet(ctx, gensql.ChartTypeJupyterhub, team.ID, configurableValues)
+	if err != nil {
+		return err
 	}
+
+	configurableValues.UserIdents, err = c.azureClient.ConvertEmailsToIdents(team.Users)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

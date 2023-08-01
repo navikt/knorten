@@ -63,6 +63,12 @@ func main() {
 		return
 	}
 
+	azureClient, err := auth.NewAzureClient(cfg.DryRun, cfg.ClientID, cfg.ClientSecret, cfg.TenantID, log.WithField("subsystem", "auth"))
+	if err != nil {
+		log.WithError(err).Fatal("creating azure client")
+		return
+	}
+
 	if !cfg.DryRun {
 		imageUpdater := imageupdater.NewClient(dbClient, log.WithField("subsystem", "imageupdater"))
 		go imageUpdater.Run(imageUpdaterFrequency)
@@ -72,14 +78,14 @@ func main() {
 		}
 	}
 
-	eventHandler, err := events.NewHandler(context.Background(), dbClient, cfg.GCPProject, cfg.GCPRegion, cfg.GCPZone, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.DryRun, cfg.InCluster, log.WithField("subsystem", "events"))
+	eventHandler, err := events.NewHandler(context.Background(), dbClient, azureClient, cfg.GCPProject, cfg.GCPRegion, cfg.GCPZone, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.DryRun, cfg.InCluster, log.WithField("subsystem", "events"))
 	if err != nil {
 		log.WithError(err).Fatal("starting event watcher")
 		return
 	}
 	eventHandler.Run(10 * time.Second)
 
-	router, err := api.New(dbClient, cfg.DryRun, cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.SessionKey, cfg.AdminGroup, cfg.GCPProject, cfg.GCPZone, log.WithField("subsystem", "api"))
+	router, err := api.New(dbClient, azureClient, cfg.DryRun, cfg.SessionKey, cfg.AdminGroup, cfg.GCPProject, cfg.GCPZone, log.WithField("subsystem", "api"))
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return

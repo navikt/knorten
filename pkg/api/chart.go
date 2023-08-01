@@ -287,7 +287,7 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 			return err
 		}
 
-		userIdents, err := c.convertEmailsToIdents(team.Users)
+		userIdents, err := c.azureClient.ConvertEmailsToIdents(team.Users)
 		if err != nil {
 			return err
 		}
@@ -404,7 +404,7 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 			return err
 		}
 
-		userIdents, err := c.convertEmailsToIdents(team.Users)
+		userIdents, err := c.azureClient.ConvertEmailsToIdents(team.Users)
 		if err != nil {
 			return err
 		}

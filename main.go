@@ -13,7 +13,6 @@ import (
 	"github.com/nais/knorten/pkg/events"
 	"github.com/nais/knorten/pkg/helm"
 	"github.com/nais/knorten/pkg/imageupdater"
-	"github.com/nais/knorten/pkg/leaderelection"
 	"github.com/sirupsen/logrus"
 )
 
@@ -73,19 +72,12 @@ func main() {
 		}
 	}
 
-	isLeader, err := leaderelection.IsLeader()
+	eventHandler, err := events.NewHandler(context.Background(), dbClient, cfg.GCPProject, cfg.GCPRegion, cfg.GCPZone, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.DryRun, cfg.InCluster, log.WithField("subsystem", "events"))
 	if err != nil {
-		log.WithError(err).Fatal("leader election check")
+		log.WithError(err).Fatal("starting event watcher")
+		return
 	}
-
-	if isLeader {
-		eventHandler, err := events.NewHandler(context.Background(), dbClient, cfg.GCPProject, cfg.GCPRegion, cfg.GCPZone, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.DryRun, cfg.InCluster, log.WithField("subsystem", "events"))
-		if err != nil {
-			log.WithError(err).Fatal("starting event watcher")
-			return
-		}
-		eventHandler.Run(10 * time.Second)
-	}
+	eventHandler.Run(10 * time.Second)
 
 	router, err := api.New(dbClient, cfg.DryRun, cfg.ClientID, cfg.ClientSecret, cfg.TenantID, cfg.SessionKey, cfg.AdminGroup, cfg.GCPProject, cfg.GCPZone, log.WithField("subsystem", "api"))
 	if err != nil {

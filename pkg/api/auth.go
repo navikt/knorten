@@ -329,6 +329,9 @@ func (c *client) isUserInAdminGroup(token string) bool {
 func (c *client) setupAuthRoutes() {
 	c.router.GET("/oauth2/login", func(ctx *gin.Context) {
 		if c.dryRun {
+			if err := c.createDryRunSession(ctx); err != nil {
+				c.log.Error("creating dryrun session")
+			}
 			ctx.Redirect(http.StatusSeeOther, "http://localhost:8080/oversikt")
 			return
 		}
@@ -371,4 +374,30 @@ func (c *client) setupAuthRoutes() {
 		}
 		ctx.Redirect(http.StatusSeeOther, redirectURL)
 	})
+}
+
+func (c *client) createDryRunSession(ctx *gin.Context) error {
+	session := &auth.Session{
+		Token:       generateSecureToken(tokenLength),
+		Expires:     time.Now().Add(sessionLength),
+		AccessToken: "",
+		IsAdmin:     true,
+	}
+
+	if err := c.repo.SessionCreate(ctx, session); err != nil {
+		c.log.WithError(err).Error("unable to create session")
+		return errors.New("unable to create session")
+	}
+
+	ctx.SetCookie(
+		sessionCookie,
+		session.Token,
+		86400,
+		"/",
+		"localhost",
+		true,
+		true,
+	)
+
+	return nil
 }

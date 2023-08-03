@@ -367,7 +367,6 @@ func generateFernetKey() (string, error) {
 		return "", err
 	}
 
-	// TODO: Hvorfor base64?
 	return base64.StdEncoding.EncodeToString(key), nil
 }
 

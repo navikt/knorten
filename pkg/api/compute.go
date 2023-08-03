@@ -109,6 +109,6 @@ func getUser(ctx *gin.Context) (*auth.User, error) {
 
 func getNormalizedNameFromEmail(name string) string {
 	name = strings.Split(name, "@")[0]
-	name = strings.Replace(name, ".", "-", -1)
+	name = strings.ReplaceAll(name, ".", "-")
 	return strings.ToLower(name)
 }

@@ -117,7 +117,16 @@ func (c *client) isLoggedIn(ctx *gin.Context) bool {
 		return false
 	}
 
-	return cookie != ""
+	session, err := c.repo.SessionGet(ctx, cookie)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false
+		}
+		c.log.WithError(err).Error("retrieving session from db")
+		return false
+	}
+
+	return session.Token != ""
 }
 
 func (c *client) isAdmin(ctx *gin.Context) bool {

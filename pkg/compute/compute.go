@@ -2,6 +2,8 @@ package compute
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
@@ -26,9 +28,14 @@ func NewClient(repo *database.Repo, gcpProject, gcpZone string, dryRun bool) *Cl
 
 func (c Client) Create(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) bool {
 	log = log.WithField("owner", instance.Name)
-	log.Infof("Creating compute instance %v", instance.Name)
+	_, err := c.repo.ComputeInstanceGet(ctx, instance.Email)
+	if err != nil {
+		log.WithError(err).Errorf("failed retrieving compute instance %v", instance.Email)
+		return !errors.Is(err, sql.ErrNoRows)
+	}
 
-	err := c.createComputeInstanceInGCP(ctx, instance.Name, instance.Email)
+	log.Infof("Creating compute instance %v", instance.Name)
+	err = c.createComputeInstanceInGCP(ctx, instance.Name, instance.Email)
 	if err != nil {
 		log.WithError(err).Error("failed creating compute instance in GCP")
 		return true

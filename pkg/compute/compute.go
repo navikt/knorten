@@ -30,8 +30,10 @@ func (c Client) Create(ctx context.Context, instance gensql.ComputeInstance, log
 	log = log.WithField("owner", instance.Name)
 	_, err := c.repo.ComputeInstanceGet(ctx, instance.Email)
 	if err != nil {
-		log.WithError(err).Errorf("failed retrieving compute instance %v", instance.Email)
-		return !errors.Is(err, sql.ErrNoRows)
+		if !errors.Is(err, sql.ErrNoRows) {
+			log.WithError(err).Errorf("failed retrieving compute instance %v", instance.Email)
+			return true
+		}
 	}
 
 	log.Infof("Creating compute instance %v", instance.Name)

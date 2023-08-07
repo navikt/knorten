@@ -92,7 +92,7 @@ func (c Client) addGCPOwnerBinding(ctx context.Context, instanceName, user strin
 		instanceName,
 		"--zone", c.gcpZone,
 		"--project", c.gcpProject,
-		fmt.Sprintf("--role=%v", "roles/owner"),
+		"--role", "roles/owner",
 		fmt.Sprintf("--member=user:%v", user),
 	)
 

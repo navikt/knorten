@@ -96,7 +96,13 @@ func jupyterReleaseName(namespace string) string {
 
 func (c Client) jupyterMergeValues(ctx context.Context, team gensql.TeamGetRow, configurableValues JupyterConfigurableValues) (jupyterValues, error) {
 	if len(configurableValues.UserIdents) == 0 {
-		if err := c.getJupyterConfigurableValues(ctx, team, &configurableValues); err != nil {
+		err := c.repo.TeamConfigurableValuesGet(ctx, gensql.ChartTypeJupyterhub, team.ID, &configurableValues)
+		if err != nil {
+			return jupyterValues{}, err
+		}
+
+		configurableValues.UserIdents, err = c.azureClient.ConvertEmailsToIdents(team.Users)
+		if err != nil {
 			return jupyterValues{}, err
 		}
 	}
@@ -127,18 +133,4 @@ func (c Client) jupyterMergeValues(ctx context.Context, team gensql.TeamGetRow, 
 		ProfileList:               profileList,
 		ExtraAnnotations:          allowList,
 	}, nil
-}
-
-func (c Client) getJupyterConfigurableValues(ctx context.Context, team gensql.TeamGetRow, configurableValues *JupyterConfigurableValues) error {
-	err := c.repo.TeamConfigurableValuesGet(ctx, gensql.ChartTypeJupyterhub, team.ID, configurableValues)
-	if err != nil {
-		return err
-	}
-
-	configurableValues.UserIdents, err = c.azureClient.ConvertEmailsToIdents(team.Users)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

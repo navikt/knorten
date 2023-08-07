@@ -345,6 +345,8 @@ func generatePassword() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
+// generateFernetKey generates a URL-safe base64-encoded 32-byte key.
+// Fernet guarantees that a message encrypted using it cannot be manipulated or read without the key.
 func generateFernetKey() (string, error) {
 	key := make([]byte, 32)
 	if _, err := rand.Read(key); err != nil {

@@ -161,7 +161,7 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string) error {
 		return err
 	}
 
-	if err := c.repo.AppDelete(ctx, teamID, gensql.ChartTypeAirflow); err != nil {
+	if err := c.repo.ChartDelete(ctx, teamID, gensql.ChartTypeAirflow); err != nil {
 		return err
 	}
 

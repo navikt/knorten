@@ -26,16 +26,16 @@ ORDER BY "key", "created" DESC;
 DELETE FROM chart_team_values
 WHERE key = @key AND team_id = @team_id;
 
--- name: AppsForTeamGet :many
+-- name: ChartsForTeamGet :many
 SELECT DISTINCT ON (chart_type) chart_type
 FROM chart_team_values
 WHERE team_id = @team_id;
 
--- name: TeamsForAppGet :many
+-- name: TeamsForChartGet :many
 SELECT DISTINCT ON (team_id) team_id
 FROM chart_team_values
 WHERE chart_type = @chart_type;
 
--- name: AppDelete :exec
+-- name: ChartDelete :exec
 DELETE FROM chart_team_values
 WHERE team_id = @team_id AND chart_type = @chart_type;

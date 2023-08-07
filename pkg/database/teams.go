@@ -42,8 +42,8 @@ func (r *Repo) TeamsGet(ctx context.Context) ([]gensql.Team, error) {
 	return r.querier.TeamsGet(ctx)
 }
 
-func (r *Repo) TeamsForAppGet(ctx context.Context, chartType gensql.ChartType) ([]string, error) {
-	return r.querier.TeamsForAppGet(ctx, chartType)
+func (r *Repo) TeamsForChartGet(ctx context.Context, chartType gensql.ChartType) ([]string, error) {
+	return r.querier.TeamsForChartGet(ctx, chartType)
 }
 
 func (r *Repo) TeamsForUser(ctx context.Context, email string) ([]string, error) {

@@ -80,7 +80,7 @@ func (c Client) deleteJupyter(ctx context.Context, teamID string) error {
 		return err
 	}
 
-	if err := c.repo.AppDelete(ctx, teamID, gensql.ChartTypeJupyterhub); err != nil {
+	if err := c.repo.ChartDelete(ctx, teamID, gensql.ChartTypeJupyterhub); err != nil {
 		return err
 	}
 

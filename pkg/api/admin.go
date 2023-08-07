@@ -55,7 +55,7 @@ func (c *client) setupAdminRoutes() {
 
 		teamApps := map[string]teamInfo{}
 		for _, team := range teams {
-			apps, err := c.repo.AppsForTeamGet(ctx, team.ID)
+			apps, err := c.repo.ChartsForTeamGet(ctx, team.ID)
 			if err != nil {
 				c.log.WithError(err).Error("problem retrieving apps for teams")
 				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err})
@@ -344,7 +344,7 @@ func (c *client) syncTeams(ctx context.Context) error {
 }
 
 func (c *client) syncChartForAllTeams(ctx context.Context, chartType gensql.ChartType) error {
-	teams, err := c.repo.TeamsForAppGet(ctx, chartType)
+	teams, err := c.repo.TeamsForChartGet(ctx, chartType)
 	if err != nil {
 		return err
 	}

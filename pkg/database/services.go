@@ -54,12 +54,12 @@ func createAppService(slug string, chartType gensql.ChartType) *AppService {
 	}
 }
 
-func (r *Repo) AppsForTeamGet(ctx context.Context, teamID string) ([]gensql.ChartType, error) {
-	return r.querier.AppsForTeamGet(ctx, teamID)
+func (r *Repo) ChartsForTeamGet(ctx context.Context, teamID string) ([]gensql.ChartType, error) {
+	return r.querier.ChartsForTeamGet(ctx, teamID)
 }
 
-func (r *Repo) AppDelete(ctx context.Context, teamID string, chartType gensql.ChartType) error {
-	return r.querier.AppDelete(ctx, gensql.AppDeleteParams{
+func (r *Repo) ChartDelete(ctx context.Context, teamID string, chartType gensql.ChartType) error {
+	return r.querier.ChartDelete(ctx, gensql.ChartDeleteParams{
 		TeamID:    teamID,
 		ChartType: chartType,
 	})
@@ -83,7 +83,7 @@ func (r *Repo) ServicesForUser(ctx context.Context, email string) (UserServices,
 
 	var userServices UserServices
 	for _, team := range teamsForUser {
-		apps, err := r.querier.AppsForTeamGet(ctx, team.ID)
+		apps, err := r.querier.ChartsForTeamGet(ctx, team.ID)
 		if err != nil {
 			return UserServices{}, err
 		}

@@ -52,7 +52,7 @@ func (c *client) run(ctx context.Context) {
 }
 
 func (c *client) triggerSync(ctx context.Context, chartType gensql.ChartType) error {
-	teams, err := c.repo.TeamsForAppGet(ctx, chartType)
+	teams, err := c.repo.TeamsForChartGet(ctx, chartType)
 	if err != nil {
 		return err
 	}

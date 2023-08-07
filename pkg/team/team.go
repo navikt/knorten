@@ -91,7 +91,7 @@ func (c Client) Update(ctx context.Context, team gensql.Team, log logger.Logger)
 		return true
 	}
 
-	apps, err := c.repo.AppsForTeamGet(ctx, team.ID)
+	apps, err := c.repo.ChartsForTeamGet(ctx, team.ID)
 	if err != nil {
 		log.WithError(err).Errorf("failed getting apps for team %v", team.ID)
 		return true

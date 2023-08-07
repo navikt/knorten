@@ -91,16 +91,14 @@ func (c Client) Update(ctx context.Context, team gensql.Team, log logger.Logger)
 		return true
 	}
 
-	// TODO: Jupyterhub støtter ikke mergeValues med tom values
-	log.Error("TODO: Jupyterhub støtter ikke mergeValues med tom values")
-	//log.Info("Trigger update of Jupyter")
-	//jupyterValues := chart.JupyterConfigurableValues{
-	//	TeamID: team.ID,
-	//}
-	//if err := c.repo.RegisterUpdateJupyterEvent(ctx, team.ID, jupyterValues); err != nil {
-	//	log.WithError(err).Error("failed while registering Jupyter update event")
-	//	return true
-	//}
+	log.Info("Trigger update of Jupyter")
+	jupyterValues := chart.JupyterConfigurableValues{
+		TeamID: team.ID,
+	}
+	if err := c.repo.RegisterUpdateJupyterEvent(ctx, team.ID, jupyterValues); err != nil {
+		log.WithError(err).Error("failed while registering Jupyter update event")
+		return true
+	}
 
 	log.Info("Trigger update of Airflow")
 	airflowValues := chart.AirflowConfigurableValues{

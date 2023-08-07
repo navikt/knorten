@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/compute"
 	"github.com/nais/knorten/pkg/database"
@@ -106,13 +107,13 @@ func (e EventHandler) processWork(event gensql.Event, logger logger.Logger, form
 	return e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusCompleted)
 }
 
-func NewHandler(ctx context.Context, repo *database.Repo, gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion string, dryRun, inCluster bool, log *logrus.Entry) (EventHandler, error) {
+func NewHandler(ctx context.Context, repo *database.Repo, azureClient *auth.Azure, gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion string, dryRun, inCluster bool, log *logrus.Entry) (EventHandler, error) {
 	teamClient, err := team.NewClient(repo, gcpProject, gcpRegion, dryRun, inCluster)
 	if err != nil {
 		return EventHandler{}, err
 	}
 
-	chartClient, err := chart.NewClient(repo, dryRun, inCluster, airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion)
+	chartClient, err := chart.NewClient(repo, azureClient, dryRun, inCluster, airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion)
 	if err != nil {
 		return EventHandler{}, err
 	}

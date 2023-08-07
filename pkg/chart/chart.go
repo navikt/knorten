@@ -3,6 +3,7 @@ package chart
 import (
 	"context"
 
+	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/k8s"
@@ -13,6 +14,7 @@ import (
 type Client struct {
 	repo                *database.Repo
 	k8sClient           *kubernetes.Clientset
+	azureClient         *auth.Azure
 	dryRun              bool
 	chartVersionAirflow string
 	chartVersionJupyter string
@@ -20,7 +22,7 @@ type Client struct {
 	gcpRegion           string
 }
 
-func NewClient(repo *database.Repo, dryRun, inCluster bool, airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion string) (*Client, error) {
+func NewClient(repo *database.Repo, azureClient *auth.Azure, dryRun, inCluster bool, airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion string) (*Client, error) {
 	k8sClient, err := k8s.CreateClientset(dryRun, inCluster)
 	if err != nil {
 		return nil, err
@@ -28,6 +30,7 @@ func NewClient(repo *database.Repo, dryRun, inCluster bool, airflowChartVersion,
 
 	return &Client{
 		repo:                repo,
+		azureClient:         azureClient,
 		k8sClient:           k8sClient,
 		dryRun:              dryRun,
 		chartVersionJupyter: jupyterChartVersion,

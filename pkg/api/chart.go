@@ -287,7 +287,7 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 			return err
 		}
 
-		userIdents, err := c.convertEmailsToIdents(team.Users)
+		userIdents, err := c.azureClient.ConvertEmailsToIdents(team.Users)
 		if err != nil {
 			return err
 		}
@@ -346,21 +346,16 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 	}
 
 	var chartObjects any
-	var allowlist []string
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
-		chartObjects = &chart.JupyterConfigurableValues{}
-		allowlist, err = c.getExistingAllowlist(ctx, team.ID)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
-		}
+		chartObjects = chart.JupyterConfigurableValues{}
 	case gensql.ChartTypeAirflow:
-		chartObjects = &chart.AirflowConfigurableValues{}
+		chartObjects = chart.AirflowConfigurableValues{}
 	default:
 		return nil, fmt.Errorf("chart type %v is not supported", chartType)
 	}
 
-	err = c.repo.TeamConfigurableValuesGet(ctx, chartType, team.ID, chartObjects)
+	err = c.repo.TeamConfigurableValuesGet(ctx, chartType, team.ID, &chartObjects)
 	if err != nil {
 		return nil, err
 	}
@@ -369,6 +364,11 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
 		jupyterhubValues := chartObjects.(*chart.JupyterConfigurableValues)
+		allowlist, err := c.getExistingAllowlist(ctx, team.ID)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+
 		form = jupyterForm{
 			CPU:         jupyterhubValues.CPU,
 			Memory:      jupyterhubValues.Memory,
@@ -404,7 +404,7 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 			return err
 		}
 
-		userIdents, err := c.convertEmailsToIdents(team.Users)
+		userIdents, err := c.azureClient.ConvertEmailsToIdents(team.Users)
 		if err != nil {
 			return err
 		}

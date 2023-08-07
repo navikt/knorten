@@ -27,6 +27,7 @@ func (r *Repo) TeamUpdate(ctx context.Context, team gensql.Team) error {
 		ApiAccess: team.ApiAccess,
 	})
 }
+
 func (r *Repo) TeamGet(ctx context.Context, teamID string) (gensql.TeamGetRow, error) {
 	return r.querier.TeamGet(ctx, teamID)
 }
@@ -85,13 +86,6 @@ func (r *Repo) TeamSetRestrictAirflowEgress(ctx context.Context, teamID string, 
 	return r.querier.TeamSetAirflowRestrictEgress(ctx, gensql.TeamSetAirflowRestrictEgressParams{
 		RestrictAirflowEgress: restrictAirflowEgress,
 		ID:                    teamID,
-	})
-}
-
-func (r *Repo) TeamSetApiAccess(ctx context.Context, teamID string, apiAccess bool) error {
-	return r.querier.TeamSetApiAccess(ctx, gensql.TeamSetApiAccessParams{
-		ApiAccess: apiAccess,
-		ID:        teamID,
 	})
 }
 

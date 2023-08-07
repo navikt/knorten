@@ -67,6 +67,10 @@ func (e EventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 
 func (e EventHandler) processWork(event gensql.Event, logger logger.Logger, form any) error {
 	if err := json.Unmarshal(event.Task, &form); err != nil {
+		if err := e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusFailed); err != nil {
+			return err
+		}
+
 		return err
 	}
 
@@ -179,10 +183,6 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 						err := worker(e.context, event, eventLogger)
 						if err != nil {
 							eventLogger.log.WithError(err).Error("failed processing event")
-							err = e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusFailed)
-							if err != nil {
-								eventLogger.log.WithError(err).Error("can't set status for event")
-							}
 						}
 					}()
 				}

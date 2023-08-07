@@ -462,10 +462,7 @@ func (c *client) deleteChart(ctx *gin.Context, teamSlug, chartTypeString string)
 		return err
 	}
 
-	// TODO: Dette er litt tullete, vi kan like gjerne sende med hva vi skal gjøre til den metoden, eller noe i den dur.
-	chartType := getChartType(chartTypeString)
-
-	switch chartType {
+	switch getChartType(chartTypeString) {
 	case gensql.ChartTypeJupyterhub:
 		return c.repo.RegisterDeleteJupyterEvent(ctx, team.ID)
 	case gensql.ChartTypeAirflow:

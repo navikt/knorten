@@ -18,7 +18,6 @@ import (
 )
 
 const (
-	// TODO: Slå sammen disse til en hemmelighet
 	k8sAirflowFernetKeySecretName = "airflow-fernet-key"
 	k8sAirflowDatabaseSecretName  = "airflow-db"
 	k8sAirflowWebserverSecretName = "airflow-webserver"
@@ -95,7 +94,6 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 		return err
 	}
 
-	// TODO: Denne og neste kan lagres som en TeamValue
 	if err := c.repo.TeamSetRestrictAirflowEgress(ctx, team.ID, values.RestrictEgress); err != nil {
 		return err
 	}

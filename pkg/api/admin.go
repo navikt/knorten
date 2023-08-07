@@ -484,7 +484,6 @@ func findChangedValues(originals []gensql.ChartGlobalValue, formValues url.Value
 			for _, originalValue := range originals {
 				if originalValue.Key == key {
 					if originalValue.Value != value {
-						// TODO: Kan man endre krypterte verdier? Hvordan?
 						diff := diffValue{
 							Old:       originalValue.Value,
 							New:       value,

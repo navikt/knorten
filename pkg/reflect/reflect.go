@@ -29,7 +29,6 @@ func reflectValueToString(value reflect.Value) (string, error) {
 }
 
 func CreateChartValues(form any) (map[string]string, error) {
-	// TODO: Hvorfor blir ikke den brukt på veien ut også?
 	values := reflect.ValueOf(form)
 	fields := reflect.VisibleFields(reflect.TypeOf(form))
 

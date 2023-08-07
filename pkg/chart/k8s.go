@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	cloudSQLProxyName = "airflow-sql-proxy"
-	enableKnetpoller  = "knetpoller-enabled"
+	cloudSQLProxyName                 = "airflow-sql-proxy"
+	k8sLabelEnableTeamNetworkPolicies = "team-netpols"
 )
 
 func (c Client) deleteCloudSQLProxyFromKubernetes(ctx context.Context, namespace string) error {
@@ -71,13 +71,11 @@ func (c Client) defaultEgressNetpolSync(ctx context.Context, namespace string, r
 		return err
 	}
 
-	// TODO: Denne burde kunne gjøres om til true/false, altså at vi ikke trenger å slette labelen.
-	// Dette vil gjøre det mer eksplisitt hva som skjer.
 	if restrictEgress {
-		nsSpec.Labels[enableKnetpoller] = "true"
+		nsSpec.Labels[k8sLabelEnableTeamNetworkPolicies] = "true"
 	} else {
-		delete(nsSpec.Labels, enableKnetpoller)
-		err := c.k8sClient.NetworkingV1().NetworkPolicies(namespace).Delete(ctx, enableKnetpoller, metav1.DeleteOptions{})
+		delete(nsSpec.Labels, k8sLabelEnableTeamNetworkPolicies)
+		err := c.k8sClient.NetworkingV1().NetworkPolicies(namespace).Delete(ctx, k8sLabelEnableTeamNetworkPolicies, metav1.DeleteOptions{})
 		if err != nil && !k8sErrors.IsNotFound(err) {
 			return err
 		}

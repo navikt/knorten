@@ -1,11 +1,10 @@
 -- name: TeamCreate :exec
-INSERT INTO teams ("id", "users", "slug", "api_access", "owner")
-VALUES (@id, @users, @slug, @api_access, @owner);
+INSERT INTO teams ("id", "users", "slug", "owner")
+VALUES (@id, @users, @slug, @owner);
 
 -- name: TeamUpdate :exec
 UPDATE teams
-SET users      = @users,
-    api_access = @api_access
+SET users      = @users
 WHERE id = @id;
 
 -- name: TeamsForUserGet :many
@@ -14,12 +13,12 @@ FROM teams
 WHERE "owner" = @email OR @email::TEXT = ANY ("users");
 
 -- name: TeamGet :one
-SELECT id, "owner", ("owner" || users)::text[] as users, slug, pending_jupyter_upgrade, pending_airflow_upgrade, api_access, restrict_airflow_egress
+SELECT id, "owner", ("owner" || users)::text[] as users, slug, pending_jupyter_upgrade, pending_airflow_upgrade, restrict_airflow_egress
 FROM teams
 WHERE id = @id;
 
 -- name: TeamBySlugGet :one
-SELECT id, "owner", ("owner" || users)::text[] as users, slug, api_access, restrict_airflow_egress
+SELECT id, "owner", ("owner" || users)::text[] as users, slug, restrict_airflow_egress
 FROM teams
 WHERE slug = @slug;
 
@@ -51,9 +50,4 @@ SET pending_jupyter_upgrade = false,
 -- name: TeamSetAirflowRestrictEgress :exec
 UPDATE teams
 SET restrict_airflow_egress = @restrict_airflow_egress
-WHERE id = @id;
-
--- name: TeamSetApiAccess :exec
-UPDATE teams
-SET api_access = @api_access
 WHERE id = @id;

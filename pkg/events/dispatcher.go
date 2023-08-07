@@ -10,6 +10,7 @@ import (
 	"github.com/nais/knorten/pkg/compute"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/leaderelection"
 	"github.com/nais/knorten/pkg/logger"
 	"github.com/nais/knorten/pkg/team"
 	"github.com/sirupsen/logrus"
@@ -145,6 +146,15 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 				e.log.Debug("Event dispatcher run!")
 			case <-e.context.Done():
 				e.log.Debug("Context cancelled, stopping the event dispatcher.")
+				return
+			}
+
+			isLeader, err := leaderelection.IsLeader()
+			if err != nil {
+				e.log.WithError(err).Error("leader election check")
+				return
+			}
+			if !isLeader {
 				return
 			}
 

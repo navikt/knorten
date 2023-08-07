@@ -41,11 +41,10 @@ func formToTeam(ctx *gin.Context) (gensql.Team, error) {
 	}
 
 	return gensql.Team{
-		ID:        id,
-		Slug:      form.Slug,
-		Users:     form.Users,
-		ApiAccess: form.APIAccess == "on",
-		Owner:     form.Owner,
+		ID:    id,
+		Slug:  form.Slug,
+		Users: form.Users,
+		Owner: form.Owner,
 	}, nil
 }
 

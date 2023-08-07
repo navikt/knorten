@@ -91,16 +91,14 @@ func (e EventHandler) processWork(event gensql.Event, logger logger.Logger, form
 		retry = e.computeClient.Create(e.context, *form.(*gensql.ComputeInstance), logger)
 	case gensql.EventTypeDeleteCompute:
 		retry = e.computeClient.Delete(e.context, *form.(*string), logger)
-	case gensql.EventTypeCreateAirflow:
+	case gensql.EventTypeCreateAirflow,
+		gensql.EventTypeUpdateAirflow:
 		retry = e.chartClient.SyncAirflow(e.context, *form.(*chart.AirflowConfigurableValues), logger)
-	case gensql.EventTypeUpdateAirflow:
-		retry = e.chartClient.UpdateAirflow(e.context, *form.(*chart.AirflowConfigurableValues), logger)
 	case gensql.EventTypeDeleteAirflow:
 		retry = e.chartClient.DeleteAirflow(e.context, *form.(*string), logger)
-	case gensql.EventTypeCreateJupyter:
+	case gensql.EventTypeCreateJupyter,
+		gensql.EventTypeUpdateJupyter:
 		retry = e.chartClient.SyncJupyter(e.context, *form.(*chart.JupyterConfigurableValues), logger)
-	case gensql.EventTypeUpdateJupyter:
-		retry = e.chartClient.UpdateJupyter(e.context, *form.(*chart.JupyterConfigurableValues), logger)
 	case gensql.EventTypeDeleteJupyter:
 		retry = e.chartClient.DeleteJupyter(e.context, *form.(*string), logger)
 	}

@@ -5,7 +5,6 @@ import (
 
 	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/logger"
 	"k8s.io/client-go/kubernetes"
@@ -40,28 +39,6 @@ func NewClient(repo *database.Repo, azureClient *auth.Azure, dryRun, inCluster b
 	}, nil
 }
 
-func (c Client) UpdateJupyter(ctx context.Context, values JupyterConfigurableValues, log logger.Logger) bool {
-	log = log.WithField("team", values.TeamID).WithField("chart", "jupyter")
-	log.Info("Updating Jupyter")
-
-	apps, err := c.repo.AppsForTeamGet(ctx, values.TeamID)
-	if err != nil {
-		log.WithError(err).Error("failed getting apps for team")
-		return true
-	}
-
-	retry := false
-	for _, app := range apps {
-		if app == gensql.ChartTypeJupyterhub {
-			retry = c.SyncJupyter(ctx, values, log)
-			continue
-		}
-	}
-
-	log.Info("Successfully updated Jupyter")
-	return retry
-}
-
 func (c Client) SyncJupyter(ctx context.Context, values JupyterConfigurableValues, log logger.Logger) bool {
 	log = log.WithField("team", values.TeamID).WithField("chart", "jupyter")
 	log.Info("Syncing Jupyter")
@@ -86,28 +63,6 @@ func (c Client) DeleteJupyter(ctx context.Context, teamID string, log logger.Log
 
 	log.Info("Successfully deleted Jupyter")
 	return false
-}
-
-func (c Client) UpdateAirflow(ctx context.Context, values AirflowConfigurableValues, log logger.Logger) bool {
-	log = log.WithField("team", values.TeamID).WithField("chart", "airflow")
-	log.Info("Updating Airflow")
-
-	apps, err := c.repo.AppsForTeamGet(ctx, values.TeamID)
-	if err != nil {
-		log.WithError(err).Error("failed getting apps for team")
-		return true
-	}
-
-	retry := false
-	for _, app := range apps {
-		if app == gensql.ChartTypeAirflow {
-			retry = c.SyncAirflow(ctx, values, log)
-			continue
-		}
-	}
-
-	log.Info("Successfully updated Airflow")
-	return retry
 }
 
 func (c Client) SyncAirflow(ctx context.Context, values AirflowConfigurableValues, log logger.Logger) bool {

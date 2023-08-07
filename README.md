@@ -25,6 +25,8 @@ Har man behov for å teste mot et cluster så kan man bruke `make local-online`,
 
 Husk å skru på [gcp-auth](https://minikube.sigs.k8s.io/docs/handbook/addons/gcp-auth/) i Minikube.
 
+PS: Hver gang du logger inn med `gcloud auth login --update-adc` må kjøre `minikube addons enable gcp-auth --refresh` for å oppdatere tokenet.
+
 ### Generering av CSS
 
 Man kan generere CSS på en av to måter.

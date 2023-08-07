@@ -38,7 +38,6 @@ func (v jupyterForm) MemoryWithoutUnit() string {
 type airflowForm struct {
 	DagRepo        string `form:"dagrepo" binding:"required,startswith=navikt/,validAirflowRepo"`
 	DagRepoBranch  string `form:"dagrepobranch" binding:"validRepoBranch"`
-	ApiAccess      bool   `form:"apiaccess"`
 	RestrictEgress bool   `form:"restrictegress"`
 }
 
@@ -329,7 +328,6 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 			TeamID:         team.ID,
 			DagRepo:        form.DagRepo,
 			DagRepoBranch:  dagRepoBranch,
-			ApiAccess:      form.ApiAccess,
 			RestrictEgress: form.RestrictEgress,
 		}
 
@@ -382,7 +380,6 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 		form = airflowForm{
 			DagRepo:        airflowValues.DagRepo,
 			DagRepoBranch:  airflowValues.DagRepoBranch,
-			ApiAccess:      team.ApiAccess,
 			RestrictEgress: team.RestrictAirflowEgress,
 		}
 	}
@@ -446,7 +443,6 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 			TeamID:         team.ID,
 			DagRepo:        form.DagRepo,
 			DagRepoBranch:  dagRepoBranch,
-			ApiAccess:      form.ApiAccess,
 			RestrictEgress: form.RestrictEgress,
 		}
 

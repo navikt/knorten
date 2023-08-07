@@ -30,7 +30,6 @@ type AirflowConfigurableValues struct {
 	TeamID         string
 	DagRepo        string `helm:"webserver.extraContainers.[0].args.[0]"`
 	DagRepoBranch  string `helm:"webserver.extraContainers.[0].args.[1]"`
-	ApiAccess      bool
 	RestrictEgress bool
 }
 
@@ -95,10 +94,6 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 	}
 
 	if err := c.repo.TeamSetRestrictAirflowEgress(ctx, team.ID, values.RestrictEgress); err != nil {
-		return err
-	}
-
-	if err := c.repo.TeamSetApiAccess(ctx, team.ID, values.ApiAccess); err != nil {
 		return err
 	}
 
@@ -190,8 +185,7 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 
 		configurableValues.DagRepoBranch = dagRepoBranch.Value
 
-		configurableValues.ApiAccess = team.ApiAccess
-		configurableValues.ApiAccess = team.RestrictAirflowEgress
+		configurableValues.RestrictEgress = team.RestrictAirflowEgress
 	}
 
 	postgresPassword, err := c.getOrGeneratePassword(ctx, team.ID, teamValueKeyDatabasePassword, generatePassword)
@@ -214,7 +208,7 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 		return AirflowValues{}, err
 	}
 
-	webserverEnv, err := c.createAirflowWebServerEnvs(team.Users, configurableValues.ApiAccess)
+	webserverEnv, err := c.createAirflowWebServerEnvs(team.Users)
 	if err != nil {
 		return AirflowValues{}, err
 	}
@@ -244,20 +238,12 @@ type airflowEnv struct {
 	Value string `json:"value"`
 }
 
-func (Client) createAirflowWebServerEnvs(users []string, apiAccess bool) (string, error) {
+func (Client) createAirflowWebServerEnvs(users []string) (string, error) {
 	envs := []airflowEnv{
 		{
 			Name:  "AIRFLOW_USERS",
 			Value: strings.Join(users, ","),
 		},
-	}
-
-	if apiAccess {
-		// TODO: Sjekk om dette faktisk er nødvendig, jeg trodde basic_auth stod i veien for måten vi løste det på
-		envs = append(envs, airflowEnv{
-			Name:  "AIRFLOW__API__AUTH_BACKENDS",
-			Value: "airflow.api.auth.backend.session,airflow.api.auth.backend.basic_auth",
-		})
 	}
 
 	envBytes, err := json.Marshal(envs)

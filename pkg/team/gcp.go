@@ -2,6 +2,7 @@ package team
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -175,7 +176,8 @@ func (c Client) createIAMServiceAccount(ctx context.Context, team string) (*iamv
 
 	account, err := service.Projects.ServiceAccounts.Create("projects/"+c.gcpProject, request).Do()
 	if err != nil {
-		gError, ok := err.(*googleapi.Error)
+		var gError *googleapi.Error
+		ok := errors.As(err, &gError)
 		if ok {
 			if gError.Code == http.StatusConflict {
 				serviceAccountName := fmt.Sprintf("projects/%v/serviceAccounts/%v@%v.iam.gserviceaccount.com", c.gcpProject, team, c.gcpProject)

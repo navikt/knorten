@@ -70,26 +70,11 @@ func Run(router *gin.Engine, inCluster bool) error {
 	return router.Run("localhost:8080")
 }
 
-func (c *client) setupAPIEndpoints() {
-	api := c.router.Group("/api")
-	api.POST("/status/:team/:chart", func(ctx *gin.Context) {
-		teamID := ctx.Param("team")
-		chartType := ctx.Param("chart")
-
-		if err := c.repo.TeamSetPendingUpgrade(ctx, teamID, chartType, false); err != nil {
-			c.log.WithError(err).Error("clearing pending upgrade flag in database")
-		}
-
-		ctx.JSON(http.StatusOK, map[string]any{"status": "ok"})
-	})
-}
-
 func (c *client) setupUnauthenticatedRoutes() {
 	c.router.GET("/", func(ctx *gin.Context) {
 		c.htmlResponseWrapper(ctx, http.StatusOK, "index", gin.H{})
 	})
 
-	c.setupAPIEndpoints()
 	c.setupAuthRoutes()
 }
 

@@ -251,8 +251,6 @@ type Team struct {
 	Slug                  string
 	Users                 []string
 	Created               sql.NullTime
-	PendingJupyterUpgrade bool
-	PendingAirflowUpgrade bool
 	RestrictAirflowEgress bool
 	Owner                 string
 }

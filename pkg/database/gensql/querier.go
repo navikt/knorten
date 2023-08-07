@@ -11,7 +11,6 @@ import (
 type Querier interface {
 	ChartDelete(ctx context.Context, arg ChartDeleteParams) error
 	ChartsForTeamGet(ctx context.Context, teamID string) ([]ChartType, error)
-	ClearPendingUpgradeLocks(ctx context.Context) error
 	ComputeInstanceCreate(ctx context.Context, arg ComputeInstanceCreateParams) error
 	ComputeInstanceDelete(ctx context.Context, email string) error
 	ComputeInstanceGet(ctx context.Context, email string) (ComputeInstance, error)
@@ -34,8 +33,6 @@ type Querier interface {
 	TeamDelete(ctx context.Context, id string) error
 	TeamGet(ctx context.Context, id string) (TeamGetRow, error)
 	TeamSetAirflowRestrictEgress(ctx context.Context, arg TeamSetAirflowRestrictEgressParams) error
-	TeamSetPendingAirflowUpgrade(ctx context.Context, arg TeamSetPendingAirflowUpgradeParams) error
-	TeamSetPendingJupyterUpgrade(ctx context.Context, arg TeamSetPendingJupyterUpgradeParams) error
 	TeamUpdate(ctx context.Context, arg TeamUpdateParams) error
 	TeamValueDelete(ctx context.Context, arg TeamValueDeleteParams) error
 	TeamValueGet(ctx context.Context, arg TeamValueGetParams) (ChartTeamValue, error)

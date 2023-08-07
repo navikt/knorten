@@ -259,24 +259,6 @@ func (c *client) setupAdminRoutes() {
 		ctx.Redirect(http.StatusSeeOther, "/admin")
 	})
 
-	c.router.POST("/admin/:chart/unlock", func(ctx *gin.Context) {
-		session := sessions.Default(ctx)
-		chartType := getChartType(ctx.Param("chart"))
-		team := ctx.PostForm("team")
-
-		err := c.repo.TeamSetPendingUpgrade(ctx, team, string(chartType), false)
-		if err != nil {
-			c.log.WithError(err).Errorf("unlocking %v", chartType)
-			session.AddFlash(err.Error())
-			err = session.Save()
-			if err != nil {
-				c.log.WithError(err).Error("problem saving session")
-			}
-		}
-
-		ctx.Redirect(http.StatusSeeOther, "/admin")
-	})
-
 	c.router.POST("/admin/team/sync/all", func(ctx *gin.Context) {
 		session := sessions.Default(ctx)
 

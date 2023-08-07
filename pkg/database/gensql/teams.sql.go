@@ -11,17 +11,6 @@ import (
 	"github.com/lib/pq"
 )
 
-const clearPendingUpgradeLocks = `-- name: ClearPendingUpgradeLocks :exec
-UPDATE teams
-SET pending_jupyter_upgrade = false,
-    pending_airflow_upgrade = false
-`
-
-func (q *Queries) ClearPendingUpgradeLocks(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, clearPendingUpgradeLocks)
-	return err
-}
-
 const teamBySlugGet = `-- name: TeamBySlugGet :one
 SELECT id, "owner", ("owner" || users)::text[] as users, slug, restrict_airflow_egress
 FROM teams
@@ -83,7 +72,7 @@ func (q *Queries) TeamDelete(ctx context.Context, id string) error {
 }
 
 const teamGet = `-- name: TeamGet :one
-SELECT id, "owner", ("owner" || users)::text[] as users, slug, pending_jupyter_upgrade, pending_airflow_upgrade, restrict_airflow_egress
+SELECT id, "owner", ("owner" || users)::text[] as users, slug, restrict_airflow_egress
 FROM teams
 WHERE id = $1
 `
@@ -93,8 +82,6 @@ type TeamGetRow struct {
 	Owner                 string
 	Users                 []string
 	Slug                  string
-	PendingJupyterUpgrade bool
-	PendingAirflowUpgrade bool
 	RestrictAirflowEgress bool
 }
 
@@ -106,8 +93,6 @@ func (q *Queries) TeamGet(ctx context.Context, id string) (TeamGetRow, error) {
 		&i.Owner,
 		pq.Array(&i.Users),
 		&i.Slug,
-		&i.PendingJupyterUpgrade,
-		&i.PendingAirflowUpgrade,
 		&i.RestrictAirflowEgress,
 	)
 	return i, err
@@ -126,38 +111,6 @@ type TeamSetAirflowRestrictEgressParams struct {
 
 func (q *Queries) TeamSetAirflowRestrictEgress(ctx context.Context, arg TeamSetAirflowRestrictEgressParams) error {
 	_, err := q.db.ExecContext(ctx, teamSetAirflowRestrictEgress, arg.RestrictAirflowEgress, arg.ID)
-	return err
-}
-
-const teamSetPendingAirflowUpgrade = `-- name: TeamSetPendingAirflowUpgrade :exec
-UPDATE teams
-SET pending_airflow_upgrade = $1
-WHERE id = $2
-`
-
-type TeamSetPendingAirflowUpgradeParams struct {
-	PendingAirflowUpgrade bool
-	ID                    string
-}
-
-func (q *Queries) TeamSetPendingAirflowUpgrade(ctx context.Context, arg TeamSetPendingAirflowUpgradeParams) error {
-	_, err := q.db.ExecContext(ctx, teamSetPendingAirflowUpgrade, arg.PendingAirflowUpgrade, arg.ID)
-	return err
-}
-
-const teamSetPendingJupyterUpgrade = `-- name: TeamSetPendingJupyterUpgrade :exec
-UPDATE teams
-SET pending_jupyter_upgrade = $1
-WHERE id = $2
-`
-
-type TeamSetPendingJupyterUpgradeParams struct {
-	PendingJupyterUpgrade bool
-	ID                    string
-}
-
-func (q *Queries) TeamSetPendingJupyterUpgrade(ctx context.Context, arg TeamSetPendingJupyterUpgradeParams) error {
-	_, err := q.db.ExecContext(ctx, teamSetPendingJupyterUpgrade, arg.PendingJupyterUpgrade, arg.ID)
 	return err
 }
 
@@ -212,7 +165,7 @@ func (q *Queries) TeamsForUserGet(ctx context.Context, email string) ([]TeamsFor
 }
 
 const teamsGet = `-- name: TeamsGet :many
-select id, slug, users, created, pending_jupyter_upgrade, pending_airflow_upgrade, restrict_airflow_egress, owner
+select id, slug, users, created, restrict_airflow_egress, owner
 from teams
 ORDER BY slug
 `
@@ -231,8 +184,6 @@ func (q *Queries) TeamsGet(ctx context.Context) ([]Team, error) {
 			&i.Slug,
 			pq.Array(&i.Users),
 			&i.Created,
-			&i.PendingJupyterUpgrade,
-			&i.PendingAirflowUpgrade,
 			&i.RestrictAirflowEgress,
 			&i.Owner,
 		); err != nil {

@@ -63,23 +63,6 @@ func (r *Repo) TeamsForUser(ctx context.Context, email string) ([]string, error)
 	return teamList, nil
 }
 
-func (r *Repo) TeamSetPendingUpgrade(ctx context.Context, teamID, chartType string, pendingUpgrade bool) error {
-	var err error
-	switch chartType {
-	case string(gensql.ChartTypeJupyterhub):
-		err = r.querier.TeamSetPendingJupyterUpgrade(ctx, gensql.TeamSetPendingJupyterUpgradeParams{
-			ID:                    teamID,
-			PendingJupyterUpgrade: pendingUpgrade,
-		})
-	case string(gensql.ChartTypeAirflow):
-		err = r.querier.TeamSetPendingAirflowUpgrade(ctx, gensql.TeamSetPendingAirflowUpgradeParams{
-			ID:                    teamID,
-			PendingAirflowUpgrade: pendingUpgrade,
-		})
-	}
-	return err
-}
-
 func (r *Repo) TeamSetRestrictAirflowEgress(ctx context.Context, teamID string, restrictAirflowEgress bool) error {
 	return r.querier.TeamSetAirflowRestrictEgress(ctx, gensql.TeamSetAirflowRestrictEgressParams{
 		RestrictAirflowEgress: restrictAirflowEgress,

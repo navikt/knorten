@@ -109,7 +109,7 @@ func (c Client) jupyterMergeValues(ctx context.Context, team gensql.TeamGetRow, 
 
 	var profileList string
 	if configurableValues.ImageName != "" {
-		profileList = fmt.Sprintf(`{"display_name":"Custom image","description":"Custom image for team %v","kubespawner_override":{"image":"%v:%v"}}`,
+		profileList = fmt.Sprintf(`[{"display_name":"Custom image","description":"Custom image for team %v","kubespawner_override":{"image":"%v:%v"}}]`,
 			configurableValues.TeamID, configurableValues.ImageName, configurableValues.ImageTag)
 	}
 

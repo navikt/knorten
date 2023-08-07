@@ -41,10 +41,12 @@ func NewClient(repo *database.Repo, azureClient *auth.Azure, dryRun, inCluster b
 }
 
 func (c Client) UpdateJupyter(ctx context.Context, values JupyterConfigurableValues, log logger.Logger) bool {
-	log.WithField("team", values.TeamID).WithField("chart", "jupyter").Info("Updating Jupyter")
+	log = log.WithField("team", values.TeamID).WithField("chart", "jupyter")
+	log.Info("Updating Jupyter")
+
 	apps, err := c.repo.AppsForTeamGet(ctx, values.TeamID)
 	if err != nil {
-		log.WithField("team", values.TeamID).WithField("chart", "jupyter").WithError(err).Error("failed getting apps for team")
+		log.WithError(err).Error("failed getting apps for team")
 		return true
 	}
 
@@ -56,7 +58,7 @@ func (c Client) UpdateJupyter(ctx context.Context, values JupyterConfigurableVal
 		}
 	}
 
-	log.WithField("team", values.TeamID).WithField("chart", "jupyter").Info("Successfully updated Jupyter")
+	log.Info("Successfully updated Jupyter")
 	return retry
 }
 
@@ -65,7 +67,7 @@ func (c Client) SyncJupyter(ctx context.Context, values JupyterConfigurableValue
 	log.Info("Syncing Jupyter")
 
 	if err := c.syncJupyter(ctx, values); err != nil {
-		log.WithError(err).WithField("team", values.TeamID).Error("failed syncing Jupyter")
+		log.WithError(err).Error("failed syncing Jupyter")
 		return true
 	}
 
@@ -78,7 +80,7 @@ func (c Client) DeleteJupyter(ctx context.Context, teamID string, log logger.Log
 	log.Info("Deleting Jupyter")
 
 	if err := c.deleteJupyter(ctx, teamID); err != nil {
-		log.WithError(err).WithField("team", teamID).Error("failed deleting Jupyter")
+		log.WithError(err).Error("failed deleting Jupyter")
 		return true
 	}
 
@@ -87,10 +89,12 @@ func (c Client) DeleteJupyter(ctx context.Context, teamID string, log logger.Log
 }
 
 func (c Client) UpdateAirflow(ctx context.Context, values AirflowConfigurableValues, log logger.Logger) bool {
-	log.WithField("team", values.TeamID).WithField("chart", "jupyter").Info("Updating Airflow")
+	log = log.WithField("team", values.TeamID).WithField("chart", "airflow")
+	log.Info("Updating Airflow")
+
 	apps, err := c.repo.AppsForTeamGet(ctx, values.TeamID)
 	if err != nil {
-		log.WithField("team", values.TeamID).WithField("chart", "airflow").WithError(err).Error("failed getting apps for team")
+		log.WithError(err).Error("failed getting apps for team")
 		return true
 	}
 
@@ -102,7 +106,7 @@ func (c Client) UpdateAirflow(ctx context.Context, values AirflowConfigurableVal
 		}
 	}
 
-	log.WithField("team", values.TeamID).WithField("chart", "airflow").Info("Successfully updated Airflow")
+	log.Info("Successfully updated Airflow")
 	return retry
 }
 
@@ -111,7 +115,7 @@ func (c Client) SyncAirflow(ctx context.Context, values AirflowConfigurableValue
 	log.Info("Syncing Airflow")
 
 	if err := c.syncAirflow(ctx, values); err != nil {
-		log.WithError(err).WithField("team", values.TeamID).Error("failed syncing Airflow")
+		log.WithError(err).Error("failed syncing Airflow")
 		return true
 	}
 
@@ -124,7 +128,7 @@ func (c Client) DeleteAirflow(ctx context.Context, teamID string, log logger.Log
 	log.Info("Deleting Airflow")
 
 	if err := c.deleteAirflow(ctx, teamID); err != nil {
-		log.WithError(err).WithField("team", teamID).Error("failed deleting Airflow")
+		log.WithError(err).Error("failed deleting Airflow")
 		return true
 	}
 

@@ -349,18 +349,18 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 	var allowlist []string
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
-		chartObjects = &chart.JupyterConfigurableValues{}
+		chartObjects = chart.JupyterConfigurableValues{}
 		allowlist, err = c.getExistingAllowlist(ctx, team.ID)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return nil, err
 		}
 	case gensql.ChartTypeAirflow:
-		chartObjects = &chart.AirflowConfigurableValues{}
+		chartObjects = chart.AirflowConfigurableValues{}
 	default:
 		return nil, fmt.Errorf("chart type %v is not supported", chartType)
 	}
 
-	err = c.repo.TeamConfigurableValuesGet(ctx, chartType, team.ID, chartObjects)
+	err = c.repo.TeamConfigurableValuesGet(ctx, chartType, team.ID, &chartObjects)
 	if err != nil {
 		return nil, err
 	}

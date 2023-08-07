@@ -346,14 +346,9 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 	}
 
 	var chartObjects any
-	var allowlist []string
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
 		chartObjects = chart.JupyterConfigurableValues{}
-		allowlist, err = c.getExistingAllowlist(ctx, team.ID)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
-		}
 	case gensql.ChartTypeAirflow:
 		chartObjects = chart.AirflowConfigurableValues{}
 	default:
@@ -369,6 +364,11 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
 		jupyterhubValues := chartObjects.(*chart.JupyterConfigurableValues)
+		allowlist, err := c.getExistingAllowlist(ctx, team.ID)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+
 		form = jupyterForm{
 			CPU:         jupyterhubValues.CPU,
 			Memory:      jupyterhubValues.Memory,

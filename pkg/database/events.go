@@ -27,7 +27,7 @@ type Event struct {
 }
 
 func (r *Repo) registerEvent(ctx context.Context, eventType gensql.EventType, owner string, deadlineOffset time.Duration, data any) error {
-	jsonTask, err := json.Marshal(data)
+	jsonPayload, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
@@ -35,8 +35,8 @@ func (r *Repo) registerEvent(ctx context.Context, eventType gensql.EventType, ow
 	err = r.querier.EventCreate(ctx, gensql.EventCreateParams{
 		Owner:     owner,
 		EventType: eventType,
-		Task:      jsonTask,
-		Deadline:  deadlineOffset.String(),
+		Payload:   jsonPayload,
+		Deadline:  int64(deadlineOffset),
 	})
 	if err != nil {
 		return err
@@ -56,9 +56,11 @@ func (r *Repo) RegisterUpdateTeamEvent(ctx context.Context, team gensql.Team) er
 func (r *Repo) RegisterDeleteTeamEvent(ctx context.Context, teamID string) error {
 	return r.registerEvent(ctx, gensql.EventTypeDeleteTeam, teamID, 5*time.Minute, teamID)
 }
+
 func (r *Repo) RegisterDeleteComputeEvent(ctx context.Context, email string) error {
 	return r.registerEvent(ctx, gensql.EventTypeDeleteCompute, email, 5*time.Minute, email)
 }
+
 func (r *Repo) RegisterCreateComputeEvent(ctx context.Context, instance gensql.ComputeInstance) error {
 	return r.registerEvent(ctx, gensql.EventTypeCreateCompute, instance.Email, 5*time.Minute, instance)
 }
@@ -92,6 +94,11 @@ func (r *Repo) EventSetStatus(ctx context.Context, id uuid.UUID, status gensql.E
 		Status: status,
 		ID:     id,
 	})
+}
+
+// EventSetPendingStatus will set status to pending and increment retry_count by 1
+func (r *Repo) EventSetPendingStatus(ctx context.Context, id uuid.UUID) error {
+	return r.querier.EventSetPendingStatus(ctx, id)
 }
 
 func (r *Repo) EventsGetNew(ctx context.Context) ([]gensql.Event, error) {
@@ -129,7 +136,7 @@ func (r *Repo) EventLogsForEventsGet(ctx context.Context) ([]Event, error) {
 			Owner:     row.Owner,
 			Type:      row.EventType,
 			Status:    row.Status,
-			Deadline:  row.Deadline,
+			Deadline:  time.Duration(row.Deadline).String(),
 			CreatedAt: row.CreatedAt,
 			UpdatedAt: row.UpdatedAt,
 			Logs:      logs,
@@ -160,7 +167,7 @@ func (r *Repo) EventLogsForOwnerGet(ctx context.Context, owner string) ([]Event,
 			Owner:     row.Owner,
 			Type:      row.EventType,
 			Status:    row.Status,
-			Deadline:  row.Deadline,
+			Deadline:  time.Duration(row.Deadline).String(),
 			CreatedAt: row.CreatedAt,
 			UpdatedAt: row.UpdatedAt,
 			Logs:      logs,

@@ -1,8 +1,8 @@
 -- name: EventCreate :exec
-INSERT INTO Events (owner, event_type, task, status, deadline)
+INSERT INTO Events (owner, event_type, payload, status, deadline)
 VALUES (@owner,
         @event_type,
-        @task,
+        @payload,
         'new',
         @deadline);
 
@@ -16,12 +16,19 @@ ORDER BY created_at DESC;
 SELECT *
 FROM Events
 WHERE status = 'pending'
-  AND updated_at + deadline::interval < NOW();
+  AND updated_at + deadline * retry_count < NOW();
 
 -- name: EventSetStatus :exec
 UPDATE
     Events
 SET status = @status
+WHERE id = @id;
+
+-- name: EventSetPendingStatus :exec
+UPDATE
+    Events
+SET status = 'pending',
+    retry_count = retry_count + 1
 WHERE id = @id;
 
 -- name: EventLogCreate :exec

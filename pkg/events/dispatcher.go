@@ -66,7 +66,7 @@ func (e EventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 }
 
 func (e EventHandler) processWork(event gensql.Event, logger logger.Logger, form any) error {
-	if err := json.Unmarshal(event.Task, &form); err != nil {
+	if err := json.Unmarshal(event.Payload, &form); err != nil {
 		if err := e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusFailed); err != nil {
 			return err
 		}
@@ -104,7 +104,7 @@ func (e EventHandler) processWork(event gensql.Event, logger logger.Logger, form
 	}
 
 	if retry {
-		return e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusPending)
+		return e.repo.EventSetPendingStatus(e.context, event.ID)
 	}
 
 	return e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusCompleted)
@@ -178,9 +178,14 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 					eventLogger.log.Infof("Dispatching event '%v'", event.EventType)
 					event := event
 					go func() {
-						err := worker(e.context, event, eventLogger)
-						if err != nil {
+						if err := worker(e.context, event, eventLogger); err != nil {
 							eventLogger.log.WithError(err).Error("failed processing event")
+							if event.RetryCount > 5 {
+								eventLogger.log.Error("event reached max retries")
+								if err := e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusFailed); err != nil {
+									eventLogger.log.WithError(err).Error("failed setting event status to 'failed'")
+								}
+							}
 						}
 					}()
 				}

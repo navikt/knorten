@@ -8,6 +8,7 @@ import (
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/helm"
 	"github.com/nais/knorten/pkg/k8s"
+	"github.com/nais/knorten/pkg/logger"
 	"github.com/nais/knorten/pkg/reflect"
 )
 
@@ -43,48 +44,34 @@ type jupyterValues struct {
 	ExtraAnnotations string   `helm:"singleuser.extraAnnotations"`
 }
 
-func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfigurableValues) error {
+func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfigurableValues, log logger.Logger) error {
 	team, err := c.repo.TeamGet(ctx, configurableValues.TeamID)
 	if err != nil {
+		log.WithError(err).Error("getting team from database")
 		return err
 	}
 
 	values, err := c.jupyterMergeValues(ctx, team, configurableValues)
 	if err != nil {
+		log.WithError(err).Error("merging jupyter values")
 		return err
 	}
 
 	chartValues, err := reflect.CreateChartValues(values)
 	if err != nil {
+		log.WithError(err).Error("creating chart values")
 		return err
 	}
 
 	err = c.repo.HelmChartValuesInsert(ctx, gensql.ChartTypeJupyterhub, chartValues, team.ID)
 	if err != nil {
+		log.WithError(err).Error("inserting helm values to database")
 		return err
 	}
 
 	namespace := k8s.TeamIDToNamespace(team.ID)
 	releaseName := jupyterReleaseName(namespace)
 	return helm.InstallOrUpgrade(ctx, c.dryRun, releaseName, namespace, team.ID, "jupyterhub", "jupyterhub", c.chartVersionJupyter, gensql.ChartTypeJupyterhub, c.repo)
-}
-
-func (c Client) deleteJupyter(ctx context.Context, teamID string) error {
-	if c.dryRun {
-		return nil
-	}
-
-	namespace := k8s.TeamIDToNamespace(teamID)
-	releaseName := jupyterReleaseName(namespace)
-	if err := helm.Uninstall(releaseName, namespace); err != nil {
-		return err
-	}
-
-	if err := c.repo.ChartDelete(ctx, teamID, gensql.ChartTypeJupyterhub); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // jupyterReleaseName creates a unique release name based on namespace name.
@@ -133,4 +120,24 @@ func (c Client) jupyterMergeValues(ctx context.Context, team gensql.TeamGetRow, 
 		ProfileList:               profileList,
 		ExtraAnnotations:          allowList,
 	}, nil
+}
+
+func (c Client) deleteJupyter(ctx context.Context, teamID string, log logger.Logger) error {
+	if c.dryRun {
+		return nil
+	}
+
+	namespace := k8s.TeamIDToNamespace(teamID)
+	releaseName := jupyterReleaseName(namespace)
+	if err := helm.Uninstall(releaseName, namespace); err != nil {
+		log.WithError(err).Error("helm uninstall failed")
+		return err
+	}
+
+	if err := c.repo.ChartDelete(ctx, teamID, gensql.ChartTypeJupyterhub); err != nil {
+		log.WithError(err).Error("delete chart from database")
+		return err
+	}
+
+	return nil
 }

@@ -8,4 +8,5 @@ type Logger interface {
 
 	WithError(error) Logger
 	WithField(string, any) Logger
+	WithTeamID(string) Logger
 }

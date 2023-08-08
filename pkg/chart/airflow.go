@@ -14,6 +14,7 @@ import (
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/helm"
 	"github.com/nais/knorten/pkg/k8s"
+	"github.com/nais/knorten/pkg/logger"
 	"github.com/nais/knorten/pkg/reflect"
 )
 
@@ -60,40 +61,48 @@ type AirflowValues struct {
 	WorkersGitSynkRepoBranch   string `helm:"workers.extraInitContainers.[0].args.[1]"`
 }
 
-func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfigurableValues) error {
+func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfigurableValues, log logger.Logger) error {
 	team, err := c.repo.TeamGet(ctx, configurableValues.TeamID)
 	if err != nil {
+		log.WithError(err).Error("getting team from database")
 		return err
 	}
 
 	values, err := c.mergeAirflowValues(ctx, team, configurableValues)
 	if err != nil {
+		log.WithError(err).Error("merging airflow values")
 		return err
 	}
 
 	helmChartValues, err := reflect.CreateChartValues(values)
 	if err != nil {
+		log.WithError(err).Error("creating chart values")
 		return err
 	}
 
 	// First we save all variables to the database, then we apply them to the cluster.
 	if err := c.repo.HelmChartValuesInsert(ctx, gensql.ChartTypeAirflow, helmChartValues, team.ID); err != nil {
+		log.WithError(err).Error("inserting helm values to database")
 		return err
 	}
 
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, teamValueKeyDatabasePassword, values.PostgresPassword, team.ID); err != nil {
+		log.WithError(err).Error("inserting postgres team value to database")
 		return err
 	}
 
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, teamValueKeyFernetKey, values.FernetKey, team.ID); err != nil {
+		log.WithError(err).Error("inserting fernet key team value to database")
 		return err
 	}
 
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, teamValueKeyWebserverSecret, values.WebserverSecretKey, team.ID); err != nil {
+		log.WithError(err).Error("inserting webserver team value to database")
 		return err
 	}
 
 	if err := c.repo.TeamSetRestrictAirflowEgress(ctx, team.ID, values.RestrictEgress); err != nil {
+		log.WithError(err).Error("setting restrict airflow egress")
 		return err
 	}
 
@@ -101,6 +110,7 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 	namespace := k8s.TeamIDToNamespace(team.ID)
 
 	if err := c.defaultEgressNetpolSync(ctx, namespace, values.RestrictEgress); err != nil {
+		log.WithError(err).Error("syncing default egress netpol")
 		return err
 	}
 
@@ -108,25 +118,30 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 		"connection": fmt.Sprintf("postgresql://%v:%v@%v:5432/%v?sslmode=disable", team.ID, values.PostgresPassword, cloudSQLProxyName, team.ID),
 	}
 	if err := c.createOrUpdateSecret(ctx, k8sAirflowDatabaseSecretName, namespace, secretStringData); err != nil {
+		log.WithError(err).Error("creating or updating airflow db secret")
 		return err
 	}
 
 	secretStringData = map[string]string{"webserver-secret-key": values.WebserverSecretKey}
 	if err := c.createOrUpdateSecret(ctx, k8sAirflowWebserverSecretName, namespace, secretStringData); err != nil {
+		log.WithError(err).Error("creating or updating airflow webserver secret")
 		return err
 	}
 
 	secretStringData = map[string]string{"fernet-key": values.FernetKey}
 	if err := c.createOrUpdateSecret(ctx, k8sAirflowFernetKeySecretName, namespace, secretStringData); err != nil {
+		log.WithError(err).Error("creating or updating airflow fernet key secret")
 		return err
 	}
 
 	// Apply values to GCP project
 	if err := c.createAirflowDatabase(ctx, team.ID, values.PostgresPassword); err != nil {
+		log.WithError(err).Error("creating airflow database")
 		return err
 	}
 
 	if err := c.createLogBucketForAirflow(ctx, team.ID); err != nil {
+		log.WithError(err).Error("creating airflow log bucket")
 		return err
 	}
 

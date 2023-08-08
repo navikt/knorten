@@ -34,18 +34,15 @@ func (e EventLogger) Infof(template string, arg ...any) {
 	e.Info(fmt.Sprintf(template, arg...))
 }
 
+// Error will not create event logs for users.
 func (e EventLogger) Error(messages ...any) {
 	for _, message := range messages {
 		messageAsString := fmt.Sprint(message)
-
 		e.log.Error(messageAsString)
-		err := e.repo.EventLogCreate(e.context, e.eventID, messageAsString, gensql.LogTypeError)
-		if err != nil {
-			e.log.WithError(err).Error("can't write event to database")
-		}
 	}
 }
 
+// Errorf will not create event logs for users.
 func (e EventLogger) Errorf(template string, arg ...any) {
 	e.Error(fmt.Sprintf(template, arg...))
 }
@@ -57,6 +54,11 @@ func (e EventLogger) WithField(key string, value interface{}) logger.Logger {
 
 func (e EventLogger) WithError(err error) logger.Logger {
 	e.log = e.log.WithField(logrus.ErrorKey, err)
+	return e
+}
+
+func (e EventLogger) WithTeamID(teamID string) logger.Logger {
+	e.log = e.log.WithField("teamID", teamID)
 	return e
 }
 

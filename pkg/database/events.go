@@ -124,7 +124,7 @@ func (r *Repo) EventsGetNew(ctx context.Context) ([]gensql.Event, error) {
 }
 
 func (r *Repo) EventsGetOverdue(ctx context.Context) ([]gensql.Event, error) {
-	rows, err := r.querier.EventsGetNew(ctx)
+	rows, err := r.querier.EventsGetOverdue(ctx)
 	if err != nil {
 		return nil, err
 	}

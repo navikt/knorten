@@ -57,8 +57,7 @@ func (e EventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 		gensql.EventTypeDeleteAirflow,
 		gensql.EventTypeDeleteJupyter:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
-			var value string
-			return e.processWork(event, logger, &value)
+			return e.processWork(event, logger, nil)
 		}
 	}
 
@@ -86,21 +85,21 @@ func (e EventHandler) processWork(event gensql.Event, logger logger.Logger, form
 	case gensql.EventTypeUpdateTeam:
 		retry = e.teamClient.Update(e.context, *form.(*gensql.Team), logger)
 	case gensql.EventTypeDeleteTeam:
-		retry = e.teamClient.Delete(e.context, *form.(*string), logger)
+		retry = e.teamClient.Delete(e.context, event.Owner, logger)
 	case gensql.EventTypeCreateCompute:
 		retry = e.computeClient.Create(e.context, *form.(*gensql.ComputeInstance), logger)
 	case gensql.EventTypeDeleteCompute:
-		retry = e.computeClient.Delete(e.context, *form.(*string), logger)
+		retry = e.computeClient.Delete(e.context, event.Owner, logger)
 	case gensql.EventTypeCreateAirflow,
 		gensql.EventTypeUpdateAirflow:
 		retry = e.chartClient.SyncAirflow(e.context, *form.(*chart.AirflowConfigurableValues), logger)
 	case gensql.EventTypeDeleteAirflow:
-		retry = e.chartClient.DeleteAirflow(e.context, *form.(*string), logger)
+		retry = e.chartClient.DeleteAirflow(e.context, event.Owner, logger)
 	case gensql.EventTypeCreateJupyter,
 		gensql.EventTypeUpdateJupyter:
 		retry = e.chartClient.SyncJupyter(e.context, *form.(*chart.JupyterConfigurableValues), logger)
 	case gensql.EventTypeDeleteJupyter:
-		retry = e.chartClient.DeleteJupyter(e.context, *form.(*string), logger)
+		retry = e.chartClient.DeleteJupyter(e.context, event.Owner, logger)
 	}
 
 	if retry {

@@ -56,11 +56,11 @@ func (r *Repo) RegisterUpdateTeamEvent(ctx context.Context, team gensql.Team) er
 }
 
 func (r *Repo) RegisterDeleteTeamEvent(ctx context.Context, teamID string) error {
-	return r.registerEvent(ctx, gensql.EventTypeDeleteTeam, teamID, 5*time.Minute, teamID)
+	return r.registerEvent(ctx, gensql.EventTypeDeleteTeam, teamID, 5*time.Minute, nil)
 }
 
 func (r *Repo) RegisterDeleteComputeEvent(ctx context.Context, email string) error {
-	return r.registerEvent(ctx, gensql.EventTypeDeleteCompute, email, 5*time.Minute, email)
+	return r.registerEvent(ctx, gensql.EventTypeDeleteCompute, email, 5*time.Minute, nil)
 }
 
 func (r *Repo) RegisterCreateComputeEvent(ctx context.Context, instance gensql.ComputeInstance) error {
@@ -76,7 +76,7 @@ func (r *Repo) RegisterUpdateAirflowEvent(ctx context.Context, teamID string, va
 }
 
 func (r *Repo) RegisterDeleteAirflowEvent(ctx context.Context, teamID string) error {
-	return r.registerEvent(ctx, gensql.EventTypeDeleteAirflow, teamID, 5*time.Minute, teamID)
+	return r.registerEvent(ctx, gensql.EventTypeDeleteAirflow, teamID, 5*time.Minute, nil)
 }
 
 func (r *Repo) RegisterCreateJupyterEvent(ctx context.Context, teamID string, values any) error {
@@ -88,7 +88,7 @@ func (r *Repo) RegisterUpdateJupyterEvent(ctx context.Context, teamID string, va
 }
 
 func (r *Repo) RegisterDeleteJupyterEvent(ctx context.Context, teamID string) error {
-	return r.registerEvent(ctx, gensql.EventTypeDeleteJupyter, teamID, 5*time.Minute, teamID)
+	return r.registerEvent(ctx, gensql.EventTypeDeleteJupyter, teamID, 5*time.Minute, nil)
 }
 
 func (r *Repo) EventSetStatus(ctx context.Context, id uuid.UUID, status gensql.EventStatus) error {

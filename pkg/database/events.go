@@ -16,14 +16,15 @@ type EventLog struct {
 }
 
 type Event struct {
-	ID        uuid.UUID
-	Owner     string
-	Type      gensql.EventType
-	Status    gensql.EventStatus
-	Deadline  string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Logs      []EventLog
+	ID         uuid.UUID
+	Owner      string
+	Type       gensql.EventType
+	Status     gensql.EventStatus
+	Deadline   string
+	RetryCount int32
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	Logs       []EventLog
 }
 
 func (r *Repo) registerEvent(ctx context.Context, eventType gensql.EventType, owner string, deadlineOffset time.Duration, data any) error {
@@ -164,14 +165,15 @@ func (r *Repo) EventLogsForEventsGet(ctx context.Context) ([]Event, error) {
 		}
 
 		events = append(events, Event{
-			ID:        row.ID,
-			Owner:     row.Owner,
-			Type:      row.EventType,
-			Status:    row.Status,
-			Deadline:  row.Deadline,
-			CreatedAt: row.CreatedAt,
-			UpdatedAt: row.UpdatedAt,
-			Logs:      logs,
+			ID:         row.ID,
+			Owner:      row.Owner,
+			Type:       row.EventType,
+			Status:     row.Status,
+			Deadline:   row.Deadline,
+			RetryCount: row.RetryCount,
+			CreatedAt:  row.CreatedAt,
+			UpdatedAt:  row.UpdatedAt,
+			Logs:       logs,
 		})
 	}
 
@@ -196,13 +198,14 @@ func (r *Repo) EventLogsForOwnerGet(ctx context.Context, owner string) ([]Event,
 		}
 
 		events = append(events, Event{
-			Owner:     row.Owner,
-			Type:      row.EventType,
-			Status:    row.Status,
-			Deadline:  row.Deadline,
-			CreatedAt: row.CreatedAt,
-			UpdatedAt: row.UpdatedAt,
-			Logs:      logs,
+			Owner:      row.Owner,
+			Type:       row.EventType,
+			Status:     row.Status,
+			Deadline:   row.Deadline,
+			RetryCount: row.RetryCount,
+			CreatedAt:  row.CreatedAt,
+			UpdatedAt:  row.UpdatedAt,
+			Logs:       logs,
 		})
 	}
 

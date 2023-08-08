@@ -151,6 +151,7 @@ func (c Client) Delete(ctx context.Context, teamID string, log logger.Logger) bo
 		return retry
 	}
 
+	log.Infof("Successfully deleted team %v", teamID)
 	return false
 }
 

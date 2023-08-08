@@ -43,7 +43,7 @@
                     <div class="navds-checkbox">
                         <div class="navds-checkbox navds-checkbox--medium">
                             <input id="restrictairflowegress" name="restrictairflowegress" type="checkbox"
-                                   class="navds-checkbox__input" {{ if .values.RestrictEgress }}checked{{ end }}/>
+                                   class="navds-checkbox__input" {{ if eq .values.RestrictEgress "on" }}checked{{ end }}/>
                             <label for="restrictairflowegress" class="navds-checkbox__label">Begrens trafikk fra
                                 Airflow workere</label>
                         </div>

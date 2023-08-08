@@ -12,17 +12,16 @@ import (
 )
 
 const teamBySlugGet = `-- name: TeamBySlugGet :one
-SELECT id, "owner", ("owner" || users)::text[] as users, slug, restrict_airflow_egress
+SELECT id, "owner", ("owner" || users)::text[] as users, slug
 FROM teams
 WHERE slug = $1
 `
 
 type TeamBySlugGetRow struct {
-	ID                    string
-	Owner                 string
-	Users                 []string
-	Slug                  string
-	RestrictAirflowEgress bool
+	ID    string
+	Owner string
+	Users []string
+	Slug  string
 }
 
 func (q *Queries) TeamBySlugGet(ctx context.Context, slug string) (TeamBySlugGetRow, error) {
@@ -33,7 +32,6 @@ func (q *Queries) TeamBySlugGet(ctx context.Context, slug string) (TeamBySlugGet
 		&i.Owner,
 		pq.Array(&i.Users),
 		&i.Slug,
-		&i.RestrictAirflowEgress,
 	)
 	return i, err
 }
@@ -72,17 +70,16 @@ func (q *Queries) TeamDelete(ctx context.Context, id string) error {
 }
 
 const teamGet = `-- name: TeamGet :one
-SELECT id, "owner", ("owner" || users)::text[] as users, slug, restrict_airflow_egress
+SELECT id, "owner", ("owner" || users)::text[] as users, slug
 FROM teams
 WHERE id = $1
 `
 
 type TeamGetRow struct {
-	ID                    string
-	Owner                 string
-	Users                 []string
-	Slug                  string
-	RestrictAirflowEgress bool
+	ID    string
+	Owner string
+	Users []string
+	Slug  string
 }
 
 func (q *Queries) TeamGet(ctx context.Context, id string) (TeamGetRow, error) {
@@ -93,25 +90,8 @@ func (q *Queries) TeamGet(ctx context.Context, id string) (TeamGetRow, error) {
 		&i.Owner,
 		pq.Array(&i.Users),
 		&i.Slug,
-		&i.RestrictAirflowEgress,
 	)
 	return i, err
-}
-
-const teamSetAirflowRestrictEgress = `-- name: TeamSetAirflowRestrictEgress :exec
-UPDATE teams
-SET restrict_airflow_egress = $1
-WHERE id = $2
-`
-
-type TeamSetAirflowRestrictEgressParams struct {
-	RestrictAirflowEgress bool
-	ID                    string
-}
-
-func (q *Queries) TeamSetAirflowRestrictEgress(ctx context.Context, arg TeamSetAirflowRestrictEgressParams) error {
-	_, err := q.db.ExecContext(ctx, teamSetAirflowRestrictEgress, arg.RestrictAirflowEgress, arg.ID)
-	return err
 }
 
 const teamUpdate = `-- name: TeamUpdate :exec
@@ -165,7 +145,7 @@ func (q *Queries) TeamsForUserGet(ctx context.Context, email string) ([]TeamsFor
 }
 
 const teamsGet = `-- name: TeamsGet :many
-select id, slug, users, created, restrict_airflow_egress, owner
+select id, slug, users, created, owner
 from teams
 ORDER BY slug
 `
@@ -184,7 +164,6 @@ func (q *Queries) TeamsGet(ctx context.Context) ([]Team, error) {
 			&i.Slug,
 			pq.Array(&i.Users),
 			&i.Created,
-			&i.RestrictAirflowEgress,
 			&i.Owner,
 		); err != nil {
 			return nil, err

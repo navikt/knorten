@@ -63,13 +63,6 @@ func (r *Repo) TeamsForUser(ctx context.Context, email string) ([]string, error)
 	return teamList, nil
 }
 
-func (r *Repo) TeamSetRestrictAirflowEgress(ctx context.Context, teamID string, restrictAirflowEgress bool) error {
-	return r.querier.TeamSetAirflowRestrictEgress(ctx, gensql.TeamSetAirflowRestrictEgressParams{
-		RestrictAirflowEgress: restrictAirflowEgress,
-		ID:                    teamID,
-	})
-}
-
 func (r *Repo) TeamChartValueInsert(ctx context.Context, key, value, teamID string, chartType gensql.ChartType) error {
 	return r.querier.TeamValueInsert(ctx, gensql.TeamValueInsertParams{
 		Key:       key,

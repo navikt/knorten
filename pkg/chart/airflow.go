@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/nais/knorten/pkg/database/gensql"
@@ -25,6 +26,7 @@ const (
 	teamValueKeyDatabasePassword  = "databasePassword,omit"
 	teamValueKeyFernetKey         = "fernetKey,omit"
 	teamValueKeyWebserverSecret   = "webserverSecretKey,omit"
+	TeamValueKeyRestrictEgress    = "restrictEgress,omit"
 )
 
 type AirflowConfigurableValues struct {
@@ -101,8 +103,8 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 		return err
 	}
 
-	if err := c.repo.TeamSetRestrictAirflowEgress(ctx, team.ID, values.RestrictEgress); err != nil {
-		log.WithError(err).Error("setting restrict airflow egress")
+	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, TeamValueKeyRestrictEgress, strconv.FormatBool(values.RestrictEgress), team.ID); err != nil {
+		log.WithError(err).Error("inserting restrict egress team value to database")
 		return err
 	}
 
@@ -200,7 +202,17 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 
 		configurableValues.DagRepoBranch = dagRepoBranch.Value
 
-		configurableValues.RestrictEgress = team.RestrictAirflowEgress
+		chartTeamValue, err := c.repo.TeamValueGet(ctx, TeamValueKeyRestrictEgress, team.ID)
+		if err != nil {
+			return AirflowValues{}, err
+		}
+
+		restrictEgress, err := strconv.ParseBool(chartTeamValue.Value)
+		if err != nil {
+			return AirflowValues{}, err
+		}
+
+		configurableValues.RestrictEgress = restrictEgress
 	}
 
 	postgresPassword, err := c.getOrGeneratePassword(ctx, team.ID, teamValueKeyDatabasePassword, generatePassword)
@@ -229,6 +241,7 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 	}
 
 	return AirflowValues{
+		AirflowConfigurableValues:  configurableValues,
 		ExtraEnvs:                  extraEnvs,
 		FernetKey:                  fernetKey,
 		IngressHosts:               fmt.Sprintf(`[{"name":"%v","tls":{"enabled":true,"secretName":"%v"}}]`, team.Slug+".airflow.knada.io", "airflow-certificate"),

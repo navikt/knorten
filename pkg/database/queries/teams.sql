@@ -13,12 +13,12 @@ FROM teams
 WHERE "owner" = @email OR @email::TEXT = ANY ("users");
 
 -- name: TeamGet :one
-SELECT id, "owner", ("owner" || users)::text[] as users, slug, restrict_airflow_egress
+SELECT id, "owner", ("owner" || users)::text[] as users, slug
 FROM teams
 WHERE id = @id;
 
 -- name: TeamBySlugGet :one
-SELECT id, "owner", ("owner" || users)::text[] as users, slug, restrict_airflow_egress
+SELECT id, "owner", ("owner" || users)::text[] as users, slug
 FROM teams
 WHERE slug = @slug;
 
@@ -31,8 +31,3 @@ WHERE id = @id;
 select *
 from teams
 ORDER BY slug;
-
--- name: TeamSetAirflowRestrictEgress :exec
-UPDATE teams
-SET restrict_airflow_egress = @restrict_airflow_egress
-WHERE id = @id;

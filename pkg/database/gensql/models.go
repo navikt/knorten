@@ -248,10 +248,9 @@ type Session struct {
 }
 
 type Team struct {
-	ID                    string
-	Slug                  string
-	Users                 []string
-	Created               sql.NullTime
-	RestrictAirflowEgress bool
-	Owner                 string
+	ID      string
+	Slug    string
+	Users   []string
+	Created sql.NullTime
+	Owner   string
 }

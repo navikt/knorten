@@ -35,7 +35,6 @@ type Querier interface {
 	TeamCreate(ctx context.Context, arg TeamCreateParams) error
 	TeamDelete(ctx context.Context, id string) error
 	TeamGet(ctx context.Context, id string) (TeamGetRow, error)
-	TeamSetAirflowRestrictEgress(ctx context.Context, arg TeamSetAirflowRestrictEgressParams) error
 	TeamUpdate(ctx context.Context, arg TeamUpdateParams) error
 	TeamValueDelete(ctx context.Context, arg TeamValueDeleteParams) error
 	TeamValueGet(ctx context.Context, arg TeamValueGetParams) (ChartTeamValue, error)

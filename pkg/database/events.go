@@ -66,11 +66,11 @@ func (r *Repo) RegisterCreateComputeEvent(ctx context.Context, instance gensql.C
 }
 
 func (r *Repo) RegisterCreateAirflowEvent(ctx context.Context, teamID string, values any) error {
-	return r.registerEvent(ctx, gensql.EventTypeCreateAirflow, teamID, 5*time.Minute, values)
+	return r.registerEvent(ctx, gensql.EventTypeCreateAirflow, teamID, 30*time.Minute, values)
 }
 
 func (r *Repo) RegisterUpdateAirflowEvent(ctx context.Context, teamID string, values any) error {
-	return r.registerEvent(ctx, gensql.EventTypeUpdateAirflow, teamID, 5*time.Minute, values)
+	return r.registerEvent(ctx, gensql.EventTypeUpdateAirflow, teamID, 15*time.Minute, values)
 }
 
 func (r *Repo) RegisterDeleteAirflowEvent(ctx context.Context, teamID string) error {

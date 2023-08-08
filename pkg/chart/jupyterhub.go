@@ -123,6 +123,11 @@ func (c Client) jupyterMergeValues(ctx context.Context, team gensql.TeamGetRow, 
 }
 
 func (c Client) deleteJupyter(ctx context.Context, teamID string, log logger.Logger) error {
+	if err := c.repo.ChartDelete(ctx, teamID, gensql.ChartTypeJupyterhub); err != nil {
+		log.WithError(err).Error("delete chart from database")
+		return err
+	}
+
 	if c.dryRun {
 		return nil
 	}
@@ -131,11 +136,6 @@ func (c Client) deleteJupyter(ctx context.Context, teamID string, log logger.Log
 	releaseName := jupyterReleaseName(namespace)
 	if err := helm.Uninstall(releaseName, namespace); err != nil {
 		log.WithError(err).Error("helm uninstall failed")
-		return err
-	}
-
-	if err := c.repo.ChartDelete(ctx, teamID, gensql.ChartTypeJupyterhub); err != nil {
-		log.WithError(err).Error("delete chart from database")
 		return err
 	}
 

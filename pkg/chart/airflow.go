@@ -150,7 +150,12 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 	return helm.InstallOrUpgrade(ctx, c.dryRun, string(gensql.ChartTypeAirflow), namespace, team.ID, "airflow", "apache-airflow", c.chartVersionAirflow, gensql.ChartTypeAirflow, c.repo)
 }
 
-func (c Client) deleteAirflow(ctx context.Context, teamID string) error {
+func (c Client) deleteAirflow(ctx context.Context, teamID string, log logger.Logger) error {
+	if err := c.repo.ChartDelete(ctx, teamID, gensql.ChartTypeAirflow); err != nil {
+		log.WithError(err).Error("delete chart from database")
+		return err
+	}
+
 	if c.dryRun {
 		return nil
 	}
@@ -158,27 +163,28 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string) error {
 	namespace := k8s.TeamIDToNamespace(teamID)
 
 	if err := helm.Uninstall(string(gensql.ChartTypeAirflow), namespace); err != nil {
+		log.WithError(err).Error("helm uninstall failed")
 		return err
 	}
 
 	if err := c.deleteCloudSQLProxyFromKubernetes(ctx, namespace); err != nil {
+		log.WithError(err).Error("delete cloud sql proxy from Kubernetes")
 		return err
 	}
 
 	if err := c.deleteSecretFromKubernetes(ctx, k8sAirflowDatabaseSecretName, namespace); err != nil {
+		log.WithError(err).Error("delete Airflow database secret from Kubernetes")
 		return err
 	}
 
 	if err := removeSQLClientIAMBinding(c.gcpProject, teamID); err != nil {
+		log.WithError(err).Error("remove SQL client IAM binding")
 		return err
 	}
 
 	instanceName := createAirflowcloudSQLInstanceName(teamID)
 	if err := deleteCloudSQLInstance(instanceName, c.gcpProject); err != nil {
-		return err
-	}
-
-	if err := c.repo.ChartDelete(ctx, teamID, gensql.ChartTypeAirflow); err != nil {
+		log.WithError(err).Error("delete Cloud SQL instance from GCP")
 		return err
 	}
 

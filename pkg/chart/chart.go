@@ -82,7 +82,7 @@ func (c Client) DeleteAirflow(ctx context.Context, teamID string, log logger.Log
 	log = log.WithTeamID(teamID).WithField("chart", "airflow")
 	log.Info("Deleting Airflow")
 
-	if err := c.deleteAirflow(ctx, teamID); err != nil {
+	if err := c.deleteAirflow(ctx, teamID, log); err != nil {
 		log.Info("Failed deleting Airflow")
 		return true
 	}

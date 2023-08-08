@@ -5,9 +5,11 @@
         {{ range .events }}
             <article class="bg-white rounded-md p-4">
                 <h2>
-                    {{ .Owner }}: {{ .Type }}, {{ .Status }}
+                    {{ .Owner }}: {{ .Type }}
                 </h2>
                 <p>
+                    <strong>Status:</strong> {{ .Status }},
+                    <br>
                     <strong>Deadline:</strong> {{ .Deadline }},
                     <br>
                     <strong>Created at:</strong> {{ .CreatedAt.Format "2006-01-02 15:04:05" }},

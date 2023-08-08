@@ -36,7 +36,7 @@ func (r *Repo) registerEvent(ctx context.Context, eventType gensql.EventType, ow
 		Owner:     owner,
 		EventType: eventType,
 		Payload:   jsonPayload,
-		Deadline:  int64(deadlineOffset),
+		Deadline:  deadlineOffset.Milliseconds() / 1000,
 	})
 	if err != nil {
 		return err
@@ -102,11 +102,43 @@ func (r *Repo) EventSetPendingStatus(ctx context.Context, id uuid.UUID) error {
 }
 
 func (r *Repo) EventsGetNew(ctx context.Context) ([]gensql.Event, error) {
-	return r.querier.EventsGetNew(ctx)
+	rows, err := r.querier.EventsGetNew(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var events []gensql.Event
+	for _, row := range rows {
+		event := gensql.Event{
+			ID:        row.ID,
+			Owner:     row.Owner,
+			EventType: row.EventType,
+			Payload:   row.Payload,
+		}
+		events = append(events, event)
+	}
+
+	return events, nil
 }
 
 func (r *Repo) EventsGetOverdue(ctx context.Context) ([]gensql.Event, error) {
-	return r.querier.EventsGetOverdue(ctx)
+	rows, err := r.querier.EventsGetNew(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var events []gensql.Event
+	for _, row := range rows {
+		event := gensql.Event{
+			ID:        row.ID,
+			Owner:     row.Owner,
+			EventType: row.EventType,
+			Payload:   row.Payload,
+		}
+		events = append(events, event)
+	}
+
+	return events, nil
 }
 
 func (r *Repo) EventLogCreate(ctx context.Context, id uuid.UUID, message string, logType gensql.LogType) error {
@@ -136,7 +168,7 @@ func (r *Repo) EventLogsForEventsGet(ctx context.Context) ([]Event, error) {
 			Owner:     row.Owner,
 			Type:      row.EventType,
 			Status:    row.Status,
-			Deadline:  time.Duration(row.Deadline).String(),
+			Deadline:  row.Deadline,
 			CreatedAt: row.CreatedAt,
 			UpdatedAt: row.UpdatedAt,
 			Logs:      logs,
@@ -167,7 +199,7 @@ func (r *Repo) EventLogsForOwnerGet(ctx context.Context, owner string) ([]Event,
 			Owner:     row.Owner,
 			Type:      row.EventType,
 			Status:    row.Status,
-			Deadline:  time.Duration(row.Deadline).String(),
+			Deadline:  row.Deadline,
 			CreatedAt: row.CreatedAt,
 			UpdatedAt: row.UpdatedAt,
 			Logs:      logs,

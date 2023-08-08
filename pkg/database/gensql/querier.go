@@ -22,8 +22,8 @@ type Querier interface {
 	EventLogsForOwnerGet(ctx context.Context, arg EventLogsForOwnerGetParams) ([]EventLogsForOwnerGetRow, error)
 	EventSetPendingStatus(ctx context.Context, id uuid.UUID) error
 	EventSetStatus(ctx context.Context, arg EventSetStatusParams) error
-	EventsGetNew(ctx context.Context) ([]Event, error)
-	EventsGetOverdue(ctx context.Context) ([]Event, error)
+	EventsGetNew(ctx context.Context) ([]EventsGetNewRow, error)
+	EventsGetOverdue(ctx context.Context) ([]EventsGetOverdueRow, error)
 	GlobalValueDelete(ctx context.Context, arg GlobalValueDeleteParams) error
 	GlobalValueGet(ctx context.Context, arg GlobalValueGetParams) (ChartGlobalValue, error)
 	GlobalValueInsert(ctx context.Context, arg GlobalValueInsertParams) error

@@ -7,13 +7,13 @@ VALUES (@owner,
         @deadline);
 
 -- name: EventsGetNew :many
-SELECT *
+SELECT id, owner, event_type, payload
 FROM Events
 WHERE status = 'new'
 ORDER BY created_at DESC;
 
 -- name: EventsGetOverdue :many
-SELECT *
+SELECT id, owner, event_type, payload
 FROM Events
 WHERE status = 'pending'
   AND updated_at + deadline * retry_count < NOW();
@@ -39,10 +39,11 @@ VALUES (@event_id, @log_type, @message);
 SELECT events.id,
        events.event_type,
        events.status,
-       events.deadline,
+       events.deadline::TEXT as deadline,
        events.created_at,
        events.updated_at,
        events.owner,
+       events.retry_count,
        json_agg(el.*) AS json_logs
 FROM events
          JOIN (SELECT event_id, message, log_type, created_at::timestamptz
@@ -57,10 +58,11 @@ LIMIT @lim;
 -- name: EventLogsForOwnerGet :many
 SELECT events.event_type,
        events.status,
-       events.deadline,
+       events.deadline::TEXT as deadline,
        events.created_at,
        events.updated_at,
        events.owner,
+       events.retry_count,
        json_agg(el.*) AS json_logs
 FROM events
          JOIN (SELECT event_id, message, log_type, created_at::timestamptz

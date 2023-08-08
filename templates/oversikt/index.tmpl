@@ -77,11 +77,13 @@
                 </h2>
                 <a class="navds-button--small navds-button--secondary" href="team/{{ .Slug }}/edit">Rediger</a>
             </div>
+                <p class="pb-4 flex items-center gap-2">
+                    <a class="navds-link" target="_blank"
+                    href="https://console.cloud.google.com/security/secret-manager/secret/{{ $teamID }}/versions?project={{ $.gcpProject }}">
+                        Secret Manager
+                    </a>
+                </p>
             {{ with .Airflow }}
-                <a class="navds-link" target="_blank"
-                   href="https://console.cloud.google.com/security/secret-manager/secret/{{ $teamID }}/versions?project={{ $.gcpProject }}">
-                    Secret Manager
-                </a>
                 <p class="pb-4 flex items-center gap-2">
                     <b>Service account:</b> <code class="text-base p-1 bg-gray-50">
                         {{ $teamID }}@{{ $.gcpProject }}.iam.gserviceaccount.com</code>

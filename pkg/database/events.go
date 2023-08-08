@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,7 +21,7 @@ type Event struct {
 	Owner      string
 	Type       gensql.EventType
 	Status     gensql.EventStatus
-	Deadline   string
+	Deadline   time.Duration
 	RetryCount int32
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
@@ -164,12 +165,17 @@ func (r *Repo) EventLogsForEventsGet(ctx context.Context) ([]Event, error) {
 			return nil, err
 		}
 
+		deadline, err := parseDeadline(row.Deadline)
+		if err != nil {
+			return nil, err
+		}
+
 		events = append(events, Event{
 			ID:         row.ID,
 			Owner:      row.Owner,
 			Type:       row.EventType,
 			Status:     row.Status,
-			Deadline:   row.Deadline,
+			Deadline:   deadline,
 			RetryCount: row.RetryCount,
 			CreatedAt:  row.CreatedAt,
 			UpdatedAt:  row.UpdatedAt,
@@ -197,11 +203,16 @@ func (r *Repo) EventLogsForOwnerGet(ctx context.Context, owner string) ([]Event,
 			return nil, err
 		}
 
+		deadline, err := parseDeadline(row.Deadline)
+		if err != nil {
+			return nil, err
+		}
+
 		events = append(events, Event{
 			Owner:      row.Owner,
 			Type:       row.EventType,
 			Status:     row.Status,
-			Deadline:   row.Deadline,
+			Deadline:   deadline,
 			RetryCount: row.RetryCount,
 			CreatedAt:  row.CreatedAt,
 			UpdatedAt:  row.UpdatedAt,
@@ -210,4 +221,12 @@ func (r *Repo) EventLogsForOwnerGet(ctx context.Context, owner string) ([]Event,
 	}
 
 	return events, nil
+}
+
+func parseDeadline(input string) (time.Duration, error) {
+	deadline := strings.Replace(input, ":", "h", 1)
+	deadline = strings.Replace(deadline, ":", "m", 1)
+	deadline += "s"
+
+	return time.ParseDuration(deadline)
 }

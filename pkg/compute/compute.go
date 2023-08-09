@@ -39,7 +39,7 @@ func (c Client) Create(ctx context.Context, instance gensql.ComputeInstance, log
 }
 
 func (c Client) create(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) (bool, error) {
-	_, err := c.repo.ComputeInstanceGet(ctx, instance.Email)
+	instance, err := c.repo.ComputeInstanceGet(ctx, instance.Email)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			log.WithError(err).Errorf("failed retrieving compute instance %v", instance.Email)
@@ -48,6 +48,10 @@ func (c Client) create(ctx context.Context, instance gensql.ComputeInstance, log
 	}
 
 	log.Infof("Creating compute instance %v", instance.Name)
+	if instance.Name != "" {
+		return false, nil
+	}
+
 	err = c.createComputeInstanceInGCP(ctx, instance.Name, instance.Email)
 	if err != nil {
 		log.WithError(err).Error("failed creating compute instance in GCP")
@@ -78,6 +82,10 @@ func (c Client) Delete(ctx context.Context, email string, log logger.Logger) boo
 func (c Client) delete(ctx context.Context, email string, log logger.Logger) (bool, error) {
 	instance, err := c.repo.ComputeInstanceGet(ctx, email)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+
 		log.WithError(err).Error("failed retrieving compute instance")
 		return true, err
 	}

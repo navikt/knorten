@@ -96,15 +96,15 @@ func TestTeamAPI(t *testing.T) {
 		}
 
 		if eventPayload.Slug != existingTeam {
-			t.Errorf("create team: expected slug %v, got %v", existingTeam, eventPayload.Slug)
+			t.Errorf("edit team: expected slug %v, got %v", existingTeam, eventPayload.Slug)
 		}
 
 		if eventPayload.ID != existingTeamID {
-			t.Errorf("create team: expected team id %v, got %v", existingTeamID, eventPayload.ID)
+			t.Errorf("edit team: expected team id %v, got %v", existingTeamID, eventPayload.ID)
 		}
 
 		if eventPayload.Owner != owner {
-			t.Errorf("create team: expected owner %v, got %v", owner, eventPayload.Owner)
+			t.Errorf("edit team: expected owner %v, got %v", owner, eventPayload.Owner)
 		}
 
 		if !reflect.DeepEqual(eventPayload.Users, users) {

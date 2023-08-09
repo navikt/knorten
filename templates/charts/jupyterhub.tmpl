@@ -83,7 +83,7 @@
     </article>
     <script>
         {{ template "charts/script" }}
-        {{ range .values.allowlist }}
+        {{ range .values.Allowlist }}
             addElement("{{ . }}")
         {{ else }}
             addElement()

@@ -44,6 +44,7 @@ SELECT events.id,
        events.updated_at,
        events.owner,
        events.retry_count,
+       events.payload,
        json_agg(el.*) AS json_logs
 FROM events
          JOIN (SELECT event_id, message, log_type, created_at::timestamptz

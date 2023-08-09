@@ -23,6 +23,7 @@ type Event struct {
 	Status     gensql.EventStatus
 	Deadline   time.Duration
 	RetryCount int32
+	Payload    string
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 	Logs       []EventLog
@@ -179,6 +180,7 @@ func (r *Repo) EventLogsForEventsGet(ctx context.Context) ([]Event, error) {
 			RetryCount: row.RetryCount,
 			CreatedAt:  row.CreatedAt,
 			UpdatedAt:  row.UpdatedAt,
+			Payload:    string(row.Payload),
 			Logs:       logs,
 		})
 	}

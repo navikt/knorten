@@ -64,6 +64,7 @@ SELECT events.id,
        events.updated_at,
        events.owner,
        events.retry_count,
+       events.payload,
        json_agg(el.*) AS json_logs
 FROM events
          JOIN (SELECT event_id, message, log_type, created_at::timestamptz
@@ -85,6 +86,7 @@ type EventLogsForEventsGetRow struct {
 	UpdatedAt  time.Time
 	Owner      string
 	RetryCount int32
+	Payload    json.RawMessage
 	JsonLogs   json.RawMessage
 }
 
@@ -106,6 +108,7 @@ func (q *Queries) EventLogsForEventsGet(ctx context.Context, lim int32) ([]Event
 			&i.UpdatedAt,
 			&i.Owner,
 			&i.RetryCount,
+			&i.Payload,
 			&i.JsonLogs,
 		); err != nil {
 			return nil, err

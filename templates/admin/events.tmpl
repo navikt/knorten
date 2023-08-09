@@ -5,7 +5,9 @@
         {{ range .events }}
             <article class="bg-white rounded-md p-4">
                 <h2>
+                    <a id="{{ .ID }}" href="#{{ .ID }}" class="navds-link">
                     {{ .Owner }}: {{ .Type }}
+                    </a>
                 </h2>
                 <p>
                     <strong>Status:</strong> {{ .Status }},

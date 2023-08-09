@@ -143,6 +143,26 @@ func (r *Repo) EventsGetOverdue(ctx context.Context) ([]gensql.Event, error) {
 	return events, nil
 }
 
+func (r *Repo) EventsGetType(ctx context.Context, eventType gensql.EventType) ([]gensql.Event, error) {
+	rows, err := r.querier.EventsGetType(ctx, eventType)
+	if err != nil {
+		return nil, err
+	}
+
+	var events []gensql.Event
+	for _, row := range rows {
+		event := gensql.Event{
+			ID:      row.ID,
+			Owner:   row.Owner,
+			Status:  row.Status,
+			Payload: row.Payload,
+		}
+		events = append(events, event)
+	}
+
+	return events, nil
+}
+
 func (r *Repo) EventLogCreate(ctx context.Context, id uuid.UUID, message string, logType gensql.LogType) error {
 	return r.querier.EventLogCreate(ctx, gensql.EventLogCreateParams{
 		EventID: id,

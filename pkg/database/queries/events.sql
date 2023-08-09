@@ -18,6 +18,11 @@ FROM Events
 WHERE status = 'pending'
   AND updated_at + deadline * retry_count < NOW();
 
+-- name: EventsGetType :many
+SELECT id, owner, status, payload
+FROM Events
+WHERE event_type = @event_type;
+
 -- name: EventSetStatus :exec
 UPDATE
     Events

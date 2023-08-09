@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"net/url"
 	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
@@ -15,16 +18,56 @@ func TestTeamAPI(t *testing.T) {
 	ctx := context.Background()
 	newTeam := "new-team"
 
+	t.Run("get new team html", func(t *testing.T) {
+		resp, err := server.Client().Get(fmt.Sprintf("%v/team/new", server.URL))
+		if err != nil {
+			t.Error(err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+		}
+
+		if resp.Header.Get("Content-Type") != htmlContentType {
+			t.Errorf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
+		}
+
+		received, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Error(err)
+		}
+
+		receivedMinimized, err := minimizeHTML(string(received))
+		if err != nil {
+			t.Error(err)
+		}
+
+		expected, err := createExpectedHTML("team/new", map[string]any{
+			"owner": user.Email,
+		})
+		if err != nil {
+			t.Error(err)
+		}
+		expectedMinimized, err := minimizeHTML(expected)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
 	t.Run("create team", func(t *testing.T) {
-		owner := "dummy@nav.no"
-		data := url.Values{"team": {newTeam}, "owner": {owner}, "users[]": []string{}}
+		data := url.Values{"team": {newTeam}, "owner": {user.Email}, "users[]": []string{}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/new", server.URL), data)
 		if err != nil {
 			t.Fatal(err)
 		}
 		resp.Body.Close()
 
-		if resp.StatusCode != 200 {
+		if resp.StatusCode != http.StatusOK {
 			t.Errorf("create team: expected status code 200, got %v", resp.StatusCode)
 		}
 
@@ -46,12 +89,28 @@ func TestTeamAPI(t *testing.T) {
 			t.Errorf("create team: expected slug %v, got %v", newTeam, eventPayload.Slug)
 		}
 
-		if eventPayload.Owner != owner {
-			t.Errorf("create team: expected owner %v, got %v", owner, eventPayload.Owner)
+		if eventPayload.Owner != user.Email {
+			t.Errorf("create team: expected owner %v, got %v", user.Email, eventPayload.Owner)
 		}
 
 		if len(eventPayload.Users) != 0 {
 			t.Errorf("create team: expected 0 number of users, got %v", len(eventPayload.Users))
+		}
+	})
+
+	t.Run("get edit team - team does not exist", func(t *testing.T) {
+		resp, err := server.Client().Get(fmt.Sprintf("%v/team/%v/edit", server.URL, "noexist"))
+		if err != nil {
+			t.Error(err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusNotFound)
+		}
+
+		if resp.Header.Get("Content-Type") != jsonContentType {
+			t.Errorf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 	})
 
@@ -61,23 +120,69 @@ func TestTeamAPI(t *testing.T) {
 		ID:    existingTeamID,
 		Slug:  existingTeam,
 		Users: []string{},
-		Owner: "dummy@nav.no",
+		Owner: user.Email,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	t.Run("get edit team", func(t *testing.T) {
+		resp, err := server.Client().Get(fmt.Sprintf("%v/team/%v/edit", server.URL, existingTeam))
+		if err != nil {
+			t.Error(err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+		}
+
+		if resp.Header.Get("Content-Type") != htmlContentType {
+			t.Errorf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
+		}
+
+		received, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Error(err)
+		}
+
+		receivedMinimized, err := minimizeHTML(string(received))
+		if err != nil {
+			t.Error(err)
+		}
+
+		expected, err := createExpectedHTML("team/edit", map[string]any{
+			"team": gensql.TeamGetRow{
+				ID:    existingTeamID,
+				Slug:  existingTeam,
+				Owner: user.Email,
+				Users: []string{},
+			},
+		})
+		if err != nil {
+			t.Error(err)
+		}
+
+		expectedMinimized, err := minimizeHTML(expected)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
 	t.Run("edit team", func(t *testing.T) {
-		owner := "dummy@nav.no"
 		users := []string{"user@nav.no"}
-		data := url.Values{"team": {existingTeam}, "owner": {owner}, "users[]": users}
+		data := url.Values{"team": {existingTeam}, "owner": {user.Email}, "users[]": users}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/%v/edit", server.URL, existingTeam), data)
 		if err != nil {
 			t.Fatal(err)
 		}
 		resp.Body.Close()
 
-		if resp.StatusCode != 200 {
+		if resp.StatusCode != http.StatusOK {
 			t.Errorf("edit team: expected status code 200, got %v", resp.StatusCode)
 		}
 
@@ -103,8 +208,8 @@ func TestTeamAPI(t *testing.T) {
 			t.Errorf("edit team: expected team id %v, got %v", existingTeamID, eventPayload.ID)
 		}
 
-		if eventPayload.Owner != owner {
-			t.Errorf("edit team: expected owner %v, got %v", owner, eventPayload.Owner)
+		if eventPayload.Owner != user.Email {
+			t.Errorf("edit team: expected owner %v, got %v", user.Email, eventPayload.Owner)
 		}
 
 		if !reflect.DeepEqual(eventPayload.Users, users) {
@@ -119,7 +224,7 @@ func TestTeamAPI(t *testing.T) {
 		}
 		resp.Body.Close()
 
-		if resp.StatusCode != 200 {
+		if resp.StatusCode != http.StatusOK {
 			t.Errorf("delete team: expected status code 200, got %v", resp.StatusCode)
 		}
 

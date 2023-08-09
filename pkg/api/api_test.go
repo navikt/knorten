@@ -1,9 +1,12 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
+	"html/template"
+	"io"
 	"log"
 	"net/http/httptest"
 	"os"
@@ -15,6 +18,8 @@ import (
 	"github.com/nais/knorten/local/dbsetup"
 	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database"
+	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/minify/v2/html"
 
 	"github.com/ory/dockertest/v3"
 	"github.com/sirupsen/logrus"
@@ -23,6 +28,15 @@ import (
 var (
 	repo   *database.Repo
 	server *httptest.Server
+	user   = auth.User{
+		Name:  "Dum My",
+		Email: "dummy@nav.no",
+	}
+)
+
+const (
+	htmlContentType = "text/html; charset=utf-8"
+	jsonContentType = "application/json; charset=utf-8"
 )
 
 func init() {
@@ -119,4 +133,34 @@ func waitForDB(dbString string) error {
 	}
 
 	return fmt.Errorf("unable to connect to db in %v seconds", int(sleepDuration)*numRetries/1000000000)
+}
+
+func minimizeHTML(in string) (string, error) {
+	m := minify.New()
+	m.AddFunc("text/html", html.Minify)
+
+	out, err := m.String("text/html", in)
+	if err != nil {
+		return "", err
+	}
+
+	return out, nil
+}
+
+func createExpectedHTML(t string, values map[string]any) (string, error) {
+	buff := &bytes.Buffer{}
+	tmpl, err := template.ParseGlob("templates/**/*")
+	if err != nil {
+		return "", err
+	}
+	if err := tmpl.ExecuteTemplate(buff, t, values); err != nil {
+		return "", err
+	}
+
+	dataBytes, err := io.ReadAll(buff)
+	if err != nil {
+		panic(err)
+	}
+
+	return string(dataBytes), nil
 }

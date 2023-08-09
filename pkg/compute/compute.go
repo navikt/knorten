@@ -35,6 +35,7 @@ func (c Client) Create(ctx context.Context, instance gensql.ComputeInstance, log
 		return retry
 	}
 
+	log.Info("Successfully created compute instance")
 	return false
 }
 
@@ -47,7 +48,6 @@ func (c Client) create(ctx context.Context, instance gensql.ComputeInstance, log
 		}
 	}
 
-	log.Infof("Creating compute instance %v", instance.Name)
 	if instance.Name != "" {
 		return false, nil
 	}
@@ -63,7 +63,6 @@ func (c Client) create(ctx context.Context, instance gensql.ComputeInstance, log
 		return true, err
 	}
 
-	log.Infof("Successfully created compute instance %v", instance.Name)
 	return false, nil
 }
 
@@ -76,6 +75,7 @@ func (c Client) Delete(ctx context.Context, email string, log logger.Logger) boo
 		return retry
 	}
 
+	log.Info("Successfully deleted compute instance")
 	return false
 }
 
@@ -100,6 +100,5 @@ func (c Client) delete(ctx context.Context, email string, log logger.Logger) (bo
 		return true, err
 	}
 
-	log.Info("Successfully deleted compute instance")
 	return false, nil
 }

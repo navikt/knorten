@@ -153,10 +153,10 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 			isLeader, err := leaderelection.IsLeader()
 			if err != nil {
 				e.log.WithError(err).Error("leader election check")
-				return
+				continue
 			}
 			if !isLeader {
-				return
+				continue
 			}
 
 			for _, eventRetriever := range eventRetrievers {

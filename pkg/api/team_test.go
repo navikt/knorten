@@ -11,7 +11,7 @@ import (
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
-func TestChartsAPI(t *testing.T) {
+func TestTeamAPI(t *testing.T) {
 	ctx := context.Background()
 	newTeam := "new-team"
 

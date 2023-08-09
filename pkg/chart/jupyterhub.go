@@ -71,7 +71,12 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfi
 
 	namespace := k8s.TeamIDToNamespace(team.ID)
 	releaseName := jupyterReleaseName(namespace)
-	return helm.InstallOrUpgrade(ctx, c.dryRun, releaseName, namespace, team.ID, "jupyterhub", "jupyterhub", c.chartVersionJupyter, gensql.ChartTypeJupyterhub, c.repo)
+	if err := helm.InstallOrUpgrade(ctx, c.dryRun, releaseName, namespace, team.ID, "jupyterhub", "jupyterhub", c.chartVersionJupyter, gensql.ChartTypeJupyterhub, c.repo); err != nil {
+		log.WithError(err).Error("helm install/upgrade failed")
+		return err
+	}
+
+	return nil
 }
 
 // jupyterReleaseName creates a unique release name based on namespace name.

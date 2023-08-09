@@ -54,12 +54,11 @@ func InstallOrUpgrade(ctx context.Context, dryRun bool, releaseName, namespace, 
 	if dryRun {
 		out, err := yaml.Marshal(teamValues)
 		if err != nil {
-			return fmt.Errorf("error while marshaling chart for %v", chartType)
+			return err
 		}
 
-		err = os.WriteFile(fmt.Sprintf("charts/%v-%v.yaml", chartType, time.Now().Format("2006.01.02-15:04")), out, 0o644)
-		if err != nil {
-			return fmt.Errorf("error while writing to file %v.yaml", chartType)
+		if err = os.WriteFile(fmt.Sprintf("charts/%v-%v.yaml", chartType, time.Now().Format("2006.01.02-15:04")), out, 0o644); err != nil {
+			return err
 		}
 
 		return nil

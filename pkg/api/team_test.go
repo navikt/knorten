@@ -99,7 +99,7 @@ func TestTeamAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if eventPayload == nil {
+		if eventPayload.ID == "" {
 			t.Errorf("create team: no event registered for team %v", newTeam)
 		}
 
@@ -202,7 +202,7 @@ func TestTeamAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if eventPayload == nil {
+		if eventPayload.ID == "" {
 			t.Fatalf("edit team: no event registered for team %v", existingTeam)
 		}
 

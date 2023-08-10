@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"reflect"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -212,8 +211,8 @@ func TestTeamAPI(t *testing.T) {
 			t.Errorf("edit team: expected owner %v, got %v", user.Email, eventPayload.Owner)
 		}
 
-		if !reflect.DeepEqual(eventPayload.Users, users) {
-			t.Errorf("edit team: user list not updated, expected %v, got %v", users, eventPayload.Users)
+		if diff := cmp.Diff(eventPayload.Users, users); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 

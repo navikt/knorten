@@ -32,7 +32,7 @@ func TestComputeAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if eventPayload == nil {
+		if eventPayload.Email == "" {
 			t.Errorf("create compute: no event registered for user %v", user.Email)
 		}
 
@@ -103,12 +103,12 @@ func TestComputeAPI(t *testing.T) {
 	})
 }
 
-func getComputeEvent(events []gensql.Event, user string) (*gensql.ComputeInstance, error) {
+func getComputeEvent(events []gensql.Event, user string) (gensql.ComputeInstance, error) {
 	for _, event := range events {
-		payload := &gensql.ComputeInstance{}
+		payload := gensql.ComputeInstance{}
 		err := json.Unmarshal(event.Payload, payload)
 		if err != nil {
-			return nil, err
+			return gensql.ComputeInstance{}, err
 		}
 
 		if payload.Email == user {
@@ -116,5 +116,5 @@ func getComputeEvent(events []gensql.Event, user string) (*gensql.ComputeInstanc
 		}
 	}
 
-	return nil, nil
+	return gensql.ComputeInstance{}, nil
 }

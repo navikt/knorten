@@ -23,6 +23,7 @@ type Event struct {
 	Status     gensql.EventStatus
 	Deadline   time.Duration
 	RetryCount int32
+	Payload    string
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 	Logs       []EventLog
@@ -171,39 +172,65 @@ func (r *Repo) EventLogCreate(ctx context.Context, id uuid.UUID, message string,
 	})
 }
 
-func (r *Repo) EventLogsForEventsGet(ctx context.Context) ([]Event, error) {
-	eventRows, err := r.querier.EventLogsForEventsGet(ctx, 500)
+func (r *Repo) EventGet(ctx context.Context, id uuid.UUID) (Event, error) {
+	eventGetRow, err := r.querier.EventGet(ctx, id)
+	if err != nil {
+		return Event{}, err
+	}
+
+	deadline, err := parseDeadline(eventGetRow.Deadline)
+	if err != nil {
+		return Event{}, err
+	}
+
+	return Event{
+		ID:         eventGetRow.ID,
+		Type:       eventGetRow.EventType,
+		Payload:    string(eventGetRow.Payload),
+		Status:     eventGetRow.Status,
+		Deadline:   deadline,
+		CreatedAt:  eventGetRow.CreatedAt,
+		UpdatedAt:  eventGetRow.UpdatedAt,
+		Owner:      eventGetRow.Owner,
+		RetryCount: eventGetRow.RetryCount,
+	}, nil
+}
+
+func (r *Repo) EventsGet(ctx context.Context, teamID string, limit int32) ([]Event, error) {
+	rows, err := r.querier.EventsByOwnerGet(ctx, gensql.EventsByOwnerGetParams{
+		Owner: teamID,
+		Lim:   limit,
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	var events []Event
-	for _, row := range eventRows {
-		var logs []EventLog
-		err := json.Unmarshal(row.JsonLogs, &logs)
-		if err != nil {
-			return nil, err
-		}
-
+	for _, row := range rows {
 		deadline, err := parseDeadline(row.Deadline)
 		if err != nil {
 			return nil, err
 		}
 
-		events = append(events, Event{
+		event := Event{
 			ID:         row.ID,
-			Owner:      row.Owner,
 			Type:       row.EventType,
+			Payload:    string(row.Payload),
 			Status:     row.Status,
 			Deadline:   deadline,
-			RetryCount: row.RetryCount,
 			CreatedAt:  row.CreatedAt,
 			UpdatedAt:  row.UpdatedAt,
-			Logs:       logs,
-		})
+			Owner:      row.Owner,
+			RetryCount: row.RetryCount,
+		}
+		events = append(events, event)
 	}
 
 	return events, nil
+}
+
+func (r *Repo) EventLogsForEventGet(ctx context.Context, id uuid.UUID) ([]gensql.EventLogsForEventGetRow, error) {
+	return r.querier.EventLogsForEventGet(ctx, id)
 }
 
 func (r *Repo) EventLogsForOwnerGet(ctx context.Context, owner string) ([]Event, error) {

@@ -39,6 +39,49 @@ func (q *Queries) EventCreate(ctx context.Context, arg EventCreateParams) error 
 	return err
 }
 
+const eventGet = `-- name: EventGet :one
+SELECT events.id,
+       events.event_type,
+       events.status,
+       events.deadline::TEXT as deadline,
+       events.created_at,
+       events.updated_at,
+       events.owner,
+       events.retry_count,
+       events.payload
+FROM Events
+WHERE id = $1
+`
+
+type EventGetRow struct {
+	ID         uuid.UUID
+	EventType  EventType
+	Status     EventStatus
+	Deadline   string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	Owner      string
+	RetryCount int32
+	Payload    json.RawMessage
+}
+
+func (q *Queries) EventGet(ctx context.Context, id uuid.UUID) (EventGetRow, error) {
+	row := q.db.QueryRowContext(ctx, eventGet, id)
+	var i EventGetRow
+	err := row.Scan(
+		&i.ID,
+		&i.EventType,
+		&i.Status,
+		&i.Deadline,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Owner,
+		&i.RetryCount,
+		&i.Payload,
+	)
+	return i, err
+}
+
 const eventLogCreate = `-- name: EventLogCreate :exec
 INSERT INTO Event_Logs (event_id, log_type, message)
 VALUES ($1, $2, $3)
@@ -55,59 +98,29 @@ func (q *Queries) EventLogCreate(ctx context.Context, arg EventLogCreateParams) 
 	return err
 }
 
-const eventLogsForEventsGet = `-- name: EventLogsForEventsGet :many
-SELECT events.id,
-       events.event_type,
-       events.status,
-       events.deadline::TEXT as deadline,
-       events.created_at,
-       events.updated_at,
-       events.owner,
-       events.retry_count,
-       json_agg(el.*) AS json_logs
-FROM events
-         JOIN (SELECT event_id, message, log_type, created_at::timestamptz
-               FROM event_logs
-               ORDER BY event_logs.created_at DESC
-               LIMIT $1) el
-              ON el.event_id = events.id
-GROUP BY events.id, events.updated_at
-ORDER BY events.updated_at DESC
-LIMIT $1
+const eventLogsForEventGet = `-- name: EventLogsForEventGet :many
+SELECT message, log_type, created_at::timestamptz
+FROM event_logs
+WHERE event_id = $1
+ORDER BY created_at DESC
 `
 
-type EventLogsForEventsGetRow struct {
-	ID         uuid.UUID
-	EventType  EventType
-	Status     EventStatus
-	Deadline   string
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	Owner      string
-	RetryCount int32
-	JsonLogs   json.RawMessage
+type EventLogsForEventGetRow struct {
+	Message   string
+	LogType   LogType
+	CreatedAt time.Time
 }
 
-func (q *Queries) EventLogsForEventsGet(ctx context.Context, lim int32) ([]EventLogsForEventsGetRow, error) {
-	rows, err := q.db.QueryContext(ctx, eventLogsForEventsGet, lim)
+func (q *Queries) EventLogsForEventGet(ctx context.Context, id uuid.UUID) ([]EventLogsForEventGetRow, error) {
+	rows, err := q.db.QueryContext(ctx, eventLogsForEventGet, id)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []EventLogsForEventsGetRow{}
+	items := []EventLogsForEventGetRow{}
 	for rows.Next() {
-		var i EventLogsForEventsGetRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.EventType,
-			&i.Status,
-			&i.Deadline,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.Owner,
-			&i.RetryCount,
-			&i.JsonLogs,
-		); err != nil {
+		var i EventLogsForEventGetRow
+		if err := rows.Scan(&i.Message, &i.LogType, &i.CreatedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -129,7 +142,7 @@ SELECT events.event_type,
        events.updated_at,
        events.owner,
        events.retry_count,
-       json_agg(el.*) AS json_logs
+       json_agg(el.*)        AS json_logs
 FROM events
          JOIN (SELECT event_id, message, log_type, created_at::timestamptz
                FROM event_logs
@@ -193,7 +206,7 @@ func (q *Queries) EventLogsForOwnerGet(ctx context.Context, arg EventLogsForOwne
 const eventSetPendingStatus = `-- name: EventSetPendingStatus :exec
 UPDATE
     Events
-SET status = 'pending',
+SET status      = 'pending',
     retry_count = retry_count + 1
 WHERE id = $1
 `
@@ -218,6 +231,72 @@ type EventSetStatusParams struct {
 func (q *Queries) EventSetStatus(ctx context.Context, arg EventSetStatusParams) error {
 	_, err := q.db.ExecContext(ctx, eventSetStatus, arg.Status, arg.ID)
 	return err
+}
+
+const eventsByOwnerGet = `-- name: EventsByOwnerGet :many
+SELECT events.id,
+       events.event_type,
+       events.status,
+       events.deadline::TEXT as deadline,
+       events.created_at,
+       events.updated_at,
+       events.owner,
+       events.retry_count,
+       events.payload
+FROM Events
+WHERE owner = $1
+ORDER BY updated_at DESC
+LIMIT $2
+`
+
+type EventsByOwnerGetParams struct {
+	Owner string
+	Lim   int32
+}
+
+type EventsByOwnerGetRow struct {
+	ID         uuid.UUID
+	EventType  EventType
+	Status     EventStatus
+	Deadline   string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	Owner      string
+	RetryCount int32
+	Payload    json.RawMessage
+}
+
+func (q *Queries) EventsByOwnerGet(ctx context.Context, arg EventsByOwnerGetParams) ([]EventsByOwnerGetRow, error) {
+	rows, err := q.db.QueryContext(ctx, eventsByOwnerGet, arg.Owner, arg.Lim)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []EventsByOwnerGetRow{}
+	for rows.Next() {
+		var i EventsByOwnerGetRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.EventType,
+			&i.Status,
+			&i.Deadline,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Owner,
+			&i.RetryCount,
+			&i.Payload,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const eventsGetNew = `-- name: EventsGetNew :many

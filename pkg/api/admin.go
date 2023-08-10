@@ -10,7 +10,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/nais/knorten/pkg/chart"
+	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/k8s"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -24,7 +26,9 @@ type diffValue struct {
 
 type teamInfo struct {
 	gensql.Team
-	Apps []gensql.ChartType
+	Namespace string
+	Apps      []gensql.ChartType
+	Events    []database.Event
 }
 
 func (c *client) setupAdminRoutes() {
@@ -61,15 +65,25 @@ func (c *client) setupAdminRoutes() {
 				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err})
 				return
 			}
+			events, err := c.repo.EventsGet(ctx, team.ID, 5)
+			if err != nil {
+				c.log.WithError(err).Error("problem retrieving apps for teams")
+				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err})
+				return
+			}
+
 			teamApps[team.ID] = teamInfo{
-				Team: team,
-				Apps: apps,
+				Team:      team,
+				Namespace: k8s.TeamIDToNamespace(team.ID),
+				Apps:      apps,
+				Events:    events,
 			}
 		}
 
 		c.htmlResponseWrapper(ctx, http.StatusOK, "admin/index", gin.H{
-			"errors": flashes,
-			"teams":  teamApps,
+			"errors":     flashes,
+			"teams":      teamApps,
+			"gcpProject": c.gcpProject,
 		})
 	})
 
@@ -275,8 +289,8 @@ func (c *client) setupAdminRoutes() {
 		ctx.Redirect(http.StatusSeeOther, "/admin")
 	})
 
-	c.router.GET("/admin/events", func(ctx *gin.Context) {
-		events, err := c.repo.EventLogsForEventsGet(ctx)
+	c.router.GET("/admin/event/:id", func(ctx *gin.Context) {
+		header, err := c.getEvent(ctx)
 		if err != nil {
 			c.log.WithError(err).Errorf("getting event logs")
 			session := sessions.Default(ctx)
@@ -288,12 +302,10 @@ func (c *client) setupAdminRoutes() {
 			ctx.Redirect(http.StatusSeeOther, "/admin")
 		}
 
-		c.htmlResponseWrapper(ctx, http.StatusOK, "admin/events", gin.H{
-			"events": events,
-		})
+		c.htmlResponseWrapper(ctx, http.StatusOK, "admin/event", header)
 	})
 
-	c.router.POST("/admin/events/:id", func(ctx *gin.Context) {
+	c.router.POST("/admin/event/:id", func(ctx *gin.Context) {
 		err := c.setEventStatus(ctx)
 		if err != nil {
 			c.log.WithError(err).Errorf("setting event status")
@@ -303,10 +315,10 @@ func (c *client) setupAdminRoutes() {
 			if err != nil {
 				c.log.WithError(err).Error("problem saving session")
 			}
-			ctx.Redirect(http.StatusSeeOther, "/admin/events")
+			ctx.Redirect(http.StatusSeeOther, "/admin/event/"+ctx.Param("id"))
 		}
 
-		ctx.Redirect(http.StatusSeeOther, "/admin/events")
+		ctx.Redirect(http.StatusSeeOther, "/admin/events"+ctx.Param("id"))
 	})
 }
 
@@ -501,6 +513,28 @@ func keyForValue(values map[string]diffValue, needle string) string {
 	}
 
 	return ""
+}
+
+func (c *client) getEvent(ctx *gin.Context) (gin.H, error) {
+	eventID, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		return gin.H{}, err
+	}
+
+	event, err := c.repo.EventGet(ctx, eventID)
+	if err != nil {
+		return gin.H{}, err
+	}
+
+	eventLogs, err := c.repo.EventLogsForEventGet(ctx, eventID)
+	if err != nil {
+		return gin.H{}, err
+	}
+
+	return gin.H{
+		"event": event,
+		"logs":  eventLogs,
+	}, nil
 }
 
 func (c *client) setEventStatus(ctx *gin.Context) error {

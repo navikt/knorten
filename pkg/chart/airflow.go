@@ -147,7 +147,12 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 		return err
 	}
 
-	return helm.InstallOrUpgrade(ctx, c.dryRun, string(gensql.ChartTypeAirflow), namespace, team.ID, "airflow", "apache-airflow", c.chartVersionAirflow, gensql.ChartTypeAirflow, c.repo)
+	if err := helm.InstallOrUpgrade(ctx, c.dryRun, string(gensql.ChartTypeAirflow), namespace, team.ID, "airflow", "apache-airflow", c.chartVersionAirflow, gensql.ChartTypeAirflow, c.repo); err != nil {
+		log.WithError(err).Error("helm install/upgrade failed")
+		return err
+	}
+
+	return nil
 }
 
 func (c Client) deleteAirflow(ctx context.Context, teamID string, log logger.Logger) error {

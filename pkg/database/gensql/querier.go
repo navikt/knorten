@@ -22,6 +22,7 @@ type Querier interface {
 	EventLogsForOwnerGet(ctx context.Context, arg EventLogsForOwnerGetParams) ([]EventLogsForOwnerGetRow, error)
 	EventSetPendingStatus(ctx context.Context, id uuid.UUID) error
 	EventSetStatus(ctx context.Context, arg EventSetStatusParams) error
+	EventsGet(ctx context.Context, arg EventsGetParams) ([]EventsGetRow, error)
 	EventsGetNew(ctx context.Context) ([]EventsGetNewRow, error)
 	EventsGetOverdue(ctx context.Context) ([]EventsGetOverdueRow, error)
 	GlobalValueDelete(ctx context.Context, arg GlobalValueDeleteParams) error

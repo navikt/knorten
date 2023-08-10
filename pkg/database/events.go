@@ -152,6 +152,39 @@ func (r *Repo) EventLogCreate(ctx context.Context, id uuid.UUID, message string,
 	})
 }
 
+func (r *Repo) EventsGet(ctx context.Context, teamID string, limit int32) ([]Event, error) {
+	rows, err := r.querier.EventsGet(ctx, gensql.EventsGetParams{
+		Owner: teamID,
+		Lim:   limit,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var events []Event
+	for _, row := range rows {
+		deadline, err := parseDeadline(row.Deadline)
+		if err != nil {
+			return nil, err
+		}
+
+		event := Event{
+			ID:         row.ID,
+			Type:       row.EventType,
+			Payload:    string(row.Payload),
+			Status:     row.Status,
+			Deadline:   deadline,
+			CreatedAt:  row.CreatedAt,
+			UpdatedAt:  row.UpdatedAt,
+			Owner:      row.Owner,
+			RetryCount: row.RetryCount,
+		}
+		events = append(events, event)
+	}
+
+	return events, nil
+}
+
 func (r *Repo) EventLogsForEventsGet(ctx context.Context) ([]Event, error) {
 	eventRows, err := r.querier.EventLogsForEventsGet(ctx, 500)
 	if err != nil {

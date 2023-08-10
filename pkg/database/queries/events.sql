@@ -6,6 +6,21 @@ VALUES (@owner,
         'new',
         @deadline);
 
+-- name: EventsGet :many
+SELECT events.id,
+       events.event_type,
+       events.status,
+       events.deadline::TEXT as deadline,
+       events.created_at,
+       events.updated_at,
+       events.owner,
+       events.retry_count,
+       events.payload
+FROM Events
+WHERE owner = @owner
+ORDER BY updated_at DESC
+LIMIT @lim;
+
 -- name: EventsGetNew :many
 SELECT id, owner, event_type, payload
 FROM Events

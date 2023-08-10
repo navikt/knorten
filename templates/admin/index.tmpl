@@ -43,12 +43,120 @@
                 <span class="navds-label">Resync alle airflow</span>
             </button>
         </form>
-        <h3 class="text-2xl font-bold">{{ len .teams }} teams</h3>
-        <div class="divide-y divide-border-divider divide-solid">
-            {{ range .teams }}
-                {{ template "admin/row" . }}
-            {{ end }}
-        </div>
     </article>
+
+    {{ range .teams }}
+        {{ $teamID := .ID }}
+        <article class="bg-white rounded-md p-4">
+            <div class="flex items-center gap-4 pb-4">
+                <h2>
+                    {{ .Slug }} ({{ .ID }})
+                </h2>
+            </div>
+            <p>
+                <strong>Owner:</strong> {{ .Owner }}
+                <br>
+                <strong>Namespace:</strong> {{ .Namespace }}
+                <br>
+                <strong>Logs:</strong>
+                <a class="navds-link"
+                   href="https://console.cloud.google.com/logs/query;query=resource.labels.namespace_name%3D%22{{ .Namespace }}%22;duration=PT15M?project={{ $.gcpProject }}">
+                    Log Explorer
+                </a>
+            </p>
+            <label for="machine_types" class="navds-form-field__label navds-label">Apper</label>
+            <table class="navds-table navds-table--small">
+                <thead class="navds-table__header">
+                <tr class="navds-table__row">
+                    <th class="navds-table__header-cell navds-label navds-label--small">App</th>
+                    <th class="navds-table__header-cell navds-label navds-label--small"></th>
+                    <th class="navds-table__header-cell navds-label navds-label--small"></th>
+                </tr>
+                </thead>
+                <tbody class="navds-table__body">
+                {{ range .Apps }}
+                    <tr class="navds-table__row navds-table__row--shade-on-hover">
+                        <td class="navds-table__header-cell navds-label navds-label--small">{{ . }}</td>
+                        <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+                            {{ if eq . "airflow" }}
+                                <a class="navds-link"
+                                   href="https://console.cloud.google.com/storage/browser/airflow-logs-{{ $teamID }};tab=objects?project={{ $.gcpProject }}">
+                                    Log bucket
+                                </a>
+                            {{ end }}
+                        </td>
+                        <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+                            <form action="/admin/jupyterhub/sync" method="POST">
+                                <input type="hidden" name="team" value="{{ $teamID }}"/>
+                                <button type="submit" class="navds-link"> Resync</button>
+                            </form>
+                        </td>
+                    </tr>
+                {{ end}}
+                </tbody>
+            </table>
+            <br>
+
+            <label for="machine_types" class="navds-form-field__label navds-label">Users</label>
+            <table class="navds-table navds-table--small">
+                <thead class="navds-table__header">
+                <tr class="navds-table__row">
+                    <th class="navds-table__header-cell navds-label navds-label--small">E-mail</th>
+                </tr>
+                </thead>
+                <tbody class="navds-table__body">
+                {{ range .Users }}
+                    <tr class="navds-table__row navds-table__row--shade-on-hover">
+                        <td class="navds-table__data-cell navds-body-short navds-body-short--small">{{ . }}</td>
+                    </tr>
+                {{ end }}
+                </tbody>
+            </table>
+            <br>
+
+            <label for="machine_types" class="navds-form-field__label navds-label">Events</label>
+            <table class="navds-table navds-table--small">
+                <thead class="navds-table__header">
+                <tr class="navds-table__row">
+                    <th class="navds-table__header-cell navds-label navds-label--small">Status</th>
+                    <th class="navds-table__header-cell navds-label navds-label--small">Type</th>
+                    <th class="navds-table__header-cell navds-label navds-label--small">Deadline</th>
+                    <th class="navds-table__header-cell navds-label navds-label--small">Created at</th>
+                    <th class="navds-table__header-cell navds-label navds-label--small">Updated at</th>
+                    <th class="navds-table__header-cell navds-label navds-label--small"></th>
+                </tr>
+                </thead>
+                <tbody class="navds-table__body">
+                {{ range .Events }}
+                    <tr class="navds-table__row navds-table__row--shade-on-hover">
+                        <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+                            {{ if eq .Status "completed" }}
+                                👍
+                            {{ else if eq .Status "failed" }}
+                                🛑
+                            {{ else if eq .Status "processing" }}
+                                🚧
+                            {{ else if eq .Status "pending" }}
+                                ⏳
+                            {{ else }}
+                                {{ .Status }}
+                            {{ end }}
+                        </td>
+                        <td class="navds-table__data-cell navds-body-short navds-body-short--small">{{ .Type }}</td>
+                        <td class="navds-table__data-cell navds-body-short navds-body-short--small">{{ .Deadline }}</td>
+                        <td class="navds-table__data-cell navds-body-short navds-body-short--small">{{ .CreatedAt.Format "02.01.06 15:04:05" }}</td>
+                        <td class="navds-table__data-cell navds-body-short navds-body-short--small">{{ .UpdatedAt.Format "02.01.06 15:04:05" }}</td>
+                        <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+                            <a class="navds-link"
+                               href="/admin/events/{{ .ID }}">
+                                logs
+                            </a>
+                        </td>
+                    </tr>
+                {{ end}}
+                </tbody>
+            </table>
+        </article>
+    {{ end }}
     {{ template "footer" }}
 {{ end }}

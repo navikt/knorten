@@ -10,7 +10,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/nais/knorten/pkg/chart"
+	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/k8s"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -24,7 +26,9 @@ type diffValue struct {
 
 type teamInfo struct {
 	gensql.Team
-	Apps []gensql.ChartType
+	Namespace string
+	Apps      []gensql.ChartType
+	Events    []database.Event
 }
 
 func (c *client) setupAdminRoutes() {
@@ -61,15 +65,25 @@ func (c *client) setupAdminRoutes() {
 				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err})
 				return
 			}
+			events, err := c.repo.EventsGet(ctx, team.ID, 5)
+			if err != nil {
+				c.log.WithError(err).Error("problem retrieving apps for teams")
+				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err})
+				return
+			}
+
 			teamApps[team.ID] = teamInfo{
-				Team: team,
-				Apps: apps,
+				Team:      team,
+				Namespace: k8s.TeamIDToNamespace(team.ID),
+				Apps:      apps,
+				Events:    events,
 			}
 		}
 
 		c.htmlResponseWrapper(ctx, http.StatusOK, "admin/index", gin.H{
-			"errors": flashes,
-			"teams":  teamApps,
+			"errors":     flashes,
+			"teams":      teamApps,
+			"gcpProject": c.gcpProject,
 		})
 	})
 

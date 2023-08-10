@@ -223,6 +223,72 @@ func (q *Queries) EventSetStatus(ctx context.Context, arg EventSetStatusParams) 
 	return err
 }
 
+const eventsGet = `-- name: EventsGet :many
+SELECT events.id,
+       events.event_type,
+       events.status,
+       events.deadline::TEXT as deadline,
+       events.created_at,
+       events.updated_at,
+       events.owner,
+       events.retry_count,
+       events.payload
+FROM Events
+WHERE owner = $1
+ORDER BY updated_at DESC
+LIMIT $2
+`
+
+type EventsGetParams struct {
+	Owner string
+	Lim   int32
+}
+
+type EventsGetRow struct {
+	ID         uuid.UUID
+	EventType  EventType
+	Status     EventStatus
+	Deadline   string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	Owner      string
+	RetryCount int32
+	Payload    json.RawMessage
+}
+
+func (q *Queries) EventsGet(ctx context.Context, arg EventsGetParams) ([]EventsGetRow, error) {
+	rows, err := q.db.QueryContext(ctx, eventsGet, arg.Owner, arg.Lim)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []EventsGetRow{}
+	for rows.Next() {
+		var i EventsGetRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.EventType,
+			&i.Status,
+			&i.Deadline,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Owner,
+			&i.RetryCount,
+			&i.Payload,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const eventsGetNew = `-- name: EventsGetNew :many
 SELECT id, owner, event_type, payload
 FROM Events

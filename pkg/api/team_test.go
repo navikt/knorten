@@ -245,12 +245,12 @@ func TestTeamAPI(t *testing.T) {
 	})
 }
 
-func getEventForTeam(events []gensql.Event, team string) (*gensql.Team, error) {
+func getEventForTeam(events []gensql.Event, team string) (gensql.Team, error) {
 	for _, event := range events {
-		payload := &gensql.Team{}
-		err := json.Unmarshal(event.Payload, payload)
+		payload := gensql.Team{}
+		err := json.Unmarshal(event.Payload, &payload)
 		if err != nil {
-			return nil, err
+			return gensql.Team{}, err
 		}
 
 		if payload.Slug == team {
@@ -258,7 +258,7 @@ func getEventForTeam(events []gensql.Event, team string) (*gensql.Team, error) {
 		}
 	}
 
-	return nil, nil
+	return gensql.Team{}, nil
 }
 
 func deleteEventCreatedForTeam(events []gensql.Event, team string) bool {

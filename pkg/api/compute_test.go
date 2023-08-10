@@ -16,6 +16,11 @@ func TestComputeAPI(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("create compute", func(t *testing.T) {
+		oldEvents, err := repo.EventsGetType(ctx, gensql.EventTypeCreateCompute)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/compute/new", server.URL), nil)
 		if err != nil {
 			t.Error(err)
@@ -27,7 +32,8 @@ func TestComputeAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		eventPayload, err := getComputeEvent(events, user.Email)
+		newEvents := getNewEvents(oldEvents, events)
+		eventPayload, err := getComputeEvent(newEvents, user.Email)
 		if err != nil {
 			t.Fatal(err)
 		}

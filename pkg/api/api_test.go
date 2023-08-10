@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"context"
 	"database/sql"
 	"fmt"
 	"html/template"
@@ -15,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nais/knorten/local/dbsetup"
 	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/tdewolff/minify/v2"
@@ -50,7 +48,6 @@ func init() {
 
 func TestMain(m *testing.M) {
 	dbPort := "5432"
-	dbHost := "db"
 	dbString := "user=postgres dbname=knorten sslmode=disable password=postgres host=db port=5432"
 
 	if os.Getenv("CI") != "true" {
@@ -78,7 +75,6 @@ func TestMain(m *testing.M) {
 			log.Fatalf("failed creating postgres expire: %v", err)
 		}
 		dbPort = resource.GetPort("5432/tcp")
-		dbHost = "localhost"
 		dbString = fmt.Sprintf("user=postgres dbname=knorten sslmode=disable password=postgres host=localhost port=%v", dbPort)
 	}
 
@@ -92,10 +88,6 @@ func TestMain(m *testing.M) {
 	repo, err = database.New(dbString, "jegersekstentegn", logger)
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	if err := dbsetup.SetupDB(context.Background(), fmt.Sprintf("postgres://postgres:postgres@%v:%v", dbHost, dbPort), "knorten"); err != nil {
-		log.Fatalf("setting up knorten db: %v", err)
 	}
 
 	azureClient, err := auth.NewAzureClient(true, "", "", "", logger)

@@ -15,6 +15,25 @@ import (
 
 func TestTeamAPI(t *testing.T) {
 	ctx := context.Background()
+
+	existingTeam := "existing-team"
+	existingTeamID := existingTeam + "-1234"
+	err := repo.TeamCreate(ctx, gensql.Team{
+		ID:    existingTeamID,
+		Slug:  existingTeam,
+		Users: []string{},
+		Owner: user.Email,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() {
+		if err := repo.TeamDelete(ctx, existingTeamID); err != nil {
+			t.Fatalf("cleaning up after team tests: %v", err)
+		}
+	})
+
 	newTeam := "new-team"
 
 	t.Run("get new team html", func(t *testing.T) {
@@ -112,18 +131,6 @@ func TestTeamAPI(t *testing.T) {
 			t.Errorf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
 		}
 	})
-
-	existingTeam := "existing-team"
-	existingTeamID := existingTeam + "-1234"
-	err := repo.TeamCreate(ctx, gensql.Team{
-		ID:    existingTeamID,
-		Slug:  existingTeam,
-		Users: []string{},
-		Owner: user.Email,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	t.Run("get edit team", func(t *testing.T) {
 		resp, err := server.Client().Get(fmt.Sprintf("%v/team/%v/edit", server.URL, existingTeam))

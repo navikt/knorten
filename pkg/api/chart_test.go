@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -22,6 +23,12 @@ func TestJupyterAPI(t *testing.T) {
 	if err != nil {
 		t.Fatalf("preparing jupyter chart tests: %v", err)
 	}
+
+	t.Cleanup(func() {
+		if err := repo.TeamDelete(ctx, team.ID); err != nil {
+			t.Fatalf("cleaning up after jupyter tests %v", err)
+		}
+	})
 
 	t.Run("get new jupyterhub html", func(t *testing.T) {
 		resp, err := server.Client().Get(fmt.Sprintf("%v/team/%v/jupyterhub/new", server.URL, team.Slug))
@@ -244,6 +251,12 @@ func TestAirflowAPI(t *testing.T) {
 		t.Fatalf("preparing airflow chart tests: %v", err)
 	}
 
+	t.Cleanup(func() {
+		if err := repo.TeamDelete(ctx, team.ID); err != nil {
+			t.Fatalf("cleaning up after airflow tests %v", err)
+		}
+	})
+
 	t.Run("get new airflow html", func(t *testing.T) {
 		resp, err := server.Client().Get(fmt.Sprintf("%v/team/%v/airflow/new", server.URL, team.Slug))
 		if err != nil {
@@ -322,17 +335,18 @@ func TestAirflowAPI(t *testing.T) {
 		}
 	})
 
+	expectedRestrictEgress := false
 	expectedValues := chart.AirflowConfigurableValues{
 		TeamID:         team.ID,
 		DagRepo:        "navikt/repo",
 		DagRepoBranch:  "main",
-		RestrictEgress: true,
+		RestrictEgress: expectedRestrictEgress,
 	}
 
 	if err := createChartForTeam(ctx, team.ID, expectedValues, gensql.ChartTypeAirflow); err != nil {
 		t.Fatal(err)
 	}
-	if err := repo.TeamChartValueInsert(ctx, chart.TeamValueKeyRestrictEgress, "true", team.ID, gensql.ChartTypeAirflow); err != nil {
+	if err := repo.TeamChartValueInsert(ctx, chart.TeamValueKeyRestrictEgress, strconv.FormatBool(expectedRestrictEgress), team.ID, gensql.ChartTypeAirflow); err != nil {
 		t.Fatal(err)
 	}
 

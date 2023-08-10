@@ -159,6 +159,7 @@ func (c *client) setupAdminRoutes() {
 			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
 			return
 		}
+
 		ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v/confirm", chartType))
 	})
 

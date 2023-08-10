@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/k8s"
 )
@@ -576,6 +577,123 @@ func TestAdminAPI(t *testing.T) {
 			if eventPayload.ID == "" {
 				t.Errorf("sync all teams: no update team event registered for team %v", team.Slug)
 			}
+		}
+	})
+
+	t.Run("get event html", func(t *testing.T) {
+		events, err := repo.EventsGet(ctx, teams[0].ID, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(events) == 0 {
+			t.Fatalf("get event html: no event found for team %v", teams[0].ID)
+		}
+
+		resp, err := server.Client().Get(fmt.Sprintf("%v/admin/event/%v", server.URL, events[0].ID))
+		if err != nil {
+			t.Error(err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+		}
+
+		if resp.Header.Get("Content-Type") != htmlContentType {
+			t.Errorf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
+		}
+
+		received, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Error(err)
+		}
+		receivedMinimized, err := minimizeHTML(string(received))
+		if err != nil {
+			t.Error(err)
+		}
+
+		expected, err := createExpectedHTML("admin/event", map[string]any{
+			"event": database.Event{
+				ID:         events[0].ID,
+				Owner:      events[0].Owner,
+				Type:       events[0].Type,
+				Status:     events[0].Status,
+				Deadline:   events[0].Deadline,
+				RetryCount: events[0].RetryCount,
+				CreatedAt:  events[0].CreatedAt,
+				UpdatedAt:  events[0].UpdatedAt,
+				Payload:    events[0].Payload,
+			},
+		})
+		if err != nil {
+			t.Error(err)
+		}
+		expectedMinimized, err := minimizeHTML(expected)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("update event status", func(t *testing.T) {
+		newStatus := "failed"
+		events, err := repo.EventsGet(ctx, teams[0].ID, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(events) == 0 {
+			t.Fatalf("get event html: no event found for team %v", teams[0].ID)
+		}
+
+		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/event/%v?status=%v", server.URL, events[0].ID, newStatus), nil)
+		if err != nil {
+			t.Error(err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+		}
+
+		if resp.Header.Get("Content-Type") != htmlContentType {
+			t.Errorf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
+		}
+
+		received, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Error(err)
+		}
+		receivedMinimized, err := minimizeHTML(string(received))
+		if err != nil {
+			t.Error(err)
+		}
+
+		expected, err := createExpectedHTML("admin/event", map[string]any{
+			"event": database.Event{
+				ID:         events[0].ID,
+				Owner:      events[0].Owner,
+				Type:       events[0].Type,
+				Status:     gensql.EventStatus(newStatus),
+				Deadline:   events[0].Deadline,
+				RetryCount: events[0].RetryCount,
+				CreatedAt:  events[0].CreatedAt,
+				UpdatedAt:  events[0].UpdatedAt,
+				Payload:    events[0].Payload,
+			},
+		})
+		if err != nil {
+			t.Error(err)
+		}
+		expectedMinimized, err := minimizeHTML(expected)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 }

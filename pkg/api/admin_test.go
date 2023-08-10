@@ -222,7 +222,7 @@ func TestAdminAPI(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if eventPayload == nil {
+			if eventPayload.TeamID == "" {
 				t.Fatalf("update admin values: no update jupyterhub event registered for team %v", team.ID)
 			}
 		}
@@ -252,7 +252,7 @@ func TestAdminAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if eventPayload == nil {
+		if eventPayload.TeamID == "" {
 			t.Fatalf("sync chart: no update jupyterhub event registered for team %v", teams[1].ID)
 		}
 	})
@@ -281,7 +281,7 @@ func TestAdminAPI(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if eventPayload == nil {
+			if eventPayload.TeamID == "" {
 				t.Fatalf("sync all jupyterhub charts: no update jupyterhub event registered for team %v", team.ID)
 			}
 		}
@@ -427,7 +427,7 @@ func TestAdminAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if eventPayload == nil {
+		if eventPayload.TeamID == "" {
 			t.Fatalf("update airflow global values: no update airflow event registered for team %v", teams[1].ID)
 		}
 	})
@@ -456,7 +456,7 @@ func TestAdminAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if eventPayload == nil {
+		if eventPayload.TeamID == "" {
 			t.Fatalf("sync airflow chart for team: no update airflow event registered for team %v", teams[1].ID)
 		}
 	})
@@ -483,7 +483,7 @@ func TestAdminAPI(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if eventPayload != nil {
+		if eventPayload.TeamID != "" {
 			t.Errorf("sync all airflow charts: airflow event registered for team %v eventhough team does not have airflow", teams[0].ID)
 		}
 
@@ -491,7 +491,7 @@ func TestAdminAPI(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if eventPayload == nil {
+		if eventPayload.TeamID == "" {
 			t.Fatalf("sync all airflow charts: no update airflow event registered for team %v", teams[1].ID)
 		}
 	})

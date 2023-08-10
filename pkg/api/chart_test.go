@@ -92,10 +92,9 @@ func TestJupyterAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if eventPayload == nil {
+		if eventPayload.TeamID == "" {
 			t.Errorf("create jupyterhub: no event registered for team %v", team.ID)
 		}
-
 		if eventPayload.CPU != cpu {
 			t.Errorf("create jupyterhub: cpu value - expected %v, got %v", cpu, eventPayload.CPU)
 		}
@@ -192,7 +191,7 @@ func TestJupyterAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if eventPayload == nil {
+		if eventPayload.TeamID == "" {
 			t.Errorf("create jupyterhub: no event registered for team %v", team.ID)
 		}
 
@@ -318,7 +317,7 @@ func TestAirflowAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if eventPayload == nil {
+		if eventPayload.TeamID == "" {
 			t.Errorf("create airflow: no event registered for team %v", team.ID)
 		}
 
@@ -421,7 +420,7 @@ func TestAirflowAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if eventPayload == nil {
+		if eventPayload.TeamID == "" {
 			t.Errorf("edit airflow: no event registered for team %v", team.ID)
 		}
 
@@ -471,12 +470,12 @@ func prepareChartTests(ctx context.Context, teamName string) (gensql.Team, error
 	return team, repo.TeamCreate(ctx, team)
 }
 
-func getEventForJupyterhub(events []gensql.Event, team string) (*chart.JupyterConfigurableValues, error) {
+func getEventForJupyterhub(events []gensql.Event, team string) (chart.JupyterConfigurableValues, error) {
 	for _, event := range events {
-		payload := &chart.JupyterConfigurableValues{}
-		err := json.Unmarshal(event.Payload, payload)
+		payload := chart.JupyterConfigurableValues{}
+		err := json.Unmarshal(event.Payload, &payload)
 		if err != nil {
-			return nil, err
+			return chart.JupyterConfigurableValues{}, err
 		}
 
 		if payload.TeamID == team {
@@ -484,15 +483,15 @@ func getEventForJupyterhub(events []gensql.Event, team string) (*chart.JupyterCo
 		}
 	}
 
-	return nil, nil
+	return chart.JupyterConfigurableValues{}, nil
 }
 
-func getEventForAirflow(events []gensql.Event, team string) (*chart.AirflowConfigurableValues, error) {
+func getEventForAirflow(events []gensql.Event, team string) (chart.AirflowConfigurableValues, error) {
 	for _, event := range events {
-		payload := &chart.AirflowConfigurableValues{}
-		err := json.Unmarshal(event.Payload, payload)
+		payload := chart.AirflowConfigurableValues{}
+		err := json.Unmarshal(event.Payload, &payload)
 		if err != nil {
-			return nil, err
+			return chart.AirflowConfigurableValues{}, err
 		}
 
 		if payload.TeamID == team {
@@ -500,7 +499,7 @@ func getEventForAirflow(events []gensql.Event, team string) (*chart.AirflowConfi
 		}
 	}
 
-	return nil, nil
+	return chart.AirflowConfigurableValues{}, nil
 }
 
 func createChartForTeam(ctx context.Context, teamID string, chartValues any, chartType gensql.ChartType) error {

@@ -250,7 +250,7 @@ func TestAdminAPI(t *testing.T) {
 		}
 
 		if eventPayload == nil {
-			t.Fatalf("update admin values: no update jupyterhub event registered for team %v", teams[1].ID)
+			t.Fatalf("sync chart: no update jupyterhub event registered for team %v", teams[1].ID)
 		}
 	})
 

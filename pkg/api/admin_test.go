@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/k8s"
 )
 
 func TestAdminAPI(t *testing.T) {
@@ -51,13 +52,15 @@ func TestAdminAPI(t *testing.T) {
 		expected, err := createExpectedHTML("admin/index", map[string]any{
 			"teams": []teamInfo{
 				{
-					Team: teams[0],
+					Team:      teams[0],
+					Namespace: k8s.TeamIDToNamespace(teams[0].ID),
 					Apps: []gensql.ChartType{
 						gensql.ChartTypeJupyterhub,
 					},
 				},
 				{
-					Team: teams[1],
+					Team:      teams[1],
+					Namespace: k8s.TeamIDToNamespace(teams[1].ID),
 					Apps: []gensql.ChartType{
 						gensql.ChartTypeJupyterhub,
 						gensql.ChartTypeAirflow,

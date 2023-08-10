@@ -22,7 +22,9 @@ func TestAdminAPI(t *testing.T) {
 		t.Fatalf("preparing admin tests: %v", err)
 	}
 	t.Cleanup(func() {
-		cleanUpAdminTests(ctx, teams)
+		if err := cleanUpAdminTests(ctx, teams); err != nil {
+			log.Fatalf("cleaning up after admin tests: %v", err)
+		}
 	})
 
 	t.Run("get admin panel html", func(t *testing.T) {
@@ -644,19 +646,21 @@ func getSessionCookieFromResponse(resp *http.Response) (*http.Cookie, error) {
 	return nil, errors.New("no session cookie in http response")
 }
 
-func cleanUpAdminTests(ctx context.Context, teams []gensql.Team) {
+func cleanUpAdminTests(ctx context.Context, teams []gensql.Team) error {
 	for _, team := range teams {
 		if err := repo.TeamDelete(ctx, team.ID); err != nil {
-			log.Fatalf("cleaning up after admin tests: %v", err)
+			return err
 		}
 	}
 
 	if err := repo.GlobalValueDelete(ctx, "jupytervalue", gensql.ChartTypeJupyterhub); err != nil {
-		log.Fatalf("cleaning up after admin tests: %v", err)
+		return err
 	}
 	if err := repo.GlobalValueDelete(ctx, "airflowvalue", gensql.ChartTypeAirflow); err != nil {
-		log.Fatalf("cleaning up after admin tests: %v", err)
+		return err
 	}
+
+	return nil
 }
 
 func getNewEvents(oldEvents, events []gensql.Event) []gensql.Event {

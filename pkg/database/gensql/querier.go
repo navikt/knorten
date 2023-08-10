@@ -17,12 +17,13 @@ type Querier interface {
 	ComputeInstanceDelete(ctx context.Context, email string) error
 	ComputeInstanceGet(ctx context.Context, email string) (ComputeInstance, error)
 	EventCreate(ctx context.Context, arg EventCreateParams) error
+	EventGet(ctx context.Context, id uuid.UUID) (EventGetRow, error)
 	EventLogCreate(ctx context.Context, arg EventLogCreateParams) error
-	EventLogsForEventsGet(ctx context.Context, lim int32) ([]EventLogsForEventsGetRow, error)
+	EventLogsForEventGet(ctx context.Context, id uuid.UUID) ([]EventLogsForEventGetRow, error)
 	EventLogsForOwnerGet(ctx context.Context, arg EventLogsForOwnerGetParams) ([]EventLogsForOwnerGetRow, error)
 	EventSetPendingStatus(ctx context.Context, id uuid.UUID) error
 	EventSetStatus(ctx context.Context, arg EventSetStatusParams) error
-	EventsGet(ctx context.Context, arg EventsGetParams) ([]EventsGetRow, error)
+	EventsByOwnerGet(ctx context.Context, arg EventsByOwnerGetParams) ([]EventsByOwnerGetRow, error)
 	EventsGetNew(ctx context.Context) ([]EventsGetNewRow, error)
 	EventsGetOverdue(ctx context.Context) ([]EventsGetOverdueRow, error)
 	GlobalValueDelete(ctx context.Context, arg GlobalValueDeleteParams) error

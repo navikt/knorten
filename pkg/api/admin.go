@@ -288,8 +288,8 @@ func (c *client) setupAdminRoutes() {
 		ctx.Redirect(http.StatusSeeOther, "/admin")
 	})
 
-	c.router.GET("/admin/events", func(ctx *gin.Context) {
-		events, err := c.repo.EventLogsForEventsGet(ctx)
+	c.router.GET("/admin/event/:id", func(ctx *gin.Context) {
+		header, err := c.getEvent(ctx)
 		if err != nil {
 			c.log.WithError(err).Errorf("getting event logs")
 			session := sessions.Default(ctx)
@@ -301,12 +301,10 @@ func (c *client) setupAdminRoutes() {
 			ctx.Redirect(http.StatusSeeOther, "/admin")
 		}
 
-		c.htmlResponseWrapper(ctx, http.StatusOK, "admin/events", gin.H{
-			"events": events,
-		})
+		c.htmlResponseWrapper(ctx, http.StatusOK, "admin/event", header)
 	})
 
-	c.router.POST("/admin/events/:id", func(ctx *gin.Context) {
+	c.router.POST("/admin/event/:id", func(ctx *gin.Context) {
 		err := c.setEventStatus(ctx)
 		if err != nil {
 			c.log.WithError(err).Errorf("setting event status")
@@ -316,10 +314,10 @@ func (c *client) setupAdminRoutes() {
 			if err != nil {
 				c.log.WithError(err).Error("problem saving session")
 			}
-			ctx.Redirect(http.StatusSeeOther, "/admin/events")
+			ctx.Redirect(http.StatusSeeOther, "/admin/event/"+ctx.Param("id"))
 		}
 
-		ctx.Redirect(http.StatusSeeOther, "/admin/events")
+		ctx.Redirect(http.StatusSeeOther, "/admin/events"+ctx.Param("id"))
 	})
 }
 
@@ -514,6 +512,28 @@ func keyForValue(values map[string]diffValue, needle string) string {
 	}
 
 	return ""
+}
+
+func (c *client) getEvent(ctx *gin.Context) (gin.H, error) {
+	eventID, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		return gin.H{}, err
+	}
+
+	event, err := c.repo.EventGet(ctx, eventID)
+	if err != nil {
+		return gin.H{}, err
+	}
+
+	eventLogs, err := c.repo.EventLogsForEventGet(ctx, eventID)
+	if err != nil {
+		return gin.H{}, err
+	}
+
+	return gin.H{
+		"event": event,
+		"logs":  eventLogs,
+	}, nil
 }
 
 func (c *client) setEventStatus(ctx *gin.Context) error {

@@ -50,7 +50,7 @@ func TestMain(m *testing.M) {
 	dbPort := "5432"
 	dbString := "user=postgres dbname=knorten sslmode=disable password=postgres host=db port=5432"
 
-	if os.Getenv("CI") != "true" {
+	if os.Getenv("CLOUDBUILD") != "true" {
 		dockerHost := os.Getenv("HOME") + "/.colima/docker.sock"
 		_, err := os.Stat(dockerHost)
 		if err != nil {

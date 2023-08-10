@@ -228,6 +228,10 @@ func TestAdminAPI(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+		}
+
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateJupyter)
 		if err != nil {
 			t.Fatal(err)
@@ -259,6 +263,10 @@ func TestAdminAPI(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+		}
+
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateJupyter)
 		if err != nil {
 			t.Fatal(err)
@@ -286,6 +294,10 @@ func TestAdminAPI(t *testing.T) {
 			t.Error(err)
 		}
 		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+		}
 
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateJupyter)
 		if err != nil {
@@ -440,6 +452,10 @@ func TestAdminAPI(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+		}
+
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateAirflow)
 		if err != nil {
 			t.Fatal(err)
@@ -469,6 +485,10 @@ func TestAdminAPI(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+		}
+
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateAirflow)
 		if err != nil {
 			t.Fatal(err)
@@ -496,6 +516,10 @@ func TestAdminAPI(t *testing.T) {
 			t.Error(err)
 		}
 		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+		}
 
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateAirflow)
 		if err != nil {
@@ -526,11 +550,15 @@ func TestAdminAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/teams/sync/all", server.URL), nil)
+		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/team/sync/all", server.URL), nil)
 		if err != nil {
 			t.Error(err)
 		}
 		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+		}
 
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateTeam)
 		if err != nil {
@@ -538,13 +566,12 @@ func TestAdminAPI(t *testing.T) {
 		}
 
 		newEvents := getNewEvents(oldEvents, events)
-
 		for _, team := range teams {
 			eventPayload, err := getEventForTeam(newEvents, team.Slug)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if eventPayload != nil {
+			if eventPayload.ID == "" {
 				t.Errorf("sync all teams: no update team event registered for team %v", team.Slug)
 			}
 		}

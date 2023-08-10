@@ -49,6 +49,16 @@ func TestAdminAPI(t *testing.T) {
 			t.Error(err)
 		}
 
+		eventsTeamA, err := repo.EventsGet(ctx, teams[0].ID, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		eventsTeamB, err := repo.EventsGet(ctx, teams[1].ID, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		expected, err := createExpectedHTML("admin/index", map[string]any{
 			"teams": []teamInfo{
 				{
@@ -57,6 +67,7 @@ func TestAdminAPI(t *testing.T) {
 					Apps: []gensql.ChartType{
 						gensql.ChartTypeJupyterhub,
 					},
+					Events: eventsTeamA,
 				},
 				{
 					Team:      teams[1],
@@ -65,6 +76,7 @@ func TestAdminAPI(t *testing.T) {
 						gensql.ChartTypeJupyterhub,
 						gensql.ChartTypeAirflow,
 					},
+					Events: eventsTeamB,
 				},
 			},
 		})
@@ -204,6 +216,11 @@ func TestAdminAPI(t *testing.T) {
 	})
 
 	t.Run("update jupyter global values", func(t *testing.T) {
+		oldEvents, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateJupyter)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		data := url.Values{"jupytervalue": {"updated"}, "new": {"new"}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/jupyterhub/confirm", server.URL), data)
 		if err != nil {
@@ -216,8 +233,9 @@ func TestAdminAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		newEvents := getNewEvents(oldEvents, events)
 		for _, team := range teams {
-			eventPayload, err := getEventForJupyterhub(events, team.ID)
+			eventPayload, err := getEventForJupyterhub(newEvents, team.ID)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -410,6 +428,11 @@ func TestAdminAPI(t *testing.T) {
 	})
 
 	t.Run("update airflow global values", func(t *testing.T) {
+		oldEvents, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateAirflow)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		data := url.Values{"airflowvalue": {"updated"}, "new": {"new"}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/airflow/confirm", server.URL), data)
 		if err != nil {
@@ -422,7 +445,8 @@ func TestAdminAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		eventPayload, err := getEventForAirflow(events, teams[1].ID)
+		newEvents := getNewEvents(oldEvents, events)
+		eventPayload, err := getEventForAirflow(newEvents, teams[1].ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -566,6 +590,14 @@ func prepareAdminTests(ctx context.Context) ([]gensql.Team, error) {
 	}
 	if err := repo.GlobalChartValueInsert(ctx, "airflowvalue", "value", false, gensql.ChartTypeAirflow); err != nil {
 		return nil, err
+	}
+
+	// events
+	if err := repo.RegisterCreateTeamEvent(ctx, team1); err != nil {
+		log.Fatal(err)
+	}
+	if err := repo.RegisterCreateTeamEvent(ctx, team2); err != nil {
+		log.Fatal(err)
 	}
 
 	return append([]gensql.Team{team1}, team2), nil

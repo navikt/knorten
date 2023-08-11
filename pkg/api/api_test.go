@@ -47,7 +47,6 @@ func init() {
 }
 
 func TestMain(m *testing.M) {
-	dbPort := "5432"
 	dbString := "user=postgres dbname=knorten sslmode=disable password=postgres host=db port=5432"
 
 	if os.Getenv("CLOUDBUILD") != "true" {
@@ -70,11 +69,13 @@ func TestMain(m *testing.M) {
 		if err != nil {
 			log.Fatalf("Could not start resource: %s", err)
 		}
-		err = resource.Expire(120) // setting resource timeout as postgres container is not terminated automatically
-		if err != nil {
+
+		// setting resource timeout as postgres container is not terminated automatically
+		if err = resource.Expire(120); err != nil {
 			log.Fatalf("failed creating postgres expire: %v", err)
 		}
-		dbPort = resource.GetPort("5432/tcp")
+
+		dbPort := resource.GetPort("5432/tcp")
 		dbString = fmt.Sprintf("user=postgres dbname=knorten sslmode=disable password=postgres host=localhost port=%v", dbPort)
 	}
 

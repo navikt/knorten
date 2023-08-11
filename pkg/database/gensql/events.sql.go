@@ -14,31 +14,35 @@ import (
 )
 
 const dispatcherEventsGet = `-- name: DispatcherEventsGet :many
-SELECT id, event_type, payload, status, deadline, created_at, updated_at, owner, retry_count
+SELECT id, owner, event_type, payload, retry_count
 FROM Events
 WHERE status = 'new'
    OR (status = 'pending' AND updated_at + deadline * retry_count < NOW())
 ORDER BY created_at DESC
 `
 
-func (q *Queries) DispatcherEventsGet(ctx context.Context) ([]Event, error) {
+type DispatcherEventsGetRow struct {
+	ID         uuid.UUID
+	Owner      string
+	EventType  EventType
+	Payload    json.RawMessage
+	RetryCount int32
+}
+
+func (q *Queries) DispatcherEventsGet(ctx context.Context) ([]DispatcherEventsGetRow, error) {
 	rows, err := q.db.QueryContext(ctx, dispatcherEventsGet)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Event{}
+	items := []DispatcherEventsGetRow{}
 	for rows.Next() {
-		var i Event
+		var i DispatcherEventsGetRow
 		if err := rows.Scan(
 			&i.ID,
+			&i.Owner,
 			&i.EventType,
 			&i.Payload,
-			&i.Status,
-			&i.Deadline,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.Owner,
 			&i.RetryCount,
 		); err != nil {
 			return nil, err

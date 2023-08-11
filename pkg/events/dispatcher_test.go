@@ -50,7 +50,7 @@ func TestEventHandler_distributeWork_teamEvents(t *testing.T) {
 				teamClient: &teamClientMock,
 			}
 			worker := e.distributeWork(tt.args.eventType)
-			if err := worker(context.Background(), gensql.Event{Payload: []byte("{}"), EventType: tt.args.eventType}, nil); err != nil {
+			if err := worker(context.Background(), gensql.DispatcherEventsGetRow{Payload: []byte("{}"), EventType: tt.args.eventType}, nil); err != nil {
 				t.Errorf("worker(): %v", err)
 			}
 			if teamClientMock.EventCounts[tt.args.eventType] != tt.want {
@@ -92,7 +92,7 @@ func TestEventHandler_distributeWork_computeEvents(t *testing.T) {
 				computeClient: &computeClientMock,
 			}
 			worker := e.distributeWork(tt.args.eventType)
-			if err := worker(context.Background(), gensql.Event{Payload: []byte("{}"), EventType: tt.args.eventType}, nil); err != nil {
+			if err := worker(context.Background(), gensql.DispatcherEventsGetRow{Payload: []byte("{}"), EventType: tt.args.eventType}, nil); err != nil {
 				t.Errorf("worker(): %v", err)
 			}
 			if computeClientMock.EventCounts[tt.args.eventType] != tt.want {
@@ -162,7 +162,7 @@ func TestEventHandler_distributeWork_chartEvents(t *testing.T) {
 				chartClient: &chartClientMock,
 			}
 			worker := e.distributeWork(tt.args.eventType)
-			if err := worker(context.Background(), gensql.Event{Payload: []byte("{}"), EventType: tt.args.eventType}, nil); err != nil {
+			if err := worker(context.Background(), gensql.DispatcherEventsGetRow{Payload: []byte("{}"), EventType: tt.args.eventType}, nil); err != nil {
 				t.Errorf("worker(): %v", err)
 			}
 			if chartClientMock.EventCounts[tt.args.eventType] != tt.want {

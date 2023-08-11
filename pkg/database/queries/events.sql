@@ -35,7 +35,7 @@ ORDER BY updated_at DESC
 LIMIT @lim;
 
 -- name: DispatcherEventsGet :many
-SELECT *
+SELECT id, owner, event_type, payload, retry_count
 FROM Events
 WHERE status = 'new'
    OR (status = 'pending' AND updated_at + deadline * retry_count < NOW())

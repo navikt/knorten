@@ -16,7 +16,7 @@ type Querier interface {
 	ComputeInstanceCreate(ctx context.Context, arg ComputeInstanceCreateParams) error
 	ComputeInstanceDelete(ctx context.Context, email string) error
 	ComputeInstanceGet(ctx context.Context, email string) (ComputeInstance, error)
-	DispatcherEventsGet(ctx context.Context) ([]Event, error)
+	DispatcherEventsGet(ctx context.Context) ([]DispatcherEventsGetRow, error)
 	EventCreate(ctx context.Context, arg EventCreateParams) error
 	EventGet(ctx context.Context, id uuid.UUID) (EventGetRow, error)
 	EventLogCreate(ctx context.Context, arg EventLogCreateParams) error

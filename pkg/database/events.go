@@ -105,7 +105,7 @@ func (r *Repo) EventSetPendingStatus(ctx context.Context, id uuid.UUID) error {
 	return r.querier.EventSetPendingStatus(ctx, id)
 }
 
-func (r *Repo) DispatcherEventsGet(ctx context.Context) ([]gensql.Event, error) {
+func (r *Repo) DispatcherEventsGet(ctx context.Context) ([]gensql.DispatcherEventsGetRow, error) {
 	return r.querier.DispatcherEventsGet(ctx)
 }
 

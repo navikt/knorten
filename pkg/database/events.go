@@ -144,6 +144,10 @@ func (r *Repo) EventsGetOverdue(ctx context.Context) ([]gensql.Event, error) {
 	return events, nil
 }
 
+func (r *Repo) EventsGetType(ctx context.Context, eventType gensql.EventType) ([]gensql.EventsGetTypeRow, error) {
+	return r.querier.EventsGetType(ctx, eventType)
+}
+
 func (r *Repo) EventLogCreate(ctx context.Context, id uuid.UUID, message string, logType gensql.LogType) error {
 	return r.querier.EventLogCreate(ctx, gensql.EventLogCreateParams{
 		EventID: id,

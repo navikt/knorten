@@ -173,6 +173,7 @@ func (c *client) setupAdminRoutes() {
 			ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v", chartType))
 			return
 		}
+
 		ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/%v/confirm", chartType))
 	})
 
@@ -317,7 +318,7 @@ func (c *client) setupAdminRoutes() {
 			ctx.Redirect(http.StatusSeeOther, "/admin/event/"+ctx.Param("id"))
 		}
 
-		ctx.Redirect(http.StatusSeeOther, "/admin/events"+ctx.Param("id"))
+		ctx.Redirect(http.StatusSeeOther, "/admin/event/"+ctx.Param("id"))
 	})
 }
 
@@ -544,8 +545,10 @@ func (c *client) setEventStatus(ctx *gin.Context) error {
 
 	var status gensql.EventStatus
 	switch ctx.Query("status") {
-	case "new":
+	case string(gensql.EventStatusNew):
 		status = gensql.EventStatusNew
+	case string(gensql.EventStatusFailed):
+		status = gensql.EventStatusFailed
 	default:
 		return fmt.Errorf("invalid status %v", ctx.PostForm("status"))
 	}

@@ -780,8 +780,8 @@ func cleanUpAdminTests(ctx context.Context, teams []gensql.Team) error {
 	return nil
 }
 
-func getNewEvents(oldEvents, events []gensql.Event) []gensql.Event {
-	var new []gensql.Event
+func getNewEvents(oldEvents, events []gensql.EventsGetTypeRow) []gensql.EventsGetTypeRow {
+	var new []gensql.EventsGetTypeRow
 	for _, event := range events {
 		if !containsEvent(oldEvents, event) {
 			new = append(new, event)
@@ -791,7 +791,7 @@ func getNewEvents(oldEvents, events []gensql.Event) []gensql.Event {
 	return new
 }
 
-func containsEvent(events []gensql.Event, event gensql.Event) bool {
+func containsEvent(events []gensql.EventsGetTypeRow, event gensql.EventsGetTypeRow) bool {
 	for _, oldEvent := range events {
 		if oldEvent.ID == event.ID {
 			return true

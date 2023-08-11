@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"testing"
@@ -24,7 +23,7 @@ func TestAdminAPI(t *testing.T) {
 	}
 	t.Cleanup(func() {
 		if err := cleanUpAdminTests(ctx, teams); err != nil {
-			log.Fatalf("cleaning up after admin tests: %v", err)
+			t.Errorf("cleaning up after admin tests: %v", err)
 		}
 	})
 
@@ -54,12 +53,12 @@ func TestAdminAPI(t *testing.T) {
 
 		eventsTeamA, err := repo.EventsGet(ctx, teams[0].ID, 1)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		eventsTeamB, err := repo.EventsGet(ctx, teams[1].ID, 1)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		expected, err := createExpectedHTML("admin/index", map[string]any{
@@ -164,12 +163,12 @@ func TestAdminAPI(t *testing.T) {
 
 		sessionCookie, err := getSessionCookieFromResponse(resp)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%v/admin/jupyterhub/confirm", server.URL), nil)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		req.AddCookie(sessionCookie)
 		resp, err = server.Client().Do(req)
@@ -221,7 +220,7 @@ func TestAdminAPI(t *testing.T) {
 	t.Run("update jupyter global values", func(t *testing.T) {
 		oldEvents, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateJupyter)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		data := url.Values{"jupytervalue": {"updated"}, "new": {"new"}}
@@ -237,18 +236,18 @@ func TestAdminAPI(t *testing.T) {
 
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateJupyter)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		newEvents := getNewEvents(oldEvents, events)
 		for _, team := range teams {
 			eventPayload, err := getEventForJupyterhub(newEvents, team.ID)
 			if err != nil {
-				t.Fatal(err)
+				t.Error(err)
 			}
 
 			if eventPayload.TeamID == "" {
-				t.Fatalf("update admin values: no update jupyterhub event registered for team %v", team.ID)
+				t.Errorf("update admin values: no update jupyterhub event registered for team %v", team.ID)
 			}
 		}
 	})
@@ -256,7 +255,7 @@ func TestAdminAPI(t *testing.T) {
 	t.Run("sync jupyterhub chart for team", func(t *testing.T) {
 		oldEvents, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateJupyter)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		data := url.Values{"team": {"team-a-1234"}}
@@ -272,24 +271,24 @@ func TestAdminAPI(t *testing.T) {
 
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateJupyter)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		newEvents := getNewEvents(oldEvents, events)
 		eventPayload, err := getEventForJupyterhub(newEvents, teams[0].ID)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if eventPayload.TeamID == "" {
-			t.Fatalf("sync chart: no update jupyterhub event registered for team %v", teams[1].ID)
+			t.Errorf("sync chart: no update jupyterhub event registered for team %v", teams[1].ID)
 		}
 	})
 
 	t.Run("sync all jupyterhub charts", func(t *testing.T) {
 		oldEvents, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateJupyter)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/jupyterhub/sync/all", server.URL), nil)
@@ -304,18 +303,18 @@ func TestAdminAPI(t *testing.T) {
 
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateJupyter)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		newEvents := getNewEvents(oldEvents, events)
 		for _, team := range teams {
 			eventPayload, err := getEventForJupyterhub(newEvents, team.ID)
 			if err != nil {
-				t.Fatal(err)
+				t.Error(err)
 			}
 
 			if eventPayload.TeamID == "" {
-				t.Fatalf("sync all jupyterhub charts: no update jupyterhub event registered for team %v", team.ID)
+				t.Errorf("sync all jupyterhub charts: no update jupyterhub event registered for team %v", team.ID)
 			}
 		}
 	})
@@ -388,12 +387,12 @@ func TestAdminAPI(t *testing.T) {
 
 		sessionCookie, err := getSessionCookieFromResponse(resp)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%v/admin/airflow/confirm", server.URL), nil)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		req.AddCookie(sessionCookie)
 		resp, err = server.Client().Do(req)
@@ -445,7 +444,7 @@ func TestAdminAPI(t *testing.T) {
 	t.Run("update airflow global values", func(t *testing.T) {
 		oldEvents, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateAirflow)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		data := url.Values{"airflowvalue": {"updated"}, "new": {"new"}}
@@ -461,24 +460,24 @@ func TestAdminAPI(t *testing.T) {
 
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateAirflow)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		newEvents := getNewEvents(oldEvents, events)
 		eventPayload, err := getEventForAirflow(newEvents, teams[1].ID)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if eventPayload.TeamID == "" {
-			t.Fatalf("update airflow global values: no update airflow event registered for team %v", teams[1].ID)
+			t.Errorf("update airflow global values: no update airflow event registered for team %v", teams[1].ID)
 		}
 	})
 
 	t.Run("sync airflow chart for team", func(t *testing.T) {
 		oldEvents, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateAirflow)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		data := url.Values{"team": {"team-b-1234"}}
@@ -494,24 +493,24 @@ func TestAdminAPI(t *testing.T) {
 
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateAirflow)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		newEvents := getNewEvents(oldEvents, events)
 		eventPayload, err := getEventForAirflow(newEvents, teams[1].ID)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if eventPayload.TeamID == "" {
-			t.Fatalf("sync airflow chart for team: no update airflow event registered for team %v", teams[1].ID)
+			t.Errorf("sync airflow chart for team: no update airflow event registered for team %v", teams[1].ID)
 		}
 	})
 
 	t.Run("sync all airflow charts", func(t *testing.T) {
 		oldEvents, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateAirflow)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/airflow/sync/all", server.URL), nil)
@@ -526,13 +525,13 @@ func TestAdminAPI(t *testing.T) {
 
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateAirflow)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		newEvents := getNewEvents(oldEvents, events)
 		eventPayload, err := getEventForAirflow(newEvents, teams[0].ID)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		if eventPayload.TeamID != "" {
 			t.Errorf("sync all airflow charts: airflow event registered for team %v eventhough team does not have airflow", teams[0].ID)
@@ -540,17 +539,17 @@ func TestAdminAPI(t *testing.T) {
 
 		eventPayload, err = getEventForAirflow(newEvents, teams[1].ID)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		if eventPayload.TeamID == "" {
-			t.Fatalf("sync all airflow charts: no update airflow event registered for team %v", teams[1].ID)
+			t.Errorf("sync all airflow charts: no update airflow event registered for team %v", teams[1].ID)
 		}
 	})
 
 	t.Run("sync all teams", func(t *testing.T) {
 		oldEvents, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateTeam)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/team/sync/all", server.URL), nil)
@@ -565,14 +564,14 @@ func TestAdminAPI(t *testing.T) {
 
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateTeam)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		newEvents := getNewEvents(oldEvents, events)
 		for _, team := range teams {
 			eventPayload, err := getEventForTeam(newEvents, team.Slug)
 			if err != nil {
-				t.Fatal(err)
+				t.Error(err)
 			}
 			if eventPayload.ID == "" {
 				t.Errorf("sync all teams: no update team event registered for team %v", team.Slug)
@@ -583,10 +582,10 @@ func TestAdminAPI(t *testing.T) {
 	t.Run("get event html", func(t *testing.T) {
 		events, err := repo.EventsGet(ctx, teams[0].ID, 1)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		if len(events) == 0 {
-			t.Fatalf("get event html: no event found for team %v", teams[0].ID)
+			t.Errorf("get event html: no event found for team %v", teams[0].ID)
 		}
 
 		resp, err := server.Client().Get(fmt.Sprintf("%v/admin/event/%v", server.URL, events[0].ID))
@@ -642,10 +641,10 @@ func TestAdminAPI(t *testing.T) {
 		newStatus := "failed"
 		events, err := repo.EventsGet(ctx, teams[0].ID, 1)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		if len(events) == 0 {
-			t.Fatalf("get event html: no event found for team %v", teams[0].ID)
+			t.Errorf("get event html: no event found for team %v", teams[0].ID)
 		}
 
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/event/%v?status=%v", server.URL, events[0].ID, newStatus), nil)
@@ -740,11 +739,11 @@ func prepareAdminTests(ctx context.Context) ([]gensql.Team, error) {
 	}
 
 	// events
-	if err := repo.RegisterCreateTeamEvent(ctx, team1); err != nil {
-		log.Fatal(err)
+	if err := repo.RegisterCreateTeamEvent(ctx, teamA); err != nil {
+		return nil, err
 	}
-	if err := repo.RegisterCreateTeamEvent(ctx, team2); err != nil {
-		log.Fatal(err)
+	if err := repo.RegisterCreateTeamEvent(ctx, teamB); err != nil {
+		return nil, err
 	}
 
 	return append([]gensql.Team{team1}, team2), nil

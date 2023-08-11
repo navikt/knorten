@@ -16,6 +16,7 @@ import (
 func TestTeamAPI(t *testing.T) {
 	ctx := context.Background()
 
+	newTeam := "new-team"
 	existingTeam := "existing-team"
 	existingTeamID := existingTeam + "-1234"
 	err := repo.TeamCreate(ctx, gensql.Team{
@@ -30,11 +31,9 @@ func TestTeamAPI(t *testing.T) {
 
 	t.Cleanup(func() {
 		if err := repo.TeamDelete(ctx, existingTeamID); err != nil {
-			t.Fatalf("cleaning up after team tests: %v", err)
+			t.Errorf("cleaning up after team tests: %v", err)
 		}
 	})
-
-	newTeam := "new-team"
 
 	t.Run("get new team html", func(t *testing.T) {
 		resp, err := server.Client().Get(fmt.Sprintf("%v/team/new", server.URL))
@@ -81,7 +80,7 @@ func TestTeamAPI(t *testing.T) {
 		data := url.Values{"team": {newTeam}, "owner": {user.Email}, "users[]": []string{}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/new", server.URL), data)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		resp.Body.Close()
 
@@ -91,12 +90,12 @@ func TestTeamAPI(t *testing.T) {
 
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeCreateTeam)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		eventPayload, err := getEventForTeam(events, newTeam)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if eventPayload.ID == "" {
@@ -184,7 +183,7 @@ func TestTeamAPI(t *testing.T) {
 		data := url.Values{"team": {existingTeam}, "owner": {user.Email}, "users[]": users}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/%v/edit", server.URL, existingTeam), data)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		resp.Body.Close()
 
@@ -194,16 +193,16 @@ func TestTeamAPI(t *testing.T) {
 
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateTeam)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		eventPayload, err := getEventForTeam(events, existingTeam)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if eventPayload.ID == "" {
-			t.Fatalf("edit team: no event registered for team %v", existingTeam)
+			t.Errorf("edit team: no event registered for team %v", existingTeam)
 		}
 
 		if eventPayload.Slug != existingTeam {
@@ -226,7 +225,7 @@ func TestTeamAPI(t *testing.T) {
 	t.Run("delete team", func(t *testing.T) {
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/%v/delete", server.URL, existingTeam), nil)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		resp.Body.Close()
 
@@ -236,11 +235,11 @@ func TestTeamAPI(t *testing.T) {
 
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeDeleteTeam)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if !deleteEventCreatedForTeam(events, existingTeamID) {
-			t.Fatalf("delete team: no event registered for team %v", existingTeam)
+			t.Errorf("delete team: no event registered for team %v", existingTeam)
 		}
 	})
 }

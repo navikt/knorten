@@ -26,7 +26,7 @@ func TestJupyterAPI(t *testing.T) {
 
 	t.Cleanup(func() {
 		if err := repo.TeamDelete(ctx, team.ID); err != nil {
-			t.Fatalf("cleaning up after jupyter tests %v", err)
+			t.Errorf("cleaning up after jupyter tests %v", err)
 		}
 	})
 
@@ -84,12 +84,12 @@ func TestJupyterAPI(t *testing.T) {
 
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeCreateJupyter)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		eventPayload, err := getEventForJupyterhub(events, team.ID)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if eventPayload.TeamID == "" {
@@ -120,7 +120,7 @@ func TestJupyterAPI(t *testing.T) {
 	}
 
 	if err := createChartForTeam(ctx, team.ID, expectedValues, gensql.ChartTypeJupyterhub); err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	t.Run("get edit jupyterhub html", func(t *testing.T) {
@@ -183,12 +183,12 @@ func TestJupyterAPI(t *testing.T) {
 
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateJupyter)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		eventPayload, err := getEventForJupyterhub(events, team.ID)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if eventPayload.TeamID == "" {
@@ -223,7 +223,7 @@ func TestJupyterAPI(t *testing.T) {
 	t.Run("delete jupyterhub", func(t *testing.T) {
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/%v/jupyterhub/delete", server.URL, team.Slug), nil)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		resp.Body.Close()
 
@@ -233,7 +233,7 @@ func TestJupyterAPI(t *testing.T) {
 
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeDeleteJupyter)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if !deleteEventCreatedForTeam(events, team.ID) {
@@ -247,12 +247,12 @@ func TestAirflowAPI(t *testing.T) {
 
 	team, err := prepareChartTests(ctx, "airflow-team")
 	if err != nil {
-		t.Fatalf("preparing airflow chart tests: %v", err)
+		t.Errorf("preparing airflow chart tests: %v", err)
 	}
 
 	t.Cleanup(func() {
 		if err := repo.TeamDelete(ctx, team.ID); err != nil {
-			t.Fatalf("cleaning up after airflow tests %v", err)
+			t.Errorf("cleaning up after airflow tests %v", err)
 		}
 	})
 
@@ -309,12 +309,12 @@ func TestAirflowAPI(t *testing.T) {
 
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeCreateAirflow)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		eventPayload, err := getEventForAirflow(events, team.ID)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if eventPayload.TeamID == "" {
@@ -343,10 +343,10 @@ func TestAirflowAPI(t *testing.T) {
 	}
 
 	if err := createChartForTeam(ctx, team.ID, expectedValues, gensql.ChartTypeAirflow); err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	if err := repo.TeamChartValueInsert(ctx, chart.TeamValueKeyRestrictEgress, strconv.FormatBool(expectedRestrictEgress), team.ID, gensql.ChartTypeAirflow); err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	t.Run("get edit airflow html", func(t *testing.T) {
@@ -412,12 +412,12 @@ func TestAirflowAPI(t *testing.T) {
 
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateAirflow)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		eventPayload, err := getEventForAirflow(events, team.ID)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if eventPayload.TeamID == "" {
@@ -440,7 +440,7 @@ func TestAirflowAPI(t *testing.T) {
 	t.Run("delete airflow", func(t *testing.T) {
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/%v/airflow/delete", server.URL, team.Slug), nil)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		resp.Body.Close()
 
@@ -450,7 +450,7 @@ func TestAirflowAPI(t *testing.T) {
 
 		events, err := repo.EventsGetType(ctx, gensql.EventTypeDeleteAirflow)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 
 		if !deleteEventCreatedForTeam(events, team.ID) {

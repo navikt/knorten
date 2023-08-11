@@ -151,7 +151,7 @@ func createExpectedHTML(t string, values map[string]any) (string, error) {
 
 	dataBytes, err := io.ReadAll(buff)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
 	return string(dataBytes), nil

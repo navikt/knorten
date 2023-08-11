@@ -20,7 +20,7 @@ func TestUserAPI(t *testing.T) {
 	}
 	t.Cleanup(func() {
 		if err := cleanupUserTests(ctx, team.ID); err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 	})
 

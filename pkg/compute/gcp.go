@@ -8,12 +8,12 @@ import (
 	"strings"
 )
 
-func (c Client) createComputeInstanceInGCP(ctx context.Context, name, email string) error {
+func (c Client) createComputeInstanceInGCP(ctx context.Context, instanceName, email string) error {
 	if c.dryRun {
 		return nil
 	}
 
-	exists, err := c.computeInstanceExistsInGCP(name)
+	exists, err := c.computeInstanceExistsInGCP(instanceName)
 	if err != nil {
 		return err
 	}
@@ -29,7 +29,7 @@ func (c Client) createComputeInstanceInGCP(ctx context.Context, name, email stri
 		"compute",
 		"instances",
 		"create",
-		name,
+		instanceName,
 		"--project", c.gcpProject,
 		"--zone", c.gcpZone,
 		"--machine-type", "n2-standard-2",
@@ -48,14 +48,14 @@ func (c Client) createComputeInstanceInGCP(ctx context.Context, name, email stri
 		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
 	}
 
-	if err := c.addGCPOwnerBinding(ctx, name, email); err != nil {
+	if err := c.addGCPOwnerBinding(ctx, instanceName, email); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (c Client) computeInstanceExistsInGCP(name string) (bool, error) {
+func (c Client) computeInstanceExistsInGCP(instanceName string) (bool, error) {
 	cmd := exec.Command(
 		"gcloud",
 		"--quiet",
@@ -64,7 +64,7 @@ func (c Client) computeInstanceExistsInGCP(name string) (bool, error) {
 		"list",
 		"--format=get(name)",
 		"--project", c.gcpProject,
-		fmt.Sprintf("--filter=name=%v", name))
+		fmt.Sprintf("--filter=name:%v", instanceName))
 
 	stdOut := &bytes.Buffer{}
 	stdErr := &bytes.Buffer{}

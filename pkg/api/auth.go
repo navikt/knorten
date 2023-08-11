@@ -84,7 +84,7 @@ func (c *client) callback(ctx *gin.Context) (string, error) {
 
 	oauthCookie, err := ctx.Cookie(OAuthStateCookie)
 	if err != nil {
-		c.log.Errorf("Missing oauth state cookie: %v", err)
+		c.log.Infof("Missing oauth state cookie: %v", err)
 		return loginPage + "?error=invalid-state", errors.New("invalid state")
 	}
 

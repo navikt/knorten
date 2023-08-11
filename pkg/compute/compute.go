@@ -40,15 +40,13 @@ func (c Client) Create(ctx context.Context, instance gensql.ComputeInstance, log
 }
 
 func (c Client) create(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) (bool, error) {
-	instance, err := c.repo.ComputeInstanceGet(ctx, instance.Email)
-	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			log.WithError(err).Errorf("failed retrieving compute instance %v", instance.Email)
-			return true, err
-		}
+	existingInstance, err := c.repo.ComputeInstanceGet(ctx, instance.Email)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		log.WithError(err).Errorf("failed retrieving compute instance %v", instance.Email)
+		return true, err
 	}
 
-	if instance.Name != "" {
+	if existingInstance.Name != "" {
 		return false, nil
 	}
 

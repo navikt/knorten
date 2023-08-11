@@ -17,7 +17,7 @@ const (
 	k8sLabelEnableTeamNetworkPolicies = "team-netpols"
 )
 
-func (c Client) deleteCloudSQLProxyFromKubernetes(ctx context.Context, namespace string) error {
+func (c ChartClient) deleteCloudSQLProxyFromKubernetes(ctx context.Context, namespace string) error {
 	if c.dryRun {
 		return nil
 	}
@@ -33,7 +33,7 @@ func (c Client) deleteCloudSQLProxyFromKubernetes(ctx context.Context, namespace
 	return nil
 }
 
-func (c Client) deleteCloudSQLProxyDeployment(ctx context.Context, name, namespace string) error {
+func (c ChartClient) deleteCloudSQLProxyDeployment(ctx context.Context, name, namespace string) error {
 	if err := c.k8sClient.AppsV1().Deployments(namespace).Delete(ctx, name, metav1.DeleteOptions{}); err != nil && !k8sErrors.IsNotFound(err) {
 		return err
 	}
@@ -41,7 +41,7 @@ func (c Client) deleteCloudSQLProxyDeployment(ctx context.Context, name, namespa
 	return nil
 }
 
-func (c Client) deleteCloudSQLProxyService(ctx context.Context, name, namespace string) error {
+func (c ChartClient) deleteCloudSQLProxyService(ctx context.Context, name, namespace string) error {
 	if err := c.k8sClient.CoreV1().Services(namespace).Delete(ctx, name, metav1.DeleteOptions{}); err != nil && !k8sErrors.IsNotFound(err) {
 		return err
 	}
@@ -49,7 +49,7 @@ func (c Client) deleteCloudSQLProxyService(ctx context.Context, name, namespace 
 	return nil
 }
 
-func (c Client) deleteSecretFromKubernetes(ctx context.Context, name, namespace string) error {
+func (c ChartClient) deleteSecretFromKubernetes(ctx context.Context, name, namespace string) error {
 	if c.dryRun {
 		return nil
 	}
@@ -61,7 +61,7 @@ func (c Client) deleteSecretFromKubernetes(ctx context.Context, name, namespace 
 	return nil
 }
 
-func (c Client) defaultEgressNetpolSync(ctx context.Context, namespace string, restrictEgress bool) error {
+func (c ChartClient) defaultEgressNetpolSync(ctx context.Context, namespace string, restrictEgress bool) error {
 	if c.dryRun {
 		return nil
 	}
@@ -88,7 +88,7 @@ func (c Client) defaultEgressNetpolSync(ctx context.Context, namespace string, r
 	return nil
 }
 
-func (c Client) createOrUpdateSecret(ctx context.Context, name, namespace string, data map[string]string) error {
+func (c ChartClient) createOrUpdateSecret(ctx context.Context, name, namespace string, data map[string]string) error {
 	if c.dryRun {
 		return nil
 	}
@@ -123,7 +123,7 @@ func (c Client) createOrUpdateSecret(ctx context.Context, name, namespace string
 	return nil
 }
 
-func (c Client) createCloudSQLProxy(ctx context.Context, name, teamID, namespace, dbInstance string) error {
+func (c ChartClient) createCloudSQLProxy(ctx context.Context, name, teamID, namespace, dbInstance string) error {
 	if c.dryRun {
 		return nil
 	}
@@ -141,7 +141,7 @@ func (c Client) createCloudSQLProxy(ctx context.Context, name, teamID, namespace
 	return nil
 }
 
-func (c Client) createCloudSQLProxyDeployment(ctx context.Context, name, namespace, saName, dbInstance string, port int32) error {
+func (c ChartClient) createCloudSQLProxyDeployment(ctx context.Context, name, namespace, saName, dbInstance string, port int32) error {
 	deploySpec := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -203,7 +203,7 @@ func (c Client) createCloudSQLProxyDeployment(ctx context.Context, name, namespa
 	return nil
 }
 
-func (c Client) createCloudSQLProxyService(ctx context.Context, name, namespace string, port int32) error {
+func (c ChartClient) createCloudSQLProxyService(ctx context.Context, name, namespace string, port int32) error {
 	serviceSpec := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,

@@ -20,9 +20,9 @@ type EventHandler struct {
 	repo          database.Repository
 	log           *logrus.Entry
 	context       context.Context
-	teamClient    *team.Client
-	computeClient *compute.Client
-	chartClient   *chart.Client
+	teamClient    team.Client
+	computeClient compute.Client
+	chartClient   chart.Client
 }
 
 type workerFunc func(context.Context, gensql.Event, logger.Logger) error
@@ -69,7 +69,6 @@ func (e EventHandler) processWork(event gensql.Event, logger logger.Logger, form
 		if err := e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusFailed); err != nil {
 			return err
 		}
-
 		return err
 	}
 

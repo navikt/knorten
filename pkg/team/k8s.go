@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (c Client) createK8sNamespace(ctx context.Context, name string) error {
+func (c TeamClient) createK8sNamespace(ctx context.Context, name string) error {
 	if c.dryRun {
 		return nil
 	}
@@ -32,7 +32,7 @@ func (c Client) createK8sNamespace(ctx context.Context, name string) error {
 	return nil
 }
 
-func (c Client) deleteK8sNamespace(ctx context.Context, namespace string) error {
+func (c TeamClient) deleteK8sNamespace(ctx context.Context, namespace string) error {
 	if c.dryRun {
 		return nil
 	}
@@ -45,7 +45,7 @@ func (c Client) deleteK8sNamespace(ctx context.Context, namespace string) error 
 	return nil
 }
 
-func (c Client) createK8sServiceAccount(ctx context.Context, teamID, namespace string) error {
+func (c TeamClient) createK8sServiceAccount(ctx context.Context, teamID, namespace string) error {
 	if c.dryRun {
 		return nil
 	}

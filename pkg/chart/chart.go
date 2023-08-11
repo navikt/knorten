@@ -10,7 +10,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type Client struct {
+type Client interface {
+	SyncJupyter(ctx context.Context, values JupyterConfigurableValues, log logger.Logger) bool
+	DeleteJupyter(ctx context.Context, teamID string, log logger.Logger) bool
+	SyncAirflow(ctx context.Context, values AirflowConfigurableValues, log logger.Logger) bool
+	DeleteAirflow(ctx context.Context, teamID string, log logger.Logger) bool
+}
+
+type ChartClient struct {
 	repo                *database.Repo
 	k8sClient           *kubernetes.Clientset
 	azureClient         *auth.Azure
@@ -21,13 +28,13 @@ type Client struct {
 	gcpRegion           string
 }
 
-func NewClient(repo *database.Repo, azureClient *auth.Azure, dryRun, inCluster bool, airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion string) (*Client, error) {
+func NewClient(repo *database.Repo, azureClient *auth.Azure, dryRun, inCluster bool, airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion string) (*ChartClient, error) {
 	k8sClient, err := k8s.CreateClientset(dryRun, inCluster)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Client{
+	return &ChartClient{
 		repo:                repo,
 		azureClient:         azureClient,
 		k8sClient:           k8sClient,
@@ -39,7 +46,7 @@ func NewClient(repo *database.Repo, azureClient *auth.Azure, dryRun, inCluster b
 	}, nil
 }
 
-func (c Client) SyncJupyter(ctx context.Context, values JupyterConfigurableValues, log logger.Logger) bool {
+func (c ChartClient) SyncJupyter(ctx context.Context, values JupyterConfigurableValues, log logger.Logger) bool {
 	log = log.WithTeamID(values.TeamID).WithField("chart", "jupyter")
 	log.Info("Syncing Jupyter")
 
@@ -52,7 +59,7 @@ func (c Client) SyncJupyter(ctx context.Context, values JupyterConfigurableValue
 	return false
 }
 
-func (c Client) DeleteJupyter(ctx context.Context, teamID string, log logger.Logger) bool {
+func (c ChartClient) DeleteJupyter(ctx context.Context, teamID string, log logger.Logger) bool {
 	log = log.WithTeamID(teamID).WithField("chart", "jupyter")
 	log.Info("Deleting Jupyter")
 
@@ -65,7 +72,7 @@ func (c Client) DeleteJupyter(ctx context.Context, teamID string, log logger.Log
 	return false
 }
 
-func (c Client) SyncAirflow(ctx context.Context, values AirflowConfigurableValues, log logger.Logger) bool {
+func (c ChartClient) SyncAirflow(ctx context.Context, values AirflowConfigurableValues, log logger.Logger) bool {
 	log = log.WithTeamID(values.TeamID).WithField("chart", "airflow")
 	log.Info("Syncing Airflow")
 
@@ -78,7 +85,7 @@ func (c Client) SyncAirflow(ctx context.Context, values AirflowConfigurableValue
 	return false
 }
 
-func (c Client) DeleteAirflow(ctx context.Context, teamID string, log logger.Logger) bool {
+func (c ChartClient) DeleteAirflow(ctx context.Context, teamID string, log logger.Logger) bool {
 	log = log.WithTeamID(teamID).WithField("chart", "airflow")
 	log.Info("Deleting Airflow")
 

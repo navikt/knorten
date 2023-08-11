@@ -17,7 +17,7 @@ import (
 )
 
 type EventHandler struct {
-	repo          *database.Repo
+	repo          database.Repository
 	log           *logrus.Entry
 	context       context.Context
 	teamClient    *team.Client

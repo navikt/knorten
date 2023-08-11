@@ -699,34 +699,34 @@ func TestAdminAPI(t *testing.T) {
 
 func prepareAdminTests(ctx context.Context) ([]gensql.Team, error) {
 	// teams
-	team1 := gensql.Team{
+	teamA := gensql.Team{
 		ID:    "team-a-1234",
 		Slug:  "team-a",
 		Users: []string{"user.one@nav.no"},
 		Owner: user.Email,
 	}
-	err := repo.TeamCreate(ctx, team1)
+	err := repo.TeamCreate(ctx, teamA)
 	if err != nil {
 		return nil, err
 	}
-	if err := createChart(ctx, team1.ID, gensql.ChartTypeJupyterhub); err != nil {
+	if err := createChart(ctx, teamA.ID, gensql.ChartTypeJupyterhub); err != nil {
 		return nil, err
 	}
 
-	team2 := gensql.Team{
+	teamB := gensql.Team{
 		ID:    "team-b-1234",
 		Slug:  "team-b",
 		Users: []string{"user.one@nav.no", "user.two@nav.no"},
 		Owner: user.Email,
 	}
-	err = repo.TeamCreate(ctx, team2)
+	err = repo.TeamCreate(ctx, teamB)
 	if err != nil {
 		return nil, err
 	}
-	if err := createChart(ctx, team2.ID, gensql.ChartTypeJupyterhub); err != nil {
+	if err := createChart(ctx, teamB.ID, gensql.ChartTypeJupyterhub); err != nil {
 		return nil, err
 	}
-	if err := createChart(ctx, team2.ID, gensql.ChartTypeAirflow); err != nil {
+	if err := createChart(ctx, teamB.ID, gensql.ChartTypeAirflow); err != nil {
 		return nil, err
 	}
 
@@ -746,7 +746,7 @@ func prepareAdminTests(ctx context.Context) ([]gensql.Team, error) {
 		return nil, err
 	}
 
-	return append([]gensql.Team{team1}, team2), nil
+	return []gensql.Team{teamA, teamB}, nil
 }
 
 func createChart(ctx context.Context, teamID string, chartType gensql.ChartType) error {
@@ -781,7 +781,7 @@ func cleanUpAdminTests(ctx context.Context, teams []gensql.Team) error {
 }
 
 func getNewEvents(oldEvents, events []gensql.Event) []gensql.Event {
-	new := []gensql.Event{}
+	var new []gensql.Event
 	for _, event := range events {
 		if !containsEvent(oldEvents, event) {
 			new = append(new, event)

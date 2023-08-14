@@ -49,7 +49,7 @@ func (c Client) Create(ctx context.Context, team gensql.Team, log logger.Logger)
 }
 
 func (c Client) create(ctx context.Context, team gensql.Team, log logger.Logger) (bool, error) {
-	existingTeam, err := c.repo.TeamGet(ctx, team.ID)
+	existingTeam, err := c.repo.TeamBySlugGet(ctx, team.Slug)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.WithError(err).Error("failed retrieving team from database")
 		return true, err

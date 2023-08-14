@@ -66,7 +66,6 @@ func TestCharts(t *testing.T) {
 	type want struct {
 		values    []gensql.ChartTeamValue
 		numValues int
-		err       error
 	}
 
 	operation := func(ctx context.Context, eventType gensql.EventType, values any, chartClient *Client) bool {

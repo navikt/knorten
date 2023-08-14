@@ -13,7 +13,7 @@ func (c Client) createComputeInstanceInGCP(ctx context.Context, instanceName, em
 		return nil
 	}
 
-	exists, err := c.computeInstanceExistsInGCP(instanceName)
+	exists, err := c.computeInstanceExistsInGCP(ctx, instanceName)
 	if err != nil {
 		return err
 	}
@@ -22,8 +22,7 @@ func (c Client) createComputeInstanceInGCP(ctx context.Context, instanceName, em
 		return nil
 	}
 
-	cmd := exec.CommandContext(
-		ctx,
+	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",
 		"compute",
@@ -55,8 +54,8 @@ func (c Client) createComputeInstanceInGCP(ctx context.Context, instanceName, em
 	return nil
 }
 
-func (c Client) computeInstanceExistsInGCP(instanceName string) (bool, error) {
-	cmd := exec.Command(
+func (c Client) computeInstanceExistsInGCP(ctx context.Context, instanceName string) (bool, error) {
+	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",
 		"compute",
@@ -82,8 +81,7 @@ func (c Client) addGCPOwnerBinding(ctx context.Context, instanceName, user strin
 		return nil
 	}
 
-	cmd := exec.CommandContext(
-		ctx,
+	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",
 		"compute",
@@ -112,7 +110,7 @@ func (c Client) deleteComputeInstanceFromGCP(ctx context.Context, instanceName s
 		return nil
 	}
 
-	exists, err := c.computeInstanceExistsInGCP(instanceName)
+	exists, err := c.computeInstanceExistsInGCP(ctx, instanceName)
 	if err != nil {
 		return err
 	}
@@ -121,8 +119,7 @@ func (c Client) deleteComputeInstanceFromGCP(ctx context.Context, instanceName s
 		return nil
 	}
 
-	cmd := exec.CommandContext(
-		ctx,
+	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",
 		"compute",

@@ -131,12 +131,16 @@ func NewHandler(ctx context.Context, repo *database.Repo, azureClient *auth.Azur
 
 func (e EventHandler) Run(tickDuration time.Duration) {
 	go func() {
+		var cancelFuncs []context.CancelFunc
 		for {
 			select {
 			case <-time.NewTicker(tickDuration).C:
 				e.log.Debug("Event dispatcher run!")
 			case <-e.context.Done():
 				e.log.Debug("Context cancelled, stopping the event dispatcher.")
+				for _, cancelFunc := range cancelFuncs {
+					cancelFunc()
+				}
 				return
 			}
 
@@ -166,7 +170,16 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 				eventLogger.log.Infof("Dispatching event '%v'", event.EventType)
 				event := event
 				go func() {
-					if err := worker(e.context, event, eventLogger); err != nil {
+					deadline, err := time.ParseDuration(event.Deadline)
+					if err != nil {
+						eventLogger.log.WithError(err).Error("failed parsing event deadline")
+						return
+					}
+
+					ctx, cancelFunc := context.WithTimeout(e.context, deadline)
+					cancelFuncs = append(cancelFuncs, cancelFunc)
+
+					if err := worker(ctx, event, eventLogger); err != nil {
 						eventLogger.log.WithError(err).Error("failed processing event")
 						if event.RetryCount > 5 {
 							eventLogger.log.Error("event reached max retries")

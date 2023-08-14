@@ -182,13 +182,13 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string, log logger.Log
 		return err
 	}
 
-	if err := removeSQLClientIAMBinding(c.gcpProject, teamID); err != nil {
+	if err := removeSQLClientIAMBinding(ctx, c.gcpProject, teamID); err != nil {
 		log.WithError(err).Error("remove SQL client IAM binding")
 		return err
 	}
 
 	instanceName := createAirflowcloudSQLInstanceName(teamID)
-	if err := deleteCloudSQLInstance(instanceName, c.gcpProject); err != nil {
+	if err := deleteCloudSQLInstance(ctx, instanceName, c.gcpProject); err != nil {
 		log.WithError(err).Error("delete Cloud SQL instance from GCP")
 		return err
 	}
@@ -331,19 +331,19 @@ func (c Client) createAirflowDatabase(ctx context.Context, teamID, dbPassword st
 	}
 
 	dbInstance := createAirflowcloudSQLInstanceName(teamID)
-	if err := createCloudSQLInstance(dbInstance, c.gcpProject, c.gcpRegion); err != nil {
+	if err := createCloudSQLInstance(ctx, dbInstance, c.gcpProject, c.gcpRegion); err != nil {
 		return err
 	}
 
-	if err := createCloudSQLDatabase(teamID, dbInstance, c.gcpProject); err != nil {
+	if err := createCloudSQLDatabase(ctx, teamID, dbInstance, c.gcpProject); err != nil {
 		return err
 	}
 
-	if err := createOrUpdateCloudSQLUser(teamID, dbPassword, dbInstance, c.gcpProject); err != nil {
+	if err := createOrUpdateCloudSQLUser(ctx, teamID, dbPassword, dbInstance, c.gcpProject); err != nil {
 		return err
 	}
 
-	if err := setSQLClientIAMBinding(teamID, c.gcpProject); err != nil {
+	if err := setSQLClientIAMBinding(ctx, teamID, c.gcpProject); err != nil {
 		return err
 	}
 

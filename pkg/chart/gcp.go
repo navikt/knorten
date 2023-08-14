@@ -90,9 +90,9 @@ func createServiceAccountObjectAdminBinding(ctx context.Context, teamID, bucketN
 	return nil
 }
 
-func removeSQLClientIAMBinding(gcpProject, teamID string) error {
+func removeSQLClientIAMBinding(ctx context.Context, gcpProject, teamID string) error {
 	role := "roles/cloudsql.client"
-	exists, err := roleBindingExistsInGCP(gcpProject, teamID, role)
+	exists, err := roleBindingExistsInGCP(ctx, gcpProject, teamID, role)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func removeSQLClientIAMBinding(gcpProject, teamID string) error {
 		return nil
 	}
 
-	cmd := exec.Command(
+	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",
 		"projects",
@@ -123,8 +123,8 @@ func removeSQLClientIAMBinding(gcpProject, teamID string) error {
 	return nil
 }
 
-func deleteCloudSQLInstance(instanceName, gcpProject string) error {
-	exisits, err := sqlInstanceExistsInGCP(instanceName, gcpProject)
+func deleteCloudSQLInstance(ctx context.Context, instanceName, gcpProject string) error {
+	exisits, err := sqlInstanceExistsInGCP(ctx, instanceName, gcpProject)
 	if err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func deleteCloudSQLInstance(instanceName, gcpProject string) error {
 		return nil
 	}
 
-	cmd := exec.Command(
+	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",
 		"sql",
@@ -153,8 +153,8 @@ func deleteCloudSQLInstance(instanceName, gcpProject string) error {
 	return nil
 }
 
-func createCloudSQLInstance(dbInstance, gcpProject, gcpRegion string) error {
-	exists, err := sqlInstanceExistsInGCP(dbInstance, gcpProject)
+func createCloudSQLInstance(ctx context.Context, dbInstance, gcpProject, gcpRegion string) error {
+	exists, err := sqlInstanceExistsInGCP(ctx, dbInstance, gcpProject)
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func createCloudSQLInstance(dbInstance, gcpProject, gcpRegion string) error {
 		return nil
 	}
 
-	cmd := exec.Command(
+	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",
 		"sql",
@@ -190,8 +190,8 @@ func createCloudSQLInstance(dbInstance, gcpProject, gcpRegion string) error {
 	return nil
 }
 
-func createCloudSQLDatabase(dbName, dbInstance, gcpProject string) error {
-	exists, err := sqlDatabaseExistsInGCP(dbInstance, gcpProject, dbName)
+func createCloudSQLDatabase(ctx context.Context, dbName, dbInstance, gcpProject string) error {
+	exists, err := sqlDatabaseExistsInGCP(ctx, dbInstance, gcpProject, dbName)
 	if err != nil {
 		return err
 	}
@@ -200,7 +200,7 @@ func createCloudSQLDatabase(dbName, dbInstance, gcpProject string) error {
 		return nil
 	}
 
-	cmd := exec.Command(
+	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",
 		"sql",
@@ -221,21 +221,21 @@ func createCloudSQLDatabase(dbName, dbInstance, gcpProject string) error {
 	return nil
 }
 
-func createOrUpdateCloudSQLUser(user, password, dbInstance, gcpProject string) error {
-	exists, err := sqlUserExistsInGCP(dbInstance, gcpProject, user)
+func createOrUpdateCloudSQLUser(ctx context.Context, user, password, dbInstance, gcpProject string) error {
+	exists, err := sqlUserExistsInGCP(ctx, dbInstance, gcpProject, user)
 	if err != nil {
 		return err
 	}
 
 	if exists {
-		return updateSQLUser(user, password, dbInstance, gcpProject)
+		return updateSQLUser(ctx, user, password, dbInstance, gcpProject)
 	}
 
-	return createSQLUser(user, password, dbInstance, gcpProject)
+	return createSQLUser(ctx, user, password, dbInstance, gcpProject)
 }
 
-func updateSQLUser(user, password, dbInstance, gcpProject string) error {
-	cmd := exec.Command(
+func updateSQLUser(ctx context.Context, user, password, dbInstance, gcpProject string) error {
+	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",
 		"sql",
@@ -257,8 +257,8 @@ func updateSQLUser(user, password, dbInstance, gcpProject string) error {
 	return nil
 }
 
-func createSQLUser(user, password, dbInstance, gcpProject string) error {
-	cmd := exec.Command(
+func createSQLUser(ctx context.Context, user, password, dbInstance, gcpProject string) error {
+	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",
 		"sql",
@@ -280,8 +280,8 @@ func createSQLUser(user, password, dbInstance, gcpProject string) error {
 	return nil
 }
 
-func setSQLClientIAMBinding(teamID, gcpProject string) error {
-	cmd := exec.Command(
+func setSQLClientIAMBinding(ctx context.Context, teamID, gcpProject string) error {
+	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",
 		"projects",
@@ -302,8 +302,8 @@ func setSQLClientIAMBinding(teamID, gcpProject string) error {
 	return nil
 }
 
-func sqlInstanceExistsInGCP(instanceName, gcpProject string) (bool, error) {
-	cmd := exec.Command(
+func sqlInstanceExistsInGCP(ctx context.Context, instanceName, gcpProject string) (bool, error) {
+	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",
 		"sql",
@@ -324,8 +324,8 @@ func sqlInstanceExistsInGCP(instanceName, gcpProject string) (bool, error) {
 	return stdOut.String() != "", nil
 }
 
-func sqlDatabaseExistsInGCP(dbInstance, gcpProject, sqlDatabase string) (bool, error) {
-	cmd := exec.Command(
+func sqlDatabaseExistsInGCP(ctx context.Context, dbInstance, gcpProject, sqlDatabase string) (bool, error) {
+	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",
 		"sql",
@@ -347,8 +347,8 @@ func sqlDatabaseExistsInGCP(dbInstance, gcpProject, sqlDatabase string) (bool, e
 	return stdOut.String() != "", nil
 }
 
-func sqlUserExistsInGCP(dbInstance, gcpProject, sqlUser string) (bool, error) {
-	cmd := exec.Command(
+func sqlUserExistsInGCP(ctx context.Context, dbInstance, gcpProject, sqlUser string) (bool, error) {
+	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",
 		"sql",
@@ -370,8 +370,8 @@ func sqlUserExistsInGCP(dbInstance, gcpProject, sqlUser string) (bool, error) {
 	return stdOut.String() != "", nil
 }
 
-func roleBindingExistsInGCP(gcpProject, teamID, role string) (bool, error) {
-	cmd := exec.Command(
+func roleBindingExistsInGCP(ctx context.Context, gcpProject, teamID, role string) (bool, error) {
+	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",
 		"projects",

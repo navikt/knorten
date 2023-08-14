@@ -109,7 +109,7 @@ func TestComputeAPI(t *testing.T) {
 	})
 }
 
-func getComputeEvent(events []gensql.EventsGetTypeRow, user string) (gensql.ComputeInstance, error) {
+func getComputeEvent(events []gensql.Event, user string) (gensql.ComputeInstance, error) {
 	for _, event := range events {
 		payload := gensql.ComputeInstance{}
 		err := json.Unmarshal(event.Payload, &payload)

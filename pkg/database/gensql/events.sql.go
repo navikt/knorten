@@ -14,35 +14,31 @@ import (
 )
 
 const dispatcherEventsGet = `-- name: DispatcherEventsGet :many
-SELECT id, owner, event_type, payload, retry_count
+SELECT id, event_type, payload, status, deadline, created_at, updated_at, owner, retry_count
 FROM Events
 WHERE status = 'new'
-   OR (status = 'pending' AND updated_at + deadline * retry_count < NOW())
+   OR (status = 'pending' AND updated_at + deadline::interval * retry_count < NOW())
 ORDER BY created_at DESC
 `
 
-type DispatcherEventsGetRow struct {
-	ID         uuid.UUID
-	Owner      string
-	EventType  EventType
-	Payload    json.RawMessage
-	RetryCount int32
-}
-
-func (q *Queries) DispatcherEventsGet(ctx context.Context) ([]DispatcherEventsGetRow, error) {
+func (q *Queries) DispatcherEventsGet(ctx context.Context) ([]Event, error) {
 	rows, err := q.db.QueryContext(ctx, dispatcherEventsGet)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []DispatcherEventsGetRow{}
+	items := []Event{}
 	for rows.Next() {
-		var i DispatcherEventsGetRow
+		var i Event
 		if err := rows.Scan(
 			&i.ID,
-			&i.Owner,
 			&i.EventType,
 			&i.Payload,
+			&i.Status,
+			&i.Deadline,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Owner,
 			&i.RetryCount,
 		); err != nil {
 			return nil, err
@@ -71,7 +67,7 @@ type EventCreateParams struct {
 	Owner     string
 	EventType EventType
 	Payload   json.RawMessage
-	Deadline  int64
+	Deadline  string
 }
 
 func (q *Queries) EventCreate(ctx context.Context, arg EventCreateParams) error {
@@ -85,44 +81,24 @@ func (q *Queries) EventCreate(ctx context.Context, arg EventCreateParams) error 
 }
 
 const eventGet = `-- name: EventGet :one
-SELECT events.id,
-       events.event_type,
-       events.status,
-       events.deadline::TEXT as deadline,
-       events.created_at,
-       events.updated_at,
-       events.owner,
-       events.retry_count,
-       events.payload
+SELECT id, event_type, payload, status, deadline, created_at, updated_at, owner, retry_count
 FROM Events
 WHERE id = $1
 `
 
-type EventGetRow struct {
-	ID         uuid.UUID
-	EventType  EventType
-	Status     EventStatus
-	Deadline   string
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	Owner      string
-	RetryCount int32
-	Payload    json.RawMessage
-}
-
-func (q *Queries) EventGet(ctx context.Context, id uuid.UUID) (EventGetRow, error) {
+func (q *Queries) EventGet(ctx context.Context, id uuid.UUID) (Event, error) {
 	row := q.db.QueryRowContext(ctx, eventGet, id)
-	var i EventGetRow
+	var i Event
 	err := row.Scan(
 		&i.ID,
 		&i.EventType,
+		&i.Payload,
 		&i.Status,
 		&i.Deadline,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Owner,
 		&i.RetryCount,
-		&i.Payload,
 	)
 	return i, err
 }
@@ -180,13 +156,7 @@ func (q *Queries) EventLogsForEventGet(ctx context.Context, id uuid.UUID) ([]Eve
 }
 
 const eventLogsForOwnerGet = `-- name: EventLogsForOwnerGet :many
-SELECT events.event_type,
-       events.status,
-       events.deadline::TEXT as deadline,
-       events.created_at,
-       events.updated_at,
-       events.owner,
-       events.retry_count,
+SELECT events.id, events.event_type, events.payload, events.status, events.deadline, events.created_at, events.updated_at, events.owner, events.retry_count,
        json_agg(el.*)        AS json_logs
 FROM events
          JOIN (SELECT event_id, message, log_type, created_at::timestamptz
@@ -206,7 +176,9 @@ type EventLogsForOwnerGetParams struct {
 }
 
 type EventLogsForOwnerGetRow struct {
+	ID         uuid.UUID
 	EventType  EventType
+	Payload    json.RawMessage
 	Status     EventStatus
 	Deadline   string
 	CreatedAt  time.Time
@@ -226,7 +198,9 @@ func (q *Queries) EventLogsForOwnerGet(ctx context.Context, arg EventLogsForOwne
 	for rows.Next() {
 		var i EventLogsForOwnerGetRow
 		if err := rows.Scan(
+			&i.ID,
 			&i.EventType,
+			&i.Payload,
 			&i.Status,
 			&i.Deadline,
 			&i.CreatedAt,
@@ -249,8 +223,7 @@ func (q *Queries) EventLogsForOwnerGet(ctx context.Context, arg EventLogsForOwne
 }
 
 const eventSetPendingStatus = `-- name: EventSetPendingStatus :exec
-UPDATE
-    Events
+UPDATE Events
 SET status      = 'pending',
     retry_count = retry_count + 1
 WHERE id = $1
@@ -262,8 +235,7 @@ func (q *Queries) EventSetPendingStatus(ctx context.Context, id uuid.UUID) error
 }
 
 const eventSetStatus = `-- name: EventSetStatus :exec
-UPDATE
-    Events
+UPDATE Events
 SET status = $1
 WHERE id = $2
 `
@@ -279,15 +251,7 @@ func (q *Queries) EventSetStatus(ctx context.Context, arg EventSetStatusParams) 
 }
 
 const eventsByOwnerGet = `-- name: EventsByOwnerGet :many
-SELECT events.id,
-       events.event_type,
-       events.status,
-       events.deadline::TEXT as deadline,
-       events.created_at,
-       events.updated_at,
-       events.owner,
-       events.retry_count,
-       events.payload
+SELECT id, event_type, payload, status, deadline, created_at, updated_at, owner, retry_count
 FROM Events
 WHERE owner = $1
 ORDER BY updated_at DESC
@@ -299,37 +263,25 @@ type EventsByOwnerGetParams struct {
 	Lim   int32
 }
 
-type EventsByOwnerGetRow struct {
-	ID         uuid.UUID
-	EventType  EventType
-	Status     EventStatus
-	Deadline   string
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	Owner      string
-	RetryCount int32
-	Payload    json.RawMessage
-}
-
-func (q *Queries) EventsByOwnerGet(ctx context.Context, arg EventsByOwnerGetParams) ([]EventsByOwnerGetRow, error) {
+func (q *Queries) EventsByOwnerGet(ctx context.Context, arg EventsByOwnerGetParams) ([]Event, error) {
 	rows, err := q.db.QueryContext(ctx, eventsByOwnerGet, arg.Owner, arg.Lim)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []EventsByOwnerGetRow{}
+	items := []Event{}
 	for rows.Next() {
-		var i EventsByOwnerGetRow
+		var i Event
 		if err := rows.Scan(
 			&i.ID,
 			&i.EventType,
+			&i.Payload,
 			&i.Status,
 			&i.Deadline,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Owner,
 			&i.RetryCount,
-			&i.Payload,
 		); err != nil {
 			return nil, err
 		}
@@ -345,32 +297,30 @@ func (q *Queries) EventsByOwnerGet(ctx context.Context, arg EventsByOwnerGetPara
 }
 
 const eventsGetType = `-- name: EventsGetType :many
-SELECT id, owner, status, payload
+SELECT id, event_type, payload, status, deadline, created_at, updated_at, owner, retry_count
 FROM Events
 WHERE event_type = $1
 `
 
-type EventsGetTypeRow struct {
-	ID      uuid.UUID
-	Owner   string
-	Status  EventStatus
-	Payload json.RawMessage
-}
-
-func (q *Queries) EventsGetType(ctx context.Context, eventType EventType) ([]EventsGetTypeRow, error) {
+func (q *Queries) EventsGetType(ctx context.Context, eventType EventType) ([]Event, error) {
 	rows, err := q.db.QueryContext(ctx, eventsGetType, eventType)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []EventsGetTypeRow{}
+	items := []Event{}
 	for rows.Next() {
-		var i EventsGetTypeRow
+		var i Event
 		if err := rows.Scan(
 			&i.ID,
-			&i.Owner,
-			&i.Status,
+			&i.EventType,
 			&i.Payload,
+			&i.Status,
+			&i.Deadline,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Owner,
+			&i.RetryCount,
 		); err != nil {
 			return nil, err
 		}

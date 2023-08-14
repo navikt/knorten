@@ -10,7 +10,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/nais/knorten/pkg/chart"
-	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/k8s"
 
@@ -28,7 +27,7 @@ type teamInfo struct {
 	gensql.Team
 	Namespace string
 	Apps      []gensql.ChartType
-	Events    []database.Event
+	Events    []gensql.Event
 }
 
 func (c *client) setupAdminRoutes() {

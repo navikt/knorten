@@ -62,7 +62,7 @@ func (e EventLogger) WithTeamID(teamID string) logger.Logger {
 	return e
 }
 
-func newEventLogger(ctx context.Context, log *logrus.Entry, repo database.Repository, event gensql.DispatcherEventsGetRow) EventLogger {
+func newEventLogger(ctx context.Context, log *logrus.Entry, repo database.Repository, event gensql.Event) EventLogger {
 	return EventLogger{
 		eventID: event.ID,
 		log:     log.WithField("eventType", event.EventType).WithField("eventID", event.ID),

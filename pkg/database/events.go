@@ -3,7 +3,6 @@ package database
 import (
 	"context"
 	"encoding/json"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -29,7 +28,7 @@ type Event struct {
 	Logs       []EventLog
 }
 
-func (r *Repo) registerEvent(ctx context.Context, eventType gensql.EventType, owner string, deadlineOffset time.Duration, data any) error {
+func (r *Repo) registerEvent(ctx context.Context, eventType gensql.EventType, owner string, deadline time.Duration, data any) error {
 	jsonPayload, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -39,7 +38,7 @@ func (r *Repo) registerEvent(ctx context.Context, eventType gensql.EventType, ow
 		Owner:     owner,
 		EventType: eventType,
 		Payload:   jsonPayload,
-		Deadline:  deadlineOffset.Milliseconds() / 1000,
+		Deadline:  deadline.String(),
 	}
 
 	if err = r.querier.EventCreate(ctx, params); err != nil {
@@ -105,11 +104,11 @@ func (r *Repo) EventSetPendingStatus(ctx context.Context, id uuid.UUID) error {
 	return r.querier.EventSetPendingStatus(ctx, id)
 }
 
-func (r *Repo) DispatcherEventsGet(ctx context.Context) ([]gensql.DispatcherEventsGetRow, error) {
+func (r *Repo) DispatcherEventsGet(ctx context.Context) ([]gensql.Event, error) {
 	return r.querier.DispatcherEventsGet(ctx)
 }
 
-func (r *Repo) EventsGetType(ctx context.Context, eventType gensql.EventType) ([]gensql.EventsGetTypeRow, error) {
+func (r *Repo) EventsGetType(ctx context.Context, eventType gensql.EventType) ([]gensql.Event, error) {
 	return r.querier.EventsGetType(ctx, eventType)
 }
 
@@ -121,61 +120,15 @@ func (r *Repo) EventLogCreate(ctx context.Context, id uuid.UUID, message string,
 	})
 }
 
-func (r *Repo) EventGet(ctx context.Context, id uuid.UUID) (Event, error) {
-	eventGetRow, err := r.querier.EventGet(ctx, id)
-	if err != nil {
-		return Event{}, err
-	}
-
-	deadline, err := parseDeadline(eventGetRow.Deadline)
-	if err != nil {
-		return Event{}, err
-	}
-
-	return Event{
-		ID:         eventGetRow.ID,
-		Type:       eventGetRow.EventType,
-		Payload:    string(eventGetRow.Payload),
-		Status:     eventGetRow.Status,
-		Deadline:   deadline,
-		CreatedAt:  eventGetRow.CreatedAt,
-		UpdatedAt:  eventGetRow.UpdatedAt,
-		Owner:      eventGetRow.Owner,
-		RetryCount: eventGetRow.RetryCount,
-	}, nil
+func (r *Repo) EventGet(ctx context.Context, id uuid.UUID) (gensql.Event, error) {
+	return r.querier.EventGet(ctx, id)
 }
 
-func (r *Repo) EventsGet(ctx context.Context, teamID string, limit int32) ([]Event, error) {
-	rows, err := r.querier.EventsByOwnerGet(ctx, gensql.EventsByOwnerGetParams{
+func (r *Repo) EventsGet(ctx context.Context, teamID string, limit int32) ([]gensql.Event, error) {
+	return r.querier.EventsByOwnerGet(ctx, gensql.EventsByOwnerGetParams{
 		Owner: teamID,
 		Lim:   limit,
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	var events []Event
-	for _, row := range rows {
-		deadline, err := parseDeadline(row.Deadline)
-		if err != nil {
-			return nil, err
-		}
-
-		event := Event{
-			ID:         row.ID,
-			Type:       row.EventType,
-			Payload:    string(row.Payload),
-			Status:     row.Status,
-			Deadline:   deadline,
-			CreatedAt:  row.CreatedAt,
-			UpdatedAt:  row.UpdatedAt,
-			Owner:      row.Owner,
-			RetryCount: row.RetryCount,
-		}
-		events = append(events, event)
-	}
-
-	return events, nil
 }
 
 func (r *Repo) EventLogsForEventGet(ctx context.Context, id uuid.UUID) ([]gensql.EventLogsForEventGetRow, error) {
@@ -199,7 +152,7 @@ func (r *Repo) EventLogsForOwnerGet(ctx context.Context, owner string) ([]Event,
 			return nil, err
 		}
 
-		deadline, err := parseDeadline(row.Deadline)
+		deadline, err := time.ParseDuration(row.Deadline)
 		if err != nil {
 			return nil, err
 		}
@@ -217,12 +170,4 @@ func (r *Repo) EventLogsForOwnerGet(ctx context.Context, owner string) ([]Event,
 	}
 
 	return events, nil
-}
-
-func parseDeadline(input string) (time.Duration, error) {
-	deadline := strings.Replace(input, ":", "h", 1)
-	deadline = strings.Replace(deadline, ":", "m", 1)
-	deadline += "s"
-
-	return time.ParseDuration(deadline)
 }

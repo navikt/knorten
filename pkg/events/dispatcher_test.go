@@ -11,162 +11,59 @@ import (
 	"github.com/nais/knorten/pkg/team"
 )
 
-func TestEventHandler_distributeWork_teamEvents(t *testing.T) {
-	type args struct {
-		eventType gensql.EventType
-	}
-	teamEventTests := []struct {
-		name string
-		args args
-		want int
-	}{
-		{
-			name: "Create team event",
-			args: args{
-				eventType: gensql.EventTypeCreateTeam,
-			},
-			want: 1,
-		},
-		{
-			name: "Update team event",
-			args: args{
-				eventType: gensql.EventTypeUpdateTeam,
-			},
-			want: 1,
-		},
-		{
-			name: "Delete team event",
-			args: args{
-				eventType: gensql.EventTypeDeleteTeam,
-			},
-			want: 1,
-		},
-	}
-	for _, tt := range teamEventTests {
-		t.Run(tt.name, func(t *testing.T) {
-			teamClientMock := team.NewClientMock()
-			e := EventHandler{
-				repo:       &database.RepoMock{},
-				teamClient: &teamClientMock,
-			}
-			worker := e.distributeWork(tt.args.eventType)
-			if err := worker(context.Background(), gensql.DispatcherEventsGetRow{Payload: []byte("{}"), EventType: tt.args.eventType}, nil); err != nil {
-				t.Errorf("worker(): %v", err)
-			}
-			if teamClientMock.EventCounts[tt.args.eventType] != tt.want {
-				t.Errorf("distributeWork(): expected %v %v event, got %v", tt.want, tt.args.eventType, teamClientMock.EventCounts[tt.args.eventType])
-			}
-		})
-	}
-}
+func TestEventHandler_distributeWork(t *testing.T) {
+	checkEventType := func(eventType gensql.EventType, chartMock chart.ClientMock, teamMock team.ClientMock, computeMock compute.ClientMock) int {
+		switch eventType {
+		case gensql.EventTypeCreateCompute,
+			gensql.EventTypeDeleteCompute:
+			return computeMock.EventCounts[eventType]
+		case gensql.EventTypeCreateTeam,
+			gensql.EventTypeUpdateTeam,
+			gensql.EventTypeDeleteTeam:
+			return teamMock.EventCounts[eventType]
+		case gensql.EventTypeCreateAirflow,
+			gensql.EventTypeUpdateAirflow,
+			gensql.EventTypeDeleteAirflow,
+			gensql.EventTypeCreateJupyter,
+			gensql.EventTypeUpdateJupyter,
+			gensql.EventTypeDeleteJupyter:
+			return chartMock.EventCounts[eventType]
+		}
 
-func TestEventHandler_distributeWork_computeEvents(t *testing.T) {
-	type args struct {
-		eventType gensql.EventType
+		return -1
 	}
-	computeEventTests := []struct {
-		name string
-		args args
-		want int
-	}{
-		{
-			name: "Create compute instance event",
-			args: args{
-				eventType: gensql.EventTypeCreateCompute,
-			},
-			want: 1,
-		},
-		{
-			name: "Delete compute instance event",
-			args: args{
-				eventType: gensql.EventTypeDeleteCompute,
-			},
-			want: 1,
-		},
+
+	eventTypes := []gensql.EventType{
+		gensql.EventTypeCreateCompute,
+		gensql.EventTypeDeleteCompute,
+		gensql.EventTypeCreateTeam,
+		gensql.EventTypeUpdateTeam,
+		gensql.EventTypeDeleteTeam,
+		gensql.EventTypeCreateAirflow,
+		gensql.EventTypeUpdateAirflow,
+		gensql.EventTypeDeleteAirflow,
+		gensql.EventTypeCreateJupyter,
+		gensql.EventTypeUpdateJupyter,
+		gensql.EventTypeDeleteJupyter,
 	}
-	for _, tt := range computeEventTests {
-		t.Run(tt.name, func(t *testing.T) {
-			computeClientMock := compute.NewClientMock()
-			e := EventHandler{
+	for _, eventType := range eventTypes {
+		t.Run(string(eventType), func(t *testing.T) {
+			computeMock := compute.NewClientMock()
+			teamMock := team.NewClientMock()
+			chartMock := chart.NewClientMock()
+			handler := EventHandler{
 				repo:          &database.RepoMock{},
-				computeClient: &computeClientMock,
+				computeClient: &computeMock,
+				teamClient:    &teamMock,
+				chartClient:   &chartMock,
 			}
-			worker := e.distributeWork(tt.args.eventType)
-			if err := worker(context.Background(), gensql.DispatcherEventsGetRow{Payload: []byte("{}"), EventType: tt.args.eventType}, nil); err != nil {
+			worker := handler.distributeWork(eventType)
+			if err := worker(context.Background(), gensql.DispatcherEventsGetRow{Payload: []byte("{}"), EventType: eventType}, nil); err != nil {
 				t.Errorf("worker(): %v", err)
 			}
-			if computeClientMock.EventCounts[tt.args.eventType] != tt.want {
-				t.Errorf("distributeWork(): expected %v %v event, got %v", tt.want, tt.args.eventType, computeClientMock.EventCounts[tt.args.eventType])
-			}
-		})
-	}
-}
 
-func TestEventHandler_distributeWork_chartEvents(t *testing.T) {
-	type args struct {
-		eventType gensql.EventType
-	}
-	chartEventTests := []struct {
-		name string
-		args args
-		want int
-	}{
-		{
-			name: "Create jupyterhub event",
-			args: args{
-				eventType: gensql.EventTypeCreateJupyter,
-			},
-			want: 1,
-		},
-		{
-			name: "Update jupyterhub event",
-			args: args{
-				eventType: gensql.EventTypeUpdateJupyter,
-			},
-			want: 1,
-		},
-		{
-			name: "Delete jupyterhub event",
-			args: args{
-				eventType: gensql.EventTypeDeleteJupyter,
-			},
-			want: 1,
-		},
-		{
-			name: "Create airflow event",
-			args: args{
-				eventType: gensql.EventTypeCreateAirflow,
-			},
-			want: 1,
-		},
-		{
-			name: "Update airflow event",
-			args: args{
-				eventType: gensql.EventTypeUpdateAirflow,
-			},
-			want: 1,
-		},
-		{
-			name: "Delete airflow event",
-			args: args{
-				eventType: gensql.EventTypeDeleteAirflow,
-			},
-			want: 1,
-		},
-	}
-	for _, tt := range chartEventTests {
-		t.Run(tt.name, func(t *testing.T) {
-			chartClientMock := chart.NewClientMock()
-			e := EventHandler{
-				repo:        &database.RepoMock{},
-				chartClient: &chartClientMock,
-			}
-			worker := e.distributeWork(tt.args.eventType)
-			if err := worker(context.Background(), gensql.DispatcherEventsGetRow{Payload: []byte("{}"), EventType: tt.args.eventType}, nil); err != nil {
-				t.Errorf("worker(): %v", err)
-			}
-			if chartClientMock.EventCounts[tt.args.eventType] != tt.want {
-				t.Errorf("distributeWork(): expected %v %v event, got %v", tt.want, tt.args.eventType, chartClientMock.EventCounts[tt.args.eventType])
+			if count := checkEventType(eventType, chartMock, teamMock, computeMock); count != 1 {
+				t.Errorf("distributeWork(): expected 1 %v event, got %v", eventType, count)
 			}
 		})
 	}

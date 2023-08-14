@@ -88,6 +88,27 @@ func TestTeam(t *testing.T) {
 			},
 		},
 		{
+			name:      "Create team slug already exists",
+			eventType: gensql.EventTypeCreateTeam,
+			args: args{
+				team: gensql.Team{
+					ID:    "already-exists-1234",
+					Slug:  "test-team",
+					Users: []string{},
+					Owner: "dummy@nav.no",
+				},
+			},
+			want: want{
+				team: gensql.TeamGetRow{
+					ID:    "test-team-1234",
+					Slug:  "test-team",
+					Users: []string{"dummy@nav.no", "user.one@nav.on", "user.two@nav.on"},
+					Owner: "dummy@nav.no",
+				},
+				err: nil,
+			},
+		},
+		{
 			name:      "Create team no users",
 			eventType: gensql.EventTypeCreateTeam,
 			args: args{

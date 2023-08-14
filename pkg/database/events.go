@@ -9,23 +9,10 @@ import (
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
-type EventLog struct {
-	Message   string
-	LogType   gensql.LogType `json:"log_type"`
-	CreatedAt time.Time      `json:"created_at"`
-}
-
-type Event struct {
-	ID         uuid.UUID
-	Owner      string
-	Type       gensql.EventType
-	Status     gensql.EventStatus
-	Deadline   time.Duration
-	RetryCount int32
-	Payload    string
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	Logs       []EventLog
+type EventWithLogs struct {
+	gensql.Event
+	Payload string
+	Logs    []gensql.EventLog
 }
 
 func (r *Repo) registerEvent(ctx context.Context, eventType gensql.EventType, owner string, deadline time.Duration, data any) error {
@@ -130,44 +117,32 @@ func (r *Repo) EventsByOwnerGet(ctx context.Context, teamID string, limit int32)
 		Lim:   limit,
 	})
 }
+func (r *Repo) EventsGet(ctx context.Context, limit int32) ([]gensql.Event, error) {
+	return r.querier.EventsGet(ctx, limit)
+}
 
-func (r *Repo) EventLogsForEventGet(ctx context.Context, id uuid.UUID) ([]gensql.EventLogsForEventGetRow, error) {
+func (r *Repo) EventLogsForEventGet(ctx context.Context, id uuid.UUID) ([]gensql.EventLog, error) {
 	return r.querier.EventLogsForEventGet(ctx, id)
 }
 
-func (r *Repo) EventLogsForOwnerGet(ctx context.Context, owner string) ([]Event, error) {
-	eventRows, err := r.querier.EventLogsForOwnerGet(ctx, gensql.EventLogsForOwnerGetParams{
+func (r *Repo) EventLogsForOwnerGet(ctx context.Context, owner string) ([]EventWithLogs, error) {
+	events, err := r.querier.EventsByOwnerGet(ctx, gensql.EventsByOwnerGetParams{
 		Owner: owner,
 		Lim:   10,
 	})
-	if err != nil {
-		return nil, err
-	}
 
-	var events []Event
-	for _, row := range eventRows {
-		var logs []EventLog
-		err := json.Unmarshal(row.JsonLogs, &logs)
+	eventsWithLogs := make([]EventWithLogs, len(events))
+	for i, event := range events {
+		eventslogs, err := r.querier.EventLogsForEventGet(ctx, event.ID)
 		if err != nil {
 			return nil, err
 		}
 
-		deadline, err := time.ParseDuration(row.Deadline)
-		if err != nil {
-			return nil, err
+		eventsWithLogs[i] = EventWithLogs{
+			Event: event,
+			Logs:  eventslogs,
 		}
-
-		events = append(events, Event{
-			Owner:      row.Owner,
-			Type:       row.EventType,
-			Status:     row.Status,
-			Deadline:   deadline,
-			RetryCount: row.RetryCount,
-			CreatedAt:  row.CreatedAt,
-			UpdatedAt:  row.UpdatedAt,
-			Logs:       logs,
-		})
 	}
 
-	return events, nil
+	return eventsWithLogs, err
 }

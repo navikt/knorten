@@ -8,7 +8,6 @@ package gensql
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -120,94 +119,27 @@ func (q *Queries) EventLogCreate(ctx context.Context, arg EventLogCreateParams) 
 }
 
 const eventLogsForEventGet = `-- name: EventLogsForEventGet :many
-SELECT message, log_type, created_at::timestamptz
+SELECT id, event_id, log_type, message, created_at
 FROM event_logs
 WHERE event_id = $1
 ORDER BY created_at DESC
 `
 
-type EventLogsForEventGetRow struct {
-	Message   string
-	LogType   LogType
-	CreatedAt time.Time
-}
-
-func (q *Queries) EventLogsForEventGet(ctx context.Context, id uuid.UUID) ([]EventLogsForEventGetRow, error) {
+func (q *Queries) EventLogsForEventGet(ctx context.Context, id uuid.UUID) ([]EventLog, error) {
 	rows, err := q.db.QueryContext(ctx, eventLogsForEventGet, id)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []EventLogsForEventGetRow{}
+	items := []EventLog{}
 	for rows.Next() {
-		var i EventLogsForEventGetRow
-		if err := rows.Scan(&i.Message, &i.LogType, &i.CreatedAt); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const eventLogsForOwnerGet = `-- name: EventLogsForOwnerGet :many
-SELECT events.id, events.event_type, events.payload, events.status, events.deadline, events.created_at, events.updated_at, events.owner, events.retry_count,
-       json_agg(el.*)        AS json_logs
-FROM events
-         JOIN (SELECT event_id, message, log_type, created_at::timestamptz
-               FROM event_logs
-               ORDER BY event_logs.created_at DESC
-               LIMIT $1) el
-              ON el.event_id = events.id
-WHERE owner = $2
-GROUP BY events.id, events.updated_at
-ORDER BY events.updated_at DESC
-LIMIT $1
-`
-
-type EventLogsForOwnerGetParams struct {
-	Lim   int32
-	Owner string
-}
-
-type EventLogsForOwnerGetRow struct {
-	ID         uuid.UUID
-	EventType  EventType
-	Payload    json.RawMessage
-	Status     EventStatus
-	Deadline   string
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	Owner      string
-	RetryCount int32
-	JsonLogs   json.RawMessage
-}
-
-func (q *Queries) EventLogsForOwnerGet(ctx context.Context, arg EventLogsForOwnerGetParams) ([]EventLogsForOwnerGetRow, error) {
-	rows, err := q.db.QueryContext(ctx, eventLogsForOwnerGet, arg.Lim, arg.Owner)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []EventLogsForOwnerGetRow{}
-	for rows.Next() {
-		var i EventLogsForOwnerGetRow
+		var i EventLog
 		if err := rows.Scan(
 			&i.ID,
-			&i.EventType,
-			&i.Payload,
-			&i.Status,
-			&i.Deadline,
+			&i.EventID,
+			&i.LogType,
+			&i.Message,
 			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.Owner,
-			&i.RetryCount,
-			&i.JsonLogs,
 		); err != nil {
 			return nil, err
 		}
@@ -265,6 +197,46 @@ type EventsByOwnerGetParams struct {
 
 func (q *Queries) EventsByOwnerGet(ctx context.Context, arg EventsByOwnerGetParams) ([]Event, error) {
 	rows, err := q.db.QueryContext(ctx, eventsByOwnerGet, arg.Owner, arg.Lim)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Event{}
+	for rows.Next() {
+		var i Event
+		if err := rows.Scan(
+			&i.ID,
+			&i.EventType,
+			&i.Payload,
+			&i.Status,
+			&i.Deadline,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Owner,
+			&i.RetryCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const eventsGet = `-- name: EventsGet :many
+SELECT id, event_type, payload, status, deadline, created_at, updated_at, owner, retry_count
+FROM Events
+ORDER BY updated_at DESC
+LIMIT $1
+`
+
+func (q *Queries) EventsGet(ctx context.Context, lim int32) ([]Event, error) {
+	rows, err := q.db.QueryContext(ctx, eventsGet, lim)
 	if err != nil {
 		return nil, err
 	}

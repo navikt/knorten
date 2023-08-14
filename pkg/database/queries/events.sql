@@ -18,6 +18,12 @@ WHERE owner = @owner
 ORDER BY updated_at DESC
 LIMIT @lim;
 
+-- name: EventsGet :many
+SELECT *
+FROM Events
+ORDER BY updated_at DESC
+LIMIT @lim;
+
 -- name: DispatcherEventsGet :many
 SELECT *
 FROM Events
@@ -50,17 +56,3 @@ SELECT message, log_type, created_at::timestamptz
 FROM event_logs
 WHERE event_id = @id
 ORDER BY created_at DESC;
-
--- name: EventLogsForOwnerGet :many
-SELECT events.*,
-       json_agg(el.*)        AS json_logs
-FROM events
-         JOIN (SELECT event_id, message, log_type, created_at::timestamptz
-               FROM event_logs
-               ORDER BY event_logs.created_at DESC
-               LIMIT @lim) el
-              ON el.event_id = events.id
-WHERE owner = @owner
-GROUP BY events.id, events.updated_at
-ORDER BY events.updated_at DESC
-LIMIT @lim;

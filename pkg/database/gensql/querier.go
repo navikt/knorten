@@ -20,11 +20,11 @@ type Querier interface {
 	EventCreate(ctx context.Context, arg EventCreateParams) error
 	EventGet(ctx context.Context, id uuid.UUID) (Event, error)
 	EventLogCreate(ctx context.Context, arg EventLogCreateParams) error
-	EventLogsForEventGet(ctx context.Context, id uuid.UUID) ([]EventLogsForEventGetRow, error)
-	EventLogsForOwnerGet(ctx context.Context, arg EventLogsForOwnerGetParams) ([]EventLogsForOwnerGetRow, error)
+	EventLogsForEventGet(ctx context.Context, id uuid.UUID) ([]EventLog, error)
 	EventSetPendingStatus(ctx context.Context, id uuid.UUID) error
 	EventSetStatus(ctx context.Context, arg EventSetStatusParams) error
 	EventsByOwnerGet(ctx context.Context, arg EventsByOwnerGetParams) ([]Event, error)
+	EventsGet(ctx context.Context, lim int32) ([]Event, error)
 	EventsGetType(ctx context.Context, eventType EventType) ([]Event, error)
 	GlobalValueDelete(ctx context.Context, arg GlobalValueDeleteParams) error
 	GlobalValueGet(ctx context.Context, arg GlobalValueGetParams) (ChartGlobalValue, error)

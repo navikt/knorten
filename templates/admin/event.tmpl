@@ -15,7 +15,7 @@
             <br>
             <strong>Updated at:</strong> {{ .event.UpdatedAt.Format "02.01.06 15:04:05" }}
             <br>
-            <strong>Payload:</strong> {{ .event.Payload }}
+            <strong>Payload:</strong> {{ printf "%s" .event.Payload }}
         </p>
         {{ if eq .event.Status "pending" }}
             <form action="/admin/event/{{ .event.ID }}?status=new" method="POST">

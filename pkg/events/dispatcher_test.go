@@ -44,7 +44,7 @@ func TestEventHandler_distributeWork_teamEvents(t *testing.T) {
 	}
 	for _, tt := range teamEventTests {
 		t.Run(tt.name, func(t *testing.T) {
-			teamClientMock := team.NewTeamClientMock()
+			teamClientMock := team.NewClientMock()
 			e := EventHandler{
 				repo:       &database.RepoMock{},
 				teamClient: &teamClientMock,
@@ -86,7 +86,7 @@ func TestEventHandler_distributeWork_computeEvents(t *testing.T) {
 	}
 	for _, tt := range computeEventTests {
 		t.Run(tt.name, func(t *testing.T) {
-			computeClientMock := compute.NewComputeClientMock()
+			computeClientMock := compute.NewClientMock()
 			e := EventHandler{
 				repo:          &database.RepoMock{},
 				computeClient: &computeClientMock,
@@ -156,7 +156,7 @@ func TestEventHandler_distributeWork_chartEvents(t *testing.T) {
 	}
 	for _, tt := range chartEventTests {
 		t.Run(tt.name, func(t *testing.T) {
-			chartClientMock := chart.NewChartClientMock()
+			chartClientMock := chart.NewClientMock()
 			e := EventHandler{
 				repo:        &database.RepoMock{},
 				chartClient: &chartClientMock,

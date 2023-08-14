@@ -37,7 +37,6 @@ func NewClient(repo *database.Repo, gcpProject, gcpRegion string, dryRun, inClus
 }
 
 func (c Client) Create(ctx context.Context, team gensql.Team, log logger.Logger) bool {
-	log = log.WithTeamID(team.ID)
 	log.Infof("Creating team %v", team.ID)
 
 	if retry, err := c.create(ctx, team, log); err != nil {
@@ -86,7 +85,6 @@ func (c Client) create(ctx context.Context, team gensql.Team, log logger.Logger)
 }
 
 func (c Client) Update(ctx context.Context, team gensql.Team, log logger.Logger) bool {
-	log = log.WithTeamID(team.ID)
 	log.Infof("Updating team %v", team.ID)
 
 	if retry, err := c.update(ctx, team, log); err != nil {
@@ -143,7 +141,6 @@ func (c Client) update(ctx context.Context, team gensql.Team, log logger.Logger)
 }
 
 func (c Client) Delete(ctx context.Context, teamID string, log logger.Logger) bool {
-	log = log.WithTeamID(teamID)
 	log.Infof("Deleting team %v", teamID)
 
 	if retry, err := c.delete(ctx, teamID, log); err != nil {

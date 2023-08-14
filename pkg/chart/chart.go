@@ -40,7 +40,6 @@ func NewClient(repo *database.Repo, azureClient *auth.Azure, dryRun, inCluster b
 }
 
 func (c Client) SyncJupyter(ctx context.Context, values JupyterConfigurableValues, log logger.Logger) bool {
-	log = log.WithTeamID(values.TeamID).WithField("chart", "jupyter")
 	log.Info("Syncing Jupyter")
 
 	if err := c.syncJupyter(ctx, values, log); err != nil {
@@ -53,7 +52,6 @@ func (c Client) SyncJupyter(ctx context.Context, values JupyterConfigurableValue
 }
 
 func (c Client) DeleteJupyter(ctx context.Context, teamID string, log logger.Logger) bool {
-	log = log.WithTeamID(teamID).WithField("chart", "jupyter")
 	log.Info("Deleting Jupyter")
 
 	if err := c.deleteJupyter(ctx, teamID, log); err != nil {
@@ -66,7 +64,6 @@ func (c Client) DeleteJupyter(ctx context.Context, teamID string, log logger.Log
 }
 
 func (c Client) SyncAirflow(ctx context.Context, values AirflowConfigurableValues, log logger.Logger) bool {
-	log = log.WithTeamID(values.TeamID).WithField("chart", "airflow")
 	log.Info("Syncing Airflow")
 
 	if err := c.syncAirflow(ctx, values, log); err != nil {
@@ -79,7 +76,6 @@ func (c Client) SyncAirflow(ctx context.Context, values AirflowConfigurableValue
 }
 
 func (c Client) DeleteAirflow(ctx context.Context, teamID string, log logger.Logger) bool {
-	log = log.WithTeamID(teamID).WithField("chart", "airflow")
 	log.Info("Deleting Airflow")
 
 	if err := c.deleteAirflow(ctx, teamID, log); err != nil {

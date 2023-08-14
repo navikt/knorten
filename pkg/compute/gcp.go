@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func (c ComputeClient) createComputeInstanceInGCP(ctx context.Context, instanceName, email string) error {
+func (c Client) createComputeInstanceInGCP(ctx context.Context, instanceName, email string) error {
 	if c.dryRun {
 		return nil
 	}
@@ -55,7 +55,7 @@ func (c ComputeClient) createComputeInstanceInGCP(ctx context.Context, instanceN
 	return nil
 }
 
-func (c ComputeClient) computeInstanceExistsInGCP(instanceName string) (bool, error) {
+func (c Client) computeInstanceExistsInGCP(instanceName string) (bool, error) {
 	cmd := exec.Command(
 		"gcloud",
 		"--quiet",
@@ -77,7 +77,7 @@ func (c ComputeClient) computeInstanceExistsInGCP(instanceName string) (bool, er
 	return stdOut.String() != "", nil
 }
 
-func (c ComputeClient) addGCPOwnerBinding(ctx context.Context, instanceName, user string) error {
+func (c Client) addGCPOwnerBinding(ctx context.Context, instanceName, user string) error {
 	if c.dryRun {
 		return nil
 	}
@@ -107,7 +107,7 @@ func (c ComputeClient) addGCPOwnerBinding(ctx context.Context, instanceName, use
 	return nil
 }
 
-func (c ComputeClient) deleteComputeInstanceFromGCP(ctx context.Context, instanceName string) error {
+func (c Client) deleteComputeInstanceFromGCP(ctx context.Context, instanceName string) error {
 	if c.dryRun {
 		return nil
 	}

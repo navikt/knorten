@@ -20,9 +20,9 @@ type EventHandler struct {
 	repo          database.Repository
 	log           *logrus.Entry
 	context       context.Context
-	teamClient    team.Client
-	computeClient compute.Client
-	chartClient   chart.Client
+	teamClient    teamClient
+	computeClient computeClient
+	chartClient   chartClient
 }
 
 type workerFunc func(context.Context, gensql.DispatcherEventsGetRow, logger.Logger) error

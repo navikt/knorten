@@ -63,7 +63,7 @@ type AirflowValues struct {
 	WorkersGitSynkRepoBranch   string `helm:"workers.extraInitContainers.[0].args.[1]"`
 }
 
-func (c ChartClient) syncAirflow(ctx context.Context, configurableValues AirflowConfigurableValues, log logger.Logger) error {
+func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfigurableValues, log logger.Logger) error {
 	team, err := c.repo.TeamGet(ctx, configurableValues.TeamID)
 	if err != nil {
 		log.WithError(err).Error("getting team from database")
@@ -155,7 +155,7 @@ func (c ChartClient) syncAirflow(ctx context.Context, configurableValues Airflow
 	return nil
 }
 
-func (c ChartClient) deleteAirflow(ctx context.Context, teamID string, log logger.Logger) error {
+func (c Client) deleteAirflow(ctx context.Context, teamID string, log logger.Logger) error {
 	if err := c.repo.ChartDelete(ctx, teamID, gensql.ChartTypeAirflow); err != nil {
 		log.WithError(err).Error("delete chart from database")
 		return err
@@ -197,7 +197,7 @@ func (c ChartClient) deleteAirflow(ctx context.Context, teamID string, log logge
 }
 
 // mergeAirflowValues merges the values from the database with the values from the request, generate the missing values and returns the final values.
-func (c ChartClient) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, configurableValues AirflowConfigurableValues) (AirflowValues, error) {
+func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, configurableValues AirflowConfigurableValues) (AirflowValues, error) {
 	if configurableValues.DagRepo == "" { // only required value
 		dagRepo, err := c.repo.TeamValueGet(ctx, "webserver.extraContainers.[0].args.[0]", team.ID)
 		if err != nil {
@@ -277,7 +277,7 @@ type airflowEnv struct {
 	Value string `json:"value"`
 }
 
-func (ChartClient) createAirflowWebServerEnvs(users []string) (string, error) {
+func (Client) createAirflowWebServerEnvs(users []string) (string, error) {
 	envs := []airflowEnv{
 		{
 			Name:  "AIRFLOW_USERS",
@@ -293,7 +293,7 @@ func (ChartClient) createAirflowWebServerEnvs(users []string) (string, error) {
 	return string(envBytes), nil
 }
 
-func (c ChartClient) createAirflowExtraEnvs(teamID string) (string, error) {
+func (c Client) createAirflowExtraEnvs(teamID string) (string, error) {
 	userEnvs := []airflowEnv{
 		{
 			Name:  "KNADA_TEAM_SECRET",
@@ -325,7 +325,7 @@ func (c ChartClient) createAirflowExtraEnvs(teamID string) (string, error) {
 	return string(envBytes), nil
 }
 
-func (c ChartClient) createAirflowDatabase(ctx context.Context, teamID, dbPassword string) error {
+func (c Client) createAirflowDatabase(ctx context.Context, teamID, dbPassword string) error {
 	if c.dryRun {
 		return nil
 	}
@@ -350,7 +350,7 @@ func (c ChartClient) createAirflowDatabase(ctx context.Context, teamID, dbPasswo
 	return c.createCloudSQLProxy(ctx, "airflow-sql-proxy", teamID, k8s.TeamIDToNamespace(teamID), dbInstance)
 }
 
-func (c ChartClient) createLogBucketForAirflow(ctx context.Context, teamID string) error {
+func (c Client) createLogBucketForAirflow(ctx context.Context, teamID string) error {
 	if c.dryRun {
 		return nil
 	}
@@ -395,7 +395,7 @@ func generateFernetKey() (string, error) {
 	return base64.StdEncoding.EncodeToString(key), nil
 }
 
-func (c ChartClient) getOrGeneratePassword(ctx context.Context, teamID, key string, generator func() (string, error)) (string, error) {
+func (c Client) getOrGeneratePassword(ctx context.Context, teamID, key string, generator func() (string, error)) (string, error) {
 	value, err := c.repo.TeamValueGet(ctx, key, teamID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

@@ -13,13 +13,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type Client interface {
-	Create(ctx context.Context, team gensql.Team, log logger.Logger) bool
-	Update(ctx context.Context, team gensql.Team, log logger.Logger) bool
-	Delete(ctx context.Context, teamID string, log logger.Logger) bool
-}
-
-type TeamClient struct {
+type Client struct {
 	repo       *database.Repo
 	k8sClient  *kubernetes.Clientset
 	gcpProject string
@@ -27,13 +21,13 @@ type TeamClient struct {
 	dryRun     bool
 }
 
-func NewClient(repo *database.Repo, gcpProject, gcpRegion string, dryRun, inCluster bool) (*TeamClient, error) {
+func NewClient(repo *database.Repo, gcpProject, gcpRegion string, dryRun, inCluster bool) (*Client, error) {
 	k8sClient, err := k8s.CreateClientset(dryRun, inCluster)
 	if err != nil {
 		return nil, err
 	}
 
-	return &TeamClient{
+	return &Client{
 		repo:       repo,
 		k8sClient:  k8sClient,
 		gcpProject: gcpProject,
@@ -42,7 +36,7 @@ func NewClient(repo *database.Repo, gcpProject, gcpRegion string, dryRun, inClus
 	}, nil
 }
 
-func (c TeamClient) Create(ctx context.Context, team gensql.Team, log logger.Logger) bool {
+func (c Client) Create(ctx context.Context, team gensql.Team, log logger.Logger) bool {
 	log = log.WithTeamID(team.ID)
 	log.Infof("Creating team %v", team.ID)
 
@@ -55,7 +49,7 @@ func (c TeamClient) Create(ctx context.Context, team gensql.Team, log logger.Log
 	return false
 }
 
-func (c TeamClient) create(ctx context.Context, team gensql.Team, log logger.Logger) (bool, error) {
+func (c Client) create(ctx context.Context, team gensql.Team, log logger.Logger) (bool, error) {
 	existingTeam, err := c.repo.TeamGet(ctx, team.ID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.WithError(err).Error("failed retrieving team from database")
@@ -91,7 +85,7 @@ func (c TeamClient) create(ctx context.Context, team gensql.Team, log logger.Log
 	return false, nil
 }
 
-func (c TeamClient) Update(ctx context.Context, team gensql.Team, log logger.Logger) bool {
+func (c Client) Update(ctx context.Context, team gensql.Team, log logger.Logger) bool {
 	log = log.WithTeamID(team.ID)
 	log.Infof("Updating team %v", team.ID)
 
@@ -103,7 +97,7 @@ func (c TeamClient) Update(ctx context.Context, team gensql.Team, log logger.Log
 	return false
 }
 
-func (c TeamClient) update(ctx context.Context, team gensql.Team, log logger.Logger) (bool, error) {
+func (c Client) update(ctx context.Context, team gensql.Team, log logger.Logger) (bool, error) {
 	err := c.repo.TeamUpdate(ctx, team)
 	if err != nil {
 		log.WithError(err).Error("failed updating team in database")
@@ -148,7 +142,7 @@ func (c TeamClient) update(ctx context.Context, team gensql.Team, log logger.Log
 	return false, nil
 }
 
-func (c TeamClient) Delete(ctx context.Context, teamID string, log logger.Logger) bool {
+func (c Client) Delete(ctx context.Context, teamID string, log logger.Logger) bool {
 	log = log.WithTeamID(teamID)
 	log.Infof("Deleting team %v", teamID)
 
@@ -161,7 +155,7 @@ func (c TeamClient) Delete(ctx context.Context, teamID string, log logger.Logger
 	return false
 }
 
-func (c TeamClient) delete(ctx context.Context, teamID string, log logger.Logger) (bool, error) {
+func (c Client) delete(ctx context.Context, teamID string, log logger.Logger) (bool, error) {
 	team, err := c.repo.TeamGet(ctx, teamID)
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
 		log.WithError(err).Error("failed retrieving team from database")

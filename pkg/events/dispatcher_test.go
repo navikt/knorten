@@ -4,15 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/nais/knorten/pkg/chart"
-	"github.com/nais/knorten/pkg/compute"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/team"
 )
 
 func TestEventHandler_distributeWork(t *testing.T) {
-	checkEventType := func(eventType gensql.EventType, chartMock chart.ClientMock, teamMock team.ClientMock, computeMock compute.ClientMock) int {
+	checkEventType := func(eventType gensql.EventType, chartMock chartMock, teamMock teamMock, computeMock computeMock) int {
 		switch eventType {
 		case gensql.EventTypeCreateCompute,
 			gensql.EventTypeDeleteCompute:
@@ -48,9 +45,9 @@ func TestEventHandler_distributeWork(t *testing.T) {
 	}
 	for _, eventType := range eventTypes {
 		t.Run(string(eventType), func(t *testing.T) {
-			computeMock := compute.NewClientMock()
-			teamMock := team.NewClientMock()
-			chartMock := chart.NewClientMock()
+			computeMock := newComputeMock()
+			teamMock := newTeamMock()
+			chartMock := newChartMock()
 			handler := EventHandler{
 				repo:          &database.RepoMock{},
 				computeClient: &computeMock,

@@ -10,20 +10,15 @@ import (
 	"github.com/nais/knorten/pkg/logger"
 )
 
-type Client interface {
-	Create(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) bool
-	Delete(ctx context.Context, email string, log logger.Logger) bool
-}
-
-type ComputeClient struct {
+type Client struct {
 	repo       *database.Repo
 	gcpProject string
 	gcpZone    string
 	dryRun     bool
 }
 
-func NewClient(repo *database.Repo, gcpProject, gcpZone string, dryRun bool) *ComputeClient {
-	return &ComputeClient{
+func NewClient(repo *database.Repo, gcpProject, gcpZone string, dryRun bool) *Client {
+	return &Client{
 		repo:       repo,
 		gcpProject: gcpProject,
 		gcpZone:    gcpZone,
@@ -31,7 +26,7 @@ func NewClient(repo *database.Repo, gcpProject, gcpZone string, dryRun bool) *Co
 	}
 }
 
-func (c ComputeClient) Create(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) bool {
+func (c Client) Create(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) bool {
 	log = log.WithField("owner", instance.Name)
 	log.Info("Creating compute instance")
 
@@ -44,7 +39,7 @@ func (c ComputeClient) Create(ctx context.Context, instance gensql.ComputeInstan
 	return false
 }
 
-func (c ComputeClient) create(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) (bool, error) {
+func (c Client) create(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) (bool, error) {
 	existingInstance, err := c.repo.ComputeInstanceGet(ctx, instance.Email)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.WithError(err).Errorf("failed retrieving compute instance %v", instance.Email)
@@ -69,7 +64,7 @@ func (c ComputeClient) create(ctx context.Context, instance gensql.ComputeInstan
 	return false, nil
 }
 
-func (c ComputeClient) Delete(ctx context.Context, email string, log logger.Logger) bool {
+func (c Client) Delete(ctx context.Context, email string, log logger.Logger) bool {
 	log = log.WithField("owner", email)
 	log.Info("Deleting compute instance")
 
@@ -82,7 +77,7 @@ func (c ComputeClient) Delete(ctx context.Context, email string, log logger.Logg
 	return false
 }
 
-func (c ComputeClient) delete(ctx context.Context, email string, log logger.Logger) (bool, error) {
+func (c Client) delete(ctx context.Context, email string, log logger.Logger) (bool, error) {
 	instance, err := c.repo.ComputeInstanceGet(ctx, email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

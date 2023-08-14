@@ -20,7 +20,7 @@ import (
 
 const secretRoleName = "roles/owner"
 
-func (c TeamClient) createGCPTeamResources(ctx context.Context, team gensql.Team) error {
+func (c Client) createGCPTeamResources(ctx context.Context, team gensql.Team) error {
 	if c.dryRun {
 		return nil
 	}
@@ -50,7 +50,7 @@ func (c TeamClient) createGCPTeamResources(ctx context.Context, team gensql.Team
 	return nil
 }
 
-func (c TeamClient) createSAWorkloadIdentityBinding(ctx context.Context, email, teamID string) error {
+func (c Client) createSAWorkloadIdentityBinding(ctx context.Context, email, teamID string) error {
 	service, err := iamv1.NewService(ctx)
 	if err != nil {
 		return err
@@ -84,7 +84,7 @@ func (c TeamClient) createSAWorkloadIdentityBinding(ctx context.Context, email, 
 	return nil
 }
 
-func (c TeamClient) updateRoleBindingIfExists(bindings []*iamv1.Binding, role, namespace, team string) bool {
+func (c Client) updateRoleBindingIfExists(bindings []*iamv1.Binding, role, namespace, team string) bool {
 	for _, binding := range bindings {
 		if binding.Role == role {
 			binding.Members = append(binding.Members, fmt.Sprintf("serviceAccount:%v.svc.id.goog[%v/%v]", c.gcpProject, namespace, team))
@@ -95,7 +95,7 @@ func (c TeamClient) updateRoleBindingIfExists(bindings []*iamv1.Binding, role, n
 	return false
 }
 
-func (c TeamClient) createSecret(ctx context.Context, slug, teamID string) (*secretmanagerpb.Secret, error) {
+func (c Client) createSecret(ctx context.Context, slug, teamID string) (*secretmanagerpb.Secret, error) {
 	client, err := secretmanager.NewClient(ctx)
 	if err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ func (c TeamClient) createSecret(ctx context.Context, slug, teamID string) (*sec
 	return s, nil
 }
 
-func (c TeamClient) createServiceAccountSecretAccessorBinding(ctx context.Context, sa, secret string) error {
+func (c Client) createServiceAccountSecretAccessorBinding(ctx context.Context, sa, secret string) error {
 	client, err := secretmanager.NewClient(ctx)
 	if err != nil {
 		return err
@@ -161,7 +161,7 @@ func (c TeamClient) createServiceAccountSecretAccessorBinding(ctx context.Contex
 	return nil
 }
 
-func (c TeamClient) createIAMServiceAccount(ctx context.Context, team string) (*iamv1.ServiceAccount, error) {
+func (c Client) createIAMServiceAccount(ctx context.Context, team string) (*iamv1.ServiceAccount, error) {
 	service, err := iamv1.NewService(ctx)
 	if err != nil {
 		return nil, err
@@ -191,7 +191,7 @@ func (c TeamClient) createIAMServiceAccount(ctx context.Context, team string) (*
 	return account, nil
 }
 
-func (c TeamClient) updateGCPTeamResources(ctx context.Context, team gensql.Team) error {
+func (c Client) updateGCPTeamResources(ctx context.Context, team gensql.Team) error {
 	if c.dryRun {
 		return nil
 	}
@@ -199,7 +199,7 @@ func (c TeamClient) updateGCPTeamResources(ctx context.Context, team gensql.Team
 	return c.setUsersSecretOwnerBinding(ctx, team.Users, fmt.Sprintf("projects/%v/secrets/%v", c.gcpProject, team.ID))
 }
 
-func (c TeamClient) deleteGCPTeamResources(ctx context.Context, teamID string) error {
+func (c Client) deleteGCPTeamResources(ctx context.Context, teamID string) error {
 	if c.dryRun {
 		return nil
 	}
@@ -215,7 +215,7 @@ func (c TeamClient) deleteGCPTeamResources(ctx context.Context, teamID string) e
 	return nil
 }
 
-func (c TeamClient) deleteSecret(ctx context.Context, teamID string) error {
+func (c Client) deleteSecret(ctx context.Context, teamID string) error {
 	client, err := secretmanager.NewClient(ctx)
 	if err != nil {
 		return err
@@ -247,7 +247,7 @@ func (c TeamClient) deleteSecret(ctx context.Context, teamID string) error {
 	return nil
 }
 
-func (c TeamClient) deleteIAMServiceAccount(ctx context.Context, teamID string) error {
+func (c Client) deleteIAMServiceAccount(ctx context.Context, teamID string) error {
 	service, err := iamv1.NewService(ctx)
 	if err != nil {
 		return err
@@ -267,7 +267,7 @@ func (c TeamClient) deleteIAMServiceAccount(ctx context.Context, teamID string) 
 	return nil
 }
 
-func (c TeamClient) setUsersSecretOwnerBinding(ctx context.Context, users []string, secret string) error {
+func (c Client) setUsersSecretOwnerBinding(ctx context.Context, users []string, secret string) error {
 	users = addUserTypePrefix(users)
 
 	client, err := secretmanager.NewClient(ctx)
@@ -303,7 +303,7 @@ func (c TeamClient) setUsersSecretOwnerBinding(ctx context.Context, users []stri
 	return nil
 }
 
-func (c TeamClient) updatePolicy(ctx context.Context, handle *iam.Handle, user string) error {
+func (c Client) updatePolicy(ctx context.Context, handle *iam.Handle, user string) error {
 	policy, err := handle.Policy(ctx)
 	if err != nil {
 		return err

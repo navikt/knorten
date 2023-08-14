@@ -44,7 +44,7 @@ type jupyterValues struct {
 	ExtraAnnotations string   `helm:"singleuser.extraAnnotations"`
 }
 
-func (c ChartClient) syncJupyter(ctx context.Context, configurableValues JupyterConfigurableValues, log logger.Logger) error {
+func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfigurableValues, log logger.Logger) error {
 	team, err := c.repo.TeamGet(ctx, configurableValues.TeamID)
 	if err != nil {
 		log.WithError(err).Error("getting team from database")
@@ -86,7 +86,7 @@ func jupyterReleaseName(namespace string) string {
 	return fmt.Sprintf("%v-%v", string(gensql.ChartTypeJupyterhub), namespace)
 }
 
-func (c ChartClient) jupyterMergeValues(ctx context.Context, team gensql.TeamGetRow, configurableValues JupyterConfigurableValues) (jupyterValues, error) {
+func (c Client) jupyterMergeValues(ctx context.Context, team gensql.TeamGetRow, configurableValues JupyterConfigurableValues) (jupyterValues, error) {
 	if len(configurableValues.UserIdents) == 0 {
 		err := c.repo.TeamConfigurableValuesGet(ctx, gensql.ChartTypeJupyterhub, team.ID, &configurableValues)
 		if err != nil {
@@ -127,7 +127,7 @@ func (c ChartClient) jupyterMergeValues(ctx context.Context, team gensql.TeamGet
 	}, nil
 }
 
-func (c ChartClient) deleteJupyter(ctx context.Context, teamID string, log logger.Logger) error {
+func (c Client) deleteJupyter(ctx context.Context, teamID string, log logger.Logger) error {
 	if err := c.repo.ChartDelete(ctx, teamID, gensql.ChartTypeJupyterhub); err != nil {
 		log.WithError(err).Error("delete chart from database")
 		return err

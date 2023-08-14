@@ -2,11 +2,17 @@ package dbsetup
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"log"
 	"os"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/nais/knorten/pkg/database"
+	"github.com/ory/dockertest/v3"
+	"github.com/sirupsen/logrus"
 )
 
 func SetupDB(ctx context.Context, dbURL, dbname string) error {
@@ -85,4 +91,64 @@ func SetupDB(ctx context.Context, dbURL, dbname string) error {
 	}
 
 	return nil
+}
+
+func SetupDBForTests() (*database.Repo, error) {
+	dbString := "user=postgres dbname=knorten sslmode=disable password=postgres host=db port=5432"
+
+	if os.Getenv("CLOUDBUILD") != "true" {
+		dockerHost := os.Getenv("HOME") + "/.colima/docker.sock"
+		_, err := os.Stat(dockerHost)
+		if err != nil {
+			// uses a sensible default on windows (tcp/http) and linux/osx (socket)
+			dockerHost = ""
+		} else {
+			dockerHost = "unix://" + dockerHost
+		}
+
+		pool, err := dockertest.NewPool(dockerHost)
+		if err != nil {
+			log.Fatalf("Could not connect to docker: %s", err)
+		}
+
+		// pulls an image, creates a container based on it and runs it
+		resource, err := pool.Run("postgres", "14", []string{"POSTGRES_PASSWORD=postgres", "POSTGRES_DB=knorten"})
+		if err != nil {
+			log.Fatalf("Could not start resource: %s", err)
+		}
+
+		// setting resource timeout as postgres container is not terminated automatically
+		if err = resource.Expire(120); err != nil {
+			log.Fatalf("failed creating postgres expire: %v", err)
+		}
+
+		dbPort := resource.GetPort("5432/tcp")
+		dbString = fmt.Sprintf("user=postgres dbname=knorten sslmode=disable password=postgres host=localhost port=%v", dbPort)
+	}
+
+	if err := waitForDB(dbString); err != nil {
+		log.Fatal(err)
+	}
+
+	logger := logrus.NewEntry(logrus.StandardLogger())
+
+	return database.New(dbString, "jegersekstentegn", logger)
+}
+
+func waitForDB(dbString string) error {
+	sleepDuration := 1 * time.Second
+	numRetries := 60
+	for i := 0; i < numRetries; i++ {
+		time.Sleep(sleepDuration)
+		db, err := sql.Open("postgres", dbString)
+		if err != nil {
+			return err
+		}
+
+		if err := db.Ping(); err == nil {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("unable to connect to db in %v seconds", int(sleepDuration)*numRetries/1000000000)
 }

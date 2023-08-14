@@ -3,19 +3,16 @@ package team
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log"
 	"os"
 	"path"
 	"runtime"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/nais/knorten/pkg/api/auth"
+	"github.com/nais/knorten/local/dbsetup"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/ory/dockertest/v3"
 	"github.com/sirupsen/logrus"
 )
 
@@ -31,79 +28,14 @@ func init() {
 }
 
 func TestMain(m *testing.M) {
-	dbString := "user=postgres dbname=knorten sslmode=disable password=postgres host=db port=5432"
-
-	if os.Getenv("CLOUDBUILD") != "true" {
-		dockerHost := os.Getenv("HOME") + "/.colima/docker.sock"
-		_, err := os.Stat(dockerHost)
-		if err != nil {
-			// uses a sensible default on windows (tcp/http) and linux/osx (socket)
-			dockerHost = ""
-		} else {
-			dockerHost = "unix://" + dockerHost
-		}
-
-		pool, err := dockertest.NewPool(dockerHost)
-		if err != nil {
-			log.Fatalf("Could not connect to docker: %s", err)
-		}
-
-		// pulls an image, creates a container based on it and runs it
-		resource, err := pool.Run("postgres", "14", []string{"POSTGRES_PASSWORD=postgres", "POSTGRES_DB=knorten"})
-		if err != nil {
-			log.Fatalf("Could not start resource: %s", err)
-		}
-
-		// setting resource timeout as postgres container is not terminated automatically
-		if err = resource.Expire(120); err != nil {
-			log.Fatalf("failed creating postgres expire: %v", err)
-		}
-
-		dbPort := resource.GetPort("5432/tcp")
-		dbString = fmt.Sprintf("user=postgres dbname=knorten sslmode=disable password=postgres host=localhost port=%v", dbPort)
-	}
-
-	if err := waitForDB(dbString); err != nil {
-		log.Fatal(err)
-	}
-
-	logger := logrus.NewEntry(logrus.StandardLogger())
-
 	var err error
-	repo, err = database.New(dbString, "jegersekstentegn", logger)
+	repo, err = dbsetup.SetupDBForTests()
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	_, err = auth.NewAzureClient(true, "", "", "", logger)
-	if err != nil {
-		log.Fatalf("creating azure client: %v", err)
-	}
-
-	log := logrus.New()
-	log.SetFormatter(&logrus.JSONFormatter{})
 
 	code := m.Run()
-
 	os.Exit(code)
-}
-
-func waitForDB(dbString string) error {
-	sleepDuration := 1 * time.Second
-	numRetries := 60
-	for i := 0; i < numRetries; i++ {
-		time.Sleep(sleepDuration)
-		db, err := sql.Open("postgres", dbString)
-		if err != nil {
-			return err
-		}
-
-		if err := db.Ping(); err == nil {
-			return nil
-		}
-	}
-
-	return fmt.Errorf("unable to connect to db in %v seconds", int(sleepDuration)*numRetries/1000000000)
 }
 
 func TestTeam(t *testing.T) {

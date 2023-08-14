@@ -317,7 +317,6 @@ func (c Client) updatePolicy(ctx context.Context, handle *iam.Handle, user strin
 			apiError, ok := apierror.FromError(err)
 			if ok && apiError.GRPCStatus().Code() == codes.InvalidArgument {
 				return nil
-
 			}
 
 			return err

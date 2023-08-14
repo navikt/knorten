@@ -17,38 +17,38 @@ import (
 )
 
 type EventHandler struct {
-	repo          *database.Repo
+	repo          database.Repository
 	log           *logrus.Entry
 	context       context.Context
-	teamClient    *team.Client
-	computeClient *compute.Client
-	chartClient   *chart.Client
+	teamClient    teamClient
+	computeClient computeClient
+	chartClient   chartClient
 }
 
-type workerFunc func(context.Context, gensql.Event, logger.Logger) error
+type workerFunc func(context.Context, gensql.DispatcherEventsGetRow, logger.Logger) error
 
 func (e EventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 	switch eventType {
 	case gensql.EventTypeCreateTeam,
 		gensql.EventTypeUpdateTeam:
-		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
+		return func(ctx context.Context, event gensql.DispatcherEventsGetRow, logger logger.Logger) error {
 			var team gensql.Team
 			return e.processWork(event, logger, &team)
 		}
 	case gensql.EventTypeCreateCompute:
-		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
+		return func(ctx context.Context, event gensql.DispatcherEventsGetRow, logger logger.Logger) error {
 			var instance gensql.ComputeInstance
 			return e.processWork(event, logger, &instance)
 		}
 	case gensql.EventTypeCreateAirflow,
 		gensql.EventTypeUpdateAirflow:
-		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
+		return func(ctx context.Context, event gensql.DispatcherEventsGetRow, logger logger.Logger) error {
 			var values chart.AirflowConfigurableValues
 			return e.processWork(event, logger, &values)
 		}
 	case gensql.EventTypeCreateJupyter,
 		gensql.EventTypeUpdateJupyter:
-		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
+		return func(ctx context.Context, event gensql.DispatcherEventsGetRow, logger logger.Logger) error {
 			var values chart.JupyterConfigurableValues
 			return e.processWork(event, logger, &values)
 		}
@@ -56,7 +56,7 @@ func (e EventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 		gensql.EventTypeDeleteCompute,
 		gensql.EventTypeDeleteAirflow,
 		gensql.EventTypeDeleteJupyter:
-		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
+		return func(ctx context.Context, event gensql.DispatcherEventsGetRow, logger logger.Logger) error {
 			return e.processWork(event, logger, nil)
 		}
 	}
@@ -64,12 +64,11 @@ func (e EventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 	return nil
 }
 
-func (e EventHandler) processWork(event gensql.Event, logger logger.Logger, form any) error {
+func (e EventHandler) processWork(event gensql.DispatcherEventsGetRow, logger logger.Logger, form any) error {
 	if err := json.Unmarshal(event.Payload, &form); err != nil {
 		if err := e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusFailed); err != nil {
 			return err
 		}
-
 		return err
 	}
 
@@ -131,15 +130,6 @@ func NewHandler(ctx context.Context, repo *database.Repo, azureClient *auth.Azur
 }
 
 func (e EventHandler) Run(tickDuration time.Duration) {
-	eventRetrievers := []func() ([]gensql.Event, error){
-		func() ([]gensql.Event, error) {
-			return e.repo.EventsGetNew(e.context)
-		},
-		func() ([]gensql.Event, error) {
-			return e.repo.EventsGetOverdue(e.context)
-		},
-	}
-
 	go func() {
 		for {
 			select {
@@ -159,35 +149,33 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 				continue
 			}
 
-			for _, eventRetriever := range eventRetrievers {
-				pickedEvents, err := eventRetriever()
-				if err != nil {
-					e.log.Errorf("Failed to fetch events: %v", err)
+			events, err := e.repo.DispatcherEventsGet(e.context)
+			if err != nil {
+				e.log.WithError(err).Error("failed to fetch events")
+				continue
+			}
+
+			for _, event := range events {
+				worker := e.distributeWork(event.EventType)
+				if worker == nil {
+					e.log.WithField("eventID", event.ID).Errorf("No worker found for event type %v", event.EventType)
 					continue
 				}
 
-				for _, event := range pickedEvents {
-					worker := e.distributeWork(event.EventType)
-					if worker == nil {
-						e.log.WithField("eventID", event.ID).Errorf("No worker found for event type %v", event.EventType)
-						continue
-					}
-
-					eventLogger := newEventLogger(e.context, e.log, e.repo, event)
-					eventLogger.log.Infof("Dispatching event '%v'", event.EventType)
-					event := event
-					go func() {
-						if err := worker(e.context, event, eventLogger); err != nil {
-							eventLogger.log.WithError(err).Error("failed processing event")
-							if event.RetryCount > 5 {
-								eventLogger.log.Error("event reached max retries")
-								if err := e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusFailed); err != nil {
-									eventLogger.log.WithError(err).Error("failed setting event status to 'failed'")
-								}
+				eventLogger := newEventLogger(e.context, e.log, e.repo, event)
+				eventLogger.log.Infof("Dispatching event '%v'", event.EventType)
+				event := event
+				go func() {
+					if err := worker(e.context, event, eventLogger); err != nil {
+						eventLogger.log.WithError(err).Error("failed processing event")
+						if event.RetryCount > 5 {
+							eventLogger.log.Error("event reached max retries")
+							if err := e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusFailed); err != nil {
+								eventLogger.log.WithError(err).Error("failed setting event status to 'failed'")
 							}
 						}
-					}()
-				}
+					}
+				}()
 			}
 		}
 	}()

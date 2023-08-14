@@ -35,13 +35,14 @@ func (r *Repo) registerEvent(ctx context.Context, eventType gensql.EventType, ow
 		return err
 	}
 
-	err = r.querier.EventCreate(ctx, gensql.EventCreateParams{
+	params := gensql.EventCreateParams{
 		Owner:     owner,
 		EventType: eventType,
 		Payload:   jsonPayload,
 		Deadline:  deadlineOffset.Milliseconds() / 1000,
-	})
-	if err != nil {
+	}
+
+	if err = r.querier.EventCreate(ctx, params); err != nil {
 		return err
 	}
 
@@ -104,44 +105,8 @@ func (r *Repo) EventSetPendingStatus(ctx context.Context, id uuid.UUID) error {
 	return r.querier.EventSetPendingStatus(ctx, id)
 }
 
-func (r *Repo) EventsGetNew(ctx context.Context) ([]gensql.Event, error) {
-	rows, err := r.querier.EventsGetNew(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var events []gensql.Event
-	for _, row := range rows {
-		event := gensql.Event{
-			ID:        row.ID,
-			Owner:     row.Owner,
-			EventType: row.EventType,
-			Payload:   row.Payload,
-		}
-		events = append(events, event)
-	}
-
-	return events, nil
-}
-
-func (r *Repo) EventsGetOverdue(ctx context.Context) ([]gensql.Event, error) {
-	rows, err := r.querier.EventsGetOverdue(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var events []gensql.Event
-	for _, row := range rows {
-		event := gensql.Event{
-			ID:        row.ID,
-			Owner:     row.Owner,
-			EventType: row.EventType,
-			Payload:   row.Payload,
-		}
-		events = append(events, event)
-	}
-
-	return events, nil
+func (r *Repo) DispatcherEventsGet(ctx context.Context) ([]gensql.DispatcherEventsGetRow, error) {
+	return r.querier.DispatcherEventsGet(ctx)
 }
 
 func (r *Repo) EventsGetType(ctx context.Context, eventType gensql.EventType) ([]gensql.EventsGetTypeRow, error) {

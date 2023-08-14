@@ -34,17 +34,12 @@ WHERE owner = @owner
 ORDER BY updated_at DESC
 LIMIT @lim;
 
--- name: EventsGetNew :many
-SELECT id, owner, event_type, payload
+-- name: DispatcherEventsGet :many
+SELECT id, owner, event_type, payload, retry_count
 FROM Events
 WHERE status = 'new'
+   OR (status = 'pending' AND updated_at + deadline * retry_count < NOW())
 ORDER BY created_at DESC;
-
--- name: EventsGetOverdue :many
-SELECT id, owner, event_type, payload
-FROM Events
-WHERE status = 'pending'
-  AND updated_at + deadline * retry_count < NOW();
 
 -- name: EventsGetType :many
 SELECT id, owner, status, payload

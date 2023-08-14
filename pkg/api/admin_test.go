@@ -50,12 +50,12 @@ func TestAdminAPI(t *testing.T) {
 			t.Error(err)
 		}
 
-		eventsTeamA, err := repo.EventsGet(ctx, teams[0].ID, 1)
+		eventsTeamA, err := repo.EventsByOwnerGet(ctx, teams[0].ID, 1)
 		if err != nil {
 			t.Error(err)
 		}
 
-		eventsTeamB, err := repo.EventsGet(ctx, teams[1].ID, 1)
+		eventsTeamB, err := repo.EventsByOwnerGet(ctx, teams[1].ID, 1)
 		if err != nil {
 			t.Error(err)
 		}
@@ -579,7 +579,7 @@ func TestAdminAPI(t *testing.T) {
 	})
 
 	t.Run("get event html", func(t *testing.T) {
-		events, err := repo.EventsGet(ctx, teams[0].ID, 1)
+		events, err := repo.EventsByOwnerGet(ctx, teams[0].ID, 1)
 		if err != nil {
 			t.Error(err)
 		}
@@ -628,7 +628,7 @@ func TestAdminAPI(t *testing.T) {
 
 	t.Run("update event status", func(t *testing.T) {
 		newStatus := "failed"
-		events, err := repo.EventsGet(ctx, teams[0].ID, 1)
+		events, err := repo.EventsByOwnerGet(ctx, teams[0].ID, 1)
 		if err != nil {
 			t.Error(err)
 		}

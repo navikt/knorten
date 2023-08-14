@@ -124,7 +124,7 @@ func (r *Repo) EventGet(ctx context.Context, id uuid.UUID) (gensql.Event, error)
 	return r.querier.EventGet(ctx, id)
 }
 
-func (r *Repo) EventsGet(ctx context.Context, teamID string, limit int32) ([]gensql.Event, error) {
+func (r *Repo) EventsByOwnerGet(ctx context.Context, teamID string, limit int32) ([]gensql.Event, error) {
 	return r.querier.EventsByOwnerGet(ctx, gensql.EventsByOwnerGetParams{
 		Owner: teamID,
 		Lim:   limit,

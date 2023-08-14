@@ -12,6 +12,7 @@ import (
 	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/helm"
 	"github.com/sirupsen/logrus"
 )
 
@@ -406,6 +407,10 @@ func prepareChartTests(ctx context.Context) (gensql.Team, error) {
 		Slug:  "test-team",
 		Users: []string{"user.one@nav.no"},
 		Owner: "dummy@nav.no",
+	}
+
+	if err := helm.UpdateHelmRepositories(); err != nil {
+		return gensql.Team{}, err
 	}
 
 	// global values for airflow

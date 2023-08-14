@@ -58,7 +58,9 @@ func TestCharts(t *testing.T) {
 	})
 
 	type args struct {
-		values JupyterConfigurableValues
+		eventType gensql.EventType
+		chartType gensql.ChartType
+		values    any
 	}
 	type want struct {
 		values    []gensql.ChartTeamValue
@@ -71,23 +73,28 @@ func TestCharts(t *testing.T) {
 		case gensql.EventTypeCreateJupyter,
 			gensql.EventTypeUpdateJupyter:
 			return chartClient.SyncJupyter(ctx, values.(JupyterConfigurableValues), logrus.NewEntry(logrus.StandardLogger()))
+		case gensql.EventTypeDeleteJupyter:
+			return chartClient.DeleteJupyter(ctx, values.(JupyterConfigurableValues).TeamID, logrus.NewEntry(logrus.StandardLogger()))
+		case gensql.EventTypeCreateAirflow,
+			gensql.EventTypeUpdateAirflow:
+			return chartClient.SyncAirflow(ctx, values.(AirflowConfigurableValues), logrus.NewEntry(logrus.StandardLogger()))
+		case gensql.EventTypeDeleteAirflow:
+			return chartClient.DeleteAirflow(ctx, values.(AirflowConfigurableValues).TeamID, logrus.NewEntry(logrus.StandardLogger()))
 		}
 
 		return true
 	}
 
 	teamTests := []struct {
-		name      string
-		eventType gensql.EventType
-		chartType gensql.ChartType
-		args      args
-		want      want
+		name string
+		args args
+		want want
 	}{
 		{
-			name:      "Create jupyter chart",
-			eventType: gensql.EventTypeCreateJupyter,
-			chartType: gensql.ChartTypeJupyterhub,
+			name: "Create jupyter chart",
 			args: args{
+				eventType: gensql.EventTypeCreateJupyter,
+				chartType: gensql.ChartTypeJupyterhub,
 				values: JupyterConfigurableValues{
 					TeamID:      team.ID,
 					UserIdents:  []string{"d123456", "u654321"},
@@ -149,6 +156,214 @@ func TestCharts(t *testing.T) {
 				numValues: 14,
 			},
 		},
+		{
+			name: "Update jupyter chart",
+			args: args{
+				eventType: gensql.EventTypeCreateJupyter,
+				chartType: gensql.ChartTypeJupyterhub,
+				values: JupyterConfigurableValues{
+					TeamID:      team.ID,
+					UserIdents:  []string{"d123456"},
+					CPU:         "1.0",
+					Memory:      "4G",
+					ImageName:   "ghcr.io/navikt/image",
+					ImageTag:    "v2",
+					CullTimeout: "7200",
+					// AllowList:   []string{"data.nav.no", "pypi.org"},
+				},
+			},
+			want: want{
+				values: []gensql.ChartTeamValue{
+					{
+						Key:   "singleuser.cpu.limit",
+						Value: "1.0",
+					},
+					{
+						Key:   "singleuser.cpu.guarantee",
+						Value: "1.0",
+					},
+					{
+						Key:   "singleuser.memory.limit",
+						Value: "4G",
+					},
+					{
+						Key:   "singleuser.memory.limit",
+						Value: "4G",
+					},
+					{
+						Key:   "hub.config.Authenticator.admin_users",
+						Value: `["d123456"]`,
+					},
+					{
+						Key:   "hub.config.Authenticator.allowed_users",
+						Value: `["d123456"]`,
+					},
+					{
+						Key:   "ingress.hosts",
+						Value: `["test-team.jupyter.knada.io"]`,
+					},
+					{
+						Key:   "ingress.tls",
+						Value: `[{"hosts":["test-team.jupyter.knada.io"], "secretName": "jupyterhub-certificate"}]`,
+					},
+					{
+						Key:   "hub.config.AzureAdOAuthenticator.oauth_callback_url",
+						Value: "https://test-team.jupyter.knada.io/hub/oauth_callback",
+					},
+					{
+						Key:   "singleuser.extraEnv.KNADA_TEAM_SECRET",
+						Value: `projects/project/secrets/test-team-1234`,
+					},
+					{
+						Key:   "singleuser.profileList",
+						Value: `[{"display_name":"Custom image","description":"Custom image for team test-team-1234","kubespawner_override":{"image":"ghcr.io/navikt/image:v2"}}]`,
+					},
+				},
+				numValues: 14,
+			},
+		},
+		{
+			name: "Delete jupyter chart",
+			args: args{
+				eventType: gensql.EventTypeDeleteJupyter,
+				chartType: gensql.ChartTypeJupyterhub,
+				values: JupyterConfigurableValues{
+					TeamID: team.ID,
+				},
+			},
+			want: want{
+				values:    []gensql.ChartTeamValue{},
+				numValues: 0,
+			},
+		},
+		{
+			name: "Create airflow chart",
+			args: args{
+				eventType: gensql.EventTypeCreateAirflow,
+				chartType: gensql.ChartTypeAirflow,
+				values: AirflowConfigurableValues{
+					TeamID:        team.ID,
+					DagRepo:       "navikt/my-dags",
+					DagRepoBranch: "main",
+				},
+			},
+			want: want{
+				values: []gensql.ChartTeamValue{
+					{
+						Key:   "webserver.extraContainers.[0].args.[0]",
+						Value: "navikt/my-dags",
+					},
+					{
+						Key:   "webserver.extraContainers.[0].args.[1]",
+						Value: "main",
+					},
+					{
+						Key:   "scheduler.extraInitContainers.[0].args.[0]",
+						Value: "navikt/my-dags",
+					},
+					{
+						Key:   "scheduler.extraInitContainers.[0].args.[1]",
+						Value: "main",
+					},
+					{
+						Key:   "scheduler.extraContainers.[0].args.[0]",
+						Value: "navikt/my-dags",
+					},
+					{
+						Key:   "scheduler.extraContainers.[0].args.[1]",
+						Value: "main",
+					},
+					{
+						Key:   "workers.extraInitContainers.[0].args.[0]",
+						Value: "navikt/my-dags",
+					},
+					{
+						Key:   "workers.extraInitContainers.[0].args.[1]",
+						Value: "main",
+					},
+					{
+						Key:   "webserver.serviceAccount.name",
+						Value: "test-team-1234",
+					},
+					{
+						Key:   "workers.serviceAccount.name",
+						Value: "test-team-1234",
+					},
+					{
+						Key:   "env",
+						Value: `[{"name":"KNADA_TEAM_SECRET","value":"projects/project/secrets/test-team-1234"},{"name":"TEAM","value":"test-team-1234"},{"name":"NAMESPACE","value":"team-test-team-1234"},{"name":"AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER","value":"gs://airflow-logs-test-team-1234"},{"name":"AIRFLOW__LOGGING__REMOTE_LOGGING","value":"True"}]`,
+					},
+					{
+						Key:   "ingress.web.hosts",
+						Value: `[{"name":"test-team.airflow.knada.io","tls":{"enabled":true,"secretName":"airflow-certificate"}}]`,
+					},
+				},
+				numValues: 17,
+			},
+		},
+		{
+			name: "Update airflow chart",
+			args: args{
+				eventType: gensql.EventTypeUpdateAirflow,
+				chartType: gensql.ChartTypeAirflow,
+				values: AirflowConfigurableValues{
+					TeamID:        team.ID,
+					DagRepo:       "navikt/other-dags",
+					DagRepoBranch: "master",
+				},
+			},
+			want: want{
+				values: []gensql.ChartTeamValue{
+					{
+						Key:   "webserver.extraContainers.[0].args.[0]",
+						Value: "navikt/other-dags",
+					},
+					{
+						Key:   "webserver.extraContainers.[0].args.[1]",
+						Value: "master",
+					},
+					{
+						Key:   "scheduler.extraInitContainers.[0].args.[0]",
+						Value: "navikt/other-dags",
+					},
+					{
+						Key:   "scheduler.extraInitContainers.[0].args.[1]",
+						Value: "master",
+					},
+					{
+						Key:   "scheduler.extraContainers.[0].args.[0]",
+						Value: "navikt/other-dags",
+					},
+					{
+						Key:   "scheduler.extraContainers.[0].args.[1]",
+						Value: "master",
+					},
+					{
+						Key:   "workers.extraInitContainers.[0].args.[0]",
+						Value: "navikt/other-dags",
+					},
+					{
+						Key:   "workers.extraInitContainers.[0].args.[1]",
+						Value: "master",
+					},
+				},
+				numValues: 17,
+			},
+		},
+		{
+			name: "Delete airflow chart",
+			args: args{
+				eventType: gensql.EventTypeDeleteAirflow,
+				chartType: gensql.ChartTypeAirflow,
+				values: AirflowConfigurableValues{
+					TeamID: team.ID,
+				},
+			},
+			want: want{
+				values:    []gensql.ChartTeamValue{},
+				numValues: 0,
+			},
+		},
 	}
 
 	for _, tt := range teamTests {
@@ -158,11 +373,11 @@ func TestCharts(t *testing.T) {
 				t.Error(err)
 			}
 
-			if retry := operation(context.Background(), tt.eventType, tt.args.values, chartClient); retry {
-				t.Error("retry")
+			if retry := operation(ctx, tt.args.eventType, tt.args.values, chartClient); retry {
+				t.Errorf("%v failed: got retry return", tt.args.eventType)
 			}
 
-			teamValues, err := repo.TeamValuesGet(ctx, tt.chartType, team.ID)
+			teamValues, err := repo.TeamValuesGet(ctx, tt.args.chartType, team.ID)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -192,5 +407,20 @@ func prepareChartTests(ctx context.Context) (gensql.Team, error) {
 		Users: []string{"user.one@nav.no"},
 		Owner: "dummy@nav.no",
 	}
+
+	// global values for airflow
+	globalValues := map[string]string{
+		"webserver.extraContainers":     `[{"name": "git-nada", "image": "registry.k8s.io/git-sync/git-sync:v3.6.3","args": ["", "", "/dags", "60"], "volumeMounts":[{"mountPath":"/dags","name":"dags"}]}]`,
+		"scheduler.extraContainers":     `[{"name": "git-nada", "image": "registry.k8s.io/git-sync/git-sync:v3.6.3","args": ["", "", "/dags", "60"], "volumeMounts":[{"mountPath":"/dags","name":"dags"}]}]`,
+		"scheduler.extraInitContainers": `[{"name": "git-nada-clone", "image": "registry.k8s.io/git-sync/git-sync:v3.6.3","args": ["", "", "/dags", "60"], "volumeMounts":[{"mountPath":"/dags","name":"dags"}]}]`,
+		"workers.extraInitContainers":   `[{"name": "git-nada", "image": "registry.k8s.io/git-sync/git-sync:v3.6.3","args": ["", "", "/dags", "60"], "volumeMounts":[{"mountPath":"/dags","name":"dags"}]}]`,
+	}
+
+	for k, v := range globalValues {
+		if err := repo.GlobalChartValueInsert(ctx, k, v, false, gensql.ChartTypeAirflow); err != nil {
+			return gensql.Team{}, err
+		}
+	}
+
 	return team, repo.TeamCreate(ctx, team)
 }

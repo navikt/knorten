@@ -543,12 +543,12 @@ func (c *client) setEventStatus(ctx *gin.Context) error {
 		return err
 	}
 
-	var status gensql.EventStatus
+	var status database.EventStatus
 	switch ctx.Query("status") {
-	case string(gensql.EventStatusNew):
-		status = gensql.EventStatusNew
-	case string(gensql.EventStatusFailed):
-		status = gensql.EventStatusFailed
+	case string(database.EventStatusNew):
+		status = database.EventStatusNew
+	case string(database.EventStatusFailed):
+		status = database.EventStatusFailed
 	default:
 		return fmt.Errorf("invalid status %v", ctx.PostForm("status"))
 	}

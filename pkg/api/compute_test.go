@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
@@ -16,7 +17,7 @@ func TestComputeAPI(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("create compute", func(t *testing.T) {
-		oldEvents, err := repo.EventsGetType(ctx, gensql.EventTypeCreateCompute)
+		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeCreateCompute)
 		if err != nil {
 			t.Error(err)
 		}
@@ -27,7 +28,7 @@ func TestComputeAPI(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeCreateCompute)
+		events, err := repo.EventsGetType(ctx, database.EventTypeCreateCompute)
 		if err != nil {
 			t.Error(err)
 		}
@@ -98,7 +99,7 @@ func TestComputeAPI(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeDeleteCompute)
+		events, err := repo.EventsGetType(ctx, database.EventTypeDeleteCompute)
 		if err != nil {
 			t.Error(err)
 		}

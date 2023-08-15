@@ -9,39 +9,39 @@ import (
 )
 
 func TestEventHandler_distributeWork(t *testing.T) {
-	checkEventType := func(eventType gensql.EventType, chartMock chartMock, teamMock teamMock, computeMock computeMock) int {
+	checkEventType := func(eventType database.EventType, chartMock chartMock, teamMock teamMock, computeMock computeMock) int {
 		switch eventType {
-		case gensql.EventTypeCreateCompute,
-			gensql.EventTypeDeleteCompute:
+		case database.EventTypeCreateCompute,
+			database.EventTypeDeleteCompute:
 			return computeMock.EventCounts[eventType]
-		case gensql.EventTypeCreateTeam,
-			gensql.EventTypeUpdateTeam,
-			gensql.EventTypeDeleteTeam:
+		case database.EventTypeCreateTeam,
+			database.EventTypeUpdateTeam,
+			database.EventTypeDeleteTeam:
 			return teamMock.EventCounts[eventType]
-		case gensql.EventTypeCreateAirflow,
-			gensql.EventTypeUpdateAirflow,
-			gensql.EventTypeDeleteAirflow,
-			gensql.EventTypeCreateJupyter,
-			gensql.EventTypeUpdateJupyter,
-			gensql.EventTypeDeleteJupyter:
+		case database.EventTypeCreateAirflow,
+			database.EventTypeUpdateAirflow,
+			database.EventTypeDeleteAirflow,
+			database.EventTypeCreateJupyter,
+			database.EventTypeUpdateJupyter,
+			database.EventTypeDeleteJupyter:
 			return chartMock.EventCounts[eventType]
 		}
 
 		return -1
 	}
 
-	eventTypes := []gensql.EventType{
-		gensql.EventTypeCreateCompute,
-		gensql.EventTypeDeleteCompute,
-		gensql.EventTypeCreateTeam,
-		gensql.EventTypeUpdateTeam,
-		gensql.EventTypeDeleteTeam,
-		gensql.EventTypeCreateAirflow,
-		gensql.EventTypeUpdateAirflow,
-		gensql.EventTypeDeleteAirflow,
-		gensql.EventTypeCreateJupyter,
-		gensql.EventTypeUpdateJupyter,
-		gensql.EventTypeDeleteJupyter,
+	eventTypes := []database.EventType{
+		database.EventTypeCreateCompute,
+		database.EventTypeDeleteCompute,
+		database.EventTypeCreateTeam,
+		database.EventTypeUpdateTeam,
+		database.EventTypeDeleteTeam,
+		database.EventTypeCreateAirflow,
+		database.EventTypeUpdateAirflow,
+		database.EventTypeDeleteAirflow,
+		database.EventTypeCreateJupyter,
+		database.EventTypeUpdateJupyter,
+		database.EventTypeDeleteJupyter,
 	}
 	for _, eventType := range eventTypes {
 		t.Run(string(eventType), func(t *testing.T) {
@@ -55,7 +55,7 @@ func TestEventHandler_distributeWork(t *testing.T) {
 				chartClient:   &chartMock,
 			}
 			worker := handler.distributeWork(eventType)
-			if err := worker(context.Background(), gensql.DispatcherEventsGetRow{Payload: []byte("{}"), EventType: eventType}, nil); err != nil {
+			if err := worker(context.Background(), gensql.DispatcherEventsGetRow{Payload: []byte("{}"), Type: string(eventType)}, nil); err != nil {
 				t.Errorf("worker(): %v", err)
 			}
 

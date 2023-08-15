@@ -25,10 +25,10 @@ import (
 var embedMigrations embed.FS
 
 type Repository interface {
-	EventSetStatus(context.Context, uuid.UUID, gensql.EventStatus) error
+	EventSetStatus(context.Context, uuid.UUID, EventStatus) error
 	EventSetPendingStatus(context.Context, uuid.UUID) error
 	DispatcherEventsGet(context.Context) ([]gensql.DispatcherEventsGetRow, error)
-	EventLogCreate(context.Context, uuid.UUID, string, gensql.LogType) error
+	EventLogCreate(context.Context, uuid.UUID, string, LogType) error
 }
 
 type Repo struct {

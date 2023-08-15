@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 
+	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/logger"
 )
@@ -13,21 +14,21 @@ type computeClient interface {
 }
 
 type computeMock struct {
-	EventCounts map[gensql.EventType]int
+	EventCounts map[database.EventType]int
 }
 
 func newComputeMock() computeMock {
 	return computeMock{
-		EventCounts: map[gensql.EventType]int{},
+		EventCounts: map[database.EventType]int{},
 	}
 }
 
 func (cm computeMock) Create(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) bool {
-	cm.EventCounts[gensql.EventTypeCreateCompute]++
+	cm.EventCounts[database.EventTypeCreateCompute]++
 	return false
 }
 
 func (cm computeMock) Delete(ctx context.Context, email string, log logger.Logger) bool {
-	cm.EventCounts[gensql.EventTypeDeleteCompute]++
+	cm.EventCounts[database.EventTypeDeleteCompute]++
 	return false
 }

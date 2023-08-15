@@ -9,7 +9,7 @@ import (
 
 type RepoMock struct{}
 
-func (r *RepoMock) EventSetStatus(ctx context.Context, id uuid.UUID, status gensql.EventStatus) error {
+func (r *RepoMock) EventSetStatus(ctx context.Context, id uuid.UUID, status EventStatus) error {
 	return nil
 }
 
@@ -21,6 +21,6 @@ func (r *RepoMock) DispatcherEventsGet(ctx context.Context) ([]gensql.Dispatcher
 	return nil, nil
 }
 
-func (r *RepoMock) EventLogCreate(ctx context.Context, id uuid.UUID, message string, logType gensql.LogType) error {
+func (r *RepoMock) EventLogCreate(ctx context.Context, id uuid.UUID, message string, logType LogType) error {
 	return nil
 }

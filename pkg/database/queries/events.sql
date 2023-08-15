@@ -1,14 +1,14 @@
 -- name: EventCreate :exec
-INSERT INTO Events (owner, event_type, payload, status, deadline)
+INSERT INTO Events (owner, type, payload, status, deadline)
 VALUES (@owner,
-        @event_type,
+        @type,
         @payload,
         'new',
         @deadline);
 
 -- name: EventGet :one
 SELECT events.id,
-       events.event_type,
+       events.type,
        events.status,
        events.deadline::TEXT as deadline,
        events.created_at,
@@ -21,7 +21,7 @@ WHERE id = @id;
 
 -- name: EventsByOwnerGet :many
 SELECT events.id,
-       events.event_type,
+       events.type,
        events.status,
        events.deadline::TEXT as deadline,
        events.created_at,
@@ -35,7 +35,7 @@ ORDER BY updated_at DESC
 LIMIT @lim;
 
 -- name: DispatcherEventsGet :many
-SELECT id, owner, event_type, payload, retry_count
+SELECT id, owner, type, payload, retry_count
 FROM Events
 WHERE status = 'new'
    OR (status = 'pending' AND updated_at + deadline * retry_count < NOW())
@@ -44,7 +44,7 @@ ORDER BY created_at DESC;
 -- name: EventsGetType :many
 SELECT id, owner, status, payload
 FROM Events
-WHERE event_type = @event_type;
+WHERE type = @event_type;
 
 -- name: EventSetStatus :exec
 UPDATE
@@ -70,7 +70,7 @@ WHERE event_id = @id
 ORDER BY created_at DESC;
 
 -- name: EventLogsForOwnerGet :many
-SELECT events.event_type,
+SELECT events.type,
        events.status,
        events.deadline::TEXT as deadline,
        events.created_at,

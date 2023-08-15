@@ -57,7 +57,7 @@ func TestTeam(t *testing.T) {
 		team gensql.Team
 	}
 	type want struct {
-		team gensql.TeamGetRow
+		team gensql.TeamBySlugGetRow
 		err  error
 	}
 
@@ -92,7 +92,7 @@ func TestTeam(t *testing.T) {
 				},
 			},
 			want: want{
-				team: gensql.TeamGetRow{
+				team: gensql.TeamBySlugGetRow{
 					ID:    "test-team-1234",
 					Slug:  "test-team",
 					Users: []string{"dummy@nav.no", "user.one@nav.on", "user.two@nav.on"},
@@ -113,7 +113,7 @@ func TestTeam(t *testing.T) {
 				},
 			},
 			want: want{
-				team: gensql.TeamGetRow{
+				team: gensql.TeamBySlugGetRow{
 					ID:    "test-team-1234",
 					Slug:  "test-team",
 					Users: []string{"dummy@nav.no", "user.one@nav.on", "user.two@nav.on"},
@@ -134,7 +134,7 @@ func TestTeam(t *testing.T) {
 				},
 			},
 			want: want{
-				team: gensql.TeamGetRow{
+				team: gensql.TeamBySlugGetRow{
 					ID:    "other-team-1234",
 					Slug:  "other-team",
 					Users: []string{"dummy@nav.no"},
@@ -154,7 +154,7 @@ func TestTeam(t *testing.T) {
 				},
 			},
 			want: want{
-				team: gensql.TeamGetRow{
+				team: gensql.TeamBySlugGetRow{
 					ID:    "test-team-1234",
 					Slug:  "test-team",
 					Users: []string{"dummy@nav.no", "new.user@nav.no"},
@@ -172,7 +172,7 @@ func TestTeam(t *testing.T) {
 				},
 			},
 			want: want{
-				team: gensql.TeamGetRow{},
+				team: gensql.TeamBySlugGetRow{},
 				err:  sql.ErrNoRows,
 			},
 		},
@@ -194,7 +194,7 @@ func TestTeam(t *testing.T) {
 				t.Error(err)
 			}
 
-			if diff := cmp.Diff(gensql.TeamGetRow{ID: team.ID, Owner: team.Owner, Users: team.Users, Slug: team.Slug}, tt.want.team); diff != "" {
+			if diff := cmp.Diff(team, tt.want.team); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

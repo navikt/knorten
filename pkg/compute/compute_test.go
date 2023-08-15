@@ -3,6 +3,7 @@ package compute
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"log"
 	"os"
 	"path"
@@ -38,6 +39,17 @@ func TestMain(m *testing.M) {
 }
 
 func TestCompute(t *testing.T) {
+	ctx := context.Background()
+	computeUser := "dummy@nav.no"
+	t.Cleanup(func() {
+		instance, err := repo.ComputeInstanceGet(ctx, computeUser)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			t.Error(err)
+		}
+		if err := repo.ComputeInstanceDelete(ctx, instance.Email); err != nil {
+			t.Error(err)
+		}
+	})
 	type args struct {
 		instance gensql.ComputeInstance
 	}
@@ -68,13 +80,13 @@ func TestCompute(t *testing.T) {
 			eventType: gensql.EventTypeCreateCompute,
 			args: args{
 				instance: gensql.ComputeInstance{
-					Email: "dummy@nav.no",
+					Email: computeUser,
 					Name:  "compute-dummy",
 				},
 			},
 			want: want{
 				instance: gensql.ComputeInstance{
-					Email: "dummy@nav.no",
+					Email: computeUser,
 					Name:  "compute-dummy",
 				},
 				err: nil,
@@ -85,7 +97,7 @@ func TestCompute(t *testing.T) {
 			eventType: gensql.EventTypeDeleteCompute,
 			args: args{
 				instance: gensql.ComputeInstance{
-					Email: "dummy@nav.no",
+					Email: computeUser,
 					Name:  "compute-dummy",
 				},
 			},

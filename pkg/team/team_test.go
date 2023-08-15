@@ -3,6 +3,7 @@ package team
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"log"
 	"os"
 	"path"
@@ -39,6 +40,19 @@ func TestMain(m *testing.M) {
 }
 
 func TestTeam(t *testing.T) {
+	ctx := context.Background()
+	t.Cleanup(func() {
+		teams, err := repo.TeamsGet(ctx)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			t.Error(err)
+		}
+		for _, team := range teams {
+			if err := repo.TeamDelete(ctx, team.ID); err != nil {
+				t.Error(err)
+			}
+		}
+	})
+
 	type args struct {
 		team gensql.Team
 	}

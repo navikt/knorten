@@ -2,6 +2,8 @@ package chart
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"log"
 	"os"
 	"path"
@@ -53,8 +55,14 @@ func TestCharts(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		if err := repo.TeamDelete(ctx, team.ID); err != nil {
+		teams, err := repo.TeamsGet(ctx)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			t.Error(err)
+		}
+		for _, team := range teams {
+			if err := repo.TeamDelete(ctx, team.ID); err != nil {
+				t.Error(err)
+			}
 		}
 	})
 

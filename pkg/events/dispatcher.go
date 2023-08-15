@@ -25,30 +25,30 @@ type EventHandler struct {
 	chartClient   chartClient
 }
 
-type workerFunc func(context.Context, gensql.DispatcherEventsGetRow, logger.Logger) error
+type workerFunc func(context.Context, gensql.Event, logger.Logger) error
 
 func (e EventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 	switch eventType {
 	case gensql.EventTypeCreateTeam,
 		gensql.EventTypeUpdateTeam:
-		return func(ctx context.Context, event gensql.DispatcherEventsGetRow, logger logger.Logger) error {
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			var team gensql.Team
 			return e.processWork(event, logger, &team)
 		}
 	case gensql.EventTypeCreateCompute:
-		return func(ctx context.Context, event gensql.DispatcherEventsGetRow, logger logger.Logger) error {
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			var instance gensql.ComputeInstance
 			return e.processWork(event, logger, &instance)
 		}
 	case gensql.EventTypeCreateAirflow,
 		gensql.EventTypeUpdateAirflow:
-		return func(ctx context.Context, event gensql.DispatcherEventsGetRow, logger logger.Logger) error {
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			var values chart.AirflowConfigurableValues
 			return e.processWork(event, logger, &values)
 		}
 	case gensql.EventTypeCreateJupyter,
 		gensql.EventTypeUpdateJupyter:
-		return func(ctx context.Context, event gensql.DispatcherEventsGetRow, logger logger.Logger) error {
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			var values chart.JupyterConfigurableValues
 			return e.processWork(event, logger, &values)
 		}
@@ -56,7 +56,7 @@ func (e EventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 		gensql.EventTypeDeleteCompute,
 		gensql.EventTypeDeleteAirflow,
 		gensql.EventTypeDeleteJupyter:
-		return func(ctx context.Context, event gensql.DispatcherEventsGetRow, logger logger.Logger) error {
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			return e.processWork(event, logger, nil)
 		}
 	}
@@ -64,7 +64,7 @@ func (e EventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 	return nil
 }
 
-func (e EventHandler) processWork(event gensql.DispatcherEventsGetRow, logger logger.Logger, form any) error {
+func (e EventHandler) processWork(event gensql.Event, logger logger.Logger, form any) error {
 	if err := json.Unmarshal(event.Payload, &form); err != nil {
 		if err := e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusFailed); err != nil {
 			return err

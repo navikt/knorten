@@ -55,7 +55,7 @@
     <article class="bg-white rounded-md p-4">
         <div class="flex items-center gap-4 pb-4">
             <h2>Privat secret</h2>
-            {{ if .user.Secret }}
+            {{ with .user.UserGSM }}
                 <form action="/secret/delete" method="POST">
                     <fieldset class="flex gap-2 items-center">
                         <button type="submit"
@@ -68,11 +68,10 @@
             {{ end }}
         </div>
 
-
-        {{ if .user.Secret }}
+        {{ if .user.UserGSM }}
             <p class="pb-4 flex items-center gap-2">
                 <a class="navds-link" target="_blank"
-                   href="https://console.cloud.google.com/security/secret-manager/secret/{{ .user.Secret.Name }}/versions?project={{ $.gcpProject }}">
+                   href="https://console.cloud.google.com/security/secret-manager/secret/{{ .user.UserGSM.Name }}/versions?project={{ $.gcpProject }}">
                     Secret Manager
                 </a>
             </p>

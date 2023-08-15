@@ -17,7 +17,7 @@ func (r *RepoMock) EventSetPendingStatus(ctx context.Context, id uuid.UUID) erro
 	return nil
 }
 
-func (r *RepoMock) DispatcherEventsGet(ctx context.Context) ([]gensql.DispatcherEventsGetRow, error) {
+func (r *RepoMock) DispatcherEventsGet(ctx context.Context) ([]gensql.Event, error) {
 	return nil, nil
 }
 

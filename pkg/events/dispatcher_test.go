@@ -55,7 +55,7 @@ func TestEventHandler_distributeWork(t *testing.T) {
 				chartClient:   &chartMock,
 			}
 			worker := handler.distributeWork(eventType)
-			if err := worker(context.Background(), gensql.DispatcherEventsGetRow{Payload: []byte("{}"), Type: string(eventType)}, nil); err != nil {
+			if err := worker(context.Background(), gensql.Event{Payload: []byte("{}"), Type: string(eventType)}, nil); err != nil {
 				t.Errorf("worker(): %v", err)
 			}
 

@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/logger"
 	"github.com/sirupsen/logrus"
 )
 
@@ -47,22 +46,11 @@ func (e EventLogger) Errorf(template string, arg ...any) {
 	e.Error(fmt.Sprintf(template, arg...))
 }
 
-func (e EventLogger) WithField(key string, value interface{}) logger.Logger {
-	e.log = e.log.WithFields(logrus.Fields{key: value})
-	return e
+func (e EventLogger) WithError(err error) *logrus.Entry {
+	return e.log.WithError(err)
 }
 
-func (e EventLogger) WithError(err error) logger.Logger {
-	e.log = e.log.WithField(logrus.ErrorKey, err)
-	return e
-}
-
-func (e EventLogger) WithTeamID(teamID string) logger.Logger {
-	e.log = e.log.WithField("teamID", teamID)
-	return e
-}
-
-func newEventLogger(ctx context.Context, log *logrus.Entry, repo database.Repository, event gensql.DispatcherEventsGetRow) EventLogger {
+func newEventLogger(ctx context.Context, log *logrus.Entry, repo database.Repository, event gensql.Event) EventLogger {
 	return EventLogger{
 		eventID: event.ID,
 		log:     log.WithField("eventType", event.Type).WithField("eventID", event.ID),

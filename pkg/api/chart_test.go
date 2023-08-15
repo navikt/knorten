@@ -471,7 +471,7 @@ func prepareChartTests(ctx context.Context, teamName string) (gensql.Team, error
 	return team, repo.TeamCreate(ctx, team)
 }
 
-func getEventForJupyterhub(events []gensql.EventsGetTypeRow, team string) (chart.JupyterConfigurableValues, error) {
+func getEventForJupyterhub(events []gensql.Event, team string) (chart.JupyterConfigurableValues, error) {
 	for _, event := range events {
 		payload := chart.JupyterConfigurableValues{}
 		err := json.Unmarshal(event.Payload, &payload)
@@ -487,7 +487,7 @@ func getEventForJupyterhub(events []gensql.EventsGetTypeRow, team string) (chart
 	return chart.JupyterConfigurableValues{}, nil
 }
 
-func getEventForAirflow(events []gensql.EventsGetTypeRow, team string) (chart.AirflowConfigurableValues, error) {
+func getEventForAirflow(events []gensql.Event, team string) (chart.AirflowConfigurableValues, error) {
 	for _, event := range events {
 		payload := chart.AirflowConfigurableValues{}
 		err := json.Unmarshal(event.Payload, &payload)

@@ -21,17 +21,17 @@ type TeamServices struct {
 	Slug       string
 	Jupyterhub *AppService
 	Airflow    *AppService
-	Events     []Event
+	Events     []EventWithLogs
 }
 
 type ComputeService struct {
 	gensql.ComputeInstance
-	Events []Event
+	Events []EventWithLogs
 }
 
 type UserGSMService struct {
 	gensql.UserGoogleSecretManager
-	Events []Event
+	Events []EventWithLogs
 }
 
 type UserServices struct {

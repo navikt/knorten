@@ -27,7 +27,7 @@ var embedMigrations embed.FS
 type Repository interface {
 	EventSetStatus(context.Context, uuid.UUID, EventStatus) error
 	EventSetPendingStatus(context.Context, uuid.UUID) error
-	DispatcherEventsGet(context.Context) ([]gensql.DispatcherEventsGetRow, error)
+	DispatcherEventsGet(context.Context) ([]gensql.Event, error)
 	EventLogCreate(context.Context, uuid.UUID, string, LogType) error
 }
 

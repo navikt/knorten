@@ -84,7 +84,7 @@ type Event struct {
 	Type       string
 	Payload    json.RawMessage
 	Status     string
-	Deadline   int64
+	Deadline   string
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 	Owner      string

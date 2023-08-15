@@ -1,13 +1,10 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
@@ -94,21 +91,4 @@ func (c *client) createComputeInstance(ctx *gin.Context) error {
 	}
 
 	return c.repo.RegisterCreateComputeEvent(ctx, instance)
-}
-
-func getUser(ctx *gin.Context) (*auth.User, error) {
-	var user *auth.User
-	anyUser, exists := ctx.Get("user")
-	if !exists {
-		return nil, fmt.Errorf("can't verify user")
-	}
-	user = anyUser.(*auth.User)
-
-	return user, nil
-}
-
-func getNormalizedNameFromEmail(name string) string {
-	name = strings.Split(name, "@")[0]
-	name = strings.ReplaceAll(name, ".", "-")
-	return strings.ToLower(name)
 }

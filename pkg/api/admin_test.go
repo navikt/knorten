@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/k8s"
 )
@@ -51,12 +50,12 @@ func TestAdminAPI(t *testing.T) {
 			t.Error(err)
 		}
 
-		eventsTeamA, err := repo.EventsGet(ctx, teams[0].ID, 1)
+		eventsTeamA, err := repo.EventsByOwnerGet(ctx, teams[0].ID, 1)
 		if err != nil {
 			t.Error(err)
 		}
 
-		eventsTeamB, err := repo.EventsGet(ctx, teams[1].ID, 1)
+		eventsTeamB, err := repo.EventsByOwnerGet(ctx, teams[1].ID, 1)
 		if err != nil {
 			t.Error(err)
 		}
@@ -580,7 +579,7 @@ func TestAdminAPI(t *testing.T) {
 	})
 
 	t.Run("get event html", func(t *testing.T) {
-		events, err := repo.EventsGet(ctx, teams[0].ID, 1)
+		events, err := repo.EventsByOwnerGet(ctx, teams[0].ID, 1)
 		if err != nil {
 			t.Error(err)
 		}
@@ -612,17 +611,7 @@ func TestAdminAPI(t *testing.T) {
 		}
 
 		expected, err := createExpectedHTML("admin/event", map[string]any{
-			"event": database.Event{
-				ID:         events[0].ID,
-				Owner:      events[0].Owner,
-				Type:       events[0].Type,
-				Status:     events[0].Status,
-				Deadline:   events[0].Deadline,
-				RetryCount: events[0].RetryCount,
-				CreatedAt:  events[0].CreatedAt,
-				UpdatedAt:  events[0].UpdatedAt,
-				Payload:    events[0].Payload,
-			},
+			"event": events[0],
 		})
 		if err != nil {
 			t.Error(err)
@@ -639,7 +628,7 @@ func TestAdminAPI(t *testing.T) {
 
 	t.Run("update event status", func(t *testing.T) {
 		newStatus := "failed"
-		events, err := repo.EventsGet(ctx, teams[0].ID, 1)
+		events, err := repo.EventsByOwnerGet(ctx, teams[0].ID, 1)
 		if err != nil {
 			t.Error(err)
 		}
@@ -670,18 +659,10 @@ func TestAdminAPI(t *testing.T) {
 			t.Error(err)
 		}
 
+		event := events[0]
+		event.Status = gensql.EventStatus(newStatus)
 		expected, err := createExpectedHTML("admin/event", map[string]any{
-			"event": database.Event{
-				ID:         events[0].ID,
-				Owner:      events[0].Owner,
-				Type:       events[0].Type,
-				Status:     gensql.EventStatus(newStatus),
-				Deadline:   events[0].Deadline,
-				RetryCount: events[0].RetryCount,
-				CreatedAt:  events[0].CreatedAt,
-				UpdatedAt:  events[0].UpdatedAt,
-				Payload:    events[0].Payload,
-			},
+			"event": event,
 		})
 		if err != nil {
 			t.Error(err)
@@ -780,8 +761,8 @@ func cleanUpAdminTests(ctx context.Context, teams []gensql.Team) error {
 	return nil
 }
 
-func getNewEvents(oldEvents, events []gensql.EventsGetTypeRow) []gensql.EventsGetTypeRow {
-	var new []gensql.EventsGetTypeRow
+func getNewEvents(oldEvents, events []gensql.Event) []gensql.Event {
+	var new []gensql.Event
 	for _, event := range events {
 		if !containsEvent(oldEvents, event) {
 			new = append(new, event)
@@ -791,7 +772,7 @@ func getNewEvents(oldEvents, events []gensql.EventsGetTypeRow) []gensql.EventsGe
 	return new
 }
 
-func containsEvent(events []gensql.EventsGetTypeRow, event gensql.EventsGetTypeRow) bool {
+func containsEvent(events []gensql.Event, event gensql.Event) bool {
 	for _, oldEvent := range events {
 		if oldEvent.ID == event.ID {
 			return true

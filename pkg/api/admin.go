@@ -10,7 +10,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/nais/knorten/pkg/chart"
-	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/k8s"
 
@@ -28,7 +27,7 @@ type teamInfo struct {
 	gensql.Team
 	Namespace string
 	Apps      []gensql.ChartType
-	Events    []database.Event
+	Events    []gensql.Event
 }
 
 func (c *client) setupAdminRoutes() {
@@ -65,7 +64,7 @@ func (c *client) setupAdminRoutes() {
 				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err})
 				return
 			}
-			events, err := c.repo.EventsGet(ctx, team.ID, 5)
+			events, err := c.repo.EventsByOwnerGet(ctx, team.ID, 5)
 			if err != nil {
 				c.log.WithError(err).Error("problem retrieving apps for teams")
 				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err})

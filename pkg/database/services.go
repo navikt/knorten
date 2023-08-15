@@ -21,13 +21,13 @@ type TeamServices struct {
 	Slug       string
 	Jupyterhub *AppService
 	Airflow    *AppService
-	Events     []Event
+	Events     []EventWithLogs
 }
 
 type ComputeService struct {
 	Email  string
 	Name   string
-	Events []Event
+	Events []EventWithLogs
 }
 
 type UserServices struct {

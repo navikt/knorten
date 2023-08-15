@@ -222,7 +222,7 @@ type Event struct {
 	EventType  EventType
 	Payload    json.RawMessage
 	Status     EventStatus
-	Deadline   int64
+	Deadline   string
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 	Owner      string

@@ -52,6 +52,48 @@
         {{ end }}
     </article>
 
+    <article class="bg-white rounded-md p-4">
+        <div class="flex items-center gap-4 pb-4">
+            <h2>Privat secret</h2>
+            {{ if .user.Secret }}
+                <form action="/secret/delete" method="POST">
+                    <fieldset class="flex gap-2 items-center">
+                        <button type="submit"
+                                onclick="return confirm('Er du sikker på at du vil slette din secret? Det er ikke mulig å gjenopprette denne senere')"
+                                class="navds-button navds-button--danger  bg-surface-danger">
+                            <span class="navds-label">Slett secret</span>
+                        </button>
+                    </fieldset>
+                </form>
+            {{ end }}
+        </div>
+
+
+        {{ if .user.Secret }}
+            <p class="pb-4 flex items-center gap-2">
+                <a class="navds-link" target="_blank"
+                   href="https://console.cloud.google.com/security/secret-manager/secret/{{ .user.Secret.Name }}/versions?project={{ $.gcpProject }}">
+                    Secret Manager
+                </a>
+            </p>
+            <br>
+            {{ template "events/rows" .Events }}
+        {{ else }}
+            <p class="flex items-center gap-4 pb-4">Vi tilbyr nå private secret per bruker, denne lar deg ha
+                hemmeligheter i Google Secret Manager som resten av teamet ditt ikke har tilgang til.
+            </p>
+            <form action="/secret/new" method="POST">
+                <fieldset class="flex gap-2 items-center">
+                    <button type="submit"
+                            onclick="return confirm('Er du sikker på at du vil opprette en privat secret?')"
+                            class="navds-button navds-button--danger  bg-surface-danger">
+                        <span class="navds-label">Opprett secret</span>
+                    </button>
+                </fieldset>
+            </form>
+        {{ end }}
+    </article>
+
     {{ range .user.Services }}
         {{ $teamID := .TeamID }}
         <article class="bg-white rounded-md p-4">

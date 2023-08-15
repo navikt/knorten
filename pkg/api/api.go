@@ -82,6 +82,7 @@ func (c *client) setupAuthenticatedRoutes() {
 	c.setupUserRoutes()
 	c.setupTeamRoutes()
 	c.setupComputeRoutes()
+	c.setupSecretRoutes()
 	c.setupChartRoutes()
 }
 

@@ -172,13 +172,8 @@ func TestTeam(t *testing.T) {
 				},
 			},
 			want: want{
-				team: gensql.TeamGetRow{
-					ID:    "",
-					Slug:  "",
-					Users: nil,
-					Owner: "",
-				},
-				err: sql.ErrNoRows,
+				team: gensql.TeamGetRow{},
+				err:  sql.ErrNoRows,
 			},
 		},
 	}

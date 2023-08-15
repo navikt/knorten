@@ -117,9 +117,6 @@ func (r *Repo) EventsByOwnerGet(ctx context.Context, teamID string, limit int32)
 		Lim:   limit,
 	})
 }
-func (r *Repo) EventsGet(ctx context.Context, limit int32) ([]gensql.Event, error) {
-	return r.querier.EventsGet(ctx, limit)
-}
 
 func (r *Repo) EventLogsForEventGet(ctx context.Context, id uuid.UUID) ([]gensql.EventLog, error) {
 	return r.querier.EventLogsForEventGet(ctx, id)

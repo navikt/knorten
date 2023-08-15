@@ -18,12 +18,6 @@ WHERE owner = @owner
 ORDER BY updated_at DESC
 LIMIT @lim;
 
--- name: EventsGet :many
-SELECT *
-FROM Events
-ORDER BY updated_at DESC
-LIMIT @lim;
-
 -- name: DispatcherEventsGet :many
 SELECT *
 FROM Events

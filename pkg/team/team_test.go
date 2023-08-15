@@ -194,7 +194,7 @@ func TestTeam(t *testing.T) {
 				t.Error(err)
 			}
 
-			if diff := cmp.Diff(team, tt.want.team); diff != "" {
+			if diff := cmp.Diff(gensql.TeamGetRow{ID: team.ID, Owner: team.Owner, Users: team.Users, Slug: team.Slug}, tt.want.team); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/nais/knorten/local/dbsetup"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
@@ -113,10 +114,6 @@ func TestCompute(t *testing.T) {
 			instance, err := repo.ComputeInstanceGet(context.Background(), tt.args.instance.Email)
 			if err != tt.want.err {
 				t.Error(err)
-			}
-
-			if instance.Name != tt.want.instance.Name {
-				t.Errorf("instance name, expected %v, got %v", tt.want.instance.Name, instance.Name)
 			}
 
 			if diff := cmp.Diff(instance, tt.want.instance); diff != "" {

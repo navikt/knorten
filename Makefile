@@ -67,4 +67,4 @@ css-watch:
 	npx tailwindcss --postcss -i local/tailwind.css -o assets/css/main.css -w
 
 test:
-	go test -v ./... -count=1
+	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" go test -v ./... -count=1

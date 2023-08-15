@@ -27,7 +27,6 @@ func NewClient(repo *database.Repo, gcpProject, gcpZone string, dryRun bool) *Cl
 }
 
 func (c Client) Create(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) bool {
-	log = log.WithField("owner", instance.Name)
 	log.Info("Creating compute instance")
 
 	if retry, err := c.create(ctx, instance, log); err != nil {
@@ -65,7 +64,6 @@ func (c Client) create(ctx context.Context, instance gensql.ComputeInstance, log
 }
 
 func (c Client) Delete(ctx context.Context, email string, log logger.Logger) bool {
-	log = log.WithField("owner", email)
 	log.Info("Deleting compute instance")
 
 	if retry, err := c.delete(ctx, email, log); err != nil {

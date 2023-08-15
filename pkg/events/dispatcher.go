@@ -7,22 +7,22 @@ import (
 
 	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/chart"
-	"github.com/nais/knorten/pkg/compute"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/leaderelection"
 	"github.com/nais/knorten/pkg/logger"
 	"github.com/nais/knorten/pkg/team"
+	"github.com/nais/knorten/pkg/user"
 	"github.com/sirupsen/logrus"
 )
 
 type EventHandler struct {
-	repo          database.Repository
-	log           *logrus.Entry
-	context       context.Context
-	teamClient    teamClient
-	computeClient computeClient
-	chartClient   chartClient
+	repo        database.Repository
+	log         *logrus.Entry
+	context     context.Context
+	teamClient  teamClient
+	userClient  userClient
+	chartClient chartClient
 }
 
 type workerFunc func(context.Context, gensql.Event, logger.Logger) error
@@ -34,6 +34,11 @@ func (e EventHandler) distributeWork(eventType database.EventType) workerFunc {
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			var team gensql.Team
 			return e.processWork(event, logger, &team)
+		}
+	case database.EventTypeCreateUserGSM:
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
+			var manager gensql.UserGoogleSecretManager
+			return e.processWork(event, logger, &manager)
 		}
 	case database.EventTypeCreateCompute:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
@@ -53,6 +58,7 @@ func (e EventHandler) distributeWork(eventType database.EventType) workerFunc {
 			return e.processWork(event, logger, &values)
 		}
 	case database.EventTypeDeleteTeam,
+		database.EventTypeDeleteUserGSM,
 		database.EventTypeDeleteCompute,
 		database.EventTypeDeleteAirflow,
 		database.EventTypeDeleteJupyter:
@@ -85,10 +91,14 @@ func (e EventHandler) processWork(event gensql.Event, logger logger.Logger, form
 		retry = e.teamClient.Update(e.context, *form.(*gensql.Team), logger)
 	case database.EventTypeDeleteTeam:
 		retry = e.teamClient.Delete(e.context, event.Owner, logger)
+	case database.EventTypeCreateUserGSM:
+		retry = e.userClient.CreateUserGSM(e.context, *form.(*gensql.UserGoogleSecretManager), logger)
+	case database.EventTypeDeleteUserGSM:
+		retry = e.userClient.DeleteUserGSM(e.context, event.Owner, logger)
 	case database.EventTypeCreateCompute:
-		retry = e.computeClient.Create(e.context, *form.(*gensql.ComputeInstance), logger)
+		retry = e.userClient.CreateComputeInstance(e.context, *form.(*gensql.ComputeInstance), logger)
 	case database.EventTypeDeleteCompute:
-		retry = e.computeClient.Delete(e.context, event.Owner, logger)
+		retry = e.userClient.DeleteComputeInstance(e.context, event.Owner, logger)
 	case database.EventTypeCreateAirflow,
 		database.EventTypeUpdateAirflow:
 		retry = e.chartClient.SyncAirflow(e.context, *form.(*chart.AirflowConfigurableValues), logger)
@@ -120,12 +130,12 @@ func NewHandler(ctx context.Context, repo *database.Repo, azureClient *auth.Azur
 	}
 
 	return EventHandler{
-		repo:          repo,
-		log:           log,
-		context:       ctx,
-		teamClient:    teamClient,
-		computeClient: compute.NewClient(repo, gcpProject, gcpZone, dryRun),
-		chartClient:   chartClient,
+		repo:        repo,
+		log:         log,
+		context:     ctx,
+		teamClient:  teamClient,
+		userClient:  user.NewClient(repo, gcpProject, gcpRegion, gcpZone, dryRun),
+		chartClient: chartClient,
 	}, nil
 }
 

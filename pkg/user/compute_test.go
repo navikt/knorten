@@ -1,4 +1,4 @@
-package compute
+package user
 
 import (
 	"context"
@@ -42,15 +42,15 @@ func TestMain(m *testing.M) {
 func TestCompute(t *testing.T) {
 	ctx := context.Background()
 	computeInstance := gensql.ComputeInstance{
-		Email: "dummy@nav.no",
+		Owner: "dummy@nav.no",
 		Name:  "compute-dummy",
 	}
 	t.Cleanup(func() {
-		instance, err := repo.ComputeInstanceGet(ctx, computeInstance.Email)
+		instance, err := repo.ComputeInstanceGet(ctx, computeInstance.Owner)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			t.Error(err)
 		}
-		if err := repo.ComputeInstanceDelete(ctx, instance.Email); err != nil {
+		if err := repo.ComputeInstanceDelete(ctx, instance.Owner); err != nil {
 			t.Error(err)
 		}
 	})
@@ -62,12 +62,12 @@ func TestCompute(t *testing.T) {
 		err      error
 	}
 
-	operation := func(ctx context.Context, eventType gensql.EventType, instance gensql.ComputeInstance, computeClient *Client) bool {
+	operation := func(ctx context.Context, eventType database.EventType, instance gensql.ComputeInstance, computeClient *Client) bool {
 		switch eventType {
-		case gensql.EventTypeCreateCompute:
-			return computeClient.Create(ctx, instance, logrus.NewEntry(logrus.StandardLogger()))
-		case gensql.EventTypeDeleteCompute:
-			return computeClient.Delete(ctx, instance.Email, logrus.NewEntry(logrus.StandardLogger()))
+		case database.EventTypeCreateCompute:
+			return computeClient.CreateComputeInstance(ctx, instance, logrus.NewEntry(logrus.StandardLogger()))
+		case database.EventTypeDeleteCompute:
+			return computeClient.DeleteComputeInstance(ctx, instance.Owner, logrus.NewEntry(logrus.StandardLogger()))
 		}
 
 		return true
@@ -75,13 +75,13 @@ func TestCompute(t *testing.T) {
 
 	teamTests := []struct {
 		name      string
-		eventType gensql.EventType
+		eventType database.EventType
 		args      args
 		want      want
 	}{
 		{
 			name:      "Create compute instance",
-			eventType: gensql.EventTypeCreateCompute,
+			eventType: database.EventTypeCreateCompute,
 			args: args{
 				instance: computeInstance,
 			},
@@ -92,7 +92,7 @@ func TestCompute(t *testing.T) {
 		},
 		{
 			name:      "Delete compute instance",
-			eventType: gensql.EventTypeDeleteCompute,
+			eventType: database.EventTypeDeleteCompute,
 			args: args{
 				instance: computeInstance,
 			},
@@ -105,14 +105,14 @@ func TestCompute(t *testing.T) {
 
 	for _, tt := range teamTests {
 		t.Run(tt.name, func(t *testing.T) {
-			computeClient := NewClient(repo, "", "", true)
+			computeClient := NewClient(repo, "", "", "", true)
 
 			if retry := operation(context.Background(), tt.eventType, tt.args.instance, computeClient); retry {
 				t.Errorf("%v failed, got retry return for instance %v", tt.eventType, tt.args.instance.Name)
 			}
 
-			instance, err := repo.ComputeInstanceGet(context.Background(), tt.args.instance.Email)
-			if err != tt.want.err {
+			instance, err := repo.ComputeInstanceGet(context.Background(), tt.args.instance.Owner)
+			if !errors.Is(err, tt.want.err) {
 				t.Error(err)
 			}
 

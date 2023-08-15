@@ -9,7 +9,7 @@ import (
 )
 
 func TestEventHandler_distributeWork(t *testing.T) {
-	checkEventType := func(eventType database.EventType, chartMock chartMock, teamMock teamMock, computeMock computeMock) int {
+	checkEventType := func(eventType database.EventType, chartMock chartMock, teamMock teamMock, computeMock userMock) int {
 		switch eventType {
 		case database.EventTypeCreateCompute,
 			database.EventTypeDeleteCompute:
@@ -45,21 +45,21 @@ func TestEventHandler_distributeWork(t *testing.T) {
 	}
 	for _, eventType := range eventTypes {
 		t.Run(string(eventType), func(t *testing.T) {
-			computeMock := newComputeMock()
+			userMock := newUserMock()
 			teamMock := newTeamMock()
 			chartMock := newChartMock()
 			handler := EventHandler{
-				repo:          &database.RepoMock{},
-				computeClient: &computeMock,
-				teamClient:    &teamMock,
-				chartClient:   &chartMock,
+				repo:        &database.RepoMock{},
+				userClient:  &userMock,
+				teamClient:  &teamMock,
+				chartClient: &chartMock,
 			}
 			worker := handler.distributeWork(eventType)
 			if err := worker(context.Background(), gensql.Event{Payload: []byte("{}"), Type: string(eventType)}, nil); err != nil {
 				t.Errorf("worker(): %v", err)
 			}
 
-			if count := checkEventType(eventType, chartMock, teamMock, computeMock); count != 1 {
+			if count := checkEventType(eventType, chartMock, teamMock, userMock); count != 1 {
 				t.Errorf("distributeWork(): expected 1 %v event, got %v", eventType, count)
 			}
 		})

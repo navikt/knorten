@@ -6,19 +6,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"cloud.google.com/go/iam"
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
-	"github.com/googleapis/gax-go/v2/apierror"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/gcp"
 	"github.com/nais/knorten/pkg/k8s"
-	"golang.org/x/exp/slices"
 	"google.golang.org/api/googleapi"
 	iamv1 "google.golang.org/api/iam/v1"
-	"google.golang.org/grpc/codes"
 )
-
-const secretRoleName = "roles/owner"
 
 func (c Client) createGCPTeamResources(ctx context.Context, team gensql.Team) error {
 	if c.dryRun {
@@ -39,7 +34,7 @@ func (c Client) createGCPTeamResources(ctx context.Context, team gensql.Team) er
 		return err
 	}
 
-	if err := c.setUsersSecretOwnerBinding(ctx, team.Users, secret.Name); err != nil {
+	if err := gcp.SetUsersSecretOwnerBinding(ctx, team.Users, secret.Name); err != nil {
 		return err
 	}
 
@@ -96,48 +91,7 @@ func (c Client) updateRoleBindingIfExists(bindings []*iamv1.Binding, role, names
 }
 
 func (c Client) createSecret(ctx context.Context, slug, teamID string) (*secretmanagerpb.Secret, error) {
-	client, err := secretmanager.NewClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer client.Close()
-
-	req := &secretmanagerpb.CreateSecretRequest{
-		Parent:   "projects/" + c.gcpProject,
-		SecretId: teamID,
-		Secret: &secretmanagerpb.Secret{
-			Labels: map[string]string{
-				"team":       slug,
-				"created-by": "knorten",
-			},
-			Replication: &secretmanagerpb.Replication{
-				Replication: &secretmanagerpb.Replication_UserManaged_{
-					UserManaged: &secretmanagerpb.Replication_UserManaged{
-						Replicas: []*secretmanagerpb.Replication_UserManaged_Replica{
-							{
-								Location: c.gcpRegion,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	s, err := client.CreateSecret(ctx, req)
-	if err != nil {
-		apiError, ok := apierror.FromError(err)
-		if ok {
-			if apiError.GRPCStatus().Code() == codes.AlreadyExists {
-				return client.GetSecret(ctx, &secretmanagerpb.GetSecretRequest{
-					Name: fmt.Sprintf("projects/%v/secrets/%v", c.gcpProject, teamID),
-				})
-			}
-		}
-		return nil, err
-	}
-
-	return s, nil
+	return gcp.CreateSecret(ctx, c.gcpProject, c.gcpRegion, teamID, map[string]string{"team": slug})
 }
 
 func (c Client) createServiceAccountSecretAccessorBinding(ctx context.Context, sa, secret string) error {
@@ -196,7 +150,7 @@ func (c Client) updateGCPTeamResources(ctx context.Context, team gensql.Team) er
 		return nil
 	}
 
-	return c.setUsersSecretOwnerBinding(ctx, team.Users, fmt.Sprintf("projects/%v/secrets/%v", c.gcpProject, team.ID))
+	return gcp.SetUsersSecretOwnerBinding(ctx, team.Users, fmt.Sprintf("projects/%v/secrets/%v", c.gcpProject, team.ID))
 }
 
 func (c Client) deleteGCPTeamResources(ctx context.Context, teamID string) error {
@@ -208,39 +162,7 @@ func (c Client) deleteGCPTeamResources(ctx context.Context, teamID string) error
 		return err
 	}
 
-	if err := c.deleteSecret(ctx, teamID); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c Client) deleteSecret(ctx context.Context, teamID string) error {
-	client, err := secretmanager.NewClient(ctx)
-	if err != nil {
-		return err
-	}
-	defer client.Close()
-
-	project := fmt.Sprintf("projects/%v", c.gcpProject)
-	_ = client.ListSecrets(ctx, &secretmanagerpb.ListSecretsRequest{
-		Parent:   project,
-		PageSize: int32(500),
-	})
-
-	req := &secretmanagerpb.DeleteSecretRequest{
-		Name: fmt.Sprintf("%v/secrets/%v", project, teamID),
-	}
-
-	err = client.DeleteSecret(ctx, req)
-	if err != nil {
-		apiError, ok := apierror.FromError(err)
-		if ok {
-			if apiError.GRPCStatus().Code() == codes.NotFound {
-				return nil
-			}
-		}
-
+	if err := gcp.DeleteSecret(ctx, c.gcpProject, teamID); err != nil {
 		return err
 	}
 
@@ -256,7 +178,8 @@ func (c Client) deleteIAMServiceAccount(ctx context.Context, teamID string) erro
 	sa := fmt.Sprintf("projects/%v/serviceAccounts/%v@%v.iam.gserviceaccount.com", c.gcpProject, teamID, c.gcpProject)
 	_, err = service.Projects.ServiceAccounts.Delete(sa).Do()
 	if err != nil {
-		apiError, ok := err.(*googleapi.Error)
+		var apiError *googleapi.Error
+		ok := errors.As(err, &apiError)
 		if ok && apiError.Code == http.StatusNotFound {
 			return nil
 		}
@@ -265,72 +188,4 @@ func (c Client) deleteIAMServiceAccount(ctx context.Context, teamID string) erro
 	}
 
 	return nil
-}
-
-func (c Client) setUsersSecretOwnerBinding(ctx context.Context, users []string, secret string) error {
-	users = addUserTypePrefix(users)
-
-	client, err := secretmanager.NewClient(ctx)
-	if err != nil {
-		return err
-	}
-	defer client.Close()
-
-	handle := client.IAM(secret)
-	policy, err := handle.Policy(ctx)
-	if err != nil {
-		return err
-	}
-
-	policyMembers := policy.Members(secretRoleName)
-	for _, member := range policyMembers {
-		if !slices.Contains(users, member) {
-			policy.Remove(member, secretRoleName)
-		}
-	}
-
-	err = handle.SetPolicy(ctx, policy)
-	if err != nil {
-		return err
-	}
-
-	for _, user := range users {
-		if err := c.updatePolicy(ctx, handle, user); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (c Client) updatePolicy(ctx context.Context, handle *iam.Handle, user string) error {
-	policy, err := handle.Policy(ctx)
-	if err != nil {
-		return err
-	}
-
-	policyMembers := policy.Members(secretRoleName)
-	if !slices.Contains(policyMembers, user) {
-		policy.Add(user, secretRoleName)
-		err = handle.SetPolicy(ctx, policy)
-		if err != nil {
-			apiError, ok := apierror.FromError(err)
-			if ok && apiError.GRPCStatus().Code() == codes.InvalidArgument {
-				return nil
-			}
-
-			return err
-		}
-	}
-
-	return nil
-}
-
-func addUserTypePrefix(users []string) []string {
-	prefixedUsers := make([]string, len(users))
-	for i, u := range users {
-		prefixedUsers[i] = "user:" + u
-	}
-
-	return prefixedUsers
 }

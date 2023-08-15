@@ -1,35 +1,18 @@
-package compute
+package user
 
 import (
 	"context"
 	"database/sql"
 	"errors"
 
-	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/logger"
 )
 
-type Client struct {
-	repo       *database.Repo
-	gcpProject string
-	gcpZone    string
-	dryRun     bool
-}
-
-func NewClient(repo *database.Repo, gcpProject, gcpZone string, dryRun bool) *Client {
-	return &Client{
-		repo:       repo,
-		gcpProject: gcpProject,
-		gcpZone:    gcpZone,
-		dryRun:     dryRun,
-	}
-}
-
-func (c Client) Create(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) bool {
+func (c Client) CreateComputeInstance(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) bool {
 	log.Info("Creating compute instance")
 
-	if retry, err := c.create(ctx, instance, log); err != nil {
+	if retry, err := c.createComputeInstance(ctx, instance, log); err != nil {
 		log.Info("failed creating compute instance")
 		return retry
 	}
@@ -38,7 +21,7 @@ func (c Client) Create(ctx context.Context, instance gensql.ComputeInstance, log
 	return false
 }
 
-func (c Client) create(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) (bool, error) {
+func (c Client) createComputeInstance(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) (bool, error) {
 	existingInstance, err := c.repo.ComputeInstanceGet(ctx, instance.Owner)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.WithError(err).Errorf("failed retrieving compute instance %v", instance.Owner)
@@ -63,10 +46,10 @@ func (c Client) create(ctx context.Context, instance gensql.ComputeInstance, log
 	return false, nil
 }
 
-func (c Client) Delete(ctx context.Context, email string, log logger.Logger) bool {
+func (c Client) DeleteComputeInstance(ctx context.Context, email string, log logger.Logger) bool {
 	log.Info("Deleting compute instance")
 
-	if retry, err := c.delete(ctx, email, log); err != nil {
+	if retry, err := c.deleteComputeInstance(ctx, email, log); err != nil {
 		log.Info("failed creating compute instance")
 		return retry
 	}
@@ -75,7 +58,7 @@ func (c Client) Delete(ctx context.Context, email string, log logger.Logger) boo
 	return false
 }
 
-func (c Client) delete(ctx context.Context, email string, log logger.Logger) (bool, error) {
+func (c Client) deleteComputeInstance(ctx context.Context, email string, log logger.Logger) (bool, error) {
 	instance, err := c.repo.ComputeInstanceGet(ctx, email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

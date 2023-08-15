@@ -81,6 +81,7 @@ func gooseMigrationWithRetries(log *logrus.Entry, db *sql.DB) error {
 			if err == nil {
 				return nil
 			}
+			log.Infof("goose up failed: %v", err)
 		}
 	}
 

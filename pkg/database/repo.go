@@ -28,6 +28,7 @@ type Repository interface {
 	EventSetStatus(context.Context, uuid.UUID, gensql.EventStatus) error
 	EventSetPendingStatus(context.Context, uuid.UUID) error
 	DispatcherEventsGet(context.Context) ([]gensql.Event, error)
+	DispatchableEventsGet(context.Context) ([]gensql.Event, error)
 	EventLogCreate(context.Context, uuid.UUID, string, gensql.LogType) error
 }
 

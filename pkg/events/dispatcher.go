@@ -159,6 +159,12 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 				continue
 			}
 
+			_, err = e.repo.DispatchableEventsGet(e.context)
+			if err != nil {
+				e.log.WithError(err).Error("failed to fetch events")
+				continue
+			}
+
 			for _, event := range events {
 				worker := e.distributeWork(event.EventType)
 				if worker == nil {

@@ -12,7 +12,94 @@ import (
 	"github.com/google/uuid"
 )
 
-const dispatcherEventsGet = `-- name: DispatcherEventsGet :many
+const dispatchableEventsGet = `-- name: DispatchableEventsGet :many
+WITH processing AS (
+  SELECT SPLIT_PART(event_type::TEXT,':',2) as event_type, owner
+  FROM events
+  WHERE status = 'processing'
+)
+SELECT id, event_type, payload, status, deadline, created_at, updated_at, owner, retry_count
+FROM events
+WHERE 
+(status = 'new' OR (status = 'pending' AND updated_at + deadline::interval * retry_count < NOW()))
+AND ((SPLIT_PART(event_type::TEXT,':',2), owner) NOT IN (SELECT event_type, owner FROM processing))
+ORDER BY created_at DESC
+`
+
+func (q *Queries) DispatchableEventsGet(ctx context.Context) ([]Event, error) {
+	rows, err := q.db.QueryContext(ctx, dispatchableEventsGet)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Event{}
+	for rows.Next() {
+		var i Event
+		if err := rows.Scan(
+			&i.ID,
+			&i.EventType,
+			&i.Payload,
+			&i.Status,
+			&i.Deadline,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Owner,
+			&i.RetryCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const dispatcherEventsProcessingGet = `-- name: DispatcherEventsProcessingGet :many
+SELECT id, event_type, payload, status, deadline, created_at, updated_at, owner, retry_count
+FROM events
+WHERE status = 'processing'
+ORDER BY created_at DESC
+`
+
+func (q *Queries) DispatcherEventsProcessingGet(ctx context.Context) ([]Event, error) {
+	rows, err := q.db.QueryContext(ctx, dispatcherEventsProcessingGet)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Event{}
+	for rows.Next() {
+		var i Event
+		if err := rows.Scan(
+			&i.ID,
+			&i.EventType,
+			&i.Payload,
+			&i.Status,
+			&i.Deadline,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Owner,
+			&i.RetryCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const dispatcherEventsUpcomingGet = `-- name: DispatcherEventsUpcomingGet :many
 SELECT id, event_type, payload, status, deadline, created_at, updated_at, owner, retry_count
 FROM Events
 WHERE status = 'new'
@@ -20,8 +107,8 @@ WHERE status = 'new'
 ORDER BY created_at DESC
 `
 
-func (q *Queries) DispatcherEventsGet(ctx context.Context) ([]Event, error) {
-	rows, err := q.db.QueryContext(ctx, dispatcherEventsGet)
+func (q *Queries) DispatcherEventsUpcomingGet(ctx context.Context) ([]Event, error) {
+	rows, err := q.db.QueryContext(ctx, dispatcherEventsUpcomingGet)
 	if err != nil {
 		return nil, err
 	}
@@ -197,46 +284,6 @@ type EventsByOwnerGetParams struct {
 
 func (q *Queries) EventsByOwnerGet(ctx context.Context, arg EventsByOwnerGetParams) ([]Event, error) {
 	rows, err := q.db.QueryContext(ctx, eventsByOwnerGet, arg.Owner, arg.Lim)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []Event{}
-	for rows.Next() {
-		var i Event
-		if err := rows.Scan(
-			&i.ID,
-			&i.EventType,
-			&i.Payload,
-			&i.Status,
-			&i.Deadline,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.Owner,
-			&i.RetryCount,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const eventsGet = `-- name: EventsGet :many
-SELECT id, event_type, payload, status, deadline, created_at, updated_at, owner, retry_count
-FROM Events
-ORDER BY updated_at DESC
-LIMIT $1
-`
-
-func (q *Queries) EventsGet(ctx context.Context, lim int32) ([]Event, error) {
-	rows, err := q.db.QueryContext(ctx, eventsGet, lim)
 	if err != nil {
 		return nil, err
 	}

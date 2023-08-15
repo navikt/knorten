@@ -18,11 +18,30 @@ WHERE owner = @owner
 ORDER BY updated_at DESC
 LIMIT @lim;
 
--- name: DispatcherEventsGet :many
+-- name: DispatcherEventsProcessingGet :many
+SELECT *
+FROM events
+WHERE status = 'processing'
+ORDER BY created_at DESC;
+
+-- name: DispatcherEventsUpcomingGet :many
 SELECT *
 FROM Events
 WHERE status = 'new'
    OR (status = 'pending' AND updated_at + deadline::interval * retry_count < NOW())
+ORDER BY created_at DESC;
+
+-- name: DispatchableEventsGet :many
+WITH processing AS (
+  SELECT SPLIT_PART(event_type::TEXT,':',2) as event_type, owner
+  FROM events
+  WHERE status = 'processing'
+)
+SELECT *
+FROM events
+WHERE 
+(status = 'new' OR (status = 'pending' AND updated_at + deadline::interval * retry_count < NOW()))
+AND ((SPLIT_PART(event_type::TEXT,':',2), owner) NOT IN (SELECT event_type, owner FROM processing))
 ORDER BY created_at DESC;
 
 -- name: EventsGetType :many
@@ -46,7 +65,7 @@ INSERT INTO Event_Logs (event_id, log_type, message)
 VALUES (@event_id, @log_type, @message);
 
 -- name: EventLogsForEventGet :many
-SELECT message, log_type, created_at::timestamptz
+SELECT *
 FROM event_logs
 WHERE event_id = @id
 ORDER BY created_at DESC;

@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -91,8 +92,28 @@ func (r *Repo) EventSetPendingStatus(ctx context.Context, id uuid.UUID) error {
 	return r.querier.EventSetPendingStatus(ctx, id)
 }
 
+func (r *Repo) DispatchableEventsGet(ctx context.Context) ([]gensql.Event, error) {
+	return r.querier.DispatchableEventsGet(ctx)
+}
+
 func (r *Repo) DispatcherEventsGet(ctx context.Context) ([]gensql.Event, error) {
-	return r.querier.DispatcherEventsGet(ctx)
+	processing, err := r.querier.DispatcherEventsProcessingGet(ctx)
+	if err != nil {
+		return nil, err
+	}
+	upcoming, err := r.querier.DispatcherEventsUpcomingGet(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	dispatchable := []gensql.Event{}
+	for _, event := range upcoming {
+		if !isProcessingEventTypeForTeam(processing, event) {
+			dispatchable = append(dispatchable, event)
+		}
+	}
+
+	return dispatchable, nil
 }
 
 func (r *Repo) EventsGetType(ctx context.Context, eventType gensql.EventType) ([]gensql.Event, error) {
@@ -142,4 +163,14 @@ func (r *Repo) EventLogsForOwnerGet(ctx context.Context, owner string) ([]EventW
 	}
 
 	return eventsWithLogs, err
+}
+
+func isProcessingEventTypeForTeam(processing []gensql.Event, new gensql.Event) bool {
+	for _, e := range processing {
+		if e.Owner == new.Owner && strings.Split(string(e.EventType), ":")[1] == strings.Split(string(new.EventType), ":")[1] {
+			return true
+		}
+	}
+
+	return false
 }

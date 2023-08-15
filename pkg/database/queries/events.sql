@@ -31,18 +31,14 @@ WHERE status = 'new'
    OR (status = 'pending' AND updated_at + deadline::interval * retry_count < NOW())
 ORDER BY created_at DESC;
 
--- name: DispatchableEventsGet :many
-WITH processing AS (
-  SELECT SPLIT_PART(event_type::TEXT,':',2) as event_type, owner
-  FROM events
-  WHERE status = 'processing'
-)
-SELECT *
+-- name: DispatchableEventsGetSQL :many
+SELECT DISTINCT ON (action_type) (SPLIT_PART(type::TEXT, ':', 2)) as action_type,
+                                 events.*
 FROM events
-WHERE 
-(status = 'new' OR (status = 'pending' AND updated_at + deadline::interval * retry_count < NOW()))
-AND ((SPLIT_PART(event_type::TEXT,':',2), owner) NOT IN (SELECT event_type, owner FROM processing))
-ORDER BY created_at DESC;
+WHERE status = 'new'
+   OR (status = 'pending' AND updated_at + deadline::interval * retry_count < NOW())
+   OR status = 'processing'
+ORDER BY action_type, created_at ASC;
 
 -- name: EventsGetType :many
 SELECT *

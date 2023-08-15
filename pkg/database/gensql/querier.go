@@ -16,7 +16,7 @@ type Querier interface {
 	ComputeInstanceCreate(ctx context.Context, arg ComputeInstanceCreateParams) error
 	ComputeInstanceDelete(ctx context.Context, email string) error
 	ComputeInstanceGet(ctx context.Context, email string) (ComputeInstance, error)
-	DispatchableEventsGet(ctx context.Context) ([]Event, error)
+	DispatchableEventsGetSQL(ctx context.Context) ([]DispatchableEventsGetSQLRow, error)
 	DispatcherEventsProcessingGet(ctx context.Context) ([]Event, error)
 	DispatcherEventsUpcomingGet(ctx context.Context) ([]Event, error)
 	EventCreate(ctx context.Context, arg EventCreateParams) error

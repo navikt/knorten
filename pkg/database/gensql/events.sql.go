@@ -8,34 +8,45 @@ package gensql
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/google/uuid"
 )
 
-const dispatchableEventsGet = `-- name: DispatchableEventsGet :many
-WITH processing AS (
-  SELECT SPLIT_PART(event_type::TEXT,':',2) as event_type, owner
-  FROM events
-  WHERE status = 'processing'
-)
-SELECT id, event_type, payload, status, deadline, created_at, updated_at, owner, retry_count
+const dispatchableEventsGetSQL = `-- name: DispatchableEventsGetSQL :many
+SELECT DISTINCT ON (action_type) (SPLIT_PART(type::TEXT, ':', 2)) as action_type,
+                                 events.id, events.event_type, events.payload, events.status, events.deadline, events.created_at, events.updated_at, events.owner, events.retry_count
 FROM events
-WHERE 
-(status = 'new' OR (status = 'pending' AND updated_at + deadline::interval * retry_count < NOW()))
-AND ((SPLIT_PART(event_type::TEXT,':',2), owner) NOT IN (SELECT event_type, owner FROM processing))
-ORDER BY created_at DESC
+WHERE status = 'new'
+   OR (status = 'pending' AND updated_at + deadline::interval * retry_count < NOW())
+   OR status = 'processing'
+ORDER BY action_type, created_at ASC
 `
 
-func (q *Queries) DispatchableEventsGet(ctx context.Context) ([]Event, error) {
-	rows, err := q.db.QueryContext(ctx, dispatchableEventsGet)
+type DispatchableEventsGetSQLRow struct {
+	ActionType string
+	ID         uuid.UUID
+	EventType  EventType
+	Payload    json.RawMessage
+	Status     EventStatus
+	Deadline   string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	Owner      string
+	RetryCount int32
+}
+
+func (q *Queries) DispatchableEventsGetSQL(ctx context.Context) ([]DispatchableEventsGetSQLRow, error) {
+	rows, err := q.db.QueryContext(ctx, dispatchableEventsGetSQL)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Event{}
+	items := []DispatchableEventsGetSQLRow{}
 	for rows.Next() {
-		var i Event
+		var i DispatchableEventsGetSQLRow
 		if err := rows.Scan(
+			&i.ActionType,
 			&i.ID,
 			&i.EventType,
 			&i.Payload,

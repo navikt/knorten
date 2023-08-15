@@ -44,12 +44,12 @@ func (c *client) createSecret(ctx *gin.Context) error {
 		return err
 	}
 
-	instance := gensql.ComputeInstance{
+	manager := gensql.UserGoogleSecretManager{
 		Owner: user.Email,
-		Name:  "secret-" + getNormalizedNameFromEmail(user.Email),
+		Name:  getNormalizedNameFromEmail(user.Email),
 	}
 
-	return c.repo.RegisterCreateSecretEvent(ctx, instance)
+	return c.repo.RegisterCreateUserGSMEvent(ctx, manager)
 }
 
 func (c *client) deleteSecret(ctx *gin.Context) error {
@@ -58,5 +58,5 @@ func (c *client) deleteSecret(ctx *gin.Context) error {
 		return err
 	}
 
-	return c.repo.RegisterSecretEvent(ctx, user.Email)
+	return c.repo.RegisterDeleteUserGSMEvent(ctx, user.Email)
 }

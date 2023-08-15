@@ -67,8 +67,10 @@ func TestUserAPI(t *testing.T) {
 					},
 				},
 				Compute: &database.ComputeService{
-					Owner: user.Email,
-					Name:  "compute-" + getNormalizedNameFromEmail(user.Email),
+					ComputeInstance: gensql.ComputeInstance{
+						Owner: user.Email,
+						Name:  "compute-" + getNormalizedNameFromEmail(user.Email),
+					},
 				},
 			},
 		})

@@ -24,6 +24,8 @@ const (
 	EventTypeDeleteAirflow EventType = "delete:airflow"
 	EventTypeCreateCompute EventType = "create:compute"
 	EventTypeDeleteCompute EventType = "delete:compute"
+	EventTypeCreateUserGSM EventType = "create:usergsm"
+	EventTypeDeleteUserGSM EventType = "delete:usergsm"
 )
 
 type EventStatus string
@@ -124,6 +126,14 @@ func (r *Repo) RegisterUpdateJupyterEvent(ctx context.Context, teamID string, va
 
 func (r *Repo) RegisterDeleteJupyterEvent(ctx context.Context, teamID string) error {
 	return r.registerEvent(ctx, EventTypeDeleteJupyter, teamID, 5*time.Minute, nil)
+}
+
+func (r *Repo) RegisterCreateUserGSMEvent(ctx context.Context, manager gensql.UserGoogleSecretManager) error {
+	return r.registerEvent(ctx, EventTypeCreateUserGSM, manager.Owner, 5*time.Minute, manager)
+}
+
+func (r *Repo) RegisterDeleteUserGSMEvent(ctx context.Context, owner string) error {
+	return r.registerEvent(ctx, EventTypeDeleteUserGSM, owner, 5*time.Minute, nil)
 }
 
 func (r *Repo) EventSetStatus(ctx context.Context, id uuid.UUID, status EventStatus) error {

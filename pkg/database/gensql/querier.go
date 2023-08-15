@@ -45,6 +45,9 @@ type Querier interface {
 	TeamsForChartGet(ctx context.Context, chartType ChartType) ([]string, error)
 	TeamsForUserGet(ctx context.Context, email string) ([]TeamsForUserGetRow, error)
 	TeamsGet(ctx context.Context) ([]Team, error)
+	UserGoogleSecretManagerCreate(ctx context.Context, arg UserGoogleSecretManagerCreateParams) error
+	UserGoogleSecretManagerDelete(ctx context.Context, owner string) error
+	UserGoogleSecretManagerGet(ctx context.Context, owner string) (UserGoogleSecretManager, error)
 }
 
 var _ Querier = (*Queries)(nil)

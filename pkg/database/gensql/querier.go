@@ -14,8 +14,8 @@ type Querier interface {
 	ChartDelete(ctx context.Context, arg ChartDeleteParams) error
 	ChartsForTeamGet(ctx context.Context, teamID string) ([]ChartType, error)
 	ComputeInstanceCreate(ctx context.Context, arg ComputeInstanceCreateParams) error
-	ComputeInstanceDelete(ctx context.Context, email string) error
-	ComputeInstanceGet(ctx context.Context, email string) (ComputeInstance, error)
+	ComputeInstanceDelete(ctx context.Context, owner string) error
+	ComputeInstanceGet(ctx context.Context, owner string) (ComputeInstance, error)
 	DispatcherEventsGet(ctx context.Context) ([]DispatcherEventsGetRow, error)
 	EventCreate(ctx context.Context, arg EventCreateParams) error
 	EventGet(ctx context.Context, id uuid.UUID) (EventGetRow, error)

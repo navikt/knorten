@@ -75,7 +75,7 @@ type ChartTeamValue struct {
 }
 
 type ComputeInstance struct {
-	Email string
+	Owner string
 	Name  string
 }
 
@@ -115,4 +115,9 @@ type Team struct {
 	Users   []string
 	Created sql.NullTime
 	Owner   string
+}
+
+type UserGoogleSecretManager struct {
+	Owner string
+	Name  string
 }

@@ -28,7 +28,7 @@ func (cm computeMock) Create(ctx context.Context, instance gensql.ComputeInstanc
 	return false
 }
 
-func (cm computeMock) Delete(ctx context.Context, email string, log logger.Logger) bool {
+func (cm computeMock) Delete(ctx context.Context, owner string, log logger.Logger) bool {
 	cm.EventCounts[database.EventTypeDeleteCompute]++
 	return false
 }

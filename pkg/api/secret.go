@@ -45,7 +45,7 @@ func (c *client) createSecret(ctx *gin.Context) error {
 	}
 
 	instance := gensql.ComputeInstance{
-		Email: user.Email,
+		Owner: user.Email,
 		Name:  "secret-" + getNormalizedNameFromEmail(user.Email),
 	}
 

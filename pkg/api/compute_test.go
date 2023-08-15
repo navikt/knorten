@@ -39,12 +39,12 @@ func TestComputeAPI(t *testing.T) {
 			t.Error(err)
 		}
 
-		if eventPayload.Email == "" {
+		if eventPayload.Owner == "" {
 			t.Errorf("create compute: no event registered for user %v", user.Email)
 		}
 
-		if eventPayload.Email != user.Email {
-			t.Errorf("create compute: email expected %v, got %v", user.Email, eventPayload.Email)
+		if eventPayload.Owner != user.Email {
+			t.Errorf("create compute: email expected %v, got %v", user.Email, eventPayload.Owner)
 		}
 
 		if eventPayload.Name != "compute-"+getNormalizedNameFromEmail(user.Email) {
@@ -118,7 +118,7 @@ func getComputeEvent(events []gensql.EventsGetTypeRow, user string) (gensql.Comp
 			return gensql.ComputeInstance{}, err
 		}
 
-		if payload.Email == user {
+		if payload.Owner == user {
 			return payload, nil
 		}
 	}

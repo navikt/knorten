@@ -10,40 +10,40 @@ import (
 )
 
 const computeInstanceCreate = `-- name: ComputeInstanceCreate :exec
-INSERT INTO compute_instances ("email", "name")
+INSERT INTO compute_instances ("owner", "name")
 VALUES ($1, $2)
 `
 
 type ComputeInstanceCreateParams struct {
-	Email string
+	Owner string
 	Name  string
 }
 
 func (q *Queries) ComputeInstanceCreate(ctx context.Context, arg ComputeInstanceCreateParams) error {
-	_, err := q.db.ExecContext(ctx, computeInstanceCreate, arg.Email, arg.Name)
+	_, err := q.db.ExecContext(ctx, computeInstanceCreate, arg.Owner, arg.Name)
 	return err
 }
 
 const computeInstanceDelete = `-- name: ComputeInstanceDelete :exec
 DELETE
 FROM compute_instances
-WHERE email = $1
+WHERE owner = $1
 `
 
-func (q *Queries) ComputeInstanceDelete(ctx context.Context, email string) error {
-	_, err := q.db.ExecContext(ctx, computeInstanceDelete, email)
+func (q *Queries) ComputeInstanceDelete(ctx context.Context, owner string) error {
+	_, err := q.db.ExecContext(ctx, computeInstanceDelete, owner)
 	return err
 }
 
 const computeInstanceGet = `-- name: ComputeInstanceGet :one
-SELECT email, name
+SELECT owner, name
 FROM compute_instances
-WHERE email = $1
+WHERE owner = $1
 `
 
-func (q *Queries) ComputeInstanceGet(ctx context.Context, email string) (ComputeInstance, error) {
-	row := q.db.QueryRowContext(ctx, computeInstanceGet, email)
+func (q *Queries) ComputeInstanceGet(ctx context.Context, owner string) (ComputeInstance, error) {
+	row := q.db.QueryRowContext(ctx, computeInstanceGet, owner)
 	var i ComputeInstance
-	err := row.Scan(&i.Email, &i.Name)
+	err := row.Scan(&i.Owner, &i.Name)
 	return i, err
 }

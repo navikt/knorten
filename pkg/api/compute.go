@@ -86,7 +86,7 @@ func (c *client) createComputeInstance(ctx *gin.Context) error {
 	}
 
 	instance := gensql.ComputeInstance{
-		Email: user.Email,
+		Owner: user.Email,
 		Name:  "compute-" + getNormalizedNameFromEmail(user.Email),
 	}
 

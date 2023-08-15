@@ -25,7 +25,7 @@ type TeamServices struct {
 }
 
 type ComputeService struct {
-	Email  string
+	Owner  string
 	Name   string
 	Events []Event
 }
@@ -125,7 +125,7 @@ func (r *Repo) ServicesForUser(ctx context.Context, email string) (UserServices,
 		}
 
 		userServices.Compute = &ComputeService{
-			Email:  compute.Email,
+			Owner:  compute.Owner,
 			Name:   compute.Name,
 			Events: events,
 		}

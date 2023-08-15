@@ -194,19 +194,7 @@ func TestTeam(t *testing.T) {
 				t.Error(err)
 			}
 
-			if team.ID != tt.want.team.ID {
-				t.Errorf("team id, expected %v, got %v", tt.want.team.ID, team.ID)
-			}
-
-			if team.Slug != tt.want.team.Slug {
-				t.Errorf("team slug, expected %v, got %v", tt.want.team.Slug, team.Slug)
-			}
-
-			if team.Owner != tt.want.team.Owner {
-				t.Errorf("team owner, expected %v, got %v", tt.want.team.Owner, team.Owner)
-			}
-
-			if diff := cmp.Diff(team.Users, tt.want.team.Users); diff != "" {
+			if diff := cmp.Diff(team, tt.want.team); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

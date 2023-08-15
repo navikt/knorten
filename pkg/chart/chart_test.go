@@ -400,8 +400,8 @@ func TestCharts(t *testing.T) {
 					t.Error(err)
 				}
 
-				if dbVal.Value != v.Value {
-					t.Errorf("chart value, expected %v, got %v", v.Value, dbVal.Value)
+				if diff := cmp.Diff(dbVal.Value, v.Value); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			}
 		})

@@ -119,8 +119,8 @@ func TestCompute(t *testing.T) {
 				t.Errorf("instance name, expected %v, got %v", tt.want.instance.Name, instance.Name)
 			}
 
-			if instance.Email != tt.want.instance.Email {
-				t.Errorf("instance email, expected %v, got %v", tt.want.instance.Email, instance.Email)
+			if diff := cmp.Diff(instance, tt.want.instance); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

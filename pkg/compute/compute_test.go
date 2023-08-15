@@ -40,9 +40,12 @@ func TestMain(m *testing.M) {
 
 func TestCompute(t *testing.T) {
 	ctx := context.Background()
-	computeUser := "dummy@nav.no"
+	computeInstance := gensql.ComputeInstance{
+		Email: "dummy@nav.no",
+		Name:  "compute-dummy",
+	}
 	t.Cleanup(func() {
-		instance, err := repo.ComputeInstanceGet(ctx, computeUser)
+		instance, err := repo.ComputeInstanceGet(ctx, computeInstance.Email)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			t.Error(err)
 		}
@@ -79,34 +82,22 @@ func TestCompute(t *testing.T) {
 			name:      "Create compute instance",
 			eventType: gensql.EventTypeCreateCompute,
 			args: args{
-				instance: gensql.ComputeInstance{
-					Email: computeUser,
-					Name:  "compute-dummy",
-				},
+				instance: computeInstance,
 			},
 			want: want{
-				instance: gensql.ComputeInstance{
-					Email: computeUser,
-					Name:  "compute-dummy",
-				},
-				err: nil,
+				instance: computeInstance,
+				err:      nil,
 			},
 		},
 		{
 			name:      "Delete compute instance",
 			eventType: gensql.EventTypeDeleteCompute,
 			args: args{
-				instance: gensql.ComputeInstance{
-					Email: computeUser,
-					Name:  "compute-dummy",
-				},
+				instance: computeInstance,
 			},
 			want: want{
-				instance: gensql.ComputeInstance{
-					Email: "",
-					Name:  "",
-				},
-				err: sql.ErrNoRows,
+				instance: gensql.ComputeInstance{},
+				err:      sql.ErrNoRows,
 			},
 		},
 	}

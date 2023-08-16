@@ -4,40 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"log"
-	"os"
-	"path"
-	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/nais/knorten/local/dbsetup"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/sirupsen/logrus"
 )
-
-var repo *database.Repo
-
-func init() {
-	_, filename, _, _ := runtime.Caller(0)
-	dir := path.Join(path.Dir(filename), "../..")
-	err := os.Chdir(dir)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func TestMain(m *testing.M) {
-	var err error
-	repo, err = dbsetup.SetupDBForTests()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	code := m.Run()
-	os.Exit(code)
-}
 
 func TestCompute(t *testing.T) {
 	ctx := context.Background()
@@ -62,12 +35,12 @@ func TestCompute(t *testing.T) {
 		err      error
 	}
 
-	operation := func(ctx context.Context, eventType database.EventType, instance gensql.ComputeInstance, computeClient *Client) bool {
+	operation := func(ctx context.Context, eventType database.EventType, instance gensql.ComputeInstance, client *Client) bool {
 		switch eventType {
 		case database.EventTypeCreateCompute:
-			return computeClient.CreateComputeInstance(ctx, instance, logrus.NewEntry(logrus.StandardLogger()))
+			return client.CreateComputeInstance(ctx, instance, logrus.NewEntry(logrus.StandardLogger()))
 		case database.EventTypeDeleteCompute:
-			return computeClient.DeleteComputeInstance(ctx, instance.Owner, logrus.NewEntry(logrus.StandardLogger()))
+			return client.DeleteComputeInstance(ctx, instance.Owner, logrus.NewEntry(logrus.StandardLogger()))
 		}
 
 		return true
@@ -87,7 +60,6 @@ func TestCompute(t *testing.T) {
 			},
 			want: want{
 				instance: computeInstance,
-				err:      nil,
 			},
 		},
 		{
@@ -105,9 +77,9 @@ func TestCompute(t *testing.T) {
 
 	for _, tt := range teamTests {
 		t.Run(tt.name, func(t *testing.T) {
-			computeClient := NewClient(repo, "", "", "", true)
+			client := NewClient(repo, "", "", "", true)
 
-			if retry := operation(context.Background(), tt.eventType, tt.args.instance, computeClient); retry {
+			if retry := operation(context.Background(), tt.eventType, tt.args.instance, client); retry {
 				t.Errorf("%v failed, got retry return for instance %v", tt.eventType, tt.args.instance.Name)
 			}
 

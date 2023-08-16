@@ -15,7 +15,7 @@
             {{ end }}
         </div>
 
-        <p class="flex items-center gap-4 pb-4">Vi har endret det slik at man kun ha private Compute instances (også
+        <p class="flex items-center gap-4 pb-4">Vi har endret det slik at man kun har private Compute instances (også
             kalt Knorten VM/Kve-em). Dette betyr
             at man må migrere seg vekk fra team baserte maskiner til hver sin private.
         </p>
@@ -46,25 +46,50 @@
                 </tbody>
             </table>
             <br>
-            <label for="machine_types" class="navds-form-field__label navds-label">Eventlogs</label>
-            <table class="navds-table navds-table--small">
-                <thead class="navds-table__header">
-                <tr class="navds-table__row">
-                    <th class="navds-table__header-cell navds-label navds-label--small">Level</th>
-                    <th class="navds-table__header-cell navds-label navds-label--small">Message</th>
-                    <th class="navds-table__header-cell navds-label navds-label--small">Created at</th>
-                </tr>
-                </thead>
-                <tbody class="navds-table__body">
-                {{ range .Events }}
-                    {{ range .Logs }}
-                        {{ template "events/row" . }}
-                    {{ end }}
-                {{ end }}
-                </tbody>
-            </table>
+            {{ template "events/rows" .Events }}
         {{ else }}
             <a class="navds-button--small navds-button--secondary" href="compute/new">Opprett</a>
+        {{ end }}
+    </article>
+
+    <article class="bg-white rounded-md p-4">
+        <div class="flex items-center gap-4 pb-4">
+            <h2>Privat secret</h2>
+            {{ with .user.UserGSM }}
+                <form action="/secret/delete" method="POST">
+                    <fieldset class="flex gap-2 items-center">
+                        <button type="submit"
+                                onclick="return confirm('Er du sikker på at du vil slette din secret? Det er ikke mulig å gjenopprette denne senere')"
+                                class="navds-button navds-button--danger  bg-surface-danger">
+                            <span class="navds-label">Slett secret</span>
+                        </button>
+                    </fieldset>
+                </form>
+            {{ end }}
+        </div>
+
+        {{ if .user.UserGSM }}
+            <p class="pb-4 flex items-center gap-2">
+                <a class="navds-link" target="_blank"
+                   href="https://console.cloud.google.com/security/secret-manager/secret/{{ .user.UserGSM.Name }}/versions?project={{ $.gcpProject }}">
+                    Secret Manager
+                </a>
+            </p>
+            <br>
+            {{ template "events/rows" .Events }}
+        {{ else }}
+            <p class="flex items-center gap-4 pb-4">Vi tilbyr nå private secret per bruker, denne lar deg ha
+                hemmeligheter i Google Secret Manager som resten av teamet ditt ikke har tilgang til.
+            </p>
+            <form action="/secret/new" method="POST">
+                <fieldset class="flex gap-2 items-center">
+                    <button type="submit"
+                            onclick="return confirm('Er du sikker på at du vil opprette en privat secret?')"
+                            class="navds-button navds-button--danger  bg-surface-danger">
+                        <span class="navds-label">Opprett secret</span>
+                    </button>
+                </fieldset>
+            </form>
         {{ end }}
     </article>
 
@@ -77,12 +102,12 @@
                 </h2>
                 <a class="navds-button--small navds-button--secondary" href="team/{{ .Slug }}/edit">Rediger</a>
             </div>
-                <p class="pb-4 flex items-center gap-2">
-                    <a class="navds-link" target="_blank"
-                    href="https://console.cloud.google.com/security/secret-manager/secret/{{ $teamID }}/versions?project={{ $.gcpProject }}">
-                        Secret Manager
-                    </a>
-                </p>
+            <p class="pb-4 flex items-center gap-2">
+                <a class="navds-link" target="_blank"
+                   href="https://console.cloud.google.com/security/secret-manager/secret/{{ $teamID }}/versions?project={{ $.gcpProject }}">
+                    Secret Manager
+                </a>
+            </p>
             {{ with .Airflow }}
                 <p class="pb-4 flex items-center gap-2">
                     <b>Service account:</b> <code class="text-base p-1 bg-gray-50">
@@ -124,23 +149,7 @@
                 </tbody>
             </table>
             <br>
-            <label for="machine_types" class="navds-form-field__label navds-label">Eventlogs</label>
-            <table class="navds-table navds-table--small">
-                <thead class="navds-table__header">
-                <tr class="navds-table__row">
-                    <th class="navds-table__header-cell navds-label navds-label--small">Level</th>
-                    <th class="navds-table__header-cell navds-label navds-label--small">Message</th>
-                    <th class="navds-table__header-cell navds-label navds-label--small">Created at</th>
-                </tr>
-                </thead>
-                <tbody class="navds-table__body">
-                {{ range .Events }}
-                    {{ range .Logs }}
-                        {{ template "events/row" . }}
-                    {{ end }}
-                {{ end }}
-                </tbody>
-            </table>
+            {{ template "events/rows" .Events }}
         </article>
     {{ end }}
 

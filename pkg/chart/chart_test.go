@@ -68,7 +68,7 @@ func TestCharts(t *testing.T) {
 	})
 
 	type args struct {
-		eventType gensql.EventType
+		eventType database.EventType
 		chartType gensql.ChartType
 		values    any
 	}
@@ -77,17 +77,17 @@ func TestCharts(t *testing.T) {
 		numValues int
 	}
 
-	operation := func(ctx context.Context, eventType gensql.EventType, values any, chartClient *Client) bool {
+	operation := func(ctx context.Context, eventType database.EventType, values any, chartClient *Client) bool {
 		switch eventType {
-		case gensql.EventTypeCreateJupyter,
-			gensql.EventTypeUpdateJupyter:
+		case database.EventTypeCreateJupyter,
+			database.EventTypeUpdateJupyter:
 			return chartClient.SyncJupyter(ctx, values.(JupyterConfigurableValues), logrus.NewEntry(logrus.StandardLogger()))
-		case gensql.EventTypeDeleteJupyter:
+		case database.EventTypeDeleteJupyter:
 			return chartClient.DeleteJupyter(ctx, values.(JupyterConfigurableValues).TeamID, logrus.NewEntry(logrus.StandardLogger()))
-		case gensql.EventTypeCreateAirflow,
-			gensql.EventTypeUpdateAirflow:
+		case database.EventTypeCreateAirflow,
+			database.EventTypeUpdateAirflow:
 			return chartClient.SyncAirflow(ctx, values.(AirflowConfigurableValues), logrus.NewEntry(logrus.StandardLogger()))
-		case gensql.EventTypeDeleteAirflow:
+		case database.EventTypeDeleteAirflow:
 			return chartClient.DeleteAirflow(ctx, values.(AirflowConfigurableValues).TeamID, logrus.NewEntry(logrus.StandardLogger()))
 		}
 
@@ -102,7 +102,7 @@ func TestCharts(t *testing.T) {
 		{
 			name: "Create jupyter chart",
 			args: args{
-				eventType: gensql.EventTypeCreateJupyter,
+				eventType: database.EventTypeCreateJupyter,
 				chartType: gensql.ChartTypeJupyterhub,
 				values: JupyterConfigurableValues{
 					TeamID:      team.ID,
@@ -168,7 +168,7 @@ func TestCharts(t *testing.T) {
 		{
 			name: "Update jupyter chart",
 			args: args{
-				eventType: gensql.EventTypeCreateJupyter,
+				eventType: database.EventTypeCreateJupyter,
 				chartType: gensql.ChartTypeJupyterhub,
 				values: JupyterConfigurableValues{
 					TeamID:      team.ID,
@@ -234,7 +234,7 @@ func TestCharts(t *testing.T) {
 		{
 			name: "Delete jupyter chart",
 			args: args{
-				eventType: gensql.EventTypeDeleteJupyter,
+				eventType: database.EventTypeDeleteJupyter,
 				chartType: gensql.ChartTypeJupyterhub,
 				values: JupyterConfigurableValues{
 					TeamID: team.ID,
@@ -248,7 +248,7 @@ func TestCharts(t *testing.T) {
 		{
 			name: "Create airflow chart",
 			args: args{
-				eventType: gensql.EventTypeCreateAirflow,
+				eventType: database.EventTypeCreateAirflow,
 				chartType: gensql.ChartTypeAirflow,
 				values: AirflowConfigurableValues{
 					TeamID:        team.ID,
@@ -313,7 +313,7 @@ func TestCharts(t *testing.T) {
 		{
 			name: "Update airflow chart",
 			args: args{
-				eventType: gensql.EventTypeUpdateAirflow,
+				eventType: database.EventTypeUpdateAirflow,
 				chartType: gensql.ChartTypeAirflow,
 				values: AirflowConfigurableValues{
 					TeamID:        team.ID,
@@ -362,7 +362,7 @@ func TestCharts(t *testing.T) {
 		{
 			name: "Delete airflow chart",
 			args: args{
-				eventType: gensql.EventTypeDeleteAirflow,
+				eventType: database.EventTypeDeleteAirflow,
 				chartType: gensql.ChartTypeAirflow,
 				values: AirflowConfigurableValues{
 					TeamID: team.ID,

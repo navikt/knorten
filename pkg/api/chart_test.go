@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/nais/knorten/pkg/chart"
+	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
@@ -82,7 +83,7 @@ func TestJupyterAPI(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeCreateJupyter)
+		events, err := repo.EventsGetType(ctx, database.EventTypeCreateJupyter)
 		if err != nil {
 			t.Error(err)
 		}
@@ -181,7 +182,7 @@ func TestJupyterAPI(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateJupyter)
+		events, err := repo.EventsGetType(ctx, database.EventTypeUpdateJupyter)
 		if err != nil {
 			t.Error(err)
 		}
@@ -231,7 +232,7 @@ func TestJupyterAPI(t *testing.T) {
 			t.Errorf("delete team: expected status code 200, got %v", resp.StatusCode)
 		}
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeDeleteJupyter)
+		events, err := repo.EventsGetType(ctx, database.EventTypeDeleteJupyter)
 		if err != nil {
 			t.Error(err)
 		}
@@ -307,7 +308,7 @@ func TestAirflowAPI(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeCreateAirflow)
+		events, err := repo.EventsGetType(ctx, database.EventTypeCreateAirflow)
 		if err != nil {
 			t.Error(err)
 		}
@@ -410,7 +411,7 @@ func TestAirflowAPI(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateAirflow)
+		events, err := repo.EventsGetType(ctx, database.EventTypeUpdateAirflow)
 		if err != nil {
 			t.Error(err)
 		}
@@ -448,7 +449,7 @@ func TestAirflowAPI(t *testing.T) {
 			t.Errorf("delete team: expected status code 200, got %v", resp.StatusCode)
 		}
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeDeleteAirflow)
+		events, err := repo.EventsGetType(ctx, database.EventTypeDeleteAirflow)
 		if err != nil {
 			t.Error(err)
 		}

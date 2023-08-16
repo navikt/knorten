@@ -401,3 +401,20 @@ func (c *client) createDryRunSession(ctx *gin.Context) error {
 
 	return nil
 }
+
+func getUser(ctx *gin.Context) (*auth.User, error) {
+	var user *auth.User
+	anyUser, exists := ctx.Get("user")
+	if !exists {
+		return nil, fmt.Errorf("can't verify user")
+	}
+	user = anyUser.(*auth.User)
+
+	return user, nil
+}
+
+func getNormalizedNameFromEmail(name string) string {
+	name = strings.Split(name, "@")[0]
+	name = strings.ReplaceAll(name, ".", "-")
+	return strings.ToLower(name)
+}

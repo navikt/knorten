@@ -14,8 +14,8 @@ type Querier interface {
 	ChartDelete(ctx context.Context, arg ChartDeleteParams) error
 	ChartsForTeamGet(ctx context.Context, teamID string) ([]ChartType, error)
 	ComputeInstanceCreate(ctx context.Context, arg ComputeInstanceCreateParams) error
-	ComputeInstanceDelete(ctx context.Context, email string) error
-	ComputeInstanceGet(ctx context.Context, email string) (ComputeInstance, error)
+	ComputeInstanceDelete(ctx context.Context, owner string) error
+	ComputeInstanceGet(ctx context.Context, owner string) (ComputeInstance, error)
 	DispatcherEventsGet(ctx context.Context) ([]Event, error)
 	EventCreate(ctx context.Context, arg EventCreateParams) error
 	EventGet(ctx context.Context, id uuid.UUID) (Event, error)
@@ -24,8 +24,7 @@ type Querier interface {
 	EventSetPendingStatus(ctx context.Context, id uuid.UUID) error
 	EventSetStatus(ctx context.Context, arg EventSetStatusParams) error
 	EventsByOwnerGet(ctx context.Context, arg EventsByOwnerGetParams) ([]Event, error)
-	EventsGet(ctx context.Context, lim int32) ([]Event, error)
-	EventsGetType(ctx context.Context, eventType EventType) ([]Event, error)
+	EventsGetType(ctx context.Context, eventType string) ([]Event, error)
 	GlobalValueDelete(ctx context.Context, arg GlobalValueDeleteParams) error
 	GlobalValueGet(ctx context.Context, arg GlobalValueGetParams) (ChartGlobalValue, error)
 	GlobalValueInsert(ctx context.Context, arg GlobalValueInsertParams) error
@@ -45,6 +44,9 @@ type Querier interface {
 	TeamsForChartGet(ctx context.Context, chartType ChartType) ([]string, error)
 	TeamsForUserGet(ctx context.Context, email string) ([]TeamsForUserGetRow, error)
 	TeamsGet(ctx context.Context) ([]Team, error)
+	UserGoogleSecretManagerCreate(ctx context.Context, arg UserGoogleSecretManagerCreateParams) error
+	UserGoogleSecretManagerDelete(ctx context.Context, owner string) error
+	UserGoogleSecretManagerGet(ctx context.Context, owner string) (UserGoogleSecretManager, error)
 }
 
 var _ Querier = (*Queries)(nil)

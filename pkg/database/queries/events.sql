@@ -1,7 +1,7 @@
 -- name: EventCreate :exec
-INSERT INTO Events (owner, event_type, payload, status, deadline)
+INSERT INTO Events (owner, type, payload, status, deadline)
 VALUES (@owner,
-        @event_type,
+        @type,
         @payload,
         'new',
         @deadline);
@@ -28,7 +28,7 @@ ORDER BY created_at DESC;
 -- name: EventsGetType :many
 SELECT *
 FROM Events
-WHERE event_type = @event_type;
+WHERE type = @event_type;
 
 -- name: EventSetStatus :exec
 UPDATE Events
@@ -46,7 +46,7 @@ INSERT INTO Event_Logs (event_id, log_type, message)
 VALUES (@event_id, @log_type, @message);
 
 -- name: EventLogsForEventGet :many
-SELECT message, log_type, created_at::timestamptz
+SELECT *
 FROM event_logs
 WHERE event_id = @id
 ORDER BY created_at DESC;

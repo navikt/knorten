@@ -56,144 +56,6 @@ func (ns NullChartType) Value() (driver.Value, error) {
 	return string(ns.ChartType), nil
 }
 
-type EventStatus string
-
-const (
-	EventStatusNew        EventStatus = "new"
-	EventStatusProcessing EventStatus = "processing"
-	EventStatusCompleted  EventStatus = "completed"
-	EventStatusPending    EventStatus = "pending"
-	EventStatusFailed     EventStatus = "failed"
-)
-
-func (e *EventStatus) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = EventStatus(s)
-	case string:
-		*e = EventStatus(s)
-	default:
-		return fmt.Errorf("unsupported scan type for EventStatus: %T", src)
-	}
-	return nil
-}
-
-type NullEventStatus struct {
-	EventStatus EventStatus
-	Valid       bool // Valid is true if EventStatus is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullEventStatus) Scan(value interface{}) error {
-	if value == nil {
-		ns.EventStatus, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.EventStatus.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullEventStatus) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.EventStatus), nil
-}
-
-type EventType string
-
-const (
-	EventTypeCreateTeam    EventType = "create:team"
-	EventTypeUpdateTeam    EventType = "update:team"
-	EventTypeDeleteTeam    EventType = "delete:team"
-	EventTypeCreateJupyter EventType = "create:jupyter"
-	EventTypeUpdateJupyter EventType = "update:jupyter"
-	EventTypeDeleteJupyter EventType = "delete:jupyter"
-	EventTypeCreateAirflow EventType = "create:airflow"
-	EventTypeUpdateAirflow EventType = "update:airflow"
-	EventTypeDeleteAirflow EventType = "delete:airflow"
-	EventTypeCreateCompute EventType = "create:compute"
-	EventTypeDeleteCompute EventType = "delete:compute"
-)
-
-func (e *EventType) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = EventType(s)
-	case string:
-		*e = EventType(s)
-	default:
-		return fmt.Errorf("unsupported scan type for EventType: %T", src)
-	}
-	return nil
-}
-
-type NullEventType struct {
-	EventType EventType
-	Valid     bool // Valid is true if EventType is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullEventType) Scan(value interface{}) error {
-	if value == nil {
-		ns.EventType, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.EventType.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullEventType) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.EventType), nil
-}
-
-type LogType string
-
-const (
-	LogTypeInfo  LogType = "info"
-	LogTypeError LogType = "error"
-)
-
-func (e *LogType) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = LogType(s)
-	case string:
-		*e = LogType(s)
-	default:
-		return fmt.Errorf("unsupported scan type for LogType: %T", src)
-	}
-	return nil
-}
-
-type NullLogType struct {
-	LogType LogType
-	Valid   bool // Valid is true if LogType is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullLogType) Scan(value interface{}) error {
-	if value == nil {
-		ns.LogType, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.LogType.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullLogType) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.LogType), nil
-}
-
 type ChartGlobalValue struct {
 	ID        uuid.UUID
 	Created   sql.NullTime
@@ -213,15 +75,15 @@ type ChartTeamValue struct {
 }
 
 type ComputeInstance struct {
-	Email string
+	Owner string
 	Name  string
 }
 
 type Event struct {
 	ID         uuid.UUID
-	EventType  EventType
+	Type       string
 	Payload    json.RawMessage
-	Status     EventStatus
+	Status     string
 	Deadline   string
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
@@ -232,7 +94,7 @@ type Event struct {
 type EventLog struct {
 	ID        uuid.UUID
 	EventID   uuid.UUID
-	LogType   LogType
+	LogType   string
 	Message   string
 	CreatedAt time.Time
 }
@@ -253,4 +115,9 @@ type Team struct {
 	Users   []string
 	Created sql.NullTime
 	Owner   string
+}
+
+type UserGoogleSecretManager struct {
+	Owner string
+	Name  string
 }

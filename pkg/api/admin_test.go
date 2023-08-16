@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/k8s"
 )
@@ -217,7 +218,7 @@ func TestAdminAPI(t *testing.T) {
 	})
 
 	t.Run("update jupyter global values", func(t *testing.T) {
-		oldEvents, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateJupyter)
+		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeUpdateJupyter)
 		if err != nil {
 			t.Error(err)
 		}
@@ -233,7 +234,7 @@ func TestAdminAPI(t *testing.T) {
 			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
 		}
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateJupyter)
+		events, err := repo.EventsGetType(ctx, database.EventTypeUpdateJupyter)
 		if err != nil {
 			t.Error(err)
 		}
@@ -252,7 +253,7 @@ func TestAdminAPI(t *testing.T) {
 	})
 
 	t.Run("sync jupyterhub chart for team", func(t *testing.T) {
-		oldEvents, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateJupyter)
+		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeUpdateJupyter)
 		if err != nil {
 			t.Error(err)
 		}
@@ -268,7 +269,7 @@ func TestAdminAPI(t *testing.T) {
 			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
 		}
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateJupyter)
+		events, err := repo.EventsGetType(ctx, database.EventTypeUpdateJupyter)
 		if err != nil {
 			t.Error(err)
 		}
@@ -285,7 +286,7 @@ func TestAdminAPI(t *testing.T) {
 	})
 
 	t.Run("sync all jupyterhub charts", func(t *testing.T) {
-		oldEvents, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateJupyter)
+		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeUpdateJupyter)
 		if err != nil {
 			t.Error(err)
 		}
@@ -300,7 +301,7 @@ func TestAdminAPI(t *testing.T) {
 			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
 		}
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateJupyter)
+		events, err := repo.EventsGetType(ctx, database.EventTypeUpdateJupyter)
 		if err != nil {
 			t.Error(err)
 		}
@@ -441,7 +442,7 @@ func TestAdminAPI(t *testing.T) {
 	})
 
 	t.Run("update airflow global values", func(t *testing.T) {
-		oldEvents, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateAirflow)
+		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeUpdateAirflow)
 		if err != nil {
 			t.Error(err)
 		}
@@ -457,7 +458,7 @@ func TestAdminAPI(t *testing.T) {
 			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
 		}
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateAirflow)
+		events, err := repo.EventsGetType(ctx, database.EventTypeUpdateAirflow)
 		if err != nil {
 			t.Error(err)
 		}
@@ -474,7 +475,7 @@ func TestAdminAPI(t *testing.T) {
 	})
 
 	t.Run("sync airflow chart for team", func(t *testing.T) {
-		oldEvents, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateAirflow)
+		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeUpdateAirflow)
 		if err != nil {
 			t.Error(err)
 		}
@@ -490,7 +491,7 @@ func TestAdminAPI(t *testing.T) {
 			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
 		}
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateAirflow)
+		events, err := repo.EventsGetType(ctx, database.EventTypeUpdateAirflow)
 		if err != nil {
 			t.Error(err)
 		}
@@ -507,7 +508,7 @@ func TestAdminAPI(t *testing.T) {
 	})
 
 	t.Run("sync all airflow charts", func(t *testing.T) {
-		oldEvents, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateAirflow)
+		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeUpdateAirflow)
 		if err != nil {
 			t.Error(err)
 		}
@@ -522,7 +523,7 @@ func TestAdminAPI(t *testing.T) {
 			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
 		}
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateAirflow)
+		events, err := repo.EventsGetType(ctx, database.EventTypeUpdateAirflow)
 		if err != nil {
 			t.Error(err)
 		}
@@ -546,7 +547,7 @@ func TestAdminAPI(t *testing.T) {
 	})
 
 	t.Run("sync all teams", func(t *testing.T) {
-		oldEvents, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateTeam)
+		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeUpdateTeam)
 		if err != nil {
 			t.Error(err)
 		}
@@ -561,7 +562,7 @@ func TestAdminAPI(t *testing.T) {
 			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
 		}
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateTeam)
+		events, err := repo.EventsGetType(ctx, database.EventTypeUpdateTeam)
 		if err != nil {
 			t.Error(err)
 		}
@@ -660,7 +661,7 @@ func TestAdminAPI(t *testing.T) {
 		}
 
 		event := events[0]
-		event.Status = gensql.EventStatus(newStatus)
+		event.Status = newStatus
 		expected, err := createExpectedHTML("admin/event", map[string]any{
 			"event": event,
 		})

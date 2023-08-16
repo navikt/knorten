@@ -1,0 +1,19 @@
+{{ define "events/rows" }}
+    <label for="machine_types" class="navds-form-field__label navds-label">Eventlogs</label>
+    <table class="navds-table navds-table--small">
+        <thead class="navds-table__header">
+        <tr class="navds-table__row">
+            <th class="navds-table__header-cell navds-label navds-label--small">Level</th>
+            <th class="navds-table__header-cell navds-label navds-label--small">Message</th>
+            <th class="navds-table__header-cell navds-label navds-label--small">Created at</th>
+        </tr>
+        </thead>
+        <tbody class="navds-table__body">
+        {{ range . }}
+            {{ range .Logs }}
+                {{ template "events/row" . }}
+            {{ end }}
+        {{ end }}
+        </tbody>
+    </table>
+{{ end }}

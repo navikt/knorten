@@ -153,13 +153,7 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 				continue
 			}
 
-			events, err := e.repo.DispatcherEventsGet(e.context)
-			if err != nil {
-				e.log.WithError(err).Error("failed to fetch events")
-				continue
-			}
-
-			_, err = e.repo.DispatchableEventsGet(e.context)
+			events, err := e.repo.DispatchableEventsGet(e.context)
 			if err != nil {
 				e.log.WithError(err).Error("failed to fetch events")
 				continue

@@ -92,11 +92,7 @@ func (r *Repo) EventSetPendingStatus(ctx context.Context, id uuid.UUID) error {
 	return r.querier.EventSetPendingStatus(ctx, id)
 }
 
-func (r *Repo) DispatchableEventsGetSQL(ctx context.Context) ([]gensql.DispatchableEventsGetSQLRow, error) {
-	return r.querier.DispatchableEventsGetSQL(ctx)
-}
-
-func (r *Repo) DispatcherEventsGet(ctx context.Context) ([]gensql.Event, error) {
+func (r *Repo) DispatchableEventsGet(ctx context.Context) ([]gensql.Event, error) {
 	processingEvents, err := r.querier.DispatcherEventsProcessingGet(ctx)
 	if err != nil {
 		return nil, err
@@ -108,9 +104,9 @@ func (r *Repo) DispatcherEventsGet(ctx context.Context) ([]gensql.Event, error) 
 	}
 
 	var dispatchableEvents []gensql.Event
-	for _, event := range upcomingEvents {
-		if isEventDispatchable(processingEvents, event) {
-			dispatchableEvents = append(dispatchableEvents, event)
+	for _, upcomingEvent := range upcomingEvents {
+		if isEventDispatchable(processingEvents, upcomingEvent) {
+			dispatchableEvents = append(dispatchableEvents, upcomingEvent)
 		}
 	}
 

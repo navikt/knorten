@@ -9,6 +9,7 @@ import (
 
 	"github.com/nais/knorten/local/dbsetup"
 	"github.com/nais/knorten/pkg/database"
+	"github.com/sirupsen/logrus"
 )
 
 var repo *database.Repo
@@ -23,8 +24,11 @@ func init() {
 }
 
 func TestMain(m *testing.M) {
-	var err error
-	repo, err = dbsetup.SetupDBForTests()
+	dbConn, err := dbsetup.SetupDBForTests()
+	if err != nil {
+		log.Fatal(err)
+	}
+	repo, err = database.New(dbConn, "", logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatal(err)
 	}

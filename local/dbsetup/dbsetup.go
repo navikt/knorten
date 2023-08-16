@@ -10,9 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/nais/knorten/pkg/database"
 	"github.com/ory/dockertest/v3"
-	"github.com/sirupsen/logrus"
 )
 
 func SetupDB(ctx context.Context, dbURL, dbname string) error {
@@ -93,7 +91,7 @@ func SetupDB(ctx context.Context, dbURL, dbname string) error {
 	return nil
 }
 
-func SetupDBForTests() (*database.Repo, error) {
+func SetupDBForTests() (string, error) {
 	dbString := "user=postgres dbname=knorten sslmode=disable password=postgres host=db port=5432"
 
 	if os.Getenv("CLOUDBUILD") != "true" {
@@ -130,9 +128,7 @@ func SetupDBForTests() (*database.Repo, error) {
 		log.Fatal(err)
 	}
 
-	logger := logrus.NewEntry(logrus.StandardLogger())
-
-	return database.New(dbString, "jegersekstentegn", logger)
+	return dbString, nil
 }
 
 func waitForDB(dbString string) error {

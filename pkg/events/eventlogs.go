@@ -7,14 +7,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/logger"
 	"github.com/sirupsen/logrus"
 )
 
 type EventLogger struct {
 	eventID uuid.UUID
 	log     *logrus.Entry
-	repo    *database.Repo
+	repo    database.Repository
 	context context.Context
 }
 
@@ -23,7 +22,7 @@ func (e EventLogger) Info(messages ...any) {
 		messageAsString := fmt.Sprint(message)
 
 		e.log.Info(messageAsString)
-		err := e.repo.EventLogCreate(e.context, e.eventID, messageAsString, gensql.LogTypeInfo)
+		err := e.repo.EventLogCreate(e.context, e.eventID, messageAsString, database.LogTypeInfo)
 		if err != nil {
 			e.log.WithError(err).Error("can't write event to database")
 		}
@@ -47,25 +46,14 @@ func (e EventLogger) Errorf(template string, arg ...any) {
 	e.Error(fmt.Sprintf(template, arg...))
 }
 
-func (e EventLogger) WithField(key string, value interface{}) logger.Logger {
-	e.log = e.log.WithFields(logrus.Fields{key: value})
-	return e
+func (e EventLogger) WithError(err error) *logrus.Entry {
+	return e.log.WithError(err)
 }
 
-func (e EventLogger) WithError(err error) logger.Logger {
-	e.log = e.log.WithField(logrus.ErrorKey, err)
-	return e
-}
-
-func (e EventLogger) WithTeamID(teamID string) logger.Logger {
-	e.log = e.log.WithField("teamID", teamID)
-	return e
-}
-
-func newEventLogger(ctx context.Context, log *logrus.Entry, repo *database.Repo, event gensql.Event) EventLogger {
+func newEventLogger(ctx context.Context, log *logrus.Entry, repo database.Repository, event gensql.Event) EventLogger {
 	return EventLogger{
 		eventID: event.ID,
-		log:     log.WithField("eventType", event.EventType).WithField("eventID", event.ID),
+		log:     log.WithField("eventType", event.Type).WithField("eventID", event.ID),
 		repo:    repo,
 		context: ctx,
 	}

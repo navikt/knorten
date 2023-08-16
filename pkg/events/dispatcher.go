@@ -7,55 +7,61 @@ import (
 
 	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/chart"
-	"github.com/nais/knorten/pkg/compute"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/leaderelection"
 	"github.com/nais/knorten/pkg/logger"
 	"github.com/nais/knorten/pkg/team"
+	"github.com/nais/knorten/pkg/user"
 	"github.com/sirupsen/logrus"
 )
 
 type EventHandler struct {
-	repo          *database.Repo
-	log           *logrus.Entry
-	context       context.Context
-	teamClient    *team.Client
-	computeClient *compute.Client
-	chartClient   *chart.Client
+	repo        database.Repository
+	log         *logrus.Entry
+	context     context.Context
+	teamClient  teamClient
+	userClient  userClient
+	chartClient chartClient
 }
 
 type workerFunc func(context.Context, gensql.Event, logger.Logger) error
 
-func (e EventHandler) distributeWork(eventType gensql.EventType) workerFunc {
+func (e EventHandler) distributeWork(eventType database.EventType) workerFunc {
 	switch eventType {
-	case gensql.EventTypeCreateTeam,
-		gensql.EventTypeUpdateTeam:
+	case database.EventTypeCreateTeam,
+		database.EventTypeUpdateTeam:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			var team gensql.Team
 			return e.processWork(event, logger, &team)
 		}
-	case gensql.EventTypeCreateCompute:
+	case database.EventTypeCreateUserGSM:
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
+			var manager gensql.UserGoogleSecretManager
+			return e.processWork(event, logger, &manager)
+		}
+	case database.EventTypeCreateCompute:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			var instance gensql.ComputeInstance
 			return e.processWork(event, logger, &instance)
 		}
-	case gensql.EventTypeCreateAirflow,
-		gensql.EventTypeUpdateAirflow:
+	case database.EventTypeCreateAirflow,
+		database.EventTypeUpdateAirflow:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			var values chart.AirflowConfigurableValues
 			return e.processWork(event, logger, &values)
 		}
-	case gensql.EventTypeCreateJupyter,
-		gensql.EventTypeUpdateJupyter:
+	case database.EventTypeCreateJupyter,
+		database.EventTypeUpdateJupyter:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			var values chart.JupyterConfigurableValues
 			return e.processWork(event, logger, &values)
 		}
-	case gensql.EventTypeDeleteTeam,
-		gensql.EventTypeDeleteCompute,
-		gensql.EventTypeDeleteAirflow,
-		gensql.EventTypeDeleteJupyter:
+	case database.EventTypeDeleteTeam,
+		database.EventTypeDeleteUserGSM,
+		database.EventTypeDeleteCompute,
+		database.EventTypeDeleteAirflow,
+		database.EventTypeDeleteJupyter:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			return e.processWork(event, logger, nil)
 		}
@@ -66,39 +72,42 @@ func (e EventHandler) distributeWork(eventType gensql.EventType) workerFunc {
 
 func (e EventHandler) processWork(event gensql.Event, logger logger.Logger, form any) error {
 	if err := json.Unmarshal(event.Payload, &form); err != nil {
-		if err := e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusFailed); err != nil {
+		if err := e.repo.EventSetStatus(e.context, event.ID, database.EventStatusFailed); err != nil {
 			return err
 		}
-
 		return err
 	}
 
-	err := e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusProcessing)
+	err := e.repo.EventSetStatus(e.context, event.ID, database.EventStatusProcessing)
 	if err != nil {
 		return err
 	}
 
 	var retry bool
-	switch event.EventType {
-	case gensql.EventTypeCreateTeam:
+	switch database.EventType(event.Type) {
+	case database.EventTypeCreateTeam:
 		retry = e.teamClient.Create(e.context, *form.(*gensql.Team), logger)
-	case gensql.EventTypeUpdateTeam:
+	case database.EventTypeUpdateTeam:
 		retry = e.teamClient.Update(e.context, *form.(*gensql.Team), logger)
-	case gensql.EventTypeDeleteTeam:
+	case database.EventTypeDeleteTeam:
 		retry = e.teamClient.Delete(e.context, event.Owner, logger)
-	case gensql.EventTypeCreateCompute:
-		retry = e.computeClient.Create(e.context, *form.(*gensql.ComputeInstance), logger)
-	case gensql.EventTypeDeleteCompute:
-		retry = e.computeClient.Delete(e.context, event.Owner, logger)
-	case gensql.EventTypeCreateAirflow,
-		gensql.EventTypeUpdateAirflow:
+	case database.EventTypeCreateUserGSM:
+		retry = e.userClient.CreateUserGSM(e.context, *form.(*gensql.UserGoogleSecretManager), logger)
+	case database.EventTypeDeleteUserGSM:
+		retry = e.userClient.DeleteUserGSM(e.context, event.Owner, logger)
+	case database.EventTypeCreateCompute:
+		retry = e.userClient.CreateComputeInstance(e.context, *form.(*gensql.ComputeInstance), logger)
+	case database.EventTypeDeleteCompute:
+		retry = e.userClient.DeleteComputeInstance(e.context, event.Owner, logger)
+	case database.EventTypeCreateAirflow,
+		database.EventTypeUpdateAirflow:
 		retry = e.chartClient.SyncAirflow(e.context, *form.(*chart.AirflowConfigurableValues), logger)
-	case gensql.EventTypeDeleteAirflow:
+	case database.EventTypeDeleteAirflow:
 		retry = e.chartClient.DeleteAirflow(e.context, event.Owner, logger)
-	case gensql.EventTypeCreateJupyter,
-		gensql.EventTypeUpdateJupyter:
+	case database.EventTypeCreateJupyter,
+		database.EventTypeUpdateJupyter:
 		retry = e.chartClient.SyncJupyter(e.context, *form.(*chart.JupyterConfigurableValues), logger)
-	case gensql.EventTypeDeleteJupyter:
+	case database.EventTypeDeleteJupyter:
 		retry = e.chartClient.DeleteJupyter(e.context, event.Owner, logger)
 	}
 
@@ -106,7 +115,7 @@ func (e EventHandler) processWork(event gensql.Event, logger logger.Logger, form
 		return e.repo.EventSetPendingStatus(e.context, event.ID)
 	}
 
-	return e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusCompleted)
+	return e.repo.EventSetStatus(e.context, event.ID, database.EventStatusCompleted)
 }
 
 func NewHandler(ctx context.Context, repo *database.Repo, azureClient *auth.Azure, gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion string, dryRun, inCluster bool, log *logrus.Entry) (EventHandler, error) {
@@ -121,32 +130,27 @@ func NewHandler(ctx context.Context, repo *database.Repo, azureClient *auth.Azur
 	}
 
 	return EventHandler{
-		repo:          repo,
-		log:           log,
-		context:       ctx,
-		teamClient:    teamClient,
-		computeClient: compute.NewClient(repo, gcpProject, gcpZone, dryRun),
-		chartClient:   chartClient,
+		repo:        repo,
+		log:         log,
+		context:     ctx,
+		teamClient:  teamClient,
+		userClient:  user.NewClient(repo, gcpProject, gcpRegion, gcpZone, dryRun),
+		chartClient: chartClient,
 	}, nil
 }
 
 func (e EventHandler) Run(tickDuration time.Duration) {
-	eventRetrievers := []func() ([]gensql.Event, error){
-		func() ([]gensql.Event, error) {
-			return e.repo.EventsGetNew(e.context)
-		},
-		func() ([]gensql.Event, error) {
-			return e.repo.EventsGetOverdue(e.context)
-		},
-	}
-
 	go func() {
+		var cancelFuncs []context.CancelFunc
 		for {
 			select {
 			case <-time.NewTicker(tickDuration).C:
 				e.log.Debug("Event dispatcher run!")
 			case <-e.context.Done():
 				e.log.Debug("Context cancelled, stopping the event dispatcher.")
+				for _, cancelFunc := range cancelFuncs {
+					cancelFunc()
+				}
 				return
 			}
 
@@ -159,35 +163,42 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 				continue
 			}
 
-			for _, eventRetriever := range eventRetrievers {
-				pickedEvents, err := eventRetriever()
-				if err != nil {
-					e.log.Errorf("Failed to fetch events: %v", err)
+			events, err := e.repo.DispatcherEventsGet(e.context)
+			if err != nil {
+				e.log.WithError(err).Error("failed to fetch events")
+				continue
+			}
+
+			for _, event := range events {
+				worker := e.distributeWork(database.EventType(event.Type))
+				if worker == nil {
+					e.log.WithField("eventID", event.ID).Errorf("No worker found for event type %v", event.Type)
 					continue
 				}
 
-				for _, event := range pickedEvents {
-					worker := e.distributeWork(event.EventType)
-					if worker == nil {
-						e.log.WithField("eventID", event.ID).Errorf("No worker found for event type %v", event.EventType)
-						continue
+				eventLogger := newEventLogger(e.context, e.log, e.repo, event)
+				eventLogger.log.Infof("Dispatching event '%v'", event.Type)
+				event := event
+				go func() {
+					deadline, err := time.ParseDuration(event.Deadline)
+					if err != nil {
+						eventLogger.log.WithError(err).Error("failed parsing event deadline")
+						return
 					}
 
-					eventLogger := newEventLogger(e.context, e.log, e.repo, event)
-					eventLogger.log.Infof("Dispatching event '%v'", event.EventType)
-					event := event
-					go func() {
-						if err := worker(e.context, event, eventLogger); err != nil {
-							eventLogger.log.WithError(err).Error("failed processing event")
-							if event.RetryCount > 5 {
-								eventLogger.log.Error("event reached max retries")
-								if err := e.repo.EventSetStatus(e.context, event.ID, gensql.EventStatusFailed); err != nil {
-									eventLogger.log.WithError(err).Error("failed setting event status to 'failed'")
-								}
+					ctx, cancelFunc := context.WithTimeout(e.context, deadline)
+					cancelFuncs = append(cancelFuncs, cancelFunc)
+
+					if err := worker(ctx, event, eventLogger); err != nil {
+						eventLogger.log.WithError(err).Error("failed processing event")
+						if event.RetryCount > 5 {
+							eventLogger.log.Error("event reached max retries")
+							if err := e.repo.EventSetStatus(e.context, event.ID, database.EventStatusFailed); err != nil {
+								eventLogger.log.WithError(err).Error("failed setting event status to 'failed'")
 							}
 						}
-					}()
-				}
+					}
+				}()
 			}
 		}
 	}()

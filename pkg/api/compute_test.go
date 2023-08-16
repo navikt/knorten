@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
@@ -16,7 +17,7 @@ func TestComputeAPI(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("create compute", func(t *testing.T) {
-		oldEvents, err := repo.EventsGetType(ctx, gensql.EventTypeCreateCompute)
+		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeCreateCompute)
 		if err != nil {
 			t.Error(err)
 		}
@@ -27,7 +28,7 @@ func TestComputeAPI(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeCreateCompute)
+		events, err := repo.EventsGetType(ctx, database.EventTypeCreateCompute)
 		if err != nil {
 			t.Error(err)
 		}
@@ -38,12 +39,12 @@ func TestComputeAPI(t *testing.T) {
 			t.Error(err)
 		}
 
-		if eventPayload.Email == "" {
+		if eventPayload.Owner == "" {
 			t.Errorf("create compute: no event registered for user %v", user.Email)
 		}
 
-		if eventPayload.Email != user.Email {
-			t.Errorf("create compute: email expected %v, got %v", user.Email, eventPayload.Email)
+		if eventPayload.Owner != user.Email {
+			t.Errorf("create compute: email expected %v, got %v", user.Email, eventPayload.Owner)
 		}
 
 		if eventPayload.Name != "compute-"+getNormalizedNameFromEmail(user.Email) {
@@ -98,7 +99,7 @@ func TestComputeAPI(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeDeleteCompute)
+		events, err := repo.EventsGetType(ctx, database.EventTypeDeleteCompute)
 		if err != nil {
 			t.Error(err)
 		}
@@ -109,7 +110,7 @@ func TestComputeAPI(t *testing.T) {
 	})
 }
 
-func getComputeEvent(events []gensql.EventsGetTypeRow, user string) (gensql.ComputeInstance, error) {
+func getComputeEvent(events []gensql.Event, user string) (gensql.ComputeInstance, error) {
 	for _, event := range events {
 		payload := gensql.ComputeInstance{}
 		err := json.Unmarshal(event.Payload, &payload)
@@ -117,7 +118,7 @@ func getComputeEvent(events []gensql.EventsGetTypeRow, user string) (gensql.Comp
 			return gensql.ComputeInstance{}, err
 		}
 
-		if payload.Email == user {
+		if payload.Owner == user {
 			return payload, nil
 		}
 	}

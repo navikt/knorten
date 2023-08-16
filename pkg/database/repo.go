@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"embed"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/postgres"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 	"github.com/nais/knorten/pkg/database/crypto"
 	"github.com/nais/knorten/pkg/database/gensql"
@@ -21,6 +23,13 @@ import (
 
 //go:embed migrations/*.sql
 var embedMigrations embed.FS
+
+type Repository interface {
+	EventSetStatus(context.Context, uuid.UUID, EventStatus) error
+	EventSetPendingStatus(context.Context, uuid.UUID) error
+	DispatcherEventsGet(context.Context) ([]gensql.Event, error)
+	EventLogCreate(context.Context, uuid.UUID, string, LogType) error
+}
 
 type Repo struct {
 	querier     Querier
@@ -72,6 +81,7 @@ func gooseMigrationWithRetries(log *logrus.Entry, db *sql.DB) error {
 			if err == nil {
 				return nil
 			}
+			log.Infof("goose up failed: %v", err)
 		}
 	}
 

@@ -21,18 +21,23 @@ type TeamServices struct {
 	Slug       string
 	Jupyterhub *AppService
 	Airflow    *AppService
-	Events     []Event
+	Events     []EventWithLogs
 }
 
 type ComputeService struct {
-	Email  string
-	Name   string
-	Events []Event
+	gensql.ComputeInstance
+	Events []EventWithLogs
+}
+
+type UserGSMService struct {
+	gensql.UserGoogleSecretManager
+	Events []EventWithLogs
 }
 
 type UserServices struct {
 	Services []TeamServices
 	Compute  *ComputeService
+	UserGSM  *UserGSMService
 }
 
 func createIngress(team string, chartType gensql.ChartType) string {
@@ -125,9 +130,27 @@ func (r *Repo) ServicesForUser(ctx context.Context, email string) (UserServices,
 		}
 
 		userServices.Compute = &ComputeService{
-			Email:  compute.Email,
-			Name:   compute.Name,
-			Events: events,
+			ComputeInstance: compute,
+			Events:          events,
+		}
+	}
+
+	manager, err := r.querier.UserGoogleSecretManagerGet(ctx, email)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return UserServices{}, err
+		}
+
+		userServices.UserGSM = nil
+	} else {
+		events, err := r.EventLogsForOwnerGet(ctx, email)
+		if err != nil {
+			return UserServices{}, err
+		}
+
+		userServices.UserGSM = &UserGSMService{
+			UserGoogleSecretManager: manager,
+			Events:                  events,
 		}
 	}
 

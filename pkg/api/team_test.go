@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
@@ -88,7 +89,7 @@ func TestTeamAPI(t *testing.T) {
 			t.Errorf("create team: expected status code 200, got %v", resp.StatusCode)
 		}
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeCreateTeam)
+		events, err := repo.EventsGetType(ctx, database.EventTypeCreateTeam)
 		if err != nil {
 			t.Error(err)
 		}
@@ -191,7 +192,7 @@ func TestTeamAPI(t *testing.T) {
 			t.Errorf("edit team: expected status code 200, got %v", resp.StatusCode)
 		}
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateTeam)
+		events, err := repo.EventsGetType(ctx, database.EventTypeUpdateTeam)
 		if err != nil {
 			t.Error(err)
 		}
@@ -233,7 +234,7 @@ func TestTeamAPI(t *testing.T) {
 			t.Errorf("delete team: expected status code 200, got %v", resp.StatusCode)
 		}
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeDeleteTeam)
+		events, err := repo.EventsGetType(ctx, database.EventTypeDeleteTeam)
 		if err != nil {
 			t.Error(err)
 		}
@@ -244,7 +245,7 @@ func TestTeamAPI(t *testing.T) {
 	})
 }
 
-func getEventForTeam(events []gensql.EventsGetTypeRow, team string) (gensql.Team, error) {
+func getEventForTeam(events []gensql.Event, team string) (gensql.Team, error) {
 	for _, event := range events {
 		payload := gensql.Team{}
 		err := json.Unmarshal(event.Payload, &payload)
@@ -260,7 +261,7 @@ func getEventForTeam(events []gensql.EventsGetTypeRow, team string) (gensql.Team
 	return gensql.Team{}, nil
 }
 
-func deleteEventCreatedForTeam(events []gensql.EventsGetTypeRow, team string) bool {
+func deleteEventCreatedForTeam(events []gensql.Event, team string) bool {
 	for _, event := range events {
 		if event.Owner == team {
 			return true

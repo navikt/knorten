@@ -67,8 +67,10 @@ func TestUserAPI(t *testing.T) {
 					},
 				},
 				Compute: &database.ComputeService{
-					Email: user.Email,
-					Name:  "compute-" + getNormalizedNameFromEmail(user.Email),
+					ComputeInstance: gensql.ComputeInstance{
+						Owner: user.Email,
+						Name:  "compute-" + getNormalizedNameFromEmail(user.Email),
+					},
 				},
 			},
 		})
@@ -107,7 +109,7 @@ func prepareUserTests(ctx context.Context) (*gensql.Team, error) {
 	}
 
 	err = repo.ComputeInstanceCreate(ctx, gensql.ComputeInstance{
-		Email: user.Email,
+		Owner: user.Email,
 		Name:  "compute-" + getNormalizedNameFromEmail(user.Email),
 	})
 	if err != nil {

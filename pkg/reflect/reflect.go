@@ -2,6 +2,7 @@ package reflect
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -14,7 +15,7 @@ func reflectValueToString(value reflect.Value) (string, error) {
 	case reflect.Slice:
 		parts, ok := value.Interface().([]string)
 		if !ok {
-			return "", fmt.Errorf("unable to parse reflect slice: %v", value)
+			return "", errors.New("unable to parse reflect slice")
 		}
 
 		quotified := make([]string, len(parts))
@@ -23,7 +24,7 @@ func reflectValueToString(value reflect.Value) (string, error) {
 		}
 		return fmt.Sprintf("[%v]", strings.Join(quotified, ", ")), nil
 	default:
-		return "", fmt.Errorf("helm value must be string or slice of strings, unable to parse helm value: %v", value)
+		return "", errors.New("helm value must be string or slice of strings, unable to parse helm value")
 
 	}
 }
@@ -42,7 +43,7 @@ func CreateChartValues(form any) (map[string]string, error) {
 		value := values.FieldByName(field.Name)
 		valueAsString, err := reflectValueToString(value)
 		if err != nil {
-			return map[string]string{}, err
+			return map[string]string{}, fmt.Errorf("key %v: %v", tag, err)
 		}
 
 		if valueAsString != "" {

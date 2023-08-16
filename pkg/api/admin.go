@@ -28,7 +28,7 @@ type teamInfo struct {
 	gensql.Team
 	Namespace string
 	Apps      []gensql.ChartType
-	Events    []database.Event
+	Events    []gensql.Event
 }
 
 func (c *client) setupAdminRoutes() {
@@ -65,7 +65,7 @@ func (c *client) setupAdminRoutes() {
 				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err})
 				return
 			}
-			events, err := c.repo.EventsGet(ctx, team.ID, 5)
+			events, err := c.repo.EventsByOwnerGet(ctx, team.ID, 5)
 			if err != nil {
 				c.log.WithError(err).Error("problem retrieving apps for teams")
 				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err})
@@ -543,12 +543,12 @@ func (c *client) setEventStatus(ctx *gin.Context) error {
 		return err
 	}
 
-	var status gensql.EventStatus
+	var status database.EventStatus
 	switch ctx.Query("status") {
-	case string(gensql.EventStatusNew):
-		status = gensql.EventStatusNew
-	case string(gensql.EventStatusFailed):
-		status = gensql.EventStatusFailed
+	case string(database.EventStatusNew):
+		status = database.EventStatusNew
+	case string(database.EventStatusFailed):
+		status = database.EventStatusFailed
 	default:
 		return fmt.Errorf("invalid status %v", ctx.PostForm("status"))
 	}

@@ -61,13 +61,13 @@ func TestTeam(t *testing.T) {
 		err  error
 	}
 
-	operation := func(ctx context.Context, eventType gensql.EventType, team gensql.Team, teamClient *Client) bool {
+	operation := func(ctx context.Context, eventType database.EventType, team gensql.Team, teamClient *Client) bool {
 		switch eventType {
-		case gensql.EventTypeCreateTeam:
+		case database.EventTypeCreateTeam:
 			return teamClient.Create(ctx, team, logrus.NewEntry(logrus.StandardLogger()))
-		case gensql.EventTypeUpdateTeam:
+		case database.EventTypeUpdateTeam:
 			return teamClient.Update(ctx, team, logrus.NewEntry(logrus.StandardLogger()))
-		case gensql.EventTypeDeleteTeam:
+		case database.EventTypeDeleteTeam:
 			return teamClient.Delete(ctx, team.ID, logrus.NewEntry(logrus.StandardLogger()))
 		}
 
@@ -76,13 +76,13 @@ func TestTeam(t *testing.T) {
 
 	teamTests := []struct {
 		name      string
-		eventType gensql.EventType
+		eventType database.EventType
 		args      args
 		want      want
 	}{
 		{
 			name:      "Create team",
-			eventType: gensql.EventTypeCreateTeam,
+			eventType: database.EventTypeCreateTeam,
 			args: args{
 				team: gensql.Team{
 					ID:    "test-team-1234",
@@ -103,7 +103,7 @@ func TestTeam(t *testing.T) {
 		},
 		{
 			name:      "Create team slug already exists",
-			eventType: gensql.EventTypeCreateTeam,
+			eventType: database.EventTypeCreateTeam,
 			args: args{
 				team: gensql.Team{
 					ID:    "already-exists-1234",
@@ -124,7 +124,7 @@ func TestTeam(t *testing.T) {
 		},
 		{
 			name:      "Create team no users",
-			eventType: gensql.EventTypeCreateTeam,
+			eventType: database.EventTypeCreateTeam,
 			args: args{
 				team: gensql.Team{
 					ID:    "other-team-1234",
@@ -145,7 +145,7 @@ func TestTeam(t *testing.T) {
 		},
 		{
 			name:      "Update team",
-			eventType: gensql.EventTypeUpdateTeam,
+			eventType: database.EventTypeUpdateTeam,
 			args: args{
 				team: gensql.Team{
 					ID:    "test-team-1234",
@@ -165,7 +165,7 @@ func TestTeam(t *testing.T) {
 		},
 		{
 			name:      "Delete team",
-			eventType: gensql.EventTypeDeleteTeam,
+			eventType: database.EventTypeDeleteTeam,
 			args: args{
 				team: gensql.Team{
 					ID: "test-team-1234",

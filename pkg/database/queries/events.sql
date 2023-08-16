@@ -1,7 +1,7 @@
 -- name: EventCreate :exec
-INSERT INTO Events (owner, event_type, payload, status, deadline)
+INSERT INTO Events (owner, type, payload, status, deadline)
 VALUES (@owner,
-        @event_type,
+        @type,
         @payload,
         'new',
         @deadline);
@@ -34,7 +34,7 @@ ORDER BY created_at DESC;
 -- name: EventsGetType :many
 SELECT *
 FROM Events
-WHERE event_type = @event_type;
+WHERE type = @event_type;
 
 -- name: EventSetStatus :exec
 UPDATE Events

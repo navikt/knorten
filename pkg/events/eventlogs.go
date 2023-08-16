@@ -22,7 +22,7 @@ func (e EventLogger) Info(messages ...any) {
 		messageAsString := fmt.Sprint(message)
 
 		e.log.Info(messageAsString)
-		err := e.repo.EventLogCreate(e.context, e.eventID, messageAsString, gensql.LogTypeInfo)
+		err := e.repo.EventLogCreate(e.context, e.eventID, messageAsString, database.LogTypeInfo)
 		if err != nil {
 			e.log.WithError(err).Error("can't write event to database")
 		}
@@ -53,7 +53,7 @@ func (e EventLogger) WithError(err error) *logrus.Entry {
 func newEventLogger(ctx context.Context, log *logrus.Entry, repo database.Repository, event gensql.Event) EventLogger {
 	return EventLogger{
 		eventID: event.ID,
-		log:     log.WithField("eventType", event.EventType).WithField("eventID", event.ID).WithField("owner", event.Owner),
+		log:     log.WithField("eventType", event.Type).WithField("eventID", event.ID),
 		repo:    repo,
 		context: ctx,
 	}

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
@@ -88,7 +89,7 @@ func TestTeamAPI(t *testing.T) {
 			t.Errorf("create team: expected status code 200, got %v", resp.StatusCode)
 		}
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeCreateTeam)
+		events, err := repo.EventsGetType(ctx, database.EventTypeCreateTeam)
 		if err != nil {
 			t.Error(err)
 		}
@@ -191,7 +192,7 @@ func TestTeamAPI(t *testing.T) {
 			t.Errorf("edit team: expected status code 200, got %v", resp.StatusCode)
 		}
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeUpdateTeam)
+		events, err := repo.EventsGetType(ctx, database.EventTypeUpdateTeam)
 		if err != nil {
 			t.Error(err)
 		}
@@ -233,7 +234,7 @@ func TestTeamAPI(t *testing.T) {
 			t.Errorf("delete team: expected status code 200, got %v", resp.StatusCode)
 		}
 
-		events, err := repo.EventsGetType(ctx, gensql.EventTypeDeleteTeam)
+		events, err := repo.EventsGetType(ctx, database.EventTypeDeleteTeam)
 		if err != nil {
 			t.Error(err)
 		}

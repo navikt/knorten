@@ -16,7 +16,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
-	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"k8s.io/utils/strings/slices"
 )
@@ -73,22 +72,16 @@ func (c *client) setupTeamRoutes() {
 			return
 		}
 
-		user, exists := ctx.Get("user")
-		if !exists {
-			c.log.Errorf("unable to identify logged in user when creating team")
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "unable to identify logged in user when creating team"})
-			return
-		}
-		owner, ok := user.(*auth.User)
-		if !ok {
-			c.log.Errorf("unable to identify logged in user when creating team, user object %v", user)
+		user, err := getUser(ctx)
+		if err != nil {
+			c.log.Error(err)
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "unable to identify logged in user when creating team"})
 			return
 		}
 
 		c.htmlResponseWrapper(ctx, http.StatusOK, "team/new", gin.H{
 			"form":   form,
-			"owner":  owner.Email,
+			"owner":  user.Email,
 			"errors": flashes,
 		})
 	})

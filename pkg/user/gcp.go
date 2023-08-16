@@ -154,7 +154,7 @@ func (c Client) createUserGSMInGCP(ctx context.Context, name, owner string) erro
 		return nil
 	}
 
-	secret, err := gcp.CreateSecret(ctx, c.gcpProject, c.gcpRegion, name, map[string]string{"owner": owner})
+	secret, err := gcp.CreateSecret(ctx, c.gcpProject, c.gcpRegion, name, map[string]string{"owner": name})
 	if err != nil {
 		return err
 	}

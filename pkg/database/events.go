@@ -148,7 +148,7 @@ func (r *Repo) DispatchableEventsGet(ctx context.Context) ([]gensql.Event, error
 
 	var dispatchableEvents []gensql.Event
 	for _, upcomingEvent := range upcomingEvents {
-		if isEventDispatchable(processingEvents, upcomingEvent) {
+		if isEventDispatchable(processingEvents, dispatchableEvents, upcomingEvent) {
 			dispatchableEvents = append(dispatchableEvents, upcomingEvent)
 		}
 	}
@@ -156,16 +156,27 @@ func (r *Repo) DispatchableEventsGet(ctx context.Context) ([]gensql.Event, error
 	return dispatchableEvents, nil
 }
 
-func isEventDispatchable(processingEvents []gensql.Event, upcoming gensql.Event) bool {
-	for _, processing := range processingEvents {
-		processingType := strings.Split(string(processing.Type), ":")[1]
-		upcomingType := strings.Split(string(upcoming.Type), ":")[1]
-		if processing.Owner == upcoming.Owner && processingType == upcomingType {
-			return false
-		}
+func isEventDispatchable(processingEvents, dispatchableEvents []gensql.Event, upcoming gensql.Event) bool {
+	if containsEvent(dispatchableEvents, upcoming) {
+		return false
+	}
+	if containsEvent(processingEvents, upcoming) {
+		return false
 	}
 
 	return true
+}
+
+func containsEvent(events []gensql.Event, new gensql.Event) bool {
+	for _, event := range events {
+		eventType := strings.Split(string(event.Type), ":")[1]
+		newType := strings.Split(string(new.Type), ":")[1]
+		if event.Owner == new.Owner && eventType == newType {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (r *Repo) EventsGetType(ctx context.Context, eventType EventType) ([]gensql.Event, error) {

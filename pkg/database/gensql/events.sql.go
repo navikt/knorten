@@ -56,8 +56,8 @@ const dispatcherEventsUpcomingGet = `-- name: DispatcherEventsUpcomingGet :many
 SELECT id, type, payload, status, deadline, created_at, updated_at, owner, retry_count
 FROM Events
 WHERE status = 'new'
-   OR (status = 'pending' AND updated_at + deadline::interval * retry_count < NOW())
-ORDER BY created_at DESC
+   OR (status = 'pending')
+ORDER BY created_at ASC
 `
 
 func (q *Queries) DispatcherEventsUpcomingGet(ctx context.Context) ([]Event, error) {

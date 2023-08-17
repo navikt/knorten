@@ -29,7 +29,7 @@ SELECT *
 FROM Events
 WHERE status = 'new'
    OR (status = 'pending' AND updated_at + deadline::interval * retry_count < NOW())
-ORDER BY created_at DESC;
+ORDER BY created_at ASC;
 
 -- name: EventsGetType :many
 SELECT *

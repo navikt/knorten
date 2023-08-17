@@ -136,12 +136,12 @@ func (r *Repo) EventSetPendingStatus(ctx context.Context, id uuid.UUID) error {
 }
 
 func (r *Repo) DispatchableEventsGet(ctx context.Context) ([]gensql.Event, error) {
-	processingEvents, err := r.querier.DispatcherEventsProcessingGet(ctx)
+	processingEvents, err := r.querier.EventsProcessingGet(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	upcomingEvents, err := r.querier.DispatcherEventsUpcomingGet(ctx)
+	upcomingEvents, err := r.querier.EventsUpcomingGet(ctx)
 	if err != nil {
 		return nil, err
 	}

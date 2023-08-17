@@ -16,8 +16,6 @@ type Querier interface {
 	ComputeInstanceCreate(ctx context.Context, arg ComputeInstanceCreateParams) error
 	ComputeInstanceDelete(ctx context.Context, owner string) error
 	ComputeInstanceGet(ctx context.Context, owner string) (ComputeInstance, error)
-	DispatcherEventsProcessingGet(ctx context.Context) ([]Event, error)
-	DispatcherEventsUpcomingGet(ctx context.Context) ([]Event, error)
 	EventCreate(ctx context.Context, arg EventCreateParams) error
 	EventGet(ctx context.Context, id uuid.UUID) (Event, error)
 	EventLogCreate(ctx context.Context, arg EventLogCreateParams) error
@@ -26,6 +24,8 @@ type Querier interface {
 	EventSetStatus(ctx context.Context, arg EventSetStatusParams) error
 	EventsByOwnerGet(ctx context.Context, arg EventsByOwnerGetParams) ([]Event, error)
 	EventsGetType(ctx context.Context, eventType string) ([]Event, error)
+	EventsProcessingGet(ctx context.Context) ([]Event, error)
+	EventsUpcomingGet(ctx context.Context) ([]Event, error)
 	GlobalValueDelete(ctx context.Context, arg GlobalValueDeleteParams) error
 	GlobalValueGet(ctx context.Context, arg GlobalValueGetParams) (ChartGlobalValue, error)
 	GlobalValueInsert(ctx context.Context, arg GlobalValueInsertParams) error

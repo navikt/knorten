@@ -124,7 +124,7 @@ func TestRepo_DispatchableEventsGet(t *testing.T) {
 func prepareEventsTest(events []gensql.Event) error {
 	for _, event := range events {
 		_, err := repo.db.Exec("INSERT INTO events (owner,type,payload,deadline,status) VALUES ($1,$2,$3,$4,$5);",
-			event.Owner, EventType(event.Type), event.Payload, event.Deadline, event.Status)
+			event.Owner, EventType(event.Type), event.Payload, "00:05:00", event.Status)
 		if err != nil {
 			return err
 		}

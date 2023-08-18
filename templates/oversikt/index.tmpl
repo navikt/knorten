@@ -150,9 +150,10 @@
             </table>
             <br>
             {{ template "events/rows" .Events }}
+            <br/>
+            <a class="navds-button--small navds-button--secondary" href="team/{{ .Slug }}/events">Se alle events</a>
         </article>
     {{ end }}
-
     <article class="bg-white rounded-md p-4">
         <a class="navds-button navds-button--secondary" href="/team/new">Legg til nytt team</a>
     </article>

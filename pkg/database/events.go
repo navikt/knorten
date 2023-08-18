@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"strings"
 	"time"
@@ -198,7 +199,7 @@ func (r *Repo) EventGet(ctx context.Context, id uuid.UUID) (gensql.Event, error)
 func (r *Repo) EventsByOwnerGet(ctx context.Context, teamID string, limit int32) ([]gensql.Event, error) {
 	return r.querier.EventsByOwnerGet(ctx, gensql.EventsByOwnerGetParams{
 		Owner: teamID,
-		Lim:   limit,
+		Lim:   sql.NullInt32{Int32: limit, Valid: limit > 0},
 	})
 }
 
@@ -206,10 +207,10 @@ func (r *Repo) EventLogsForEventGet(ctx context.Context, id uuid.UUID) ([]gensql
 	return r.querier.EventLogsForEventGet(ctx, id)
 }
 
-func (r *Repo) EventLogsForOwnerGet(ctx context.Context, owner string) ([]EventWithLogs, error) {
+func (r *Repo) EventLogsForOwnerGet(ctx context.Context, owner string, limit int32) ([]EventWithLogs, error) {
 	events, err := r.querier.EventsByOwnerGet(ctx, gensql.EventsByOwnerGetParams{
 		Owner: owner,
-		Lim:   10,
+		Lim:   sql.NullInt32{Int32: limit, Valid: limit > 0},
 	})
 
 	eventsWithLogs := make([]EventWithLogs, len(events))

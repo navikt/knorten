@@ -1,0 +1,15 @@
+{{ define "team/events" }}
+    {{ template "head" . }}
+    {{ with .errors }}
+        {{ . }}
+    {{ end }}
+    {{ with .flashes }}
+        {{ . }}
+    {{ end }}
+    <article class="bg-white rounded-md p-4">
+        <h2>Events for {{ .slug }}
+        <br/>
+        {{ template "events/rows" .events }}
+    </article>
+    {{ template "footer" }}
+{{ end }}

@@ -16,7 +16,7 @@ SELECT *
 FROM Events
 WHERE owner = @owner
 ORDER BY updated_at DESC
-LIMIT @lim;
+LIMIT sqlc.narg('lim');
 
 -- name: EventsProcessingGet :many
 SELECT *

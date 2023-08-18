@@ -10,12 +10,15 @@ import (
 func TestRepo_DispatchableEventsGet(t *testing.T) {
 	ctx := context.Background()
 	team := gensql.Team{
-		ID:    "eventtest-team-1234",
-		Slug:  "eventtest-team",
+		ID:    "team-a-1234",
+		Slug:  "team-a",
 		Users: []string{},
 		Owner: "dummy@nav.no",
 	}
 	if err := repo.TeamCreate(ctx, team); err != nil {
+		t.Fatal(err)
+	}
+	if err := cleanupEvents(); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {

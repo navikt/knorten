@@ -34,8 +34,11 @@ func init() {
 }
 
 func TestMain(m *testing.M) {
-	var err error
-	repo, err = dbsetup.SetupDBForTests()
+	dbConn, err := dbsetup.SetupDBForTests()
+	if err != nil {
+		log.Fatal(err)
+	}
+	repo, err = database.New(dbConn, "", logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatal(err)
 	}

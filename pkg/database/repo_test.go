@@ -1,4 +1,4 @@
-package user
+package database
 
 import (
 	"log"
@@ -8,11 +8,10 @@ import (
 	"testing"
 
 	"github.com/nais/knorten/local/dbsetup"
-	"github.com/nais/knorten/pkg/database"
 	"github.com/sirupsen/logrus"
 )
 
-var repo *database.Repo
+var repo *Repo
 
 func init() {
 	_, filename, _, _ := runtime.Caller(0)
@@ -28,7 +27,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	repo, err = database.New(dbConn, "", logrus.NewEntry(logrus.StandardLogger()))
+	repo, err = New(dbConn, "", logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatal(err)
 	}

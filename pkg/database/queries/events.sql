@@ -18,12 +18,18 @@ WHERE owner = @owner
 ORDER BY updated_at DESC
 LIMIT @lim;
 
--- name: DispatcherEventsGet :many
+-- name: EventsProcessingGet :many
+SELECT *
+FROM events
+WHERE status = 'processing'
+ORDER BY created_at DESC;
+
+-- name: EventsUpcomingGet :many
 SELECT *
 FROM Events
 WHERE status = 'new'
    OR (status = 'pending' AND updated_at + deadline::interval * retry_count < NOW())
-ORDER BY created_at DESC;
+ORDER BY created_at ASC;
 
 -- name: EventsGetType :many
 SELECT *

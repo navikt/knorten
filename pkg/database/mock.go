@@ -21,6 +21,10 @@ func (r *RepoMock) DispatcherEventsGet(ctx context.Context) ([]gensql.Event, err
 	return nil, nil
 }
 
+func (r *RepoMock) DispatchableEventsGet(ctx context.Context) ([]gensql.Event, error) {
+	return nil, nil
+}
+
 func (r *RepoMock) EventLogCreate(ctx context.Context, id uuid.UUID, message string, logType LogType) error {
 	return nil
 }

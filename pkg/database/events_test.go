@@ -10,8 +10,8 @@ import (
 func TestRepo_DispatchableEventsGet(t *testing.T) {
 	ctx := context.Background()
 	team := gensql.Team{
-		ID:    "team-a-1234",
-		Slug:  "team-a",
+		ID:    "eventtest-team-1234",
+		Slug:  "eventtest-team",
 		Users: []string{},
 		Owner: "dummy@nav.no",
 	}
@@ -92,7 +92,7 @@ func TestRepo_DispatchableEventsGet(t *testing.T) {
 				t.Error(err)
 			}
 			t.Cleanup(func() {
-				if err := cleanupEventsTest(); err != nil {
+				if err := cleanupEvents(); err != nil {
 					t.Error(err)
 				}
 			})
@@ -133,7 +133,7 @@ func prepareEventsTest(events []gensql.Event) error {
 	return nil
 }
 
-func cleanupEventsTest() error {
+func cleanupEvents() error {
 	_, err := repo.db.Exec("DELETE FROM events")
 	if err != nil {
 		return err

@@ -28,20 +28,29 @@
             </form>
         {{ end }}
         <label for="machine_types" class="navds-form-field__label navds-label">Eventlogs</label>
-        <table class="navds-table navds-table--small">
-            <thead class="navds-table__header">
-            <tr class="navds-table__row">
-                <th class="navds-table__header-cell navds-label navds-label--small">Level</th>
-                <th class="navds-table__header-cell navds-label navds-label--small">Message</th>
-                <th class="navds-table__header-cell navds-label navds-label--small">Created at</th>
-            </tr>
-            </thead>
-            <tbody class="navds-table__body">
-            {{ range .logs }}
-                {{ template "events/row" . }}
+        <div id="{{ .event.ID }}">
+            <table class="navds-table navds-table--small">
+                <thead class="navds-table__header">
+                <tr class="navds-table__row">
+                    <th class="navds-table__header-cell navds-label navds-label--small">Level</th>
+                    <th class="navds-table__header-cell navds-label navds-label--small">Message</th>
+                    <th class="navds-table__header-cell navds-label navds-label--small">Created at</th>
+                </tr>
+                </thead>
+                <tbody class="navds-table__body">
+                {{ range $i, $logs := .logs }}
+                        {{ template "events/row" toArray $i $logs}}
+                {{ end }}
+                </tbody>
+            </table>
+            {{ if and .logs (gt (len .logs) 2) }}
+            <button type="button" class="navds-button navds-button--secondary navds-button--small"
+                        onClick="toggleShowAll(event)">Vis mer</button>
             {{ end }}
-            </tbody>
-        </table>
+        </div>
     </article>
+    <script>
+        {{ template "events/script" }}
+    </script>
     {{ template "footer" }}
 {{ end }}

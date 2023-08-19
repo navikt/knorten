@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"text/template"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nais/knorten/pkg/api/auth"
@@ -48,6 +49,9 @@ func New(repo *database.Repo, azureClient *auth.Azure, dryRun bool, sessionKey, 
 
 	api.router.Use(session)
 	api.router.Static("/assets", "./assets")
+	api.router.FuncMap = template.FuncMap{
+		"toArray": toArray,
+	}
 	api.router.LoadHTMLGlob("templates/**/*")
 	api.setupUnauthenticatedRoutes()
 	api.router.Use(api.authMiddleware())
@@ -145,4 +149,8 @@ func (c *client) fetchAdminGroupID(adminGroupEmail string) error {
 
 	c.adminGroupID = id
 	return nil
+}
+
+func toArray(args ...any) []any {
+	return args
 }

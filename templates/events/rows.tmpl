@@ -1,19 +1,48 @@
 {{ define "events/rows" }}
-    <label for="machine_types" class="navds-form-field__label navds-label">Eventlogs</label>
-    <table class="navds-table navds-table--small">
-        <thead class="navds-table__header">
-        <tr class="navds-table__row">
-            <th class="navds-table__header-cell navds-label navds-label--small">Level</th>
-            <th class="navds-table__header-cell navds-label navds-label--small">Message</th>
-            <th class="navds-table__header-cell navds-label navds-label--small">Created at</th>
-        </tr>
-        </thead>
-        <tbody class="navds-table__body">
-        {{ range . }}
-            {{ range .Logs }}
-                {{ template "events/row" . }}
-            {{ end }}
+    {{ range . }}
+    <label for="machine_types" class="navds-form-field__label navds-label">Eventlogs for {{ .Type }}</label>
+    <div id="{{ .ID }}" class="flex-col">        
+        <table id="table" class="navds-table navds-table--small">
+            <thead class="navds-table__header">
+            <tr class="navds-table__row">
+                <th class="navds-table__header-cell navds-label navds-label--small">Level</th>
+                <th class="navds-table__header-cell navds-label navds-label--small">Message</th>
+                <th class="navds-table__header-cell navds-label navds-label--small">Created at</th>
+            </tr>
+            </thead>
+            <tbody class="navds-table__body">
+                {{ range $i, $logs := .Logs }}
+                    {{ template "events/row" toArray $i $logs}}
+                {{ end }}
+            </tbody>
+        </table>
+        {{ if gt (len .Logs) 2 }}
+        <button type="button" class="navds-button navds-button--secondary navds-button--small"
+                    onClick="toggleShowAll(event)">Vis mer</button>
         {{ end }}
-        </tbody>
-    </table>
+    </div>
+    <br/>
+    {{ end }}
+    <script>
+        function toggleShowAll(event) {
+            const tableDivID = event.currentTarget.parentElement.getAttribute("id")
+            const tableDiv = document.getElementById(tableDivID)
+            for (let i = 2; i<tableDiv.children[0].children[1].children.length; i++) {
+                const tableRow = tableDiv.children[0].children[1].children[i]
+                if (tableRow.hasAttribute("hidden")) {
+                    tableRow.removeAttribute("hidden")
+                }
+                else {
+                    tableRow.setAttribute("hidden", "hidden")
+                }
+            }
+
+            if (tableDiv.children[1].textContent == "Vis mer") {
+                tableDiv.children[1].textContent = "Vis mindre"
+            }
+            else {
+                tableDiv.children[1].textContent = "Vis mer"
+            }
+        }
+    </script>
 {{ end }}

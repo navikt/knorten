@@ -7,7 +7,7 @@
         {{ . }}
     {{ end }}
     <article class="bg-white rounded-md p-4">
-        <h2>Events for {{ .slug }}
+        <h2>{{ .slug }}</h2>
         <br/>
         {{ template "events/rows" .events }}
     </article>

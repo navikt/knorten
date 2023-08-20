@@ -16,7 +16,7 @@
                 {{ end }}
             </tbody>
         </table>
-        {{ if gt (len .Logs) 2 }}
+        {{ if and .Logs (gt (len .Logs) 2) }}
         <button type="button" style="margin-top:0.5rem" class="navds-button navds-button--secondary navds-button--small"
                     onClick="toggleShowAll(event)">Vis mer</button>
         {{ end }}

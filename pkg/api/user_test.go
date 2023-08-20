@@ -48,6 +48,11 @@ func TestUserAPI(t *testing.T) {
 			t.Error(err)
 		}
 
+		events, err := repo.EventLogsForOwnerGet(ctx, user.Email, 3)
+		if err != nil {
+			t.Error(err)
+		}
+
 		expected, err := createExpectedHTML("oversikt/index", map[string]any{
 			"user": database.UserServices{
 				Services: []database.TeamServices{
@@ -71,6 +76,7 @@ func TestUserAPI(t *testing.T) {
 						Owner: user.Email,
 						Name:  "compute-" + getNormalizedNameFromEmail(user.Email),
 					},
+					Events: events,
 				},
 			},
 		})

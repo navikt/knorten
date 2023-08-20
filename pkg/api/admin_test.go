@@ -660,8 +660,16 @@ func TestAdminAPI(t *testing.T) {
 			t.Error(err)
 		}
 
+		events, err = repo.EventsByOwnerGet(ctx, teams[0].ID, 1)
+		if err != nil {
+			t.Error(err)
+		}
+
 		event := events[0]
-		event.Status = newStatus
+		if diff := cmp.Diff(newStatus, event.Status); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+
 		expected, err := createExpectedHTML("admin/event", map[string]any{
 			"event": event,
 		})

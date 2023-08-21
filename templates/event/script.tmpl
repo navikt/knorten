@@ -1,0 +1,22 @@
+{{ define "event/logs/script" }}
+    function toggleShowAll(event) {
+        const tableDivID = event.currentTarget.parentElement.getAttribute("id")
+        const tableDiv = document.getElementById(tableDivID)
+        for (let i = 2; i<tableDiv.children[0].children[1].children.length; i++) {
+            const tableRow = tableDiv.children[0].children[1].children[i]
+            if (tableRow.hasAttribute("hidden")) {
+                tableRow.removeAttribute("hidden")
+            }
+            else {
+                tableRow.setAttribute("hidden", "hidden")
+            }
+        }
+
+        if (tableDiv.children[1].textContent == "Vis mer") {
+            tableDiv.children[1].textContent = "Vis mindre"
+        }
+        else {
+            tableDiv.children[1].textContent = "Vis mer"
+        }
+    }
+{{ end }}

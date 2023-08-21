@@ -180,6 +180,42 @@ func (c *client) setupTeamRoutes() {
 		}
 		ctx.Redirect(http.StatusSeeOther, "/oversikt")
 	})
+
+	c.router.GET("/team/:slug/events", func(ctx *gin.Context) {
+		teamSlug := ctx.Param("slug")
+		team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				ctx.JSON(http.StatusNotFound, map[string]string{
+					"status":  strconv.Itoa(http.StatusNotFound),
+					"message": fmt.Sprintf("team %v does not exist", teamSlug),
+				})
+				return
+			}
+			c.log.WithError(err).Errorf("problem getting team %v", teamSlug)
+			ctx.Redirect(http.StatusSeeOther, "/oversikt")
+			return
+		}
+
+		events, err := c.repo.EventLogsForOwnerGet(ctx, team.ID, -1)
+		if err != nil {
+			return
+		}
+
+		session := sessions.Default(ctx)
+		flashes := session.Flashes()
+		err = session.Save()
+		if err != nil {
+			c.log.WithError(err).Error("problem saving session")
+			return
+		}
+
+		c.htmlResponseWrapper(ctx, http.StatusOK, "team/events", gin.H{
+			"events": events,
+			"slug":   team.Slug,
+			"errors": flashes,
+		})
+	})
 }
 
 func descriptiveMessageForTeamError(fieldError validator.FieldError) string {

@@ -86,10 +86,11 @@ func minimizeHTML(in string) (string, error) {
 
 func createExpectedHTML(t string, values map[string]any) (string, error) {
 	buff := &bytes.Buffer{}
-	tmpl, err := template.ParseGlob("templates/**/*")
+	tmpl, err := template.New("").Funcs(template.FuncMap{"toArray": toArray}).ParseGlob("templates/**/*")
 	if err != nil {
 		return "", err
 	}
+
 	if err := tmpl.ExecuteTemplate(buff, t, values); err != nil {
 		return "", err
 	}

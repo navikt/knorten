@@ -1,0 +1,18 @@
+{{ define "event/logs/row" }}
+    {{ $logIndex := index . 0 }}
+    {{ $log := index . 1 }}
+    {{ if gt $logIndex 1 }}
+    <tr class="navds-table__row navds-table__row--shade-on-hover" hidden>
+    {{ else }}
+    <tr class="navds-table__row navds-table__row--shade-on-hover">
+    {{ end }}
+        <td class="navds-table__header-cell navds-label navds-label--small"
+            style="text-transform: uppercase;">{{ $log.LogType }}</td>
+        <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+            {{ $log.Message }}
+        </td>
+        <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+            {{ $log.CreatedAt.Format "02.01.2006 15:04:05" }}
+        </td>
+    </tr>
+{{ end }}

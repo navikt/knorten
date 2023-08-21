@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 )
@@ -243,6 +244,68 @@ func TestTeamAPI(t *testing.T) {
 			t.Errorf("delete team: no event registered for team %v", existingTeam)
 		}
 	})
+
+	t.Run("get team events", func(t *testing.T) {
+		team, err := prepareTeamEventsTest(ctx)
+		if err != nil {
+			t.Errorf("preparing team events test: %v", err)
+		}
+		t.Cleanup(func() {
+			if err := repo.TeamDelete(ctx, team.ID); err != nil {
+				t.Errorf("deleting team in cleanup: %v", err)
+			}
+		})
+
+		resp, err := server.Client().Get(fmt.Sprintf("%v/team/%v/events", server.URL, team.Slug))
+		if err != nil {
+			t.Error(err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+		}
+
+		if resp.Header.Get("Content-Type") != htmlContentType {
+			t.Errorf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
+		}
+
+		received, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Error(err)
+		}
+
+		receivedMinimized, err := minimizeHTML(string(received))
+		if err != nil {
+			t.Error(err)
+		}
+
+		events, err := repo.EventLogsForOwnerGet(ctx, team.ID, -1)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if len(events) == 0 {
+			t.Errorf("no events stored for team %v", team.ID)
+		}
+
+		expected, err := createExpectedHTML("team/events", map[string]any{
+			"events": events,
+			"slug":   team.Slug,
+		})
+		if err != nil {
+			t.Error(err)
+		}
+
+		expectedMinimized, err := minimizeHTML(expected)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
 }
 
 func getEventForTeam(events []gensql.Event, team string) (gensql.Team, error) {
@@ -269,4 +332,34 @@ func deleteEventCreatedForTeam(events []gensql.Event, team string) bool {
 	}
 
 	return false
+}
+
+func prepareTeamEventsTest(ctx context.Context) (gensql.Team, error) {
+	team := gensql.Team{
+		ID:    "eventtest-team-1234",
+		Slug:  "eventtest-team",
+		Users: []string{},
+		Owner: user.Email,
+	}
+
+	if err := repo.TeamCreate(ctx, team); err != nil {
+		return gensql.Team{}, err
+	}
+
+	// create events
+	if err := repo.RegisterCreateJupyterEvent(ctx, team.ID, chart.JupyterConfigurableValues{}); err != nil {
+		return gensql.Team{}, err
+	}
+	if err := repo.RegisterUpdateJupyterEvent(ctx, team.ID, chart.JupyterConfigurableValues{}); err != nil {
+		return gensql.Team{}, err
+	}
+	if err := repo.RegisterDeleteJupyterEvent(ctx, team.ID); err != nil {
+		return gensql.Team{}, err
+	}
+
+	if err := repo.RegisterCreateAirflowEvent(ctx, team.ID, chart.AirflowConfigurableValues{}); err != nil {
+		return gensql.Team{}, err
+	}
+
+	return team, nil
 }

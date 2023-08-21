@@ -93,7 +93,7 @@ func (r *Repo) ServicesForUser(ctx context.Context, email string) (UserServices,
 			return UserServices{}, err
 		}
 
-		events, err := r.EventLogsForOwnerGet(ctx, team.ID)
+		events, err := r.EventLogsForOwnerGet(ctx, team.ID, 3)
 		if err != nil {
 			return UserServices{}, err
 		}
@@ -124,7 +124,7 @@ func (r *Repo) ServicesForUser(ctx context.Context, email string) (UserServices,
 
 		userServices.Compute = nil
 	} else {
-		events, err := r.EventLogsForOwnerGet(ctx, email)
+		events, err := r.EventLogsForOwnerGet(ctx, email, 3)
 		if err != nil {
 			return UserServices{}, err
 		}
@@ -143,7 +143,7 @@ func (r *Repo) ServicesForUser(ctx context.Context, email string) (UserServices,
 
 		userServices.UserGSM = nil
 	} else {
-		events, err := r.EventLogsForOwnerGet(ctx, email)
+		events, err := r.EventLogsForOwnerGet(ctx, email, 3)
 		if err != nil {
 			return UserServices{}, err
 		}

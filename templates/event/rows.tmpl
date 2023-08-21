@@ -1,0 +1,29 @@
+{{ define "event/logs/rows" }}
+    {{ range . }}
+    <label for="machine_types" class="navds-form-field__label navds-label">Eventlogs for {{ .Type }}</label>
+    <div id="{{ .ID }}" class="flex flex-col gap-2">      
+        <table id="table" class="navds-table navds-table--small">
+            <thead class="navds-table__header">
+            <tr class="navds-table__row">
+                <th class="navds-table__header-cell navds-label navds-label--small">Level</th>
+                <th class="navds-table__header-cell navds-label navds-label--small">Message</th>
+                <th class="navds-table__header-cell navds-label navds-label--small">Created at</th>
+            </tr>
+            </thead>
+            <tbody class="navds-table__body">
+                {{ range $i, $logs := .Logs }}
+                    {{ template "event/logs/row" toArray $i $logs}}
+                {{ end }}
+            </tbody>
+        </table>
+        {{ if and .Logs (gt (len .Logs) 2) }}
+        <button type="button" class="navds-button navds-button--secondary navds-button--small w-fit"
+                    onClick="toggleShowAll(event)">Vis mer</button>
+        {{ end }}
+    </div>
+    <br/>
+    {{ end }}
+    <script>
+        {{ template "event/logs/script" }}
+    </script>
+{{ end }}

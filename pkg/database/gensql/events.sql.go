@@ -7,6 +7,7 @@ package gensql
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 
 	"github.com/google/uuid"
@@ -151,7 +152,7 @@ LIMIT $2
 
 type EventsByOwnerGetParams struct {
 	Owner string
-	Lim   int32
+	Lim   sql.NullInt32
 }
 
 func (q *Queries) EventsByOwnerGet(ctx context.Context, arg EventsByOwnerGetParams) ([]Event, error) {

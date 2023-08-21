@@ -1,6 +1,7 @@
-{{ define "events/row" }}
+{{ define "event/logs/row" }}
+    {{ $logIndex := index . 0 }}
     {{ $log := index . 1 }}
-    {{ if gt (index . 0) 1 }}
+    {{ if gt $logIndex 1 }}
     <tr class="navds-table__row navds-table__row--shade-on-hover" hidden>
     {{ else }}
     <tr class="navds-table__row navds-table__row--shade-on-hover">

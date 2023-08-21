@@ -39,7 +39,7 @@
                 </thead>
                 <tbody class="navds-table__body">
                 {{ range $i, $logs := .logs }}
-                        {{ template "events/row" toArray $i $logs}}
+                        {{ template "event/logs/row" toArray $i $logs}}
                 {{ end }}
                 </tbody>
             </table>
@@ -50,7 +50,7 @@
         </div>
     </article>
     <script>
-        {{ template "events/script" }}
+        {{ template "event/logs/script" }}
     </script>
     {{ template "footer" }}
 {{ end }}

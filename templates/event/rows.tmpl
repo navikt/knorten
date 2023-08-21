@@ -1,4 +1,4 @@
-{{ define "events/rows" }}
+{{ define "event/logs/rows" }}
     {{ range . }}
     <label for="machine_types" class="navds-form-field__label navds-label">Eventlogs for {{ .Type }}</label>
     <div id="{{ .ID }}" class="flex flex-col gap-2">      
@@ -12,7 +12,7 @@
             </thead>
             <tbody class="navds-table__body">
                 {{ range $i, $logs := .Logs }}
-                    {{ template "events/row" toArray $i $logs}}
+                    {{ template "event/logs/row" toArray $i $logs}}
                 {{ end }}
             </tbody>
         </table>
@@ -24,6 +24,6 @@
     <br/>
     {{ end }}
     <script>
-        {{ template "events/script" }}
+        {{ template "event/logs/script" }}
     </script>
 {{ end }}

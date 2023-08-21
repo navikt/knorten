@@ -666,8 +666,8 @@ func TestAdminAPI(t *testing.T) {
 		}
 
 		event := events[0]
-		if diff := cmp.Diff(newStatus, event.Status); diff != "" {
-			t.Errorf("mismatch (-want +got):\n%s", diff)
+		if newStatus != event.Status {
+			t.Errorf("expected status %v, got %s", newStatus, event.Status)
 		}
 
 		expected, err := createExpectedHTML("admin/event", map[string]any{

@@ -6,7 +6,7 @@
             <form action="delete" method="POST">
                 <fieldset>
                     <button type="submit"
-                            onclick="return confirm('Er du sikker på at du vil slette teamet? Dette vil samtidig slette teamets jupyterhub, airflow og compute instanser dersom det er satt opp og vil ikke kunne gjenopprettes senere.')"
+                            onclick="return confirm('Er du sikker på at du vil slette {{ .team.Slug }}? Dette vil samtidig slette teamets Jupyter og Airflow (dersom det er satt opp). Det er ikke mulig å gjenopprette teamet.')"
                             class="navds-button navds-button--danger navds-button--small bg-surface-danger"
                     >
                                 <span class="navds-label">

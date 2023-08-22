@@ -101,8 +101,11 @@ func InstallOrUpgrade(ctx context.Context, dryRun bool, releaseName, namespace, 
 		// Dette hindrer post-upgrade hooken som trigger databasemigrasjonsjobben for airflow og dermed blir alle airflow tjenester låst i wait-for-migrations initcontaineren når
 		// vi bumper til ny versjon av airflow hvis denne krever db migrasjoner. Tenker vi løser dette annerledes uansett når vi går over til pubsub så kommenterer det ut for nå.
 
-		_, err = upgradeClient.Run(releaseName, helmChart, helmChart.Values)
+		_, err = upgradeClient.RunWithContext(ctx, releaseName, helmChart, helmChart.Values)
 		if err != nil {
+			if err := rollback(releaseName, actionConfig); err != nil {
+				return err
+			}
 			return err
 		}
 	} else {
@@ -111,7 +114,7 @@ func InstallOrUpgrade(ctx context.Context, dryRun bool, releaseName, namespace, 
 		installClient.ReleaseName = releaseName
 		installClient.Timeout = timeout
 
-		_, err = installClient.Run(helmChart, helmChart.Values)
+		_, err = installClient.RunWithContext(ctx, helmChart, helmChart.Values)
 		if err != nil {
 			return err
 		}
@@ -144,6 +147,11 @@ func Uninstall(releaseName, namespace string) error {
 	}
 
 	return nil
+}
+
+func rollback(releaseName string, actionConfig *action.Configuration) error {
+	client := action.NewRollback(actionConfig)
+	return client.Run(releaseName)
 }
 
 func (a *Application) chartValues(ctx context.Context) (map[string]any, error) {

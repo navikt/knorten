@@ -281,13 +281,23 @@ func createSQLUser(ctx context.Context, user, password, dbInstance, gcpProject s
 }
 
 func setSQLClientIAMBinding(ctx context.Context, teamID, gcpProject string) error {
+	role := "roles/cloudsql.client"
+	exists, err := roleBindingExistsInGCP(ctx, gcpProject, teamID, role)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		return nil
+	}
+
 	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",
 		"projects",
 		"add-iam-policy-binding",
 		gcpProject,
-		"--role=roles/cloudsql.client",
+		fmt.Sprintf("--role=%v", role),
 		"--condition=None",
 		fmt.Sprintf("--member=serviceAccount:%v@%v.iam.gserviceaccount.com", teamID, gcpProject))
 
@@ -379,7 +389,7 @@ func roleBindingExistsInGCP(ctx context.Context, gcpProject, teamID, role string
 		gcpProject,
 		"--format=get(bindings.role)",
 		"--flatten=bindings[].members",
-		fmt.Sprintf("--filter=bindings.members:%v@%v.iam.gserviceaccount.com AND not deleted", teamID, gcpProject))
+		fmt.Sprintf("--filter=bindings.members:%v@%v.iam.gserviceaccount.com AND bindings.members!~deleted:", teamID, gcpProject))
 
 	stdOut := &bytes.Buffer{}
 	stdErr := &bytes.Buffer{}

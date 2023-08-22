@@ -24,20 +24,11 @@ type TeamServices struct {
 	Events     []EventWithLogs
 }
 
-type ComputeService struct {
-	gensql.ComputeInstance
-	Events []EventWithLogs
-}
-
-type UserGSMService struct {
-	gensql.UserGoogleSecretManager
-	Events []EventWithLogs
-}
-
 type UserServices struct {
-	Services []TeamServices
-	Compute  *ComputeService
-	UserGSM  *UserGSMService
+	Services   []TeamServices
+	Compute    *gensql.ComputeInstance
+	UserGSM    *gensql.UserGoogleSecretManager
+	UserEvents []EventWithLogs
 }
 
 func createIngress(team string, chartType gensql.ChartType) string {
@@ -116,23 +107,15 @@ func (r *Repo) ServicesForUser(ctx context.Context, email string) (UserServices,
 		userServices.Services = append(userServices.Services, teamServices)
 	}
 
+	var hasUserServices bool
 	compute, err := r.querier.ComputeInstanceGet(ctx, email)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			return UserServices{}, err
 		}
-
-		userServices.Compute = nil
 	} else {
-		events, err := r.EventLogsForOwnerGet(ctx, email, 3)
-		if err != nil {
-			return UserServices{}, err
-		}
-
-		userServices.Compute = &ComputeService{
-			ComputeInstance: compute,
-			Events:          events,
-		}
+		userServices.Compute = &compute
+		hasUserServices = true
 	}
 
 	manager, err := r.querier.UserGoogleSecretManagerGet(ctx, email)
@@ -140,18 +123,18 @@ func (r *Repo) ServicesForUser(ctx context.Context, email string) (UserServices,
 		if !errors.Is(err, sql.ErrNoRows) {
 			return UserServices{}, err
 		}
-
-		userServices.UserGSM = nil
 	} else {
+		userServices.UserGSM = &manager
+		hasUserServices = true
+	}
+
+	if hasUserServices {
 		events, err := r.EventLogsForOwnerGet(ctx, email, 3)
 		if err != nil {
 			return UserServices{}, err
 		}
 
-		userServices.UserGSM = &UserGSMService{
-			UserGoogleSecretManager: manager,
-			Events:                  events,
-		}
+		userServices.UserEvents = events
 	}
 
 	return userServices, nil

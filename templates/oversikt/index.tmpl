@@ -8,135 +8,141 @@
     {{ end }}
 
     <article class="bg-white rounded-md p-4">
-        <div class="flex items-center gap-4 pb-4">
-            <h2>Privat compute instance</h2>
-            {{ if .user.Compute }}
-                <a class="navds-button--small navds-button--secondary" href="compute/edit">Rediger</a>
-            {{ end }}
+        <div class="flex flex-col gap-4">
+            <div class="flex items-center gap-4">
+                <h2>Personlige tjenester</h2>
+                {{ if .user.Compute }}
+                    <a class="navds-button--small navds-button--secondary" href="compute/edit">Rediger</a>
+                {{ end }}
+            </div>
+            <p>
+                Google Secret Manager er en tjeneste som gir en sikker og praktisk metode for å lagre API-nøkler,
+                passord,
+                sertifikater og annen sensitiv data.
+                Vi tilbyr personlige hemmeligheter i Google Secret Manager som kun du har tilgang til.
+            </p>
+            <p>
+                Vi tilbyr private virtuelle maskiner gjennom Knorten, disse kjører i GCP prosjektet knada-gcp. Denne
+                maskinen vil ha tilgang til on-premise kilder på lik linje som Notebooks og Airflow som kjører i KNADA.
+            </p>
         </div>
-
-        <p class="flex items-center gap-4 pb-4">Vi har endret det slik at man kun har private Compute instances (også
-            kalt Knorten VM/Kve-em). Dette betyr
-            at man må migrere seg vekk fra team baserte maskiner til hver sin private.
-        </p>
-        <p class="flex items-center gap-4 pb-4">Vi vil ta kontakt med dere som har team-baserte VM-er i løpet av
-            måneden.</p>
-
-        {{ with .user.Compute }}
-            <table class="navds-table navds-table--small">
-                <thead class="navds-table__header">
-                <tr class="navds-table__row">
-                    <th class="navds-table__header-cell navds-label navds-label--small">Instansnavn</th>
-                    <th class="navds-table__header-cell navds-label navds-label--small">Tilkobling/dok</th>
-                </tr>
-                </thead>
-                <tbody class="navds-table__body">
-                <tr class="navds-table__row navds-table__row--shade-on-hover">
-                    <th class="navds-table__header-cell navds-label navds-label--small">
+        <table class="navds-table navds-table--small">
+            <thead class="navds-table__header">
+            <tr class="navds-table__row">
+                <th class="navds-table__header-cell navds-label navds-label--small">Tjeneste</th>
+                <th class="navds-table__header-cell navds-label navds-label--small">Dokumentasjon</th>
+                <th class="navds-table__header-cell navds-label navds-label--small"></th>
+            </tr>
+            </thead>
+            <tbody class="navds-table__body">
+            <tr class="navds-table__row navds-table__row--shade-on-hover">
+                <th class="navds-table__header-cell navds-label navds-label--small">
+                    {{ with .user.Compute }}
                         <a class="navds-link" target="_blank"
                            href="https://console.cloud.google.com/compute/instancesDetail/zones/{{ $.gcpZone }}/instances/{{ .Name }}?project={{ $.gcpProject }}">
                             {{ .Name }}
                         </a>
-                    </th>
-                    <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+                    {{ else }}
+                        Compute instans
+                    {{ end }}
+                </th>
+                <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+                    <a class="navds-link" target="_blank"
+                       href="https://docs.knada.io/analyse/knada-vm/#koble-til-vm-med-ssh">docs.knada.io</a>
+                </td>
+                <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+                    {{ if .user.Compute }}
+                        <a class="navds-link" href="compute/edit">rediger</a>
+                    {{ else }}
+                        <a class="navds-link" href="/compute/new">opprett</a>
+                    {{ end }}
+                </td>
+            </tr>
+            <tr class="navds-table__row navds-table__row--shade-on-hover">
+                <th class="navds-table__header-cell navds-label navds-label--small">
+                    {{ with .user.UserGSM }}
                         <a class="navds-link" target="_blank"
-                           href="https://docs.knada.io/analyse/knada-vm/#koble-til-vm-med-ssh">docs.knada.io</a>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-            <br>
-            {{ template "event/logs/rows" .Events }}
-        {{ else }}
-            <a class="navds-button--small navds-button--secondary" href="compute/new">Opprett</a>
-        {{ end }}
-    </article>
-
-    <article class="bg-white rounded-md p-4">
-        <div class="flex items-center gap-4 pb-4">
-            <h2 id="personlig-secret-manager">Personlig secret manager</h2>
-            {{ with .user.UserGSM }}
-                <form action="/secret/delete" method="POST">
-                    <fieldset class="flex gap-2 items-center">
-                        <button type="submit"
-                                onclick="return confirm('Er du sikker på at du vil slette hemmelighetene dine? Det er ikke mulig å gjenopprette hemmelighetene.')"
-                                class="navds-button navds-button--danger  bg-surface-danger">
-                            <span class="navds-label">Slett secret</span>
-                        </button>
-                    </fieldset>
-                </form>
-            {{ end }}
-        </div>
-
-        <p class="pb-4 flex items-center gap-2">
-            Google Secret Manager er en tjeneste som gir en sikker og praktisk metode for å lagre API-nøkler, passord, sertifikater og annen sensitiv data.
-            Vi tilbyr personlige hemmeligheter i Google Secret Manager som kun du har tilgang til.
-        </p>
-        <p class="pb-4 flex items-center gap-2">
-            Dette kan være nyttig for de av dere som jobber med oppgaver som krever at dere har tilganger som andre på ditt team ikke skal ha.
-            Typisk vil dette være personlige tilganger man har fått til andre tjenester, i motsetning til team-tilganger.
-        </p>
-        <p class="pb-4 flex items-center gap-2">
-            Les mer om dette på <a class="navds-link" href="https://docs.knada.io/analyse/google-secret-manager/">docs.knada.io</a>.
-        </p>
-        {{ if .user.UserGSM }}
-            <p class="pb-4 flex items-center gap-2">
-                <a class="navds-link" target="_blank"
-                   href="https://console.cloud.google.com/security/secret-manager/secret/{{ .user.UserGSM.Name }}/versions?project={{ $.gcpProject }}">
-                    Personlig Secret Manager
-                </a>
-            </p>
-            <br>
-            {{ template "event/logs/rows" .Events }}
-        {{ else }}
-            <form action="/secret/new" method="POST">
-                <fieldset class="flex gap-2 items-center">
-                    <button type="submit"
-                            onclick="return confirm('Er du sikker på at du vil opprette en privat secret?')"
-                            class="navds-button navds-button--danger  bg-surface-danger">
-                        <span class="navds-label">Opprett personlig secret manager</span>
-                    </button>
-                </fieldset>
-            </form>
-        {{ end }}
+                           href="https://console.cloud.google.com/security/secret-manager/secret/{{ .Name }}/versions?project={{ $.gcpProject }}">
+                            Secret Manager
+                        </a>
+                    {{ else }}
+                        Secret Manager
+                    {{ end }}
+                </th>
+                <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+                    <a class="navds-link" href="https://docs.knada.io/analyse/google-secret-manager/">docs.knada.io</a>
+                </td>
+                <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+                    {{ with .user.UserGSM }}
+                        <form action="/secret/delete" method="POST">
+                            <fieldset class="flex gap-2 items-center">
+                                <button type="submit"
+                                        onclick="return confirm('Er du sikker på at du vil slette hemmelighetene dine? Det er ikke mulig å gjenopprette hemmelighetene.')"
+                                        class="navds-link">
+                                    slett
+                                </button>
+                            </fieldset>
+                        </form>
+                    {{ else }}
+                        <form action="/secret/new" method="POST">
+                            <fieldset class="flex gap-2 items-center">
+                                <button type="submit"
+                                        onclick="return confirm('Er du sikker på at du vil opprette en privat secret?')"
+                                        class="navds-link">
+                                    opprett
+                                </button>
+                            </fieldset>
+                        </form>
+                    {{ end }}
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <br>
+        {{ template "event/logs/rows" .user.Compute.Events }}
     </article>
 
     {{ range .user.Services }}
         {{ $teamID := .TeamID }}
         <article class="bg-white rounded-md p-4">
-            <div class="flex items-center gap-4 pb-4">
-                <h2>
-                    {{ .Slug }}
-                </h2>
-                <a class="navds-button--small navds-button--secondary" href="team/{{ .Slug }}/edit">Rediger</a>
+            <div class="flex flex-col gap-4">
+                <div class="flex items-center gap-4">
+                    <h2>
+                        {{ .Slug }}
+                    </h2>
+                    <a class="navds-button--small navds-button--secondary" href="team/{{ .Slug }}/edit">Rediger</a>
+                </div>
             </div>
-            <p class="pb-4 flex items-center gap-2">
-                <a class="navds-link" target="_blank"
-                   href="https://console.cloud.google.com/security/secret-manager/secret/{{ $teamID }}/versions?project={{ $.gcpProject }}">
-                    Secret Manager
-                </a>
-            </p>
             {{ with .Airflow }}
-                <p class="pb-4 flex items-center gap-2">
+                <p>
                     <b>Service account:</b> <code class="text-base p-1 bg-gray-50">
                         {{ $teamID }}@{{ $.gcpProject }}.iam.gserviceaccount.com</code>
                 </p>
             {{ end }}
-            <label for="machine_types" class="navds-form-field__label navds-label">Apper</label>
+            <label for="machine_types" class="navds-form-field__label navds-label">Tjenester</label>
             <table class="navds-table navds-table--small">
                 <thead class="navds-table__header">
                 <tr class="navds-table__row">
-                    <th class="navds-table__header-cell navds-label navds-label--small">App</th>
+                    <th class="navds-table__header-cell navds-label navds-label--small">Tjeneste</th>
                     <th class="navds-table__header-cell navds-label navds-label--small">Adresse</th>
                     <th class="navds-table__header-cell navds-label navds-label--small"></th>
                 </tr>
                 </thead>
                 <tbody class="navds-table__body">
+                <tr class="navds-table__row navds-table__row--shade-on-hover">
+                    <th class="navds-table__header-cell navds-label navds-label--small">Secret Manager</th>
+                    <td class="navds-table__data-cell navds-body-short navds-body-short--small"><a class="navds-link" target="_blank"
+                                                                                                   href="https://console.cloud.google.com/security/secret-manager/secret/{{ $teamID }}/versions?project={{ $.gcpProject }}">
+                            Google Cloud Platform
+                        </a></td>
+                    <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+                    </td>
+                </tr>
                 {{ with .Jupyterhub }}
                     {{ template "oversikt/row" . }}
                 {{ else }}
                     <tr class="navds-table__row navds-table__row--shade-on-hover">
-                        <th class="navds-table__header-cell navds-label navds-label--small">Jupyterhub</th>
+                        <th class="navds-table__header-cell navds-label navds-label--small">Jupyter</th>
                         <td class="navds-table__data-cell navds-body-short navds-body-short--small"></td>
                         <td class="navds-table__data-cell navds-body-short navds-body-short--small">
                             <a class="navds-link" href="/team/{{ .Slug }}/jupyterhub/new">Installer</a>
@@ -161,7 +167,7 @@
             <a class="navds-link" href="team/{{ .Slug }}/events">Se alle events</a>
         </article>
     {{ end }}
-    <article class="bg-white rounded-md p-4">
+    <article class="bg-white rounded-md p-4 flex flex-col gap-4">
         <a class="navds-button navds-button--secondary" href="/team/new">Legg til nytt team</a>
     </article>
     {{ template "footer" }}

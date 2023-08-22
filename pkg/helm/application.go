@@ -71,12 +71,12 @@ func InstallOrUpgrade(ctx context.Context, dryRun bool, releaseName, namespace, 
 		return err
 	}
 
-	var charty *chart.Chart
+	var helmChart *chart.Chart
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
-		charty, err = FetchChart("jupyterhub", "jupyterhub", chartVersion)
+		helmChart, err = FetchChart("jupyterhub", "jupyterhub", chartVersion)
 	case gensql.ChartTypeAirflow:
-		charty, err = FetchChart("apache-airflow", "airflow", chartVersion)
+		helmChart, err = FetchChart("apache-airflow", "airflow", chartVersion)
 	default:
 		return fmt.Errorf("chart type for release %v is not supported", releaseName)
 	}
@@ -84,7 +84,7 @@ func InstallOrUpgrade(ctx context.Context, dryRun bool, releaseName, namespace, 
 		return err
 	}
 
-	charty.Values = teamValues
+	helmChart.Values = teamValues
 
 	exists, err := releaseExists(actionConfig, releaseName)
 	if err != nil {
@@ -101,7 +101,7 @@ func InstallOrUpgrade(ctx context.Context, dryRun bool, releaseName, namespace, 
 		// Dette hindrer post-upgrade hooken som trigger databasemigrasjonsjobben for airflow og dermed blir alle airflow tjenester låst i wait-for-migrations initcontaineren når
 		// vi bumper til ny versjon av airflow hvis denne krever db migrasjoner. Tenker vi løser dette annerledes uansett når vi går over til pubsub så kommenterer det ut for nå.
 
-		_, err = upgradeClient.Run(releaseName, charty, charty.Values)
+		_, err = upgradeClient.Run(releaseName, helmChart, helmChart.Values)
 		if err != nil {
 			return err
 		}
@@ -111,7 +111,7 @@ func InstallOrUpgrade(ctx context.Context, dryRun bool, releaseName, namespace, 
 		installClient.ReleaseName = releaseName
 		installClient.Timeout = timeout
 
-		_, err = installClient.Run(charty, charty.Values)
+		_, err = installClient.Run(helmChart, helmChart.Values)
 		if err != nil {
 			return err
 		}

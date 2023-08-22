@@ -54,7 +54,7 @@
 
     <article class="bg-white rounded-md p-4">
         <div class="flex items-center gap-4 pb-4">
-            <h2>Privat secret</h2>
+            <h2 id="personlig-secret-manager">Personlig secret manager</h2>
             {{ with .user.UserGSM }}
                 <form action="/secret/delete" method="POST">
                     <fieldset class="flex gap-2 items-center">
@@ -68,25 +68,33 @@
             {{ end }}
         </div>
 
+        <p class="pb-4 flex items-center gap-2">
+            Google Secret Manager er en tjeneste som gir en sikker og praktisk metode for å lagre API-nøkler, passord, sertifikater og annen sensitiv data.
+            Vi tilbyr personlige hemmeligheter i Google Secret Manager som kun du har tilgang til.
+        </p>
+        <p class="pb-4 flex items-center gap-2">
+            Dette kan være nyttig for de av dere som jobber med oppgaver som krever at dere har tilganger som andre på ditt team ikke skal ha.
+            Typisk vil dette være personlige tilganger man har fått til andre tjenester, i motsetning til team-tilganger.
+        </p>
+        <p class="pb-4 flex items-center gap-2">
+            Les mer om dette på <a class="navds-link" href="https://docs.knada.io/analyse/google-secret-manager/">docs.knada.io</a>.
+        </p>
         {{ if .user.UserGSM }}
             <p class="pb-4 flex items-center gap-2">
                 <a class="navds-link" target="_blank"
                    href="https://console.cloud.google.com/security/secret-manager/secret/{{ .user.UserGSM.Name }}/versions?project={{ $.gcpProject }}">
-                    Secret Manager
+                    Personlig Secret Manager
                 </a>
             </p>
             <br>
             {{ template "event/logs/rows" .Events }}
         {{ else }}
-            <p class="flex items-center gap-4 pb-4">Vi tilbyr nå private secret per bruker, denne lar deg ha
-                hemmeligheter i Google Secret Manager som resten av teamet ditt ikke har tilgang til.
-            </p>
             <form action="/secret/new" method="POST">
                 <fieldset class="flex gap-2 items-center">
                     <button type="submit"
                             onclick="return confirm('Er du sikker på at du vil opprette en privat secret?')"
                             class="navds-button navds-button--danger  bg-surface-danger">
-                        <span class="navds-label">Opprett secret</span>
+                        <span class="navds-label">Opprett personlig secret manager</span>
                     </button>
                 </fieldset>
             </form>

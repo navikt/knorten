@@ -83,7 +83,7 @@
                             {{ end }}
                         </td>
                         <td class="navds-table__data-cell navds-body-short navds-body-short--small">
-                            <form action="/admin/jupyterhub/sync" method="POST">
+                            <form action="/admin/{{ . }}/sync" method="POST">
                                 <input type="hidden" name="team" value="{{ $teamID }}"/>
                                 <button type="submit" class="navds-link"> Resync</button>
                             </form>

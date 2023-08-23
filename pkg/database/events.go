@@ -56,6 +56,16 @@ type EventWithLogs struct {
 	Logs    []gensql.EventLog
 }
 
+type HelmEvent struct {
+	TeamID       string
+	Namespace    string
+	ReleaseName  string
+	ChartType    gensql.ChartType
+	ChartRepo    string
+	ChartName    string
+	ChartVersion string
+}
+
 func (r *Repo) registerEvent(ctx context.Context, eventType EventType, owner string, deadline time.Duration, data any) error {
 	jsonPayload, err := json.Marshal(data)
 	if err != nil {
@@ -128,20 +138,20 @@ func (r *Repo) RegisterDeleteUserGSMEvent(ctx context.Context, owner string) err
 	return r.registerEvent(ctx, EventTypeDeleteUserGSM, owner, 5*time.Minute, nil)
 }
 
-func (r *Repo) RegisterHelmInstallEvent(ctx context.Context, owner string) error {
-	return r.registerEvent(ctx, EventTypeHelmInstall, owner, 30*time.Minute, nil)
+func (r *Repo) RegisterHelmInstallOrUpgradeEvent(ctx context.Context, helmEvent HelmEvent) error {
+	return r.registerEvent(ctx, EventTypeHelmInstall, helmEvent.TeamID, 30*time.Minute, helmEvent)
 }
 
-func (r *Repo) RegisterHelmUpgradeEvent(ctx context.Context, owner string) error {
-	return r.registerEvent(ctx, EventTypeHelmUpgrade, owner, 15*time.Minute, nil)
+func (r *Repo) RegisterHelmUpgradeEvent(ctx context.Context, helmEvent HelmEvent) error {
+	return r.registerEvent(ctx, EventTypeHelmUpgrade, helmEvent.TeamID, 15*time.Minute, helmEvent)
 }
 
-func (r *Repo) RegisterHelmRollbackEvent(ctx context.Context, owner string) error {
-	return r.registerEvent(ctx, EventTypeHelmRollback, owner, 5*time.Minute, nil)
+func (r *Repo) RegisterHelmRollbackEvent(ctx context.Context, helmEvent HelmEvent) error {
+	return r.registerEvent(ctx, EventTypeHelmRollback, helmEvent.TeamID, 5*time.Minute, helmEvent)
 }
 
-func (r *Repo) RegisterHelmUninstallEvent(ctx context.Context, owner string) error {
-	return r.registerEvent(ctx, EventTypeHelmUninstall, owner, 5*time.Minute, nil)
+func (r *Repo) RegisterHelmUninstallEvent(ctx context.Context, helmEvent HelmEvent) error {
+	return r.registerEvent(ctx, EventTypeHelmUninstall, helmEvent.TeamID, 10*time.Minute, helmEvent)
 }
 
 func (r *Repo) EventSetStatus(ctx context.Context, id uuid.UUID, status EventStatus) error {

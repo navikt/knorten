@@ -29,6 +29,9 @@ type Repository interface {
 	EventSetPendingStatus(context.Context, uuid.UUID) error
 	DispatchableEventsGet(context.Context) ([]gensql.Event, error)
 	EventLogCreate(context.Context, uuid.UUID, string, LogType) error
+	RegisterHelmInstallOrUpgradeEvent(ctx context.Context, helmEvent HelmEvent) error
+	RegisterHelmRollbackEvent(ctx context.Context, helmEvent HelmEvent) error
+	RegisterHelmUninstallEvent(ctx context.Context, helmEvent HelmEvent) error
 }
 
 type Repo struct {

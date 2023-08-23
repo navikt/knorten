@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/helm"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/logger"
 	"github.com/nais/knorten/pkg/reflect"
@@ -66,13 +66,6 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfi
 	err = c.repo.HelmChartValuesInsert(ctx, gensql.ChartTypeJupyterhub, chartValues, team.ID)
 	if err != nil {
 		log.WithError(err).Error("inserting helm values to database")
-		return err
-	}
-
-	namespace := k8s.TeamIDToNamespace(team.ID)
-	releaseName := jupyterReleaseName(namespace)
-	if err := helm.InstallOrUpgrade(ctx, c.dryRun, releaseName, namespace, team.ID, "jupyterhub", "jupyterhub", c.chartVersionJupyter, gensql.ChartTypeJupyterhub, c.repo); err != nil {
-		log.WithError(err).Error("helm install/upgrade failed")
 		return err
 	}
 
@@ -137,12 +130,18 @@ func (c Client) deleteJupyter(ctx context.Context, teamID string, log logger.Log
 		return nil
 	}
 
-	namespace := k8s.TeamIDToNamespace(teamID)
-	releaseName := jupyterReleaseName(namespace)
-	if err := helm.Uninstall(releaseName, namespace); err != nil {
-		log.WithError(err).Error("helm uninstall failed")
-		return err
-	}
-
 	return nil
+}
+
+func (c Client) createJupyterHelmEvent(teamID string, chartType gensql.ChartType) database.HelmEvent {
+	namespace := k8s.TeamIDToNamespace(teamID)
+	return database.HelmEvent{
+		TeamID:       teamID,
+		Namespace:    namespace,
+		ReleaseName:  jupyterReleaseName(namespace),
+		ChartType:    chartType,
+		ChartRepo:    "jupyter",
+		ChartName:    "jupyter",
+		ChartVersion: c.chartVersionJupyter,
+	}
 }

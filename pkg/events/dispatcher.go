@@ -24,6 +24,7 @@ type EventHandler struct {
 	teamClient  teamClient
 	userClient  userClient
 	chartClient chartClient
+	helmClient  helm.Client
 }
 
 type workerFunc func(context.Context, gensql.Event, logger.Logger) error
@@ -66,8 +67,11 @@ func (e EventHandler) distributeWork(eventType database.EventType) workerFunc {
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			return e.processWork(event, logger, nil)
 		}
-	case database.EventTypeHelmRollback:
-		var values helm.HelmData
+	case database.EventTypeHelmInstall,
+		database.EventTypeHelmUpgrade,
+		database.EventTypeHelmRollback,
+		database.EventTypeHelmUninstall:
+		var values database.HelmEvent
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			return e.processWork(event, logger, &values)
 		}
@@ -117,10 +121,19 @@ func (e EventHandler) processWork(event gensql.Event, logger logger.Logger, form
 		retry = e.chartClient.DeleteJupyter(e.context, event.Owner, logger)
 	case database.EventTypeHelmInstall,
 		database.EventTypeHelmUpgrade:
-		go e.helmClient.HelmOperationStatus(e.context, event.Owner)
-		retry = e.helmClient.InstallOrUpgrade(e.context, *form.(*helm.HelmData), logger)
+		helmEvent := *form.(*database.HelmEvent)
+		go e.helmClient.HelmOperationStatus(e.context, helmEvent, logger)
+		if err := e.helmClient.InstallOrUpgrade(e.context, helmEvent, logger); err != nil {
+			logger.WithError(err).Error("helm install or upgrade failed")
+			if err := e.repo.EventSetStatus(e.context, event.ID, database.EventStatusFailed); err != nil {
+				logger.WithError(err).Error("setting event status to failed")
+			}
+			return nil
+		}
 	case database.EventTypeHelmRollback:
-		retry = e.helmClient.Rollback(e.context, *form.(*helm.HelmData), logger)
+		retry = e.helmClient.Rollback(e.context, *form.(*database.HelmEvent), logger)
+	case database.EventTypeHelmUninstall:
+		retry = e.helmClient.Uninstall(e.context, *form.(*database.HelmEvent), logger)
 	}
 
 	if retry {
@@ -130,7 +143,6 @@ func (e EventHandler) processWork(event gensql.Event, logger logger.Logger, form
 	return e.repo.EventSetStatus(e.context, event.ID, database.EventStatusCompleted)
 }
 
-// if ctx.Done() {h.repo.RegisterEventHelmRollback}
 func NewHandler(ctx context.Context, repo *database.Repo, azureClient *auth.Azure, gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion string, dryRun, inCluster bool, log *logrus.Entry) (EventHandler, error) {
 	teamClient, err := team.NewClient(repo, gcpProject, gcpRegion, dryRun, inCluster)
 	if err != nil {
@@ -149,6 +161,7 @@ func NewHandler(ctx context.Context, repo *database.Repo, azureClient *auth.Azur
 		teamClient:  teamClient,
 		userClient:  user.NewClient(repo, gcpProject, gcpRegion, gcpZone, dryRun),
 		chartClient: chartClient,
+		helmClient:  helm.NewClient(dryRun, repo),
 	}, nil
 }
 

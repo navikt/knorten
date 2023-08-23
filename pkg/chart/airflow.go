@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/helm"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/logger"
 	"github.com/nais/knorten/pkg/reflect"
@@ -147,11 +147,6 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 		return err
 	}
 
-	if err := helm.InstallOrUpgrade(ctx, c.dryRun, string(gensql.ChartTypeAirflow), namespace, team.ID, "airflow", "apache-airflow", c.chartVersionAirflow, gensql.ChartTypeAirflow, c.repo); err != nil {
-		log.WithError(err).Error("helm install/upgrade failed")
-		return err
-	}
-
 	return nil
 }
 
@@ -166,11 +161,6 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string, log logger.Log
 	}
 
 	namespace := k8s.TeamIDToNamespace(teamID)
-
-	if err := helm.Uninstall(string(gensql.ChartTypeAirflow), namespace); err != nil {
-		log.WithError(err).Error("helm uninstall failed")
-		return err
-	}
 
 	if err := c.deleteCloudSQLProxyFromKubernetes(ctx, namespace); err != nil {
 		log.WithError(err).Error("delete cloud sql proxy from Kubernetes")
@@ -409,4 +399,16 @@ func (c Client) getOrGeneratePassword(ctx context.Context, teamID, key string, g
 	}
 
 	return "", fmt.Errorf("a %v exisits for %v, but it's empty or doesn't belong to Airflow", key, teamID)
+}
+
+func (c Client) createAirflowHelmEvent(teamID string, chartType gensql.ChartType) database.HelmEvent {
+	return database.HelmEvent{
+		TeamID:       teamID,
+		Namespace:    k8s.TeamIDToNamespace(teamID),
+		ReleaseName:  string(chartType),
+		ChartType:    chartType,
+		ChartRepo:    "apache-airflow",
+		ChartName:    "airflow",
+		ChartVersion: c.chartVersionAirflow,
+	}
 }

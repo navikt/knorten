@@ -25,98 +25,92 @@ const (
 	timeout = 30 * time.Minute
 )
 
-type Helm struct {
-	dryRun bool
-	repo   *database.Repo
+type Client struct {
+	dryRun       bool
+	repo         *database.Repo
+	chartRepo    string
+	chartName    string
+	chartVersion string
 }
 
-type HelmData struct {
-	TeamID       string
-	ReleaseName  string
-	ChartName    string
-	ChartVersion string
-	ChartType    string
-	ChartRepo    string
-}
-
-func NewClient(dryRun bool, repo *database.Repo) *Helm {
-	return &Helm{
+func NewClient(dryRun bool, repo *database.Repo) Client {
+	return Client{
 		dryRun: dryRun,
 		repo:   repo,
 	}
 }
 
-func (h *Helm) InstallOrUpgrade(ctx context.Context, helmData *HelmData, logger *logger.Logger) error {
-	teamValues, err := h.chartValues(ctx, helmData)
+func (c Client) InstallOrUpgrade(ctx context.Context, helmEvent database.HelmEvent, logger logger.Logger) error {
+	teamValues, err := c.chartValues(ctx, helmEvent)
 	if err != nil {
+		logger.WithError(err).Error("getting chart values")
 		return err
 	}
 
-	if h.dryRun {
+	if c.dryRun {
 		out, err := yaml.Marshal(teamValues)
 		if err != nil {
+			logger.WithError(err).Error("marshalling team values")
 			return err
 		}
 
-		if err = os.WriteFile(fmt.Sprintf("charts/%v-%v.yaml", chartType, time.Now().Format("2006.01.02-15:04")), out, 0o644); err != nil {
+		if err = os.WriteFile(fmt.Sprintf("charts/%v-%v.yaml", helmEvent.ChartType, time.Now().Format("2006.01.02-15:04")), out, 0o644); err != nil {
+			logger.WithError(err).Error("writing values to file")
 			return err
 		}
 
-		return nil
+		return err
 	}
 
 	settings := cli.New()
-	settings.SetNamespace(namespace)
+	settings.SetNamespace(helmEvent.Namespace)
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "secret", log.Printf); err != nil {
+		logger.WithError(err).Error("action config init")
 		return err
 	}
 
 	var helmChart *chart.Chart
-	switch chartType {
+	switch helmEvent.ChartType {
 	case gensql.ChartTypeJupyterhub:
-		helmChart, err = FetchChart("jupyterhub", "jupyterhub", chartVersion)
+		helmChart, err = FetchChart("jupyterhub", "jupyterhub", c.chartVersion)
 	case gensql.ChartTypeAirflow:
-		helmChart, err = FetchChart("apache-airflow", "airflow", chartVersion)
+		helmChart, err = FetchChart("apache-airflow", "airflow", c.chartVersion)
 	default:
-		return fmt.Errorf("chart type for release %v is not supported", releaseName)
+		logger.Errorf("chart type %v for release %v is not supported", helmEvent.ChartType, helmEvent.ReleaseName)
+		return err
 	}
 	if err != nil {
-		return err
+		logger.WithError(err).Error("fetching chart type")
 	}
 
 	helmChart.Values = teamValues
 
-	exists, err := releaseExists(actionConfig, releaseName)
+	exists, err := releaseExists(actionConfig, helmEvent.ReleaseName)
 	if err != nil {
+		logger.WithError(err).Error("checking if release exists")
 		return err
 	}
 
 	if exists {
 		upgradeClient := action.NewUpgrade(actionConfig)
-		upgradeClient.Namespace = namespace
+		upgradeClient.Namespace = helmEvent.Namespace
 		upgradeClient.Timeout = timeout
 
-		// upgradeClient.Atomic = true
-		// Fra doc: The --wait flag will be set automatically if --atomic is used.
-		// Dette hindrer post-upgrade hooken som trigger databasemigrasjonsjobben for airflow og dermed blir alle airflow tjenester låst i wait-for-migrations initcontaineren når
-		// vi bumper til ny versjon av airflow hvis denne krever db migrasjoner. Tenker vi løser dette annerledes uansett når vi går over til pubsub så kommenterer det ut for nå.
-
-		_, err = upgradeClient.RunWithContext(ctx, releaseName, helmChart, helmChart.Values)
+		_, err = upgradeClient.RunWithContext(ctx, helmEvent.ReleaseName, helmChart, helmChart.Values)
 		if err != nil {
-			if err := h.repo.RegisterHelmRollbackEvent(ctx, helmData.TeamID); err != nil {
-				return err
-			}
+			logger.WithError(err).Error("helm upgrade")
 			return err
 		}
 	} else {
 		installClient := action.NewInstall(actionConfig)
-		installClient.Namespace = namespace
-		installClient.ReleaseName = releaseName
+		installClient.Namespace = helmEvent.Namespace
+		installClient.ReleaseName = helmEvent.ReleaseName
 		installClient.Timeout = timeout
 
 		_, err = installClient.RunWithContext(ctx, helmChart, helmChart.Values)
 		if err != nil {
+			logger.WithError(err).Error("helm install")
 			return err
 		}
 	}
@@ -124,55 +118,72 @@ func (h *Helm) InstallOrUpgrade(ctx context.Context, helmData *HelmData, logger 
 	return nil
 }
 
-func Uninstall(releaseName, namespace string) error {
+func (c Client) Uninstall(ctx context.Context, helmEvent database.HelmEvent, logger logger.Logger) bool {
 	settings := cli.New()
-	settings.SetNamespace(namespace)
+	settings.SetNamespace(helmEvent.Namespace)
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "secret", log.Printf); err != nil {
-		return err
+		logger.WithError(err).Errorf("creating action config for helm uninstall: release %v, team %v", helmEvent.TeamID, helmEvent.TeamID)
+		return true
 	}
 
-	exists, err := releaseExists(actionConfig, releaseName)
+	exists, err := releaseExists(actionConfig, helmEvent.ReleaseName)
 	if err != nil {
-		return err
+		logger.WithError(err).Errorf("checking if release exists for helm uninstall: release %v, team %v", helmEvent.TeamID, helmEvent.TeamID)
+		return true
 	}
 
 	if !exists {
-		return nil
+		return false
 	}
 
 	uninstallClient := action.NewUninstall(actionConfig)
-	_, err = uninstallClient.Run(releaseName)
+	_, err = uninstallClient.Run(helmEvent.ReleaseName)
 	if err != nil {
-		return err
+		logger.WithError(err).Errorf("helm uninstall: release %v, team %v", helmEvent.TeamID, helmEvent.TeamID)
+		return true
 	}
 
-	return nil
+	return false
 }
 
-func Rollback(releaseName string, actionConfig *action.Configuration) error {
+func (c Client) Rollback(ctx context.Context, helmEvent database.HelmEvent, logger logger.Logger) bool {
+	settings := cli.New()
+	settings.SetNamespace(helmEvent.Namespace)
+	actionConfig := new(action.Configuration)
 	client := action.NewRollback(actionConfig)
-	return client.Run(releaseName)
+
+	if err := client.Run(helmEvent.ReleaseName); err != nil {
+		logger.WithError(err).Errorf("rolling back release %v for team %v", helmEvent.ReleaseName, helmEvent.TeamID)
+		return true
+	}
+
+	return false
 }
 
-func (h *Helm) HelmOperationStatus(ctx context.Context, owner string) {
+func (c Client) HelmOperationStatus(ctx context.Context, helmEvent database.HelmEvent, logger logger.Logger) {
+	ticker := time.NewTicker(5 * time.Second)
 	for {
 		select {
+		case <-ticker.C:
 		case <-ctx.Done():
 			if ctx.Err() == context.DeadlineExceeded {
-				h.repo.RegisterHelmRollbackEvent(ctx, owner)
+				if err := c.repo.RegisterHelmRollbackEvent(ctx, helmEvent); err != nil {
+					logger.WithError(err).Errorf("registering rollback event for team %v", helmEvent.TeamID)
+				}
 			}
+			return
 		}
 	}
 }
 
-func (h *Helm) chartValues(ctx context.Context) (map[string]any, error) {
-	helmChart, err := FetchChart(h.chartRepo, h.chartName, h.chartVersion)
+func (c Client) chartValues(ctx context.Context, helmEvent database.HelmEvent) (map[string]any, error) {
+	helmChart, err := FetchChart(helmEvent.ChartRepo, helmEvent.ChartName, helmEvent.ChartVersion)
 	if err != nil {
 		return nil, err
 	}
 
-	err = h.mergeValues(ctx, helmChart.Values)
+	err = c.mergeValues(ctx, helmEvent.ChartType, helmEvent.TeamID, helmChart.Values)
 	if err != nil {
 		return nil, err
 	}
@@ -180,13 +191,13 @@ func (h *Helm) chartValues(ctx context.Context) (map[string]any, error) {
 	return helmChart.Values, nil
 }
 
-func (h *Helm) mergeValues(ctx context.Context, defaultValues map[string]any) error {
-	values, err := h.globalValues(ctx)
+func (c Client) mergeValues(ctx context.Context, chartType gensql.ChartType, teamID string, defaultValues map[string]any) error {
+	values, err := c.globalValues(ctx, chartType)
 	if err != nil {
 		return err
 	}
 
-	err = h.enrichWithTeamValues(ctx, values)
+	err = c.enrichWithTeamValues(ctx, chartType, teamID, values)
 	if err != nil {
 		return err
 	}
@@ -195,8 +206,8 @@ func (h *Helm) mergeValues(ctx context.Context, defaultValues map[string]any) er
 	return nil
 }
 
-func (h *Helm) globalValues(ctx context.Context) (map[string]any, error) {
-	dbValues, err := a.repo.GlobalValuesGet(ctx, a.chartType)
+func (c Client) globalValues(ctx context.Context, chartType gensql.ChartType) (map[string]any, error) {
+	dbValues, err := c.repo.GlobalValuesGet(ctx, chartType)
 	if err != nil {
 		return map[string]any{}, err
 	}
@@ -204,7 +215,7 @@ func (h *Helm) globalValues(ctx context.Context) (map[string]any, error) {
 	values := map[string]any{}
 	for _, v := range dbValues {
 		if v.Encrypted {
-			v.Value, err = a.repo.DecryptValue(v.Value)
+			v.Value, err = c.repo.DecryptValue(v.Value)
 			if err != nil {
 				return nil, err
 			}
@@ -221,8 +232,8 @@ func (h *Helm) globalValues(ctx context.Context) (map[string]any, error) {
 	return values, nil
 }
 
-func (h *Helm) enrichWithTeamValues(ctx context.Context, values map[string]any) error {
-	dbValues, err := a.repo.TeamValuesGet(ctx, a.chartType, a.teamID)
+func (c Client) enrichWithTeamValues(ctx context.Context, chartType gensql.ChartType, teamID string, values map[string]any) error {
+	dbValues, err := c.repo.TeamValuesGet(ctx, chartType, teamID)
 	if err != nil {
 		return err
 	}

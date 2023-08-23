@@ -71,13 +71,11 @@ func TestUserAPI(t *testing.T) {
 						},
 					},
 				},
-				Compute: &database.ComputeService{
-					ComputeInstance: gensql.ComputeInstance{
-						Owner: user.Email,
-						Name:  "compute-" + getNormalizedNameFromEmail(user.Email),
-					},
-					Events: events,
+				Compute: &gensql.ComputeInstance{
+					Owner: user.Email,
+					Name:  "compute-" + getNormalizedNameFromEmail(user.Email),
 				},
+				UserEvents: events,
 			},
 		})
 		if err != nil {

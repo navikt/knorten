@@ -27,11 +27,8 @@ const (
 )
 
 type Client struct {
-	dryRun       bool
-	repo         *database.Repo
-	chartRepo    string
-	chartName    string
-	chartVersion string
+	dryRun bool
+	repo   *database.Repo
 }
 
 func NewClient(dryRun bool, repo *database.Repo) Client {

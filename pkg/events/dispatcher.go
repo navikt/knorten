@@ -24,7 +24,7 @@ type EventHandler struct {
 	teamClient  teamClient
 	userClient  userClient
 	chartClient chartClient
-	helmClient  helm.Client
+	helmClient  helmClient
 }
 
 type workerFunc func(context.Context, gensql.Event, logger.Logger) error

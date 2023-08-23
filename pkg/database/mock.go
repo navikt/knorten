@@ -28,3 +28,15 @@ func (r *RepoMock) DispatchableEventsGet(ctx context.Context) ([]gensql.Event, e
 func (r *RepoMock) EventLogCreate(ctx context.Context, id uuid.UUID, message string, logType LogType) error {
 	return nil
 }
+
+func (r *RepoMock) RegisterHelmInstallOrUpgradeEvent(ctx context.Context, helmEvent HelmEvent) error {
+	return nil
+}
+
+func (r *RepoMock) RegisterHelmRollbackEvent(ctx context.Context, helmEvent HelmEvent) error {
+	return nil
+}
+
+func (r *RepoMock) RegisterHelmUninstallEvent(ctx context.Context, helmEvent HelmEvent) error {
+	return nil
+}

@@ -39,6 +39,7 @@ type airflowForm struct {
 	DagRepo        string `form:"dagrepo" binding:"required,startswith=navikt/,validAirflowRepo"`
 	DagRepoBranch  string `form:"dagrepobranch" binding:"validRepoBranch"`
 	RestrictEgress string `form:"restrictairflowegress"`
+	ApiAccess      string `form:"apiaccess"`
 }
 
 func getChartType(chartType string) gensql.ChartType {
@@ -329,6 +330,7 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 			DagRepo:        form.DagRepo,
 			DagRepoBranch:  dagRepoBranch,
 			RestrictEgress: form.RestrictEgress == "on",
+			ApiAccess:      form.ApiAccess == "on",
 		}
 
 		return c.repo.RegisterCreateAirflowEvent(ctx, team.ID, values)
@@ -377,20 +379,31 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 		}
 	case gensql.ChartTypeAirflow:
 		airflowValues := chartObjects.(*chart.AirflowConfigurableValues)
-		chartTeamValue, err := c.repo.TeamValueGet(ctx, chart.TeamValueKeyRestrictEgress, team.ID)
+		restrictEgressTeamValue, err := c.repo.TeamValueGet(ctx, chart.TeamValueKeyRestrictEgress, team.ID)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return nil, err
 		}
 
 		restrictEgress := ""
-		if chartTeamValue.Value == "true" {
+		if restrictEgressTeamValue.Value == "true" {
 			restrictEgress = "on"
+		}
+
+		apiAccessTeamValue, err := c.repo.TeamValueGet(ctx, chart.TeamValueKeyApiAccess, team.ID)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+
+		apiAccess := ""
+		if apiAccessTeamValue.Value == "true" {
+			apiAccess = "on"
 		}
 
 		form = airflowForm{
 			DagRepo:        airflowValues.DagRepo,
 			DagRepoBranch:  airflowValues.DagRepoBranch,
 			RestrictEgress: restrictEgress,
+			ApiAccess:      apiAccess,
 		}
 	}
 
@@ -454,6 +467,7 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 			DagRepo:        form.DagRepo,
 			DagRepoBranch:  dagRepoBranch,
 			RestrictEgress: form.RestrictEgress == "on",
+			ApiAccess:      form.ApiAccess == "on",
 		}
 
 		return c.repo.RegisterUpdateAirflowEvent(ctx, team.ID, values)

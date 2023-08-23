@@ -27,6 +27,7 @@ const (
 	teamValueKeyFernetKey         = "fernetKey,omit"
 	teamValueKeyWebserverSecret   = "webserverSecretKey,omit"
 	TeamValueKeyRestrictEgress    = "restrictEgress,omit"
+	TeamValueKeyApiAccess         = "apiAccess,omit"
 )
 
 type AirflowConfigurableValues struct {
@@ -34,6 +35,7 @@ type AirflowConfigurableValues struct {
 	DagRepo        string `helm:"webserver.extraContainers.[0].args.[0]"`
 	DagRepoBranch  string `helm:"webserver.extraContainers.[0].args.[1]"`
 	RestrictEgress bool
+	ApiAccess      bool
 }
 
 type AirflowValues struct {
@@ -105,6 +107,11 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, TeamValueKeyRestrictEgress, strconv.FormatBool(values.RestrictEgress), team.ID); err != nil {
 		log.WithError(err).Error("inserting restrict egress team value to database")
+		return err
+	}
+
+	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, TeamValueKeyApiAccess, strconv.FormatBool(values.ApiAccess), team.ID); err != nil {
+		log.WithError(err).Error("inserting api access team value to database")
 		return err
 	}
 
@@ -213,17 +220,29 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 
 		configurableValues.DagRepoBranch = dagRepoBranch.Value
 
-		chartTeamValue, err := c.repo.TeamValueGet(ctx, TeamValueKeyRestrictEgress, team.ID)
+		restrictEgressTeamValue, err := c.repo.TeamValueGet(ctx, TeamValueKeyRestrictEgress, team.ID)
 		if err != nil {
 			return AirflowValues{}, err
 		}
 
-		restrictEgress, err := strconv.ParseBool(chartTeamValue.Value)
+		restrictEgress, err := strconv.ParseBool(restrictEgressTeamValue.Value)
 		if err != nil {
 			return AirflowValues{}, err
 		}
 
 		configurableValues.RestrictEgress = restrictEgress
+
+		apiAccessTeamValue, err := c.repo.TeamValueGet(ctx, TeamValueKeyApiAccess, team.ID)
+		if err != nil {
+			return AirflowValues{}, err
+		}
+
+		apiAccess, err := strconv.ParseBool(apiAccessTeamValue.Value)
+		if err != nil {
+			return AirflowValues{}, err
+		}
+
+		configurableValues.ApiAccess = apiAccess
 	}
 
 	postgresPassword, err := c.getOrGeneratePassword(ctx, team.ID, teamValueKeyDatabasePassword, generatePassword)
@@ -246,7 +265,7 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 		return AirflowValues{}, err
 	}
 
-	webserverEnv, err := c.createAirflowWebServerEnvs(team.Users)
+	webserverEnv, err := c.createAirflowWebServerEnvs(team.Users, configurableValues.ApiAccess)
 	if err != nil {
 		return AirflowValues{}, err
 	}
@@ -277,12 +296,19 @@ type airflowEnv struct {
 	Value string `json:"value"`
 }
 
-func (Client) createAirflowWebServerEnvs(users []string) (string, error) {
+func (Client) createAirflowWebServerEnvs(users []string, apiAccess bool) (string, error) {
 	envs := []airflowEnv{
 		{
 			Name:  "AIRFLOW_USERS",
 			Value: strings.Join(users, ","),
 		},
+	}
+
+	if apiAccess {
+		envs = append(envs, airflowEnv{
+			Name:  "AIRFLOW__API__AUTH_BACKENDS",
+			Value: "airflow.api.auth.backend.basic_auth",
+		})
 	}
 
 	envBytes, err := json.Marshal(envs)

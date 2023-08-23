@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -70,16 +71,6 @@ func TestCharts(t *testing.T) {
 		}
 	})
 
-	type args struct {
-		eventType database.EventType
-		chartType gensql.ChartType
-		values    any
-	}
-	type want struct {
-		values    []gensql.ChartTeamValue
-		numValues int
-	}
-
 	operation := func(ctx context.Context, eventType database.EventType, values any, chartClient *Client) bool {
 		switch eventType {
 		case database.EventTypeCreateJupyter,
@@ -97,10 +88,16 @@ func TestCharts(t *testing.T) {
 		return true
 	}
 
+	type args struct {
+		eventType database.EventType
+		chartType gensql.ChartType
+		values    any
+	}
+
 	teamTests := []struct {
 		name string
 		args args
-		want want
+		want map[string]string
 	}{
 		{
 			name: "Create jupyter chart",
@@ -115,57 +112,23 @@ func TestCharts(t *testing.T) {
 					ImageName:   "ghcr.io/navikt/image",
 					ImageTag:    "v1",
 					CullTimeout: "7200",
-					// AllowList:   []string{"data.nav.no", "pypi.org"},
 				},
 			},
-			want: want{
-				values: []gensql.ChartTeamValue{
-					{
-						Key:   "singleuser.cpu.limit",
-						Value: "1.0",
-					},
-					{
-						Key:   "singleuser.cpu.guarantee",
-						Value: "1.0",
-					},
-					{
-						Key:   "singleuser.memory.limit",
-						Value: "2G",
-					},
-					{
-						Key:   "singleuser.memory.limit",
-						Value: "2G",
-					},
-					{
-						Key:   "hub.config.Authenticator.admin_users",
-						Value: `["d123456", "u654321"]`,
-					},
-					{
-						Key:   "hub.config.Authenticator.allowed_users",
-						Value: `["d123456", "u654321"]`,
-					},
-					{
-						Key:   "ingress.hosts",
-						Value: `["test-team.jupyter.knada.io"]`,
-					},
-					{
-						Key:   "ingress.tls",
-						Value: `[{"hosts":["test-team.jupyter.knada.io"], "secretName": "jupyterhub-certificate"}]`,
-					},
-					{
-						Key:   "hub.config.AzureAdOAuthenticator.oauth_callback_url",
-						Value: "https://test-team.jupyter.knada.io/hub/oauth_callback",
-					},
-					{
-						Key:   "singleuser.extraEnv.KNADA_TEAM_SECRET",
-						Value: `projects/project/secrets/test-team-1234`,
-					},
-					{
-						Key:   "singleuser.profileList",
-						Value: `[{"display_name":"Custom image","description":"Custom image for team test-team-1234","kubespawner_override":{"image":"ghcr.io/navikt/image:v1"}}]`,
-					},
-				},
-				numValues: 14,
+			want: map[string]string{
+				"cull.timeout":                                        "7200",
+				"singleuser.image.name":                               "ghcr.io/navikt/image",
+				"singleuser.image.tag":                                "v1",
+				"singleuser.cpu.limit":                                "1.0",
+				"singleuser.cpu.guarantee":                            "1.0",
+				"singleuser.memory.limit":                             "2G",
+				"singleuser.memory.guarantee":                         "2G",
+				"hub.config.Authenticator.admin_users":                `["d123456", "u654321"]`,
+				"hub.config.Authenticator.allowed_users":              `["d123456", "u654321"]`,
+				"ingress.hosts":                                       `["test-team.jupyter.knada.io"]`,
+				"ingress.tls":                                         `[{"hosts":["test-team.jupyter.knada.io"], "secretName": "jupyterhub-certificate"}]`,
+				"hub.config.AzureAdOAuthenticator.oauth_callback_url": "https://test-team.jupyter.knada.io/hub/oauth_callback",
+				"singleuser.extraEnv.KNADA_TEAM_SECRET":               `projects/project/secrets/test-team-1234`,
+				"singleuser.profileList":                              `[{"display_name":"Custom image","description":"Custom image for team test-team-1234","kubespawner_override":{"image":"ghcr.io/navikt/image:v1"}}]`,
 			},
 		},
 		{
@@ -181,57 +144,23 @@ func TestCharts(t *testing.T) {
 					ImageName:   "ghcr.io/navikt/image",
 					ImageTag:    "v2",
 					CullTimeout: "7200",
-					// AllowList:   []string{"data.nav.no", "pypi.org"},
 				},
 			},
-			want: want{
-				values: []gensql.ChartTeamValue{
-					{
-						Key:   "singleuser.cpu.limit",
-						Value: "1.0",
-					},
-					{
-						Key:   "singleuser.cpu.guarantee",
-						Value: "1.0",
-					},
-					{
-						Key:   "singleuser.memory.limit",
-						Value: "4G",
-					},
-					{
-						Key:   "singleuser.memory.limit",
-						Value: "4G",
-					},
-					{
-						Key:   "hub.config.Authenticator.admin_users",
-						Value: `["d123456"]`,
-					},
-					{
-						Key:   "hub.config.Authenticator.allowed_users",
-						Value: `["d123456"]`,
-					},
-					{
-						Key:   "ingress.hosts",
-						Value: `["test-team.jupyter.knada.io"]`,
-					},
-					{
-						Key:   "ingress.tls",
-						Value: `[{"hosts":["test-team.jupyter.knada.io"], "secretName": "jupyterhub-certificate"}]`,
-					},
-					{
-						Key:   "hub.config.AzureAdOAuthenticator.oauth_callback_url",
-						Value: "https://test-team.jupyter.knada.io/hub/oauth_callback",
-					},
-					{
-						Key:   "singleuser.extraEnv.KNADA_TEAM_SECRET",
-						Value: `projects/project/secrets/test-team-1234`,
-					},
-					{
-						Key:   "singleuser.profileList",
-						Value: `[{"display_name":"Custom image","description":"Custom image for team test-team-1234","kubespawner_override":{"image":"ghcr.io/navikt/image:v2"}}]`,
-					},
-				},
-				numValues: 14,
+			want: map[string]string{
+				"cull.timeout":                                        "7200",
+				"singleuser.image.name":                               "ghcr.io/navikt/image",
+				"singleuser.image.tag":                                "v2",
+				"singleuser.cpu.limit":                                "1.0",
+				"singleuser.cpu.guarantee":                            "1.0",
+				"singleuser.memory.limit":                             "4G",
+				"singleuser.memory.guarantee":                         "4G",
+				"hub.config.Authenticator.admin_users":                `["d123456"]`,
+				"hub.config.Authenticator.allowed_users":              `["d123456"]`,
+				"ingress.hosts":                                       `["test-team.jupyter.knada.io"]`,
+				"ingress.tls":                                         `[{"hosts":["test-team.jupyter.knada.io"], "secretName": "jupyterhub-certificate"}]`,
+				"hub.config.AzureAdOAuthenticator.oauth_callback_url": "https://test-team.jupyter.knada.io/hub/oauth_callback",
+				"singleuser.extraEnv.KNADA_TEAM_SECRET":               `projects/project/secrets/test-team-1234`,
+				"singleuser.profileList":                              `[{"display_name":"Custom image","description":"Custom image for team test-team-1234","kubespawner_override":{"image":"ghcr.io/navikt/image:v2"}}]`,
 			},
 		},
 		{
@@ -243,10 +172,7 @@ func TestCharts(t *testing.T) {
 					TeamID: team.ID,
 				},
 			},
-			want: want{
-				values:    []gensql.ChartTeamValue{},
-				numValues: 0,
-			},
+			want: map[string]string{},
 		},
 		{
 			name: "Create airflow chart",
@@ -259,58 +185,20 @@ func TestCharts(t *testing.T) {
 					DagRepoBranch: "main",
 				},
 			},
-			want: want{
-				values: []gensql.ChartTeamValue{
-					{
-						Key:   "webserver.extraContainers.[0].args.[0]",
-						Value: "navikt/my-dags",
-					},
-					{
-						Key:   "webserver.extraContainers.[0].args.[1]",
-						Value: "main",
-					},
-					{
-						Key:   "scheduler.extraInitContainers.[0].args.[0]",
-						Value: "navikt/my-dags",
-					},
-					{
-						Key:   "scheduler.extraInitContainers.[0].args.[1]",
-						Value: "main",
-					},
-					{
-						Key:   "scheduler.extraContainers.[0].args.[0]",
-						Value: "navikt/my-dags",
-					},
-					{
-						Key:   "scheduler.extraContainers.[0].args.[1]",
-						Value: "main",
-					},
-					{
-						Key:   "workers.extraInitContainers.[0].args.[0]",
-						Value: "navikt/my-dags",
-					},
-					{
-						Key:   "workers.extraInitContainers.[0].args.[1]",
-						Value: "main",
-					},
-					{
-						Key:   "webserver.serviceAccount.name",
-						Value: "test-team-1234",
-					},
-					{
-						Key:   "workers.serviceAccount.name",
-						Value: "test-team-1234",
-					},
-					{
-						Key:   "env",
-						Value: `[{"name":"KNADA_TEAM_SECRET","value":"projects/project/secrets/test-team-1234"},{"name":"TEAM","value":"test-team-1234"},{"name":"NAMESPACE","value":"team-test-team-1234"},{"name":"AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER","value":"gs://airflow-logs-test-team-1234"},{"name":"AIRFLOW__LOGGING__REMOTE_LOGGING","value":"True"}]`,
-					},
-					{
-						Key:   "ingress.web.hosts",
-						Value: `[{"name":"test-team.airflow.knada.io","tls":{"enabled":true,"secretName":"airflow-certificate"}}]`,
-					},
-				},
-				numValues: 17,
+			want: map[string]string{
+				"webserver.env":                              `[{"name":"AIRFLOW_USERS","value":"dummy@nav.no,user.one@nav.no"}]`,
+				"webserver.extraContainers.[0].args.[0]":     "navikt/my-dags",
+				"webserver.extraContainers.[0].args.[1]":     "main",
+				"scheduler.extraInitContainers.[0].args.[0]": "navikt/my-dags",
+				"scheduler.extraInitContainers.[0].args.[1]": "main",
+				"scheduler.extraContainers.[0].args.[0]":     "navikt/my-dags",
+				"scheduler.extraContainers.[0].args.[1]":     "main",
+				"workers.extraInitContainers.[0].args.[0]":   "navikt/my-dags",
+				"workers.extraInitContainers.[0].args.[1]":   "main",
+				"webserver.serviceAccount.name":              "test-team-1234",
+				"workers.serviceAccount.name":                "test-team-1234",
+				"env":                                        `[{"name":"KNADA_TEAM_SECRET","value":"projects/project/secrets/test-team-1234"},{"name":"TEAM","value":"test-team-1234"},{"name":"NAMESPACE","value":"team-test-team-1234"},{"name":"AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER","value":"gs://airflow-logs-test-team-1234"},{"name":"AIRFLOW__LOGGING__REMOTE_LOGGING","value":"True"}]`,
+				"ingress.web.hosts":                          `[{"name":"test-team.airflow.knada.io","tls":{"enabled":true,"secretName":"airflow-certificate"}}]`,
 			},
 		},
 		{
@@ -324,42 +212,20 @@ func TestCharts(t *testing.T) {
 					DagRepoBranch: "master",
 				},
 			},
-			want: want{
-				values: []gensql.ChartTeamValue{
-					{
-						Key:   "webserver.extraContainers.[0].args.[0]",
-						Value: "navikt/other-dags",
-					},
-					{
-						Key:   "webserver.extraContainers.[0].args.[1]",
-						Value: "master",
-					},
-					{
-						Key:   "scheduler.extraInitContainers.[0].args.[0]",
-						Value: "navikt/other-dags",
-					},
-					{
-						Key:   "scheduler.extraInitContainers.[0].args.[1]",
-						Value: "master",
-					},
-					{
-						Key:   "scheduler.extraContainers.[0].args.[0]",
-						Value: "navikt/other-dags",
-					},
-					{
-						Key:   "scheduler.extraContainers.[0].args.[1]",
-						Value: "master",
-					},
-					{
-						Key:   "workers.extraInitContainers.[0].args.[0]",
-						Value: "navikt/other-dags",
-					},
-					{
-						Key:   "workers.extraInitContainers.[0].args.[1]",
-						Value: "master",
-					},
-				},
-				numValues: 17,
+			want: map[string]string{
+				"workers.serviceAccount.name":                "test-team-1234",
+				"webserver.serviceAccount.name":              "test-team-1234",
+				"env":                                        `[{"name":"KNADA_TEAM_SECRET","value":"projects/project/secrets/test-team-1234"},{"name":"TEAM","value":"test-team-1234"},{"name":"NAMESPACE","value":"team-test-team-1234"},{"name":"AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER","value":"gs://airflow-logs-test-team-1234"},{"name":"AIRFLOW__LOGGING__REMOTE_LOGGING","value":"True"}]`,
+				"webserver.env":                              `[{"name":"AIRFLOW_USERS","value":"dummy@nav.no,user.one@nav.no"}]`,
+				"ingress.web.hosts":                          `[{"name":"test-team.airflow.knada.io","tls":{"enabled":true,"secretName":"airflow-certificate"}}]`,
+				"webserver.extraContainers.[0].args.[0]":     "navikt/other-dags",
+				"webserver.extraContainers.[0].args.[1]":     "master",
+				"scheduler.extraInitContainers.[0].args.[0]": "navikt/other-dags",
+				"scheduler.extraInitContainers.[0].args.[1]": "master",
+				"scheduler.extraContainers.[0].args.[0]":     "navikt/other-dags",
+				"scheduler.extraContainers.[0].args.[1]":     "master",
+				"workers.extraInitContainers.[0].args.[0]":   "navikt/other-dags",
+				"workers.extraInitContainers.[0].args.[1]":   "master",
 			},
 		},
 		{
@@ -371,10 +237,7 @@ func TestCharts(t *testing.T) {
 					TeamID: team.ID,
 				},
 			},
-			want: want{
-				values:    []gensql.ChartTeamValue{},
-				numValues: 0,
-			},
+			want: map[string]string{},
 		},
 	}
 
@@ -394,19 +257,17 @@ func TestCharts(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if len(teamValues) != tt.want.numValues {
-				t.Errorf("expected %v team values, got %v", tt.want.numValues, len(teamValues))
+			databaseValues := map[string]string{}
+			for _, teamValue := range teamValues {
+				if strings.HasSuffix(teamValue.Key, ",omit") {
+					continue
+				}
+
+				databaseValues[teamValue.Key] = teamValue.Value
 			}
 
-			for _, v := range tt.want.values {
-				dbVal, err := repo.TeamValueGet(ctx, v.Key, team.ID)
-				if err != nil {
-					t.Error(err)
-				}
-
-				if diff := cmp.Diff(dbVal.Value, v.Value); diff != "" {
-					t.Errorf("mismatch (-want +got):\n%s", diff)
-				}
+			if diff := cmp.Diff(tt.want, databaseValues); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

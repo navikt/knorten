@@ -27,6 +27,10 @@ const (
 	EventTypeDeleteCompute EventType = "delete:compute"
 	EventTypeCreateUserGSM EventType = "create:usergsm"
 	EventTypeDeleteUserGSM EventType = "delete:usergsm"
+	EventTypeHelmInstall   EventType = "install:helm"
+	EventTypeHelmUpgrade   EventType = "upgrade:helm"
+	EventTypeHelmRollback  EventType = "rollback:helm"
+	EventTypeHelmUninstall EventType = "uninstall:helm"
 )
 
 type EventStatus string
@@ -122,6 +126,22 @@ func (r *Repo) RegisterCreateUserGSMEvent(ctx context.Context, manager gensql.Us
 
 func (r *Repo) RegisterDeleteUserGSMEvent(ctx context.Context, owner string) error {
 	return r.registerEvent(ctx, EventTypeDeleteUserGSM, owner, 5*time.Minute, nil)
+}
+
+func (r *Repo) RegisterHelmInstallEvent(ctx context.Context, owner string) error {
+	return r.registerEvent(ctx, EventTypeHelmInstall, owner, 30*time.Minute, nil)
+}
+
+func (r *Repo) RegisterHelmUpgradeEvent(ctx context.Context, owner string) error {
+	return r.registerEvent(ctx, EventTypeHelmUpgrade, owner, 15*time.Minute, nil)
+}
+
+func (r *Repo) RegisterHelmRollbackEvent(ctx context.Context, owner string) error {
+	return r.registerEvent(ctx, EventTypeHelmRollback, owner, 5*time.Minute, nil)
+}
+
+func (r *Repo) RegisterHelmUninstallEvent(ctx context.Context, owner string) error {
+	return r.registerEvent(ctx, EventTypeHelmUninstall, owner, 5*time.Minute, nil)
 }
 
 func (r *Repo) EventSetStatus(ctx context.Context, id uuid.UUID, status EventStatus) error {

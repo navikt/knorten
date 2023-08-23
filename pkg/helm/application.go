@@ -18,40 +18,41 @@ import (
 
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/logger"
 )
 
 const (
 	timeout = 30 * time.Minute
 )
 
-type Application struct {
-	chartName    string
-	chartRepo    string
-	chartType    gensql.ChartType
-	chartVersion string
-	teamID       string
-	repo         *database.Repo
+type Helm struct {
+	dryRun bool
+	repo   *database.Repo
 }
 
-func newApplication(chartName, chartRepo, teamID, chartVersion string, chartType gensql.ChartType, repo *database.Repo) *Application {
-	return &Application{
-		chartName:    chartName,
-		chartRepo:    chartRepo,
-		chartType:    chartType,
-		chartVersion: chartVersion,
-		teamID:       teamID,
-		repo:         repo,
+type HelmData struct {
+	TeamID       string
+	ReleaseName  string
+	ChartName    string
+	ChartVersion string
+	ChartType    string
+	ChartRepo    string
+}
+
+func NewClient(dryRun bool, repo *database.Repo) *Helm {
+	return &Helm{
+		dryRun: dryRun,
+		repo:   repo,
 	}
 }
 
-func InstallOrUpgrade(ctx context.Context, dryRun bool, releaseName, namespace, teamID, chartName, chartRepo, chartVersion string, chartType gensql.ChartType, repo *database.Repo) error {
-	application := newApplication(chartName, chartRepo, teamID, chartVersion, chartType, repo)
-	teamValues, err := application.chartValues(ctx)
+func (h *Helm) InstallOrUpgrade(ctx context.Context, helmData *HelmData, logger *logger.Logger) error {
+	teamValues, err := h.chartValues(ctx, helmData)
 	if err != nil {
 		return err
 	}
 
-	if dryRun {
+	if h.dryRun {
 		out, err := yaml.Marshal(teamValues)
 		if err != nil {
 			return err
@@ -103,7 +104,7 @@ func InstallOrUpgrade(ctx context.Context, dryRun bool, releaseName, namespace, 
 
 		_, err = upgradeClient.RunWithContext(ctx, releaseName, helmChart, helmChart.Values)
 		if err != nil {
-			if err := rollback(releaseName, actionConfig); err != nil {
+			if err := h.repo.RegisterHelmRollbackEvent(ctx, helmData.TeamID); err != nil {
 				return err
 			}
 			return err
@@ -149,32 +150,43 @@ func Uninstall(releaseName, namespace string) error {
 	return nil
 }
 
-func rollback(releaseName string, actionConfig *action.Configuration) error {
+func Rollback(releaseName string, actionConfig *action.Configuration) error {
 	client := action.NewRollback(actionConfig)
 	return client.Run(releaseName)
 }
 
-func (a *Application) chartValues(ctx context.Context) (map[string]any, error) {
-	charty, err := FetchChart(a.chartRepo, a.chartName, a.chartVersion)
-	if err != nil {
-		return nil, err
+func (h *Helm) HelmOperationStatus(ctx context.Context, owner string) {
+	for {
+		select {
+		case <-ctx.Done():
+			if ctx.Err() == context.DeadlineExceeded {
+				h.repo.RegisterHelmRollbackEvent(ctx, owner)
+			}
+		}
 	}
-
-	err = a.mergeValues(ctx, charty.Values)
-	if err != nil {
-		return nil, err
-	}
-
-	return charty.Values, nil
 }
 
-func (a *Application) mergeValues(ctx context.Context, defaultValues map[string]any) error {
-	values, err := a.globalValues(ctx)
+func (h *Helm) chartValues(ctx context.Context) (map[string]any, error) {
+	helmChart, err := FetchChart(h.chartRepo, h.chartName, h.chartVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	err = h.mergeValues(ctx, helmChart.Values)
+	if err != nil {
+		return nil, err
+	}
+
+	return helmChart.Values, nil
+}
+
+func (h *Helm) mergeValues(ctx context.Context, defaultValues map[string]any) error {
+	values, err := h.globalValues(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = a.enrichWithTeamValues(ctx, values)
+	err = h.enrichWithTeamValues(ctx, values)
 	if err != nil {
 		return err
 	}
@@ -183,7 +195,7 @@ func (a *Application) mergeValues(ctx context.Context, defaultValues map[string]
 	return nil
 }
 
-func (a *Application) globalValues(ctx context.Context) (map[string]any, error) {
+func (h *Helm) globalValues(ctx context.Context) (map[string]any, error) {
 	dbValues, err := a.repo.GlobalValuesGet(ctx, a.chartType)
 	if err != nil {
 		return map[string]any{}, err
@@ -209,7 +221,7 @@ func (a *Application) globalValues(ctx context.Context) (map[string]any, error) 
 	return values, nil
 }
 
-func (a *Application) enrichWithTeamValues(ctx context.Context, values map[string]any) error {
+func (h *Helm) enrichWithTeamValues(ctx context.Context, values map[string]any) error {
 	dbValues, err := a.repo.TeamValuesGet(ctx, a.chartType, a.teamID)
 	if err != nil {
 		return err

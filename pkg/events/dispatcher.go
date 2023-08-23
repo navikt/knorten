@@ -9,6 +9,7 @@ import (
 	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/helm"
 	"github.com/nais/knorten/pkg/leaderelection"
 	"github.com/nais/knorten/pkg/logger"
 	"github.com/nais/knorten/pkg/team"
@@ -65,6 +66,11 @@ func (e EventHandler) distributeWork(eventType database.EventType) workerFunc {
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			return e.processWork(event, logger, nil)
 		}
+	case database.EventTypeHelmRollback:
+		var values helm.HelmData
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
+			return e.processWork(event, logger, &values)
+		}
 	}
 
 	return nil
@@ -109,6 +115,12 @@ func (e EventHandler) processWork(event gensql.Event, logger logger.Logger, form
 		retry = e.chartClient.SyncJupyter(e.context, *form.(*chart.JupyterConfigurableValues), logger)
 	case database.EventTypeDeleteJupyter:
 		retry = e.chartClient.DeleteJupyter(e.context, event.Owner, logger)
+	case database.EventTypeHelmInstall,
+		database.EventTypeHelmUpgrade:
+		go e.helmClient.HelmOperationStatus(e.context, event.Owner)
+		retry = e.helmClient.InstallOrUpgrade(e.context, *form.(*helm.HelmData), logger)
+	case database.EventTypeHelmRollback:
+		retry = e.helmClient.Rollback(e.context, *form.(*helm.HelmData), logger)
 	}
 
 	if retry {
@@ -118,6 +130,7 @@ func (e EventHandler) processWork(event gensql.Event, logger logger.Logger, form
 	return e.repo.EventSetStatus(e.context, event.ID, database.EventStatusCompleted)
 }
 
+// if ctx.Done() {h.repo.RegisterEventHelmRollback}
 func NewHandler(ctx context.Context, repo *database.Repo, azureClient *auth.Azure, gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion string, dryRun, inCluster bool, log *logrus.Entry) (EventHandler, error) {
 	teamClient, err := team.NewClient(repo, gcpProject, gcpRegion, dryRun, inCluster)
 	if err != nil {

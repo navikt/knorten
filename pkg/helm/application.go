@@ -14,6 +14,7 @@ import (
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli"
+	"helm.sh/helm/v3/pkg/release"
 	"k8s.io/utils/strings/slices"
 
 	"github.com/nais/knorten/pkg/database"
@@ -73,9 +74,9 @@ func (c Client) InstallOrUpgrade(ctx context.Context, helmEvent database.HelmEve
 	var helmChart *chart.Chart
 	switch helmEvent.ChartType {
 	case gensql.ChartTypeJupyterhub:
-		helmChart, err = FetchChart("jupyterhub", "jupyterhub", c.chartVersion)
+		helmChart, err = FetchChart("jupyterhub", "jupyterhub", helmEvent.ChartVersion)
 	case gensql.ChartTypeAirflow:
-		helmChart, err = FetchChart("apache-airflow", "airflow", c.chartVersion)
+		helmChart, err = FetchChart("apache-airflow", "airflow", helmEvent.ChartVersion)
 	default:
 		logger.Errorf("chart type %v for release %v is not supported", helmEvent.ChartType, helmEvent.ReleaseName)
 		return err
@@ -147,28 +148,58 @@ func (c Client) Uninstall(ctx context.Context, helmEvent database.HelmEvent, log
 	return false
 }
 
-func (c Client) Rollback(ctx context.Context, helmEvent database.HelmEvent, logger logger.Logger) bool {
+func (c Client) Rollback(ctx context.Context, helmEvent database.HelmEvent, logger logger.Logger) (bool, error) {
 	settings := cli.New()
 	settings.SetNamespace(helmEvent.Namespace)
 	actionConfig := new(action.Configuration)
-	client := action.NewRollback(actionConfig)
-
-	if err := client.Run(helmEvent.ReleaseName); err != nil {
-		logger.WithError(err).Errorf("rolling back release %v for team %v", helmEvent.ReleaseName, helmEvent.TeamID)
-		return true
+	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "secret", log.Printf); err != nil {
+		logger.WithError(err).Error("action config init")
+		return true, nil
 	}
 
-	return false
+	version, err := lastSuccessfulHelmRelease(helmEvent.ReleaseName, actionConfig)
+	if err != nil {
+		logger.WithError(err).Errorf("unable to rollback chart %v for team %v", helmEvent.ChartName, helmEvent.TeamID)
+		return false, err
+	}
+
+	rollbackClient := action.NewRollback(actionConfig)
+	rollbackClient.Version = version
+	if err := rollbackClient.Run(helmEvent.ReleaseName); err != nil {
+		logger.WithError(err).Errorf("rolling back release %v for team %v to version %v", helmEvent.ReleaseName, helmEvent.TeamID, version)
+		return true, nil
+	}
+
+	return false, nil
 }
 
-func (c Client) HelmOperationStatus(ctx context.Context, helmEvent database.HelmEvent, logger logger.Logger) {
+func lastSuccessfulHelmRelease(releaseName string, actionConfig *action.Configuration) (int, error) {
+	historyClient := action.NewHistory(actionConfig)
+
+	releases, err := historyClient.Run(releaseName)
+	if err != nil {
+		return 0, err
+	}
+
+	validStatuses := []string{release.StatusDeployed.String(), release.StatusSuperseded.String()}
+	for i := len(releases) - 1; i >= 0; i-- {
+		if slices.Contains(validStatuses, releases[i].Info.Status.String()) {
+			return releases[i].Version, nil
+		}
+	}
+
+	return 0, fmt.Errorf("no previous successful helm releases for %v", releaseName)
+}
+
+func (c Client) HelmTimeoutWatcher(ctx context.Context, helmEvent database.HelmEvent, logger logger.Logger) {
+	statusCtx := context.Background()
 	ticker := time.NewTicker(5 * time.Second)
 	for {
 		select {
 		case <-ticker.C:
 		case <-ctx.Done():
 			if ctx.Err() == context.DeadlineExceeded {
-				if err := c.repo.RegisterHelmRollbackEvent(ctx, helmEvent); err != nil {
+				if err := c.repo.RegisterHelmRollbackEvent(statusCtx, helmEvent); err != nil {
 					logger.WithError(err).Errorf("registering rollback event for team %v", helmEvent.TeamID)
 				}
 			}

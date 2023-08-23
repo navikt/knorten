@@ -122,16 +122,24 @@ func (e EventHandler) processWork(event gensql.Event, logger logger.Logger, form
 	case database.EventTypeHelmInstall,
 		database.EventTypeHelmUpgrade:
 		helmEvent := *form.(*database.HelmEvent)
-		go e.helmClient.HelmOperationStatus(e.context, helmEvent, logger)
+		go e.helmClient.HelmTimeoutWatcher(e.context, helmEvent, logger)
 		if err := e.helmClient.InstallOrUpgrade(e.context, helmEvent, logger); err != nil {
 			logger.WithError(err).Error("helm install or upgrade failed")
+			if err := e.repo.RegisterHelmRollbackEvent(e.context, helmEvent); err != nil {
+				logger.WithError(err).Error("registering helm rollback event")
+			}
 			if err := e.repo.EventSetStatus(e.context, event.ID, database.EventStatusFailed); err != nil {
 				logger.WithError(err).Error("setting event status to failed")
 			}
 			return nil
 		}
 	case database.EventTypeHelmRollback:
-		retry = e.helmClient.Rollback(e.context, *form.(*database.HelmEvent), logger)
+		retry, err = e.helmClient.Rollback(e.context, *form.(*database.HelmEvent), logger)
+		if err != nil {
+			if err := e.repo.EventSetStatus(e.context, event.ID, database.EventStatusFailed); err != nil {
+				logger.WithError(err).Error("setting event status to failed")
+			}
+		}
 	case database.EventTypeHelmUninstall:
 		retry = e.helmClient.Uninstall(e.context, *form.(*database.HelmEvent), logger)
 	}

@@ -67,8 +67,7 @@ func (e EventHandler) distributeWork(eventType database.EventType) workerFunc {
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			return e.processWork(event, logger, nil)
 		}
-	case database.EventTypeHelmInstall,
-		database.EventTypeHelmUpgrade,
+	case database.EventTypeHelmInstallOrUpgrade,
 		database.EventTypeHelmRollback,
 		database.EventTypeHelmUninstall:
 		var values database.HelmEvent
@@ -119,8 +118,7 @@ func (e EventHandler) processWork(event gensql.Event, logger logger.Logger, form
 		retry = e.chartClient.SyncJupyter(e.context, *form.(*chart.JupyterConfigurableValues), logger)
 	case database.EventTypeDeleteJupyter:
 		retry = e.chartClient.DeleteJupyter(e.context, event.Owner, logger)
-	case database.EventTypeHelmInstall,
-		database.EventTypeHelmUpgrade:
+	case database.EventTypeHelmInstallOrUpgrade:
 		helmEvent := *form.(*database.HelmEvent)
 		go e.helmClient.HelmTimeoutWatcher(e.context, helmEvent, logger)
 		if err := e.helmClient.InstallOrUpgrade(e.context, helmEvent, logger); err != nil {

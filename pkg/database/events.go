@@ -14,23 +14,22 @@ import (
 type EventType string
 
 const (
-	EventTypeCreateTeam    EventType = "create:team"
-	EventTypeUpdateTeam    EventType = "update:team"
-	EventTypeDeleteTeam    EventType = "delete:team"
-	EventTypeCreateJupyter EventType = "create:jupyter"
-	EventTypeUpdateJupyter EventType = "update:jupyter"
-	EventTypeDeleteJupyter EventType = "delete:jupyter"
-	EventTypeCreateAirflow EventType = "create:airflow"
-	EventTypeUpdateAirflow EventType = "update:airflow"
-	EventTypeDeleteAirflow EventType = "delete:airflow"
-	EventTypeCreateCompute EventType = "create:compute"
-	EventTypeDeleteCompute EventType = "delete:compute"
-	EventTypeCreateUserGSM EventType = "create:usergsm"
-	EventTypeDeleteUserGSM EventType = "delete:usergsm"
-	EventTypeHelmInstall   EventType = "install:helm"
-	EventTypeHelmUpgrade   EventType = "upgrade:helm"
-	EventTypeHelmRollback  EventType = "rollback:helm"
-	EventTypeHelmUninstall EventType = "uninstall:helm"
+	EventTypeCreateTeam           EventType = "create:team"
+	EventTypeUpdateTeam           EventType = "update:team"
+	EventTypeDeleteTeam           EventType = "delete:team"
+	EventTypeCreateJupyter        EventType = "create:jupyter"
+	EventTypeUpdateJupyter        EventType = "update:jupyter"
+	EventTypeDeleteJupyter        EventType = "delete:jupyter"
+	EventTypeCreateAirflow        EventType = "create:airflow"
+	EventTypeUpdateAirflow        EventType = "update:airflow"
+	EventTypeDeleteAirflow        EventType = "delete:airflow"
+	EventTypeCreateCompute        EventType = "create:compute"
+	EventTypeDeleteCompute        EventType = "delete:compute"
+	EventTypeCreateUserGSM        EventType = "create:usergsm"
+	EventTypeDeleteUserGSM        EventType = "delete:usergsm"
+	EventTypeHelmInstallOrUpgrade EventType = "installorupgrade:helm"
+	EventTypeHelmRollback         EventType = "rollback:helm"
+	EventTypeHelmUninstall        EventType = "uninstall:helm"
 )
 
 type EventStatus string
@@ -139,11 +138,7 @@ func (r *Repo) RegisterDeleteUserGSMEvent(ctx context.Context, owner string) err
 }
 
 func (r *Repo) RegisterHelmInstallOrUpgradeEvent(ctx context.Context, helmEvent HelmEvent) error {
-	return r.registerEvent(ctx, EventTypeHelmInstall, helmEvent.TeamID, 30*time.Minute, helmEvent)
-}
-
-func (r *Repo) RegisterHelmUpgradeEvent(ctx context.Context, helmEvent HelmEvent) error {
-	return r.registerEvent(ctx, EventTypeHelmUpgrade, helmEvent.TeamID, 15*time.Minute, helmEvent)
+	return r.registerEvent(ctx, EventTypeHelmInstallOrUpgrade, helmEvent.TeamID, 30*time.Minute, helmEvent)
 }
 
 func (r *Repo) RegisterHelmRollbackEvent(ctx context.Context, helmEvent HelmEvent) error {

@@ -141,8 +141,8 @@ func (c Client) createJupyterHelmEvent(ctx context.Context, teamID string, event
 		Namespace:    namespace,
 		ReleaseName:  jupyterReleaseName(namespace),
 		ChartType:    gensql.ChartTypeJupyterhub,
-		ChartRepo:    "jupyter",
-		ChartName:    "jupyter",
+		ChartRepo:    "jupyterhub",
+		ChartName:    "jupyterhub",
 		ChartVersion: c.chartVersionJupyter,
 	}
 

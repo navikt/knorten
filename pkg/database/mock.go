@@ -29,14 +29,14 @@ func (r *RepoMock) EventLogCreate(ctx context.Context, id uuid.UUID, message str
 	return nil
 }
 
-func (r *RepoMock) RegisterHelmInstallOrUpgradeEvent(ctx context.Context, helmEvent HelmEvent) error {
+func (r *RepoMock) RegisterHelmInstallOrUpgradeEvent(ctx context.Context, teamID string, helmEvent any) error {
 	return nil
 }
 
-func (r *RepoMock) RegisterHelmRollbackEvent(ctx context.Context, helmEvent HelmEvent) error {
+func (r *RepoMock) RegisterHelmRollbackEvent(ctx context.Context, helmEvent any) error {
 	return nil
 }
 
-func (r *RepoMock) RegisterHelmUninstallEvent(ctx context.Context, helmEvent HelmEvent) error {
-	return nil
+func (r *RepoMock) RegisterHelmUninstallEvent(ctx context.Context, helmEvent any) bool {
+	return false
 }

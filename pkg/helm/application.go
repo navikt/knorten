@@ -59,7 +59,6 @@ func (c Client) InstallOrUpgrade(ctx context.Context, helmEvent HelmEventData, l
 	}
 	if err != nil {
 		logger.Infof("Installing or upgrading %v failed", helmEvent.ChartType)
-		logger.WithError(err).Error("helm install or upgrade")
 		return err
 	}
 

@@ -23,6 +23,8 @@ Kjør `make local` for å kjøre Knorten uten kobling til noe annet enn Postgres
 
 Har man behov for å teste mot et cluster så kan man bruke `make local-online`, dette kobler deg opp til `nada-dev-db2e`, og et lokalt [Minikube](https://minikube.sigs.k8s.io/) cluster.
 
+Sett opp minikube clusteret med: `minikube start --driver=qemu2 --kubernetes-version=v1.27.4`
+
 Husk å skru på [gcp-auth](https://minikube.sigs.k8s.io/docs/handbook/addons/gcp-auth/) i Minikube.
 
 PS: Hver gang du logger inn med `gcloud auth login --update-adc` må kjøre `minikube addons enable gcp-auth --refresh` for å oppdatere tokenet.

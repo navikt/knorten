@@ -55,16 +55,6 @@ type EventWithLogs struct {
 	Logs    []gensql.EventLog
 }
 
-type HelmEvent struct {
-	TeamID       string
-	Namespace    string
-	ReleaseName  string
-	ChartType    gensql.ChartType
-	ChartRepo    string
-	ChartName    string
-	ChartVersion string
-}
-
 func (r *Repo) registerEvent(ctx context.Context, eventType EventType, owner string, deadline time.Duration, data any) error {
 	jsonPayload, err := json.Marshal(data)
 	if err != nil {
@@ -101,8 +91,8 @@ func (r *Repo) RegisterDeleteComputeEvent(ctx context.Context, email string) err
 	return r.registerEvent(ctx, EventTypeDeleteCompute, email, 5*time.Minute, nil)
 }
 
-func (r *Repo) RegisterCreateComputeEvent(ctx context.Context, instance gensql.ComputeInstance) error {
-	return r.registerEvent(ctx, EventTypeCreateCompute, instance.Owner, 5*time.Minute, instance)
+func (r *Repo) RegisterCreateComputeEvent(ctx context.Context, owner string, values any) error {
+	return r.registerEvent(ctx, EventTypeCreateCompute, owner, 5*time.Minute, values)
 }
 
 func (r *Repo) RegisterCreateAirflowEvent(ctx context.Context, teamID string, values any) error {
@@ -129,24 +119,24 @@ func (r *Repo) RegisterDeleteJupyterEvent(ctx context.Context, teamID string) er
 	return r.registerEvent(ctx, EventTypeDeleteJupyter, teamID, 5*time.Minute, nil)
 }
 
-func (r *Repo) RegisterCreateUserGSMEvent(ctx context.Context, manager gensql.UserGoogleSecretManager) error {
-	return r.registerEvent(ctx, EventTypeCreateUserGSM, manager.Owner, 5*time.Minute, manager)
+func (r *Repo) RegisterCreateUserGSMEvent(ctx context.Context, owner string, values any) error {
+	return r.registerEvent(ctx, EventTypeCreateUserGSM, owner, 5*time.Minute, values)
 }
 
 func (r *Repo) RegisterDeleteUserGSMEvent(ctx context.Context, owner string) error {
 	return r.registerEvent(ctx, EventTypeDeleteUserGSM, owner, 5*time.Minute, nil)
 }
 
-func (r *Repo) RegisterHelmInstallOrUpgradeEvent(ctx context.Context, helmEvent HelmEvent) error {
-	return r.registerEvent(ctx, EventTypeHelmInstallOrUpgrade, helmEvent.TeamID, 30*time.Minute, helmEvent)
+func (r *Repo) RegisterHelmInstallOrUpgradeEvent(ctx context.Context, teamID string, values any) error {
+	return r.registerEvent(ctx, EventTypeHelmInstallOrUpgrade, teamID, 30*time.Minute, values)
 }
 
-func (r *Repo) RegisterHelmRollbackEvent(ctx context.Context, helmEvent HelmEvent) error {
-	return r.registerEvent(ctx, EventTypeHelmRollback, helmEvent.TeamID, 5*time.Minute, helmEvent)
+func (r *Repo) RegisterHelmRollbackEvent(ctx context.Context, teamID string, values any) error {
+	return r.registerEvent(ctx, EventTypeHelmRollback, teamID, 5*time.Minute, values)
 }
 
-func (r *Repo) RegisterHelmUninstallEvent(ctx context.Context, helmEvent HelmEvent) error {
-	return r.registerEvent(ctx, EventTypeHelmUninstall, helmEvent.TeamID, 10*time.Minute, helmEvent)
+func (r *Repo) RegisterHelmUninstallEvent(ctx context.Context, teamID string, values any) error {
+	return r.registerEvent(ctx, EventTypeHelmUninstall, teamID, 10*time.Minute, values)
 }
 
 func (r *Repo) EventSetStatus(ctx context.Context, id uuid.UUID, status EventStatus) error {

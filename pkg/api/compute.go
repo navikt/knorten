@@ -90,5 +90,5 @@ func (c *client) createComputeInstance(ctx *gin.Context) error {
 		Name:  "compute-" + getNormalizedNameFromEmail(user.Email),
 	}
 
-	return c.repo.RegisterCreateComputeEvent(ctx, instance)
+	return c.repo.RegisterCreateComputeEvent(ctx, instance.Owner, instance)
 }

@@ -122,7 +122,7 @@ func (c Client) installOrUpgrade(ctx context.Context, helmEvent HelmEventData, l
 		_, err = installClient.RunWithContext(ctx, helmChart, helmChart.Values)
 		if err != nil {
 			logger.WithError(err).Error("helm install")
-			return true, err
+			return false, err
 		}
 	}
 

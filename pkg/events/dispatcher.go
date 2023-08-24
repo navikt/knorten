@@ -70,7 +70,7 @@ func (e EventHandler) distributeWork(eventType database.EventType) workerFunc {
 	case database.EventTypeHelmInstallOrUpgrade,
 		database.EventTypeHelmRollback,
 		database.EventTypeHelmUninstall:
-		var values database.HelmEvent
+		var values helm.HelmEventData
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			return e.processWork(event, logger, &values)
 		}
@@ -87,12 +87,12 @@ func (e EventHandler) processWork(event gensql.Event, logger logger.Logger, form
 		return err
 	}
 
-	err := e.repo.EventSetStatus(e.context, event.ID, database.EventStatusProcessing)
-	if err != nil {
+	if err := e.repo.EventSetStatus(e.context, event.ID, database.EventStatusProcessing); err != nil {
 		return err
 	}
 
 	var retry bool
+	var err error
 	switch database.EventType(event.Type) {
 	case database.EventTypeCreateTeam:
 		retry = e.teamClient.Create(e.context, *form.(*gensql.Team), logger)
@@ -119,27 +119,15 @@ func (e EventHandler) processWork(event gensql.Event, logger logger.Logger, form
 	case database.EventTypeDeleteJupyter:
 		retry = e.chartClient.DeleteJupyter(e.context, event.Owner, logger)
 	case database.EventTypeHelmInstallOrUpgrade:
-		helmEvent := *form.(*database.HelmEvent)
-		go e.helmClient.HelmTimeoutWatcher(e.context, helmEvent, logger)
-		if err := e.helmClient.InstallOrUpgrade(e.context, helmEvent, logger); err != nil {
-			logger.WithError(err).Error("helm install or upgrade failed")
-			if err := e.repo.RegisterHelmRollbackEvent(e.context, helmEvent); err != nil {
-				logger.WithError(err).Error("registering helm rollback event")
-			}
-			if err := e.repo.EventSetStatus(e.context, event.ID, database.EventStatusFailed); err != nil {
-				logger.WithError(err).Error("setting event status to failed")
-			}
-			return nil
-		}
+		err = e.helmClient.InstallOrUpgrade(e.context, *form.(*helm.HelmEventData), logger)
 	case database.EventTypeHelmRollback:
-		retry, err = e.helmClient.Rollback(e.context, *form.(*database.HelmEvent), logger)
-		if err != nil {
-			if err := e.repo.EventSetStatus(e.context, event.ID, database.EventStatusFailed); err != nil {
-				logger.WithError(err).Error("setting event status to failed")
-			}
-		}
+		retry, err = e.helmClient.Rollback(e.context, *form.(*helm.HelmEventData), logger)
 	case database.EventTypeHelmUninstall:
-		retry = e.helmClient.Uninstall(e.context, *form.(*database.HelmEvent), logger)
+		retry = e.helmClient.Uninstall(e.context, *form.(*helm.HelmEventData), logger)
+	}
+
+	if err != nil {
+		return e.repo.EventSetStatus(e.context, event.ID, database.EventStatusFailed)
 	}
 
 	if retry {

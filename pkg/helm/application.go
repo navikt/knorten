@@ -26,6 +26,16 @@ const (
 	timeout = 30 * time.Minute
 )
 
+type HelmEventData struct {
+	TeamID       string
+	Namespace    string
+	ReleaseName  string
+	ChartType    gensql.ChartType
+	ChartRepo    string
+	ChartName    string
+	ChartVersion string
+}
+
 type Client struct {
 	dryRun bool
 	repo   *database.Repo
@@ -38,26 +48,45 @@ func NewClient(dryRun bool, repo *database.Repo) Client {
 	}
 }
 
-func (c Client) InstallOrUpgrade(ctx context.Context, helmEvent database.HelmEvent, logger logger.Logger) error {
-	teamValues, err := c.chartValues(ctx, helmEvent)
+func (c Client) InstallOrUpgrade(ctx context.Context, helmEvent HelmEventData, logger logger.Logger) error {
+	logger.Infof("Installing or upgrading %v", helmEvent.ChartType)
+	go c.HelmTimeoutWatcher(ctx, helmEvent, logger)
+	rollback, err := c.installOrUpgrade(ctx, helmEvent, logger)
+	if rollback {
+		if err := c.repo.RegisterHelmRollbackEvent(ctx, helmEvent.TeamID, helmEvent); err != nil {
+			logger.WithError(err).Error("registering helm rollback event")
+		}
+	}
 	if err != nil {
-		logger.WithError(err).Error("getting chart values")
+		logger.Infof("Installing or upgrading %v failed", helmEvent.ChartType)
+		logger.WithError(err).Error("helm install or upgrade")
 		return err
 	}
 
+	logger.Infof("Successfully installed or upgraded %v", helmEvent.ChartType)
+	return nil
+}
+
+func (c Client) installOrUpgrade(ctx context.Context, helmEvent HelmEventData, logger logger.Logger) (bool, error) {
+	helmChart, err := c.createChartWithValues(ctx, helmEvent)
+	if err != nil {
+		logger.WithError(err).Error("getting chart values")
+		return false, err
+	}
+
 	if c.dryRun {
-		out, err := yaml.Marshal(teamValues)
+		out, err := yaml.Marshal(helmChart.Values)
 		if err != nil {
 			logger.WithError(err).Error("marshalling team values")
-			return err
+			return false, err
 		}
 
 		if err = os.WriteFile(fmt.Sprintf("charts/%v-%v.yaml", helmEvent.ChartType, time.Now().Format("2006.01.02-15:04")), out, 0o644); err != nil {
 			logger.WithError(err).Error("writing values to file")
-			return err
+			return true, err
 		}
 
-		return err
+		return false, nil
 	}
 
 	settings := cli.New()
@@ -65,29 +94,13 @@ func (c Client) InstallOrUpgrade(ctx context.Context, helmEvent database.HelmEve
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "secret", log.Printf); err != nil {
 		logger.WithError(err).Error("action config init")
-		return err
+		return false, err
 	}
-
-	var helmChart *chart.Chart
-	switch helmEvent.ChartType {
-	case gensql.ChartTypeJupyterhub:
-		helmChart, err = FetchChart("jupyterhub", "jupyterhub", helmEvent.ChartVersion)
-	case gensql.ChartTypeAirflow:
-		helmChart, err = FetchChart("apache-airflow", "airflow", helmEvent.ChartVersion)
-	default:
-		logger.Errorf("chart type %v for release %v is not supported", helmEvent.ChartType, helmEvent.ReleaseName)
-		return err
-	}
-	if err != nil {
-		logger.WithError(err).Error("fetching chart type")
-	}
-
-	helmChart.Values = teamValues
 
 	exists, err := releaseExists(actionConfig, helmEvent.ReleaseName)
 	if err != nil {
 		logger.WithError(err).Error("checking if release exists")
-		return err
+		return false, err
 	}
 
 	if exists {
@@ -98,7 +111,7 @@ func (c Client) InstallOrUpgrade(ctx context.Context, helmEvent database.HelmEve
 		_, err = upgradeClient.RunWithContext(ctx, helmEvent.ReleaseName, helmChart, helmChart.Values)
 		if err != nil {
 			logger.WithError(err).Error("helm upgrade")
-			return err
+			return true, err
 		}
 	} else {
 		installClient := action.NewInstall(actionConfig)
@@ -109,43 +122,74 @@ func (c Client) InstallOrUpgrade(ctx context.Context, helmEvent database.HelmEve
 		_, err = installClient.RunWithContext(ctx, helmChart, helmChart.Values)
 		if err != nil {
 			logger.WithError(err).Error("helm install")
-			return err
+			return true, err
 		}
 	}
 
-	return nil
+	return false, nil
 }
 
-func (c Client) Uninstall(ctx context.Context, helmEvent database.HelmEvent, logger logger.Logger) bool {
+func (c Client) Uninstall(ctx context.Context, helmEvent HelmEventData, logger logger.Logger) bool {
+	logger.Infof("Uninstalling %v", helmEvent.ChartType)
+	if err := c.uninstall(ctx, helmEvent, logger); err != nil {
+		logger.Infof("Uninstalling %v failed", helmEvent.ChartType)
+		return true
+	}
+
+	logger.Infof("Successfully uninstalled %v", helmEvent.ChartType)
+	return false
+}
+
+func (c Client) uninstall(ctx context.Context, helmEvent HelmEventData, logger logger.Logger) error {
+	if c.dryRun {
+		return nil
+	}
+
 	settings := cli.New()
 	settings.SetNamespace(helmEvent.Namespace)
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "secret", log.Printf); err != nil {
 		logger.WithError(err).Errorf("creating action config for helm uninstall: release %v, team %v", helmEvent.TeamID, helmEvent.TeamID)
-		return true
+		return err
 	}
 
 	exists, err := releaseExists(actionConfig, helmEvent.ReleaseName)
 	if err != nil {
 		logger.WithError(err).Errorf("checking if release exists for helm uninstall: release %v, team %v", helmEvent.TeamID, helmEvent.TeamID)
-		return true
+		return err
 	}
 
 	if !exists {
-		return false
+		return nil
 	}
 
 	uninstallClient := action.NewUninstall(actionConfig)
 	_, err = uninstallClient.Run(helmEvent.ReleaseName)
 	if err != nil {
 		logger.WithError(err).Errorf("helm uninstall: release %v, team %v", helmEvent.TeamID, helmEvent.TeamID)
-		return true
+		return err
 	}
 
-	return false
+	return nil
 }
 
-func (c Client) Rollback(ctx context.Context, helmEvent database.HelmEvent, logger logger.Logger) (bool, error) {
+func (c Client) Rollback(ctx context.Context, helmEvent HelmEventData, logger logger.Logger) (bool, error) {
+	logger.Infof("Rolling back %v", helmEvent.ChartType)
+	retry, err := c.rollback(ctx, helmEvent, logger)
+	if retry || err != nil {
+		logger.Infof("Rolling back %v failed", helmEvent.ChartType)
+		return retry, err
+	}
+
+	logger.Infof("Successfully rolled back %v", helmEvent.ChartType)
+	return false, nil
+}
+
+func (c Client) rollback(ctx context.Context, helmEvent HelmEventData, logger logger.Logger) (bool, error) {
+	if c.dryRun {
+		return false, nil
+	}
+
 	settings := cli.New()
 	settings.SetNamespace(helmEvent.Namespace)
 	actionConfig := new(action.Configuration)
@@ -188,15 +232,14 @@ func lastSuccessfulHelmRelease(releaseName string, actionConfig *action.Configur
 	return 0, fmt.Errorf("no previous successful helm releases for %v", releaseName)
 }
 
-func (c Client) HelmTimeoutWatcher(ctx context.Context, helmEvent database.HelmEvent, logger logger.Logger) {
-	statusCtx := context.Background()
+func (c Client) HelmTimeoutWatcher(ctx context.Context, helmEvent HelmEventData, logger logger.Logger) {
 	ticker := time.NewTicker(5 * time.Second)
 	for {
 		select {
 		case <-ticker.C:
 		case <-ctx.Done():
 			if ctx.Err() == context.DeadlineExceeded {
-				if err := c.repo.RegisterHelmRollbackEvent(statusCtx, helmEvent); err != nil {
+				if err := c.repo.RegisterHelmRollbackEvent(context.Background(), helmEvent.TeamID, helmEvent); err != nil {
 					logger.WithError(err).Errorf("registering rollback event for team %v", helmEvent.TeamID)
 				}
 			}
@@ -205,7 +248,7 @@ func (c Client) HelmTimeoutWatcher(ctx context.Context, helmEvent database.HelmE
 	}
 }
 
-func (c Client) chartValues(ctx context.Context, helmEvent database.HelmEvent) (map[string]any, error) {
+func (c Client) createChartWithValues(ctx context.Context, helmEvent HelmEventData) (*chart.Chart, error) {
 	helmChart, err := FetchChart(helmEvent.ChartRepo, helmEvent.ChartName, helmEvent.ChartVersion)
 	if err != nil {
 		return nil, err
@@ -216,7 +259,7 @@ func (c Client) chartValues(ctx context.Context, helmEvent database.HelmEvent) (
 		return nil, err
 	}
 
-	return helmChart.Values, nil
+	return helmChart, nil
 }
 
 func (c Client) mergeValues(ctx context.Context, chartType gensql.ChartType, teamID string, defaultValues map[string]any) error {

@@ -14,6 +14,7 @@ import (
 
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/helm"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/logger"
 	"github.com/nais/knorten/pkg/reflect"
@@ -427,14 +428,29 @@ func (c Client) getOrGeneratePassword(ctx context.Context, teamID, key string, g
 	return "", fmt.Errorf("a %v exisits for %v, but it's empty or doesn't belong to Airflow", key, teamID)
 }
 
-func (c Client) createAirflowHelmEvent(teamID string, chartType gensql.ChartType) database.HelmEvent {
-	return database.HelmEvent{
+func (c Client) createAirflowHelmEvent(ctx context.Context, teamID string, eventType database.EventType, logger logger.Logger) error {
+	helmEventData := helm.HelmEventData{
 		TeamID:       teamID,
 		Namespace:    k8s.TeamIDToNamespace(teamID),
-		ReleaseName:  string(chartType),
-		ChartType:    chartType,
+		ReleaseName:  string(gensql.ChartTypeAirflow),
+		ChartType:    gensql.ChartTypeAirflow,
 		ChartRepo:    "apache-airflow",
 		ChartName:    "airflow",
 		ChartVersion: c.chartVersionAirflow,
 	}
+
+	switch eventType {
+	case database.EventTypeHelmInstallOrUpgrade:
+		if err := c.repo.RegisterHelmInstallOrUpgradeEvent(ctx, teamID, helmEventData); err != nil {
+			logger.WithError(err).Error("registering helm install or upgrade event failed")
+			return err
+		}
+	case database.EventTypeHelmUninstall:
+		if err := c.repo.RegisterHelmUninstallEvent(ctx, teamID, helmEventData); err != nil {
+			logger.WithError(err).Error("registering helm uninstall event failed")
+			return err
+		}
+	}
+
+	return nil
 }

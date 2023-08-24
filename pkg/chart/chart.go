@@ -5,7 +5,6 @@ import (
 
 	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/logger"
 	"k8s.io/client-go/kubernetes"
@@ -48,9 +47,8 @@ func (c Client) SyncJupyter(ctx context.Context, values JupyterConfigurableValue
 		return true
 	}
 
-	helmEvent := c.createJupyterHelmEvent(values.TeamID, gensql.ChartTypeAirflow)
-	if err := c.repo.RegisterHelmUninstallEvent(ctx, helmEvent); err != nil {
-		log.WithError(err).Error("registering helm install or upgrade event failed")
+	if err := c.createJupyterHelmEvent(ctx, values.TeamID, database.EventTypeHelmInstallOrUpgrade, log); err != nil {
+		log.Info("Failed creating install or upgrade jupyter helm event")
 		return true
 	}
 
@@ -66,9 +64,8 @@ func (c Client) DeleteJupyter(ctx context.Context, teamID string, log logger.Log
 		return true
 	}
 
-	helmEvent := c.createJupyterHelmEvent(teamID, gensql.ChartTypeAirflow)
-	if err := c.repo.RegisterHelmUninstallEvent(ctx, helmEvent); err != nil {
-		log.WithError(err).Error("registering helm delete event failed")
+	if err := c.createJupyterHelmEvent(ctx, teamID, database.EventTypeHelmUninstall, log); err != nil {
+		log.Info("Failed creating uninstall jupyter helm event")
 		return true
 	}
 
@@ -84,9 +81,8 @@ func (c Client) SyncAirflow(ctx context.Context, values AirflowConfigurableValue
 		return true
 	}
 
-	helmEvent := c.createAirflowHelmEvent(values.TeamID, gensql.ChartTypeAirflow)
-	if err := c.repo.RegisterHelmInstallOrUpgradeEvent(ctx, helmEvent); err != nil {
-		log.WithError(err).Error("registering helm install or upgrade event failed")
+	if err := c.createAirflowHelmEvent(ctx, values.TeamID, database.EventTypeHelmInstallOrUpgrade, log); err != nil {
+		log.Info("Failed creating install or upgrade airflow helm event")
 		return true
 	}
 
@@ -102,9 +98,8 @@ func (c Client) DeleteAirflow(ctx context.Context, teamID string, log logger.Log
 		return true
 	}
 
-	helmEvent := c.createAirflowHelmEvent(teamID, gensql.ChartTypeAirflow)
-	if err := c.repo.RegisterHelmUninstallEvent(ctx, helmEvent); err != nil {
-		log.WithError(err).Error("registering helm delete event failed")
+	if err := c.createAirflowHelmEvent(ctx, teamID, database.EventTypeHelmUninstall, log); err != nil {
+		log.Info("Failed creating install or upgrade airflow helm event")
 		return true
 	}
 

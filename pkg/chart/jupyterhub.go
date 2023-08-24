@@ -7,6 +7,7 @@ import (
 
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/helm"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/logger"
 	"github.com/nais/knorten/pkg/reflect"
@@ -133,15 +134,30 @@ func (c Client) deleteJupyter(ctx context.Context, teamID string, log logger.Log
 	return nil
 }
 
-func (c Client) createJupyterHelmEvent(teamID string, chartType gensql.ChartType) database.HelmEvent {
+func (c Client) createJupyterHelmEvent(ctx context.Context, teamID string, eventType database.EventType, logger logger.Logger) error {
 	namespace := k8s.TeamIDToNamespace(teamID)
-	return database.HelmEvent{
+	helmEventData := helm.HelmEventData{
 		TeamID:       teamID,
 		Namespace:    namespace,
 		ReleaseName:  jupyterReleaseName(namespace),
-		ChartType:    chartType,
+		ChartType:    gensql.ChartTypeJupyterhub,
 		ChartRepo:    "jupyter",
 		ChartName:    "jupyter",
 		ChartVersion: c.chartVersionJupyter,
 	}
+
+	switch eventType {
+	case database.EventTypeHelmInstallOrUpgrade:
+		if err := c.repo.RegisterHelmInstallOrUpgradeEvent(ctx, teamID, helmEventData); err != nil {
+			logger.WithError(err).Error("registering helm install or upgrade event failed")
+			return err
+		}
+	case database.EventTypeHelmUninstall:
+		if err := c.repo.RegisterHelmUninstallEvent(ctx, teamID, helmEventData); err != nil {
+			logger.WithError(err).Error("registering helm uninstall event failed")
+			return err
+		}
+	}
+
+	return nil
 }

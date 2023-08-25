@@ -47,7 +47,7 @@ func (c Client) SyncJupyter(ctx context.Context, values JupyterConfigurableValue
 		return true
 	}
 
-	if err := c.createJupyterHelmEvent(ctx, values.TeamID, database.EventTypeHelmInstallOrUpgrade, log); err != nil {
+	if err := c.createJupyterHelmEvent(ctx, values.TeamID, database.EventTypeHelmRolloutJupyter, log); err != nil {
 		log.Info("Failed creating install or upgrade jupyter helm event")
 		return true
 	}
@@ -64,7 +64,7 @@ func (c Client) DeleteJupyter(ctx context.Context, teamID string, log logger.Log
 		return true
 	}
 
-	if err := c.createJupyterHelmEvent(ctx, teamID, database.EventTypeHelmUninstall, log); err != nil {
+	if err := c.createJupyterHelmEvent(ctx, teamID, database.EventTypeHelmUninstallJupyter, log); err != nil {
 		log.Info("Failed creating uninstall jupyter helm event")
 		return true
 	}
@@ -81,7 +81,7 @@ func (c Client) SyncAirflow(ctx context.Context, values AirflowConfigurableValue
 		return true
 	}
 
-	if err := c.createAirflowHelmEvent(ctx, values.TeamID, database.EventTypeHelmInstallOrUpgrade, log); err != nil {
+	if err := c.createAirflowHelmEvent(ctx, values.TeamID, database.EventTypeHelmRolloutAirflow, log); err != nil {
 		log.Info("Failed creating install or upgrade airflow helm event")
 		return true
 	}
@@ -98,7 +98,7 @@ func (c Client) DeleteAirflow(ctx context.Context, teamID string, log logger.Log
 		return true
 	}
 
-	if err := c.createAirflowHelmEvent(ctx, teamID, database.EventTypeHelmUninstall, log); err != nil {
+	if err := c.createAirflowHelmEvent(ctx, teamID, database.EventTypeHelmUninstallAirflow, log); err != nil {
 		log.Info("Failed creating install or upgrade airflow helm event")
 		return true
 	}

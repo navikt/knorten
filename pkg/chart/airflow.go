@@ -440,13 +440,13 @@ func (c Client) createAirflowHelmEvent(ctx context.Context, teamID string, event
 	}
 
 	switch eventType {
-	case database.EventTypeHelmInstallOrUpgrade:
-		if err := c.repo.RegisterHelmInstallOrUpgradeEvent(ctx, teamID, helmEventData); err != nil {
+	case database.EventTypeHelmRolloutAirflow:
+		if err := c.repo.RegisterHelmRolloutAirflowEvent(ctx, teamID, helmEventData); err != nil {
 			logger.WithError(err).Error("registering helm install or upgrade event failed")
 			return err
 		}
-	case database.EventTypeHelmUninstall:
-		if err := c.repo.RegisterHelmUninstallEvent(ctx, teamID, helmEventData); err != nil {
+	case database.EventTypeHelmUninstallAirflow:
+		if err := c.repo.RegisterHelmUninstallAirflowEvent(ctx, teamID, helmEventData); err != nil {
 			logger.WithError(err).Error("registering helm uninstall event failed")
 			return err
 		}

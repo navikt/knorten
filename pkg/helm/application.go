@@ -53,8 +53,15 @@ func (c Client) InstallOrUpgrade(ctx context.Context, helmEvent HelmEventData, l
 	go c.HelmTimeoutWatcher(ctx, helmEvent, logger)
 	rollback, err := c.installOrUpgrade(ctx, helmEvent, logger)
 	if rollback {
-		if err := c.repo.RegisterHelmRollbackEvent(ctx, helmEvent.TeamID, helmEvent); err != nil {
-			logger.WithError(err).Error("registering helm rollback event")
+		switch helmEvent.ChartType {
+		case gensql.ChartTypeJupyterhub:
+			if err := c.repo.RegisterHelmRollbackJupyterEvent(ctx, helmEvent.TeamID, helmEvent); err != nil {
+				logger.WithError(err).Error("registering helm rollback jupyter event")
+			}
+		case gensql.ChartTypeAirflow:
+			if err := c.repo.RegisterHelmRollbackAirflowEvent(ctx, helmEvent.TeamID, helmEvent); err != nil {
+				logger.WithError(err).Error("registering helm rollback airflow event")
+			}
 		}
 	}
 	if err != nil {
@@ -238,8 +245,15 @@ func (c Client) HelmTimeoutWatcher(ctx context.Context, helmEvent HelmEventData,
 		case <-ticker.C:
 		case <-ctx.Done():
 			if ctx.Err() == context.DeadlineExceeded {
-				if err := c.repo.RegisterHelmRollbackEvent(context.Background(), helmEvent.TeamID, helmEvent); err != nil {
-					logger.WithError(err).Errorf("registering rollback event for team %v", helmEvent.TeamID)
+				switch helmEvent.ChartType {
+				case gensql.ChartTypeJupyterhub:
+					if err := c.repo.RegisterHelmRollbackJupyterEvent(context.Background(), helmEvent.TeamID, helmEvent); err != nil {
+						logger.WithError(err).Error("registering helm rollback jupyter event")
+					}
+				case gensql.ChartTypeAirflow:
+					if err := c.repo.RegisterHelmRollbackAirflowEvent(context.Background(), helmEvent.TeamID, helmEvent); err != nil {
+						logger.WithError(err).Error("registering helm rollback airflow event")
+					}
 				}
 			}
 			return

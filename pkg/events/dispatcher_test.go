@@ -25,9 +25,12 @@ func TestEventHandler_distributeWork(t *testing.T) {
 			database.EventTypeUpdateJupyter,
 			database.EventTypeDeleteJupyter:
 			return chartMock.EventCounts[eventType]
-		case database.EventTypeHelmInstallOrUpgrade,
-			database.EventTypeHelmRollback,
-			database.EventTypeHelmUninstall:
+		case database.EventTypeHelmRolloutJupyter,
+			database.EventTypeHelmRollbackJupyter,
+			database.EventTypeHelmUninstallJupyter,
+			database.EventTypeHelmRolloutAirflow,
+			database.EventTypeHelmRollbackAirflow,
+			database.EventTypeHelmUninstallAirflow:
 			return helmMock.EventCounts[eventType]
 		}
 
@@ -46,9 +49,12 @@ func TestEventHandler_distributeWork(t *testing.T) {
 		database.EventTypeCreateJupyter,
 		database.EventTypeUpdateJupyter,
 		database.EventTypeDeleteJupyter,
-		database.EventTypeHelmInstallOrUpgrade,
-		database.EventTypeHelmRollback,
-		database.EventTypeHelmUninstall,
+		database.EventTypeHelmRolloutJupyter,
+		database.EventTypeHelmRollbackJupyter,
+		database.EventTypeHelmUninstallJupyter,
+		database.EventTypeHelmRolloutAirflow,
+		database.EventTypeHelmRollbackAirflow,
+		database.EventTypeHelmUninstallAirflow,
 	}
 	for _, eventType := range eventTypes {
 		t.Run(string(eventType), func(t *testing.T) {

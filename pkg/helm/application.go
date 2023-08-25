@@ -54,11 +54,11 @@ func (c Client) InstallOrUpgrade(ctx context.Context, helmEvent HelmEventData, l
 	if rollback {
 		switch helmEvent.ChartType {
 		case gensql.ChartTypeJupyterhub:
-			if err := c.repo.RegisterHelmRollbackJupyterEvent(ctx, helmEvent.TeamID, helmEvent); err != nil {
+			if err := c.repo.RegisterHelmRollbackJupyterEvent(context.Background(), helmEvent.TeamID, helmEvent); err != nil {
 				logger.WithError(err).Error("registering helm rollback jupyter event")
 			}
 		case gensql.ChartTypeAirflow:
-			if err := c.repo.RegisterHelmRollbackAirflowEvent(ctx, helmEvent.TeamID, helmEvent); err != nil {
+			if err := c.repo.RegisterHelmRollbackAirflowEvent(context.Background(), helmEvent.TeamID, helmEvent); err != nil {
 				logger.WithError(err).Error("registering helm rollback airflow event")
 			}
 		}

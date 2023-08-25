@@ -115,7 +115,7 @@ func (r *Repo) RegisterCreateJupyterEvent(ctx context.Context, teamID string, va
 }
 
 func (r *Repo) RegisterUpdateJupyterEvent(ctx context.Context, teamID string, values any) error {
-	return r.registerEvent(ctx, EventTypeUpdateJupyter, teamID, 20*time.Second, values)
+	return r.registerEvent(ctx, EventTypeUpdateJupyter, teamID, 5*time.Minute, values)
 }
 
 func (r *Repo) RegisterDeleteJupyterEvent(ctx context.Context, teamID string) error {

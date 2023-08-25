@@ -49,7 +49,7 @@ func (c *client) createSecret(ctx *gin.Context) error {
 		Name:  getNormalizedNameFromEmail(user.Email),
 	}
 
-	return c.repo.RegisterCreateUserGSMEvent(ctx, manager)
+	return c.repo.RegisterCreateUserGSMEvent(ctx, manager.Owner, manager)
 }
 
 func (c *client) deleteSecret(ctx *gin.Context) error {

@@ -14,19 +14,25 @@ import (
 type EventType string
 
 const (
-	EventTypeCreateTeam    EventType = "create:team"
-	EventTypeUpdateTeam    EventType = "update:team"
-	EventTypeDeleteTeam    EventType = "delete:team"
-	EventTypeCreateJupyter EventType = "create:jupyter"
-	EventTypeUpdateJupyter EventType = "update:jupyter"
-	EventTypeDeleteJupyter EventType = "delete:jupyter"
-	EventTypeCreateAirflow EventType = "create:airflow"
-	EventTypeUpdateAirflow EventType = "update:airflow"
-	EventTypeDeleteAirflow EventType = "delete:airflow"
-	EventTypeCreateCompute EventType = "create:compute"
-	EventTypeDeleteCompute EventType = "delete:compute"
-	EventTypeCreateUserGSM EventType = "create:usergsm"
-	EventTypeDeleteUserGSM EventType = "delete:usergsm"
+	EventTypeCreateTeam           EventType = "create:team"
+	EventTypeUpdateTeam           EventType = "update:team"
+	EventTypeDeleteTeam           EventType = "delete:team"
+	EventTypeCreateJupyter        EventType = "create:jupyter"
+	EventTypeUpdateJupyter        EventType = "update:jupyter"
+	EventTypeDeleteJupyter        EventType = "delete:jupyter"
+	EventTypeCreateAirflow        EventType = "create:airflow"
+	EventTypeUpdateAirflow        EventType = "update:airflow"
+	EventTypeDeleteAirflow        EventType = "delete:airflow"
+	EventTypeCreateCompute        EventType = "create:compute"
+	EventTypeDeleteCompute        EventType = "delete:compute"
+	EventTypeCreateUserGSM        EventType = "create:usergsm"
+	EventTypeDeleteUserGSM        EventType = "delete:usergsm"
+	EventTypeHelmRolloutJupyter   EventType = "rolloutJupyter:helm"
+	EventTypeHelmRollbackJupyter  EventType = "rollbackJupyter:helm"
+	EventTypeHelmUninstallJupyter EventType = "uninstallJupyter:helm"
+	EventTypeHelmRolloutAirflow   EventType = "rolloutAirflow:helm"
+	EventTypeHelmRollbackAirflow  EventType = "rollbackAirflow:helm"
+	EventTypeHelmUninstallAirflow EventType = "uninstallAirflow:helm"
 )
 
 type EventStatus string
@@ -88,8 +94,8 @@ func (r *Repo) RegisterDeleteComputeEvent(ctx context.Context, email string) err
 	return r.registerEvent(ctx, EventTypeDeleteCompute, email, 5*time.Minute, nil)
 }
 
-func (r *Repo) RegisterCreateComputeEvent(ctx context.Context, instance gensql.ComputeInstance) error {
-	return r.registerEvent(ctx, EventTypeCreateCompute, instance.Owner, 5*time.Minute, instance)
+func (r *Repo) RegisterCreateComputeEvent(ctx context.Context, owner string, values any) error {
+	return r.registerEvent(ctx, EventTypeCreateCompute, owner, 5*time.Minute, values)
 }
 
 func (r *Repo) RegisterCreateAirflowEvent(ctx context.Context, teamID string, values any) error {
@@ -116,12 +122,36 @@ func (r *Repo) RegisterDeleteJupyterEvent(ctx context.Context, teamID string) er
 	return r.registerEvent(ctx, EventTypeDeleteJupyter, teamID, 5*time.Minute, nil)
 }
 
-func (r *Repo) RegisterCreateUserGSMEvent(ctx context.Context, manager gensql.UserGoogleSecretManager) error {
-	return r.registerEvent(ctx, EventTypeCreateUserGSM, manager.Owner, 5*time.Minute, manager)
+func (r *Repo) RegisterCreateUserGSMEvent(ctx context.Context, owner string, values any) error {
+	return r.registerEvent(ctx, EventTypeCreateUserGSM, owner, 5*time.Minute, values)
 }
 
 func (r *Repo) RegisterDeleteUserGSMEvent(ctx context.Context, owner string) error {
 	return r.registerEvent(ctx, EventTypeDeleteUserGSM, owner, 5*time.Minute, nil)
+}
+
+func (r *Repo) RegisterHelmRolloutJupyterEvent(ctx context.Context, teamID string, values any) error {
+	return r.registerEvent(ctx, EventTypeHelmRolloutJupyter, teamID, 10*time.Second, values)
+}
+
+func (r *Repo) RegisterHelmRollbackJupyterEvent(ctx context.Context, teamID string, values any) error {
+	return r.registerEvent(ctx, EventTypeHelmRollbackJupyter, teamID, 5*time.Minute, values)
+}
+
+func (r *Repo) RegisterHelmUninstallJupyterEvent(ctx context.Context, teamID string, values any) error {
+	return r.registerEvent(ctx, EventTypeHelmUninstallJupyter, teamID, 10*time.Minute, values)
+}
+
+func (r *Repo) RegisterHelmRolloutAirflowEvent(ctx context.Context, teamID string, values any) error {
+	return r.registerEvent(ctx, EventTypeHelmRolloutAirflow, teamID, 30*time.Minute, values)
+}
+
+func (r *Repo) RegisterHelmRollbackAirflowEvent(ctx context.Context, teamID string, values any) error {
+	return r.registerEvent(ctx, EventTypeHelmRollbackAirflow, teamID, 5*time.Minute, values)
+}
+
+func (r *Repo) RegisterHelmUninstallAirflowEvent(ctx context.Context, teamID string, values any) error {
+	return r.registerEvent(ctx, EventTypeHelmUninstallAirflow, teamID, 10*time.Minute, values)
 }
 
 func (r *Repo) EventSetStatus(ctx context.Context, id uuid.UUID, status EventStatus) error {

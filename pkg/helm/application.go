@@ -50,7 +50,6 @@ func NewClient(dryRun bool, repo *database.Repo) Client {
 
 func (c Client) InstallOrUpgrade(ctx context.Context, helmEvent HelmEventData, logger logger.Logger) error {
 	logger.Infof("Installing or upgrading %v", helmEvent.ChartType)
-	go c.HelmTimeoutWatcher(ctx, helmEvent, logger)
 	rollback, err := c.installOrUpgrade(ctx, helmEvent, logger)
 	if rollback {
 		switch helmEvent.ChartType {
@@ -236,29 +235,6 @@ func lastSuccessfulHelmRelease(releaseName string, actionConfig *action.Configur
 	}
 
 	return 0, fmt.Errorf("no previous successful helm releases for %v", releaseName)
-}
-
-func (c Client) HelmTimeoutWatcher(ctx context.Context, helmEvent HelmEventData, logger logger.Logger) {
-	ticker := time.NewTicker(5 * time.Second)
-	for {
-		select {
-		case <-ticker.C:
-		case <-ctx.Done():
-			if ctx.Err() == context.DeadlineExceeded {
-				switch helmEvent.ChartType {
-				case gensql.ChartTypeJupyterhub:
-					if err := c.repo.RegisterHelmRollbackJupyterEvent(context.Background(), helmEvent.TeamID, helmEvent); err != nil {
-						logger.WithError(err).Error("registering helm rollback jupyter event")
-					}
-				case gensql.ChartTypeAirflow:
-					if err := c.repo.RegisterHelmRollbackAirflowEvent(context.Background(), helmEvent.TeamID, helmEvent); err != nil {
-						logger.WithError(err).Error("registering helm rollback airflow event")
-					}
-				}
-			}
-			return
-		}
-	}
 }
 
 func (c Client) createChartWithValues(ctx context.Context, helmEvent HelmEventData) (*chart.Chart, error) {

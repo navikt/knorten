@@ -12,7 +12,6 @@ type helmClient interface {
 	InstallOrUpgrade(ctx context.Context, helmData helm.HelmEventData, log logger.Logger) error
 	Rollback(ctx context.Context, helmData helm.HelmEventData, log logger.Logger) (bool, error)
 	Uninstall(ctx context.Context, helmData helm.HelmEventData, log logger.Logger) bool
-	HelmTimeoutWatcher(ctx context.Context, helmData helm.HelmEventData, log logger.Logger)
 }
 
 type helmMock struct {
@@ -41,7 +40,4 @@ func (hm helmMock) Uninstall(ctx context.Context, helmEvent helm.HelmEventData, 
 	hm.EventCounts[database.EventTypeHelmUninstallJupyter]++
 	hm.EventCounts[database.EventTypeHelmUninstallAirflow]++
 	return false
-}
-
-func (hm helmMock) HelmTimeoutWatcher(ctx context.Context, helmData helm.HelmEventData, log logger.Logger) {
 }

@@ -50,7 +50,7 @@ func (c Client) SyncJupyter(ctx context.Context, values JupyterConfigurableValue
 	}
 
 	if err := c.registerJupyterHelmEvent(ctx, values.TeamID, database.EventTypeHelmRolloutJupyter, log); err != nil {
-		log.Info("Failed creating install or upgrade jupyter helm event")
+		log.Info("Failed creating rollout jupyter helm event")
 		return true
 	}
 
@@ -84,7 +84,7 @@ func (c Client) SyncAirflow(ctx context.Context, values AirflowConfigurableValue
 	}
 
 	if err := c.registerAirflowHelmEvent(ctx, values.TeamID, database.EventTypeHelmRolloutAirflow, log); err != nil {
-		log.Info("Failed creating install or upgrade airflow helm event")
+		log.Info("Failed creating rollout airflow helm event")
 		return true
 	}
 
@@ -101,7 +101,7 @@ func (c Client) DeleteAirflow(ctx context.Context, teamID string, log logger.Log
 	}
 
 	if err := c.registerAirflowHelmEvent(ctx, teamID, database.EventTypeHelmUninstallAirflow, log); err != nil {
-		log.Info("Failed creating install or upgrade airflow helm event")
+		log.Info("Failed creating uninstall airflow helm event")
 		return true
 	}
 

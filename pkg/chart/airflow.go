@@ -428,7 +428,7 @@ func (c Client) getOrGeneratePassword(ctx context.Context, teamID, key string, g
 	return "", fmt.Errorf("a %v exisits for %v, but it's empty or doesn't belong to Airflow", key, teamID)
 }
 
-func (c Client) createAirflowHelmEvent(ctx context.Context, teamID string, eventType database.EventType, logger logger.Logger) error {
+func (c Client) registerAirflowHelmEvent(ctx context.Context, teamID string, eventType database.EventType, logger logger.Logger) error {
 	helmEventData := helm.HelmEventData{
 		TeamID:       teamID,
 		Namespace:    k8s.TeamIDToNamespace(teamID),
@@ -439,17 +439,8 @@ func (c Client) createAirflowHelmEvent(ctx context.Context, teamID string, event
 		ChartVersion: c.chartVersionAirflow,
 	}
 
-	switch eventType {
-	case database.EventTypeHelmRolloutAirflow:
-		if err := c.repo.RegisterHelmRolloutAirflowEvent(ctx, teamID, helmEventData); err != nil {
-			logger.WithError(err).Error("registering helm install or upgrade event failed")
-			return err
-		}
-	case database.EventTypeHelmUninstallAirflow:
-		if err := c.repo.RegisterHelmUninstallAirflowEvent(ctx, teamID, helmEventData); err != nil {
-			logger.WithError(err).Error("registering helm uninstall event failed")
-			return err
-		}
+	if err := c.registerHelmEvent(ctx, eventType, teamID, helmEventData, logger); err != nil {
+		return err
 	}
 
 	return nil

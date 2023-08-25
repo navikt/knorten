@@ -134,7 +134,7 @@ func (c Client) deleteJupyter(ctx context.Context, teamID string, log logger.Log
 	return nil
 }
 
-func (c Client) createJupyterHelmEvent(ctx context.Context, teamID string, eventType database.EventType, logger logger.Logger) error {
+func (c Client) registerJupyterHelmEvent(ctx context.Context, teamID string, eventType database.EventType, logger logger.Logger) error {
 	namespace := k8s.TeamIDToNamespace(teamID)
 	helmEventData := helm.HelmEventData{
 		TeamID:       teamID,
@@ -146,17 +146,8 @@ func (c Client) createJupyterHelmEvent(ctx context.Context, teamID string, event
 		ChartVersion: c.chartVersionJupyter,
 	}
 
-	switch eventType {
-	case database.EventTypeHelmRolloutJupyter:
-		if err := c.repo.RegisterHelmRolloutJupyterEvent(ctx, teamID, helmEventData); err != nil {
-			logger.WithError(err).Error("registering helm install or upgrade event failed")
-			return err
-		}
-	case database.EventTypeHelmUninstallJupyter:
-		if err := c.repo.RegisterHelmUninstallJupyterEvent(ctx, teamID, helmEventData); err != nil {
-			logger.WithError(err).Error("registering helm uninstall event failed")
-			return err
-		}
+	if err := c.registerHelmEvent(ctx, eventType, teamID, helmEventData, logger); err != nil {
+		return err
 	}
 
 	return nil

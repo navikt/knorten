@@ -131,7 +131,7 @@ func (r *Repo) RegisterDeleteUserGSMEvent(ctx context.Context, owner string) err
 }
 
 func (r *Repo) RegisterHelmRolloutJupyterEvent(ctx context.Context, teamID string, values any) error {
-	return r.registerEvent(ctx, EventTypeHelmRolloutJupyter, teamID, 10*time.Second, values)
+	return r.registerEvent(ctx, EventTypeHelmRolloutJupyter, teamID, 10*time.Minute, values)
 }
 
 func (r *Repo) RegisterHelmRollbackJupyterEvent(ctx context.Context, teamID string, values any) error {

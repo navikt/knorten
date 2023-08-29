@@ -16,7 +16,7 @@ func (c Client) doesK8sNamespaceExists(ctx context.Context, namespace string) (b
 
 	_, err := c.k8sClient.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if err != nil {
-		if !k8sErrors.IsNotFound(err) {
+		if k8sErrors.IsNotFound(err) {
 			return false, nil
 		}
 

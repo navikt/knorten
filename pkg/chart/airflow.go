@@ -389,7 +389,7 @@ func createAirflowcloudSQLInstanceName(teamID string) string {
 }
 
 func createBucketName(teamID string) string {
-	return "airflow-logs-" + teamID
+	return "airflow-logs-" + teamID + "-north"
 }
 
 func generatePassword() (string, error) {

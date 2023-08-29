@@ -10,6 +10,10 @@ import (
 )
 
 func (c Client) doesK8sNamespaceExists(ctx context.Context, namespace string) (bool, error) {
+	if c.dryRun {
+		return false, nil
+	}
+
 	_, err := c.k8sClient.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if err != nil {
 		if !k8sErrors.IsNotFound(err) {

@@ -61,7 +61,7 @@ spec:
         - --max-sigterm-delay=30s
         - --address=0.0.0.0
         - --port=5432
-        - knada-gcp:europe-west1:knorten
+        - knada-gcp:europe-north1:knorten-north
         image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.6.0-alpine
         ports:
         - containerPort: 5432

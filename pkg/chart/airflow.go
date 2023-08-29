@@ -385,11 +385,11 @@ func (c Client) createLogBucketForAirflow(ctx context.Context, teamID string) er
 }
 
 func createAirflowcloudSQLInstanceName(teamID string) string {
-	return "airflow-" + teamID
+	return "airflow-" + teamID + "-north"
 }
 
 func createBucketName(teamID string) string {
-	return "airflow-logs-" + teamID
+	return "airflow-logs-" + teamID + "-north"
 }
 
 func generatePassword() (string, error) {

@@ -62,6 +62,23 @@ func (c Client) deleteK8sNamespace(ctx context.Context, namespace string) error 
 	return nil
 }
 
+func (c Client) k8sServiceAccountExists(ctx context.Context, teamID, namespace string) (bool, error) {
+	if c.dryRun {
+		return false, nil
+	}
+
+	_, err := c.k8sClient.CoreV1().ServiceAccounts(namespace).Get(ctx, teamID, metav1.GetOptions{})
+	if err != nil {
+		if k8sErrors.IsNotFound(err) {
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	return true, nil
+}
+
 func (c Client) createK8sServiceAccount(ctx context.Context, teamID, namespace string) error {
 	if c.dryRun {
 		return nil

@@ -114,7 +114,15 @@ func (c Client) update(ctx context.Context, team gensql.Team, log logger.Logger)
 			log.WithError(err).Error("failed creating team namespace")
 			return true, err
 		}
+	}
 
+	serviceAccountExists, err := c.k8sServiceAccountExists(ctx, team.ID, namespace)
+	if err != nil {
+		log.WithError(err).Error("failed while checking if service accpunt exists")
+		return true, err
+	}
+
+	if !serviceAccountExists {
 		if err := c.createK8sServiceAccount(ctx, team.ID, namespace); err != nil {
 			log.WithError(err).Error("failed creating k8s service account")
 			return true, err

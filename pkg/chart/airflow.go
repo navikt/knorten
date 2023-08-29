@@ -213,27 +213,32 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 
 		restrictEgressTeamValue, err := c.repo.TeamValueGet(ctx, TeamValueKeyRestrictEgress, team.ID)
 		if err != nil {
-			return AirflowValues{}, err
-		}
+			if !errors.Is(err, sql.ErrNoRows) {
+				return AirflowValues{}, err
+			}
+		} else {
+			restrictEgress, err := strconv.ParseBool(restrictEgressTeamValue.Value)
+			if err != nil {
+				return AirflowValues{}, err
+			}
 
-		restrictEgress, err := strconv.ParseBool(restrictEgressTeamValue.Value)
-		if err != nil {
-			return AirflowValues{}, err
+			configurableValues.RestrictEgress = restrictEgress
 		}
-
-		configurableValues.RestrictEgress = restrictEgress
 
 		apiAccessTeamValue, err := c.repo.TeamValueGet(ctx, TeamValueKeyApiAccess, team.ID)
 		if err != nil {
-			return AirflowValues{}, err
+			if !errors.Is(err, sql.ErrNoRows) {
+				return AirflowValues{}, err
+			}
+		} else {
+			apiAccess, err := strconv.ParseBool(apiAccessTeamValue.Value)
+			if err != nil {
+				return AirflowValues{}, err
+			}
+
+			configurableValues.ApiAccess = apiAccess
 		}
 
-		apiAccess, err := strconv.ParseBool(apiAccessTeamValue.Value)
-		if err != nil {
-			return AirflowValues{}, err
-		}
-
-		configurableValues.ApiAccess = apiAccess
 	}
 
 	postgresPassword, err := c.getOrGeneratePassword(ctx, team.ID, teamValueKeyDatabasePassword, generatePassword)

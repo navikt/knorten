@@ -17,77 +17,77 @@ spec:
     spec:
       serviceAccountName: knorten
       containers:
-      - name: knorten
-        image: europe-west1-docker.pkg.dev/knada-gcp/knada/knorten
-        ports:
-        - containerPort: 8080
-        env:
-          - name: "GIN_MODE"
-            value: "release"
-          - name: AIRFLOW_CHART_VERSION
-            valueFrom:
-              configMapKeyRef:
-                name: helm-repos
-                key: airflow_chart_version
-          - name: JUPYTER_CHART_VERSION
-            valueFrom:
-              configMapKeyRef:
-                name: helm-repos
-                key: jupyter_chart_version
-          - name: AIRFLOW_EGRESS_NETPOL
-            value: /root/.config/netpol/default-egress-airflow-worker.yaml
-          - name: ADMIN_GROUP
-            value: nada@nav.no
-          - name: VM_NETWORK_CONFIG
-            value: network=knada-vpc,subnet=knada,no-address
-          - name: GCP_PROJECT
-            value: knada-gcp
-          - name: GCP_REGION
-            value: europe-west1
-          - name: GCP_ZONE
-            value: europe-west1-b
-          - name: ELECTOR_PATH
-            value: localhost:4040
-        envFrom:
-        - secretRef:
-            name: knorten
-        volumeMounts:
-          - name: helm-repos-config
-            mountPath: /root/.config/helm/repositories.yaml
-            subPath: repositories.yaml
-      - name: cloudsql-proxy
-        command:
-        - /cloud-sql-proxy
-        - --max-sigterm-delay=30s
-        - --address=0.0.0.0
-        - --port=5432
-        - knada-gcp:europe-north1:knorten-north
-        image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.6.0-alpine
-        ports:
-        - containerPort: 5432
-          protocol: TCP
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
-          privileged: false
-          readOnlyRootFilesystem: true
-          runAsGroup: 2
-          runAsNonRoot: true
-          runAsUser: 2
-        terminationMessagePath: /dev/termination-log
-        terminationMessagePolicy: File
-      - name: elector
-        image: europe-north1-docker.pkg.dev/nais-io/nais/images/elector:20230310-120406-3b3cc7d
-        command:
-        - /elector
-        - --election=knorten
-        - --http=localhost:4040
-        - --election-namespace=knada-system
-        env:
-        - name: ELECTOR_LOG_FORMAT
-          value: json
+        - name: knorten
+          image: europe-west1-docker.pkg.dev/knada-gcp/knada/knorten
+          ports:
+            - containerPort: 8080
+          env:
+            - name: "GIN_MODE"
+              value: "release"
+            - name: AIRFLOW_CHART_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: helm-repos
+                  key: airflow_chart_version
+            - name: JUPYTER_CHART_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: helm-repos
+                  key: jupyter_chart_version
+            - name: AIRFLOW_EGRESS_NETPOL
+              value: /root/.config/netpol/default-egress-airflow-worker.yaml
+            - name: ADMIN_GROUP
+              value: nada@nav.no
+            - name: VM_NETWORK_CONFIG
+              value: network=knada-vpc,subnet=knada,no-address
+            - name: GCP_PROJECT
+              value: knada-gcp
+            - name: GCP_REGION
+              value: europe-north1
+            - name: GCP_ZONE
+              value: europe-north1-b
+            - name: ELECTOR_PATH
+              value: localhost:4040
+          envFrom:
+            - secretRef:
+                name: knorten
+          volumeMounts:
+            - name: helm-repos-config
+              mountPath: /root/.config/helm/repositories.yaml
+              subPath: repositories.yaml
+        - name: cloudsql-proxy
+          command:
+            - /cloud-sql-proxy
+            - --max-sigterm-delay=30s
+            - --address=0.0.0.0
+            - --port=5432
+            - knada-gcp:europe-north1:knorten-north
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.6.0-alpine
+          ports:
+            - containerPort: 5432
+              protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 2
+            runAsNonRoot: true
+            runAsUser: 2
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        - name: elector
+          image: europe-north1-docker.pkg.dev/nais-io/nais/images/elector:20230310-120406-3b3cc7d
+          command:
+            - /elector
+            - --election=knorten
+            - --http=localhost:4040
+            - --election-namespace=knada-system
+          env:
+            - name: ELECTOR_LOG_FORMAT
+              value: json
       volumes:
         - name: helm-repos-config
           configMap:

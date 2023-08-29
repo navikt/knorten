@@ -103,7 +103,7 @@ func (c Client) update(ctx context.Context, team gensql.Team, log logger.Logger)
 	}
 
 	namespace := k8s.TeamIDToNamespace(team.ID)
-	namespaceExists, err := c.doesK8sNamespaceExists(ctx, namespace)
+	namespaceExists, err := c.k8sNamespaceExists(ctx, namespace)
 	if err != nil {
 		log.WithError(err).Error("failed while checking if namespace exists")
 		return true, err

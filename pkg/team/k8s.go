@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (c Client) doesK8sNamespaceExists(ctx context.Context, namespace string) (bool, error) {
+func (c Client) k8sNamespaceExists(ctx context.Context, namespace string) (bool, error) {
 	if c.dryRun {
 		return false, nil
 	}

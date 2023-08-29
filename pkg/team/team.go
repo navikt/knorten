@@ -102,6 +102,25 @@ func (c Client) update(ctx context.Context, team gensql.Team, log logger.Logger)
 		return true, err
 	}
 
+	namespace := k8s.TeamIDToNamespace(team.ID)
+	namespaceExists, err := c.doesK8sNamespaceExists(ctx, namespace)
+	if err != nil {
+		log.WithError(err).Error("failed while checking if namespace exists")
+		return true, err
+	}
+
+	if !namespaceExists {
+		if err := c.createK8sNamespace(ctx, namespace); err != nil {
+			log.WithError(err).Error("failed creating team namespace")
+			return true, err
+		}
+
+		if err := c.createK8sServiceAccount(ctx, team.ID, namespace); err != nil {
+			log.WithError(err).Error("failed creating k8s service account")
+			return true, err
+		}
+	}
+
 	if err := c.updateGCPTeamResources(ctx, team); err != nil {
 		log.WithError(err).Error("failed while updating GCP resources")
 		return true, err

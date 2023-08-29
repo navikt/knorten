@@ -9,6 +9,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+func (c Client) doesK8sNamespaceExists(ctx context.Context, namespace string) (bool, error) {
+	_, err := c.k8sClient.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	if err != nil {
+		if !k8sErrors.IsNotFound(err) {
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	return true, nil
+}
+
 func (c Client) createK8sNamespace(ctx context.Context, name string) error {
 	if c.dryRun {
 		return nil

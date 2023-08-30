@@ -18,7 +18,7 @@ spec:
       serviceAccountName: knorten
       containers:
         - name: knorten
-          image: europe-west1-docker.pkg.dev/knada-gcp/knada/knorten
+          image: europe-north1-docker.pkg.dev/knada-gcp/knada-north/knorten
           ports:
             - containerPort: 8080
           env:

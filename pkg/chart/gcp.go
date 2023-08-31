@@ -11,6 +11,7 @@ import (
 	"cloud.google.com/go/iam"
 	"cloud.google.com/go/storage"
 	gErrors "github.com/googleapis/gax-go/v2/apierror"
+	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
 	"k8s.io/utils/strings/slices"
 )
@@ -24,6 +25,19 @@ func createBucket(ctx context.Context, teamID, bucketName, gcpProject, gcpRegion
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
 	defer cancel()
+
+	buckets := client.Buckets(ctx, "knada-gcp")
+	for {
+		b, err := buckets.Next()
+		if err != nil {
+			if err == iterator.Done {
+				break
+			}
+		}
+		if b.Name == bucketName {
+			return nil
+		}
+	}
 
 	storageClassAndLocation := &storage.BucketAttrs{
 		StorageClass:             "STANDARD",

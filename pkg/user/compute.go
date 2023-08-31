@@ -74,6 +74,11 @@ func (c Client) deleteComputeInstance(ctx context.Context, email string, log log
 		return true, err
 	}
 
+	if err := c.deleteIAMPolicyBinding(ctx, instance.Name, email); err != nil {
+		log.WithError(err).Error("failed deleting IAM policy binding")
+		return true, err
+	}
+
 	if err = c.repo.ComputeInstanceDelete(ctx, email); err != nil {
 		log.WithError(err).Error("failed deleting compute instance from database")
 		return true, err

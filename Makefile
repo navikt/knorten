@@ -28,9 +28,9 @@ local-online:
 	  --oauth2-client-secret=$(AZURE_APP_CLIENT_SECRET) \
 	  --oauth2-tenant-id=$(AZURE_APP_TENANT_ID) \
 	  --project=nada-dev-db2e \
-	  --region=europe-west1 \
+	  --region=europe-north1 \
 	  --session-key online-session
-	  --zone=europe-west1-b \
+	  --zone=europe-north1-b \
 
 local:
 	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" \
@@ -43,9 +43,9 @@ local:
 	  --in-cluster=false \
 	  --jupyter-chart-version=2.0.0 \
 	  --project=nada-dev-db2e \
-	  --region=europe-west1 \
+	  --region=europe-north1 \
 	  --session-key offline-session
-	  --zone=europe-west1-b \
+	  --zone=europe-north1-b \
 
 generate-sql:
 	$(GOBIN)/sqlc generate

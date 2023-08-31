@@ -26,7 +26,7 @@ func createBucket(ctx context.Context, teamID, bucketName, gcpProject, gcpRegion
 	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
 	defer cancel()
 
-	buckets := client.Buckets(ctx, "knada-gcp")
+	buckets := client.Buckets(ctx, gcpProject)
 	for {
 		b, err := buckets.Next()
 		if err != nil {

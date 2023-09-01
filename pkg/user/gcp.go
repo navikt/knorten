@@ -53,6 +53,10 @@ func (c Client) createComputeInstanceInGCP(ctx context.Context, instanceName, em
 		return err
 	}
 
+	if err := c.addGCPKnadaVMUserBinding(ctx, instanceName, email); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -79,6 +83,14 @@ func (c Client) computeInstanceExistsInGCP(ctx context.Context, instanceName str
 }
 
 func (c Client) addGCPOwnerBinding(ctx context.Context, instanceName, user string) error {
+	return c.addGCPIAMPolicyBinding(ctx, instanceName, user, "roles/owner")
+}
+
+func (c Client) addGCPKnadaVMUserBinding(ctx context.Context, instanceName, user string) error {
+	return c.addGCPIAMPolicyBinding(ctx, instanceName, user, "projects/knada-gcp/roles/knadvmauser")
+}
+
+func (c Client) addGCPIAMPolicyBinding(ctx context.Context, instanceName, user, role string) error {
 	if c.dryRun {
 		return nil
 	}
@@ -92,7 +104,36 @@ func (c Client) addGCPOwnerBinding(ctx context.Context, instanceName, user strin
 		instanceName,
 		"--zone", c.gcpZone,
 		"--project", c.gcpProject,
-		"--role", "roles/owner",
+		"--role", role,
+		fmt.Sprintf("--member=user:%v", user),
+	)
+
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	}
+
+	return nil
+}
+
+func (c Client) deleteIAMPolicyBinding(ctx context.Context, instanceName, user string) error {
+	if c.dryRun {
+		return nil
+	}
+
+	cmd := exec.CommandContext(ctx,
+		"gcloud",
+		"--quiet",
+		"compute",
+		"instances",
+		"remove-iam-policy-binding",
+		instanceName,
+		"--zone", c.gcpZone,
+		"--project", c.gcpProject,
+		"--role", "projects/knada-gcp/roles/knadvmauser",
 		fmt.Sprintf("--member=user:%v", user),
 	)
 

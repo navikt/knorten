@@ -73,7 +73,7 @@ Hvis du allerede har en Postgres-instans kjørende kan du bare lage en ny databa
 Trenger man tilgang til prod-databasen kan man gjøre dette med `gcloud` og `cloud_sql_proxy`.
 
 ```
-CONNECTION_NAME=$(gcloud sql instances describe knorten --format="get(connectionName)" --project knada-gcp);
+CONNECTION_NAME=$(gcloud sql instances describe knorten-north --format="get(connectionName)" --project knada-gcp);
 cloud_sql_proxy -enable_iam_login -instances=${CONNECTION_NAME}=tcp:5433
 ```
 

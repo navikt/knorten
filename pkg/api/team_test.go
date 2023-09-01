@@ -24,8 +24,7 @@ func TestTeamAPI(t *testing.T) {
 	err := repo.TeamCreate(ctx, gensql.Team{
 		ID:    existingTeamID,
 		Slug:  existingTeam,
-		Users: []string{},
-		Owner: user.Email,
+		Users: []string{user.Email},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -63,7 +62,9 @@ func TestTeamAPI(t *testing.T) {
 		}
 
 		expected, err := createExpectedHTML("team/new", map[string]any{
-			"owner": user.Email,
+			"form": gensql.Team{
+				Users: []string{user.Email},
+			},
 		})
 		if err != nil {
 			t.Error(err)
@@ -79,7 +80,7 @@ func TestTeamAPI(t *testing.T) {
 	})
 
 	t.Run("create team", func(t *testing.T) {
-		data := url.Values{"team": {newTeam}, "owner": {user.Email}, "users[]": []string{}}
+		data := url.Values{"team": {newTeam}, "users[]": []string{user.Email}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/new", server.URL), data)
 		if err != nil {
 			t.Error(err)
@@ -108,12 +109,8 @@ func TestTeamAPI(t *testing.T) {
 			t.Errorf("create team: expected slug %v, got %v", newTeam, eventPayload.Slug)
 		}
 
-		if eventPayload.Owner != user.Email {
-			t.Errorf("create team: expected owner %v, got %v", user.Email, eventPayload.Owner)
-		}
-
-		if len(eventPayload.Users) != 0 {
-			t.Errorf("create team: expected 0 number of users, got %v", len(eventPayload.Users))
+		if len(eventPayload.Users) != 1 {
+			t.Errorf("create team: expected 1 number of users, got %v", len(eventPayload.Users))
 		}
 	})
 
@@ -162,8 +159,7 @@ func TestTeamAPI(t *testing.T) {
 			"team": gensql.TeamGetRow{
 				ID:    existingTeamID,
 				Slug:  existingTeam,
-				Owner: user.Email,
-				Users: []string{},
+				Users: []string{user.Email},
 			},
 		})
 		if err != nil {
@@ -213,10 +209,6 @@ func TestTeamAPI(t *testing.T) {
 
 		if eventPayload.ID != existingTeamID {
 			t.Errorf("edit team: expected team id %v, got %v", existingTeamID, eventPayload.ID)
-		}
-
-		if eventPayload.Owner != user.Email {
-			t.Errorf("edit team: expected owner %v, got %v", user.Email, eventPayload.Owner)
 		}
 
 		if diff := cmp.Diff(eventPayload.Users, users); diff != "" {
@@ -338,8 +330,7 @@ func prepareTeamEventsTest(ctx context.Context) (gensql.Team, error) {
 	team := gensql.Team{
 		ID:    "eventtest-team-1234",
 		Slug:  "eventtest-team",
-		Users: []string{},
-		Owner: user.Email,
+		Users: []string{user.Email},
 	}
 
 	if err := repo.TeamCreate(ctx, team); err != nil {

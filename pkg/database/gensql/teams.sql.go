@@ -12,14 +12,13 @@ import (
 )
 
 const teamBySlugGet = `-- name: TeamBySlugGet :one
-SELECT id, "owner", ("owner" || users)::text[] as users, slug
+SELECT id, users, slug
 FROM teams
 WHERE slug = $1
 `
 
 type TeamBySlugGetRow struct {
 	ID    string
-	Owner string
 	Users []string
 	Slug  string
 }
@@ -27,34 +26,23 @@ type TeamBySlugGetRow struct {
 func (q *Queries) TeamBySlugGet(ctx context.Context, slug string) (TeamBySlugGetRow, error) {
 	row := q.db.QueryRowContext(ctx, teamBySlugGet, slug)
 	var i TeamBySlugGetRow
-	err := row.Scan(
-		&i.ID,
-		&i.Owner,
-		pq.Array(&i.Users),
-		&i.Slug,
-	)
+	err := row.Scan(&i.ID, pq.Array(&i.Users), &i.Slug)
 	return i, err
 }
 
 const teamCreate = `-- name: TeamCreate :exec
-INSERT INTO teams ("id", "users", "slug", "owner")
-VALUES ($1, $2, $3, $4)
+INSERT INTO teams ("id", "users", "slug")
+VALUES ($1, $2, $3)
 `
 
 type TeamCreateParams struct {
 	ID    string
 	Users []string
 	Slug  string
-	Owner string
 }
 
 func (q *Queries) TeamCreate(ctx context.Context, arg TeamCreateParams) error {
-	_, err := q.db.ExecContext(ctx, teamCreate,
-		arg.ID,
-		pq.Array(arg.Users),
-		arg.Slug,
-		arg.Owner,
-	)
+	_, err := q.db.ExecContext(ctx, teamCreate, arg.ID, pq.Array(arg.Users), arg.Slug)
 	return err
 }
 
@@ -70,14 +58,13 @@ func (q *Queries) TeamDelete(ctx context.Context, id string) error {
 }
 
 const teamGet = `-- name: TeamGet :one
-SELECT id, "owner", ("owner" || users)::text[] as users, slug
+SELECT id, users, slug
 FROM teams
 WHERE id = $1
 `
 
 type TeamGetRow struct {
 	ID    string
-	Owner string
 	Users []string
 	Slug  string
 }
@@ -85,12 +72,7 @@ type TeamGetRow struct {
 func (q *Queries) TeamGet(ctx context.Context, id string) (TeamGetRow, error) {
 	row := q.db.QueryRowContext(ctx, teamGet, id)
 	var i TeamGetRow
-	err := row.Scan(
-		&i.ID,
-		&i.Owner,
-		pq.Array(&i.Users),
-		&i.Slug,
-	)
+	err := row.Scan(&i.ID, pq.Array(&i.Users), &i.Slug)
 	return i, err
 }
 
@@ -113,7 +95,7 @@ func (q *Queries) TeamUpdate(ctx context.Context, arg TeamUpdateParams) error {
 const teamsForUserGet = `-- name: TeamsForUserGet :many
 SELECT id, slug
 FROM teams
-WHERE "owner" = $1 OR $1::TEXT = ANY ("users")
+WHERE $1::TEXT = ANY ("users")
 `
 
 type TeamsForUserGetRow struct {
@@ -145,7 +127,7 @@ func (q *Queries) TeamsForUserGet(ctx context.Context, email string) ([]TeamsFor
 }
 
 const teamsGet = `-- name: TeamsGet :many
-select id, slug, users, created, owner
+select id, slug, users, created
 from teams
 ORDER BY slug
 `
@@ -164,7 +146,6 @@ func (q *Queries) TeamsGet(ctx context.Context) ([]Team, error) {
 			&i.Slug,
 			pq.Array(&i.Users),
 			&i.Created,
-			&i.Owner,
 		); err != nil {
 			return nil, err
 		}

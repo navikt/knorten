@@ -96,8 +96,7 @@ func prepareUserTests(ctx context.Context) (*gensql.Team, error) {
 	team := gensql.Team{
 		ID:    "team",
 		Slug:  "team",
-		Users: []string{},
-		Owner: user.Email,
+		Users: []string{user.Email},
 	}
 	err := repo.TeamCreate(ctx, team)
 	if err != nil {

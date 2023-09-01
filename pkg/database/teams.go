@@ -15,7 +15,6 @@ func (r *Repo) TeamCreate(ctx context.Context, team gensql.Team) error {
 		ID:    team.ID,
 		Users: stringSliceToLower(team.Users),
 		Slug:  team.Slug,
-		Owner: team.Owner,
 	})
 }
 

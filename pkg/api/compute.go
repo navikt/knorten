@@ -1,10 +1,12 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 )
 
@@ -14,7 +16,7 @@ func (c *client) setupComputeRoutes() {
 	})
 
 	c.router.POST("/compute/new", func(ctx *gin.Context) {
-		err := c.createComputeInstance(ctx)
+		err := c.createOrSyncComputeInstance(ctx, database.EventTypeCreateCompute)
 		if err != nil {
 			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
@@ -79,7 +81,7 @@ func (c *client) deleteComputeInstance(ctx *gin.Context) error {
 	return c.repo.RegisterDeleteComputeEvent(ctx, user.Email)
 }
 
-func (c *client) createComputeInstance(ctx *gin.Context) error {
+func (c *client) createOrSyncComputeInstance(ctx *gin.Context, event database.EventType) error {
 	user, err := getUser(ctx)
 	if err != nil {
 		return err
@@ -90,5 +92,12 @@ func (c *client) createComputeInstance(ctx *gin.Context) error {
 		Name:  "compute-" + getNormalizedNameFromEmail(user.Email),
 	}
 
-	return c.repo.RegisterCreateComputeEvent(ctx, instance.Owner, instance)
+	switch event {
+	case database.EventTypeCreateCompute:
+		return c.repo.RegisterCreateComputeEvent(ctx, instance.Owner, instance)
+	case database.EventTypeSyncCompute:
+		return c.repo.RegisterSyncComputeEvent(ctx, instance.Owner, instance)
+	default:
+		return fmt.Errorf("invalid event type %v", event)
+	}
 }

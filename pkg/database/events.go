@@ -25,6 +25,7 @@ const (
 	EventTypeDeleteAirflow        EventType = "delete:airflow"
 	EventTypeCreateCompute        EventType = "create:compute"
 	EventTypeDeleteCompute        EventType = "delete:compute"
+	EventTypeSyncCompute          EventType = "sync:compute"
 	EventTypeCreateUserGSM        EventType = "create:usergsm"
 	EventTypeDeleteUserGSM        EventType = "delete:usergsm"
 	EventTypeHelmRolloutJupyter   EventType = "rolloutJupyter:helm"
@@ -96,6 +97,10 @@ func (r *Repo) RegisterDeleteComputeEvent(ctx context.Context, email string) err
 
 func (r *Repo) RegisterCreateComputeEvent(ctx context.Context, owner string, values any) error {
 	return r.registerEvent(ctx, EventTypeCreateCompute, owner, 5*time.Minute, values)
+}
+
+func (r *Repo) RegisterSyncComputeEvent(ctx context.Context, owner string, values any) error {
+	return r.registerEvent(ctx, EventTypeSyncCompute, owner, 5*time.Minute, values)
 }
 
 func (r *Repo) RegisterCreateAirflowEvent(ctx context.Context, teamID string, values any) error {

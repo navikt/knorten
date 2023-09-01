@@ -685,6 +685,52 @@ func TestAdminAPI(t *testing.T) {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
+
+	t.Run("sync all compute", func(t *testing.T) {
+		instance := gensql.ComputeInstance{
+			Owner: user.Email,
+			Name:  "compute-dummy",
+		}
+		if err := repo.ComputeInstanceCreate(ctx, instance); err != nil {
+			t.Error(err)
+		}
+		t.Cleanup(func() {
+			if err := repo.ComputeInstanceDelete(ctx, user.Email); err != nil {
+				t.Error(err)
+			}
+		})
+
+		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeSyncCompute)
+		if err != nil {
+			t.Error(err)
+		}
+
+		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/compute/sync/all", server.URL), nil)
+		if err != nil {
+			t.Error(err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+		}
+
+		events, err := repo.EventsGetType(ctx, database.EventTypeSyncCompute)
+		if err != nil {
+			t.Error(err)
+		}
+
+		newEvents := getNewEvents(oldEvents, events)
+
+		if len(newEvents) != 1 {
+			t.Errorf("sync all compute: expected 1 sync event, got %v", len(newEvents))
+		}
+
+		event := newEvents[0]
+		if event.Owner != instance.Owner {
+			t.Errorf("sync all compute: expected event owner %v, got %v", instance.Owner, event.Owner)
+		}
+	})
 }
 
 func prepareAdminTests(ctx context.Context) ([]gensql.Team, error) {

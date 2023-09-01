@@ -10,6 +10,10 @@ func (r *Repo) ComputeInstanceCreate(ctx context.Context, instance gensql.Comput
 	return r.querier.ComputeInstanceCreate(ctx, gensql.ComputeInstanceCreateParams(instance))
 }
 
+func (r *Repo) ComputeInstancesGet(ctx context.Context) ([]gensql.ComputeInstance, error) {
+	return r.querier.ComputeInstancesGet(ctx)
+}
+
 func (r *Repo) ComputeInstanceGet(ctx context.Context, owner string) (gensql.ComputeInstance, error) {
 	return r.querier.ComputeInstanceGet(ctx, owner)
 }

@@ -92,3 +92,30 @@ func (c Client) deleteComputeInstance(ctx context.Context, email string, log log
 
 	return false, nil
 }
+
+func (c Client) SyncComputeInstance(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) bool {
+	log.Info("Syncing compute instance")
+
+	if retry, err := c.syncComputeInstance(ctx, instance, log); err != nil {
+		log.Info("Failed syncing compute instance")
+		return retry
+	}
+
+	log.Info("Successfully synced compute instance")
+	return false
+}
+
+func (c Client) syncComputeInstance(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) (bool, error) {
+	err := c.createComputeInstanceInGCP(ctx, instance.Name, instance.Owner)
+	if err != nil {
+		log.WithError(err).Error("failed creating compute instance in GCP")
+		return true, err
+	}
+
+	err = c.createIAMPolicyBindingsInGCP(ctx, instance.Name, instance.Owner)
+	if err != nil {
+		log.WithError(err).Error("failed creating IAM policy binding")
+		return true, err
+	}
+	return false, nil
+}

@@ -47,3 +47,31 @@ func (q *Queries) ComputeInstanceGet(ctx context.Context, owner string) (Compute
 	err := row.Scan(&i.Owner, &i.Name)
 	return i, err
 }
+
+const computeInstancesGet = `-- name: ComputeInstancesGet :many
+SELECT owner, name
+FROM compute_instances
+`
+
+func (q *Queries) ComputeInstancesGet(ctx context.Context) ([]ComputeInstance, error) {
+	rows, err := q.db.QueryContext(ctx, computeInstancesGet)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ComputeInstance{}
+	for rows.Next() {
+		var i ComputeInstance
+		if err := rows.Scan(&i.Owner, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

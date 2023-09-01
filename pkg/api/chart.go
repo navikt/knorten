@@ -36,10 +36,12 @@ func (v jupyterForm) MemoryWithoutUnit() string {
 }
 
 type airflowForm struct {
-	DagRepo        string `form:"dagrepo" binding:"required,startswith=navikt/,validAirflowRepo"`
-	DagRepoBranch  string `form:"dagrepobranch" binding:"validRepoBranch"`
-	RestrictEgress string `form:"restrictairflowegress"`
-	ApiAccess      string `form:"apiaccess"`
+	DagRepo         string `form:"dagrepo" binding:"required,startswith=navikt/,validAirflowRepo"`
+	DagRepoBranch   string `form:"dagrepobranch" binding:"validRepoBranch"`
+	AirflowImage    string `form:"airflowimage"`
+	AirflowImageTag string `form:"airflowimagetag"`
+	RestrictEgress  string `form:"restrictairflowegress"`
+	ApiAccess       string `form:"apiaccess"`
 }
 
 func getChartType(chartType string) gensql.ChartType {

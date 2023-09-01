@@ -692,8 +692,7 @@ func prepareAdminTests(ctx context.Context) ([]gensql.Team, error) {
 	teamA := gensql.Team{
 		ID:    "team-a-1234",
 		Slug:  "team-a",
-		Users: []string{"user.one@nav.no"},
-		Owner: user.Email,
+		Users: []string{user.Email, "user.one@nav.no"},
 	}
 	err := repo.TeamCreate(ctx, teamA)
 	if err != nil {
@@ -706,8 +705,7 @@ func prepareAdminTests(ctx context.Context) ([]gensql.Team, error) {
 	teamB := gensql.Team{
 		ID:    "team-b-1234",
 		Slug:  "team-b",
-		Users: []string{"user.one@nav.no", "user.two@nav.no"},
-		Owner: user.Email,
+		Users: []string{user.Email, "user.one@nav.no", "user.two@nav.no"},
 	}
 	err = repo.TeamCreate(ctx, teamB)
 	if err != nil {

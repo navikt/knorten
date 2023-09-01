@@ -10,6 +10,12 @@ import (
 	"github.com/nais/knorten/pkg/gcp"
 )
 
+var gcpIAMPolicyBindingsRoles = []string{
+	"roles/compute.viewer",
+	"roles/iap.tunnelResourceAccessor",
+	"roles/monitoring.viewer",
+}
+
 func (c Client) createComputeInstanceInGCP(ctx context.Context, instanceName, email string) error {
 	if c.dryRun {
 		return nil
@@ -49,102 +55,6 @@ func (c Client) createComputeInstanceInGCP(ctx context.Context, instanceName, em
 		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
 	}
 
-	if err := c.addGCPOwnerBinding(ctx, instanceName, email); err != nil {
-		return err
-	}
-
-	if err := c.addGCPKnadaVMUserBinding(ctx, instanceName, email); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c Client) computeInstanceExistsInGCP(ctx context.Context, instanceName string) (bool, error) {
-	cmd := exec.CommandContext(ctx,
-		"gcloud",
-		"--quiet",
-		"compute",
-		"instances",
-		"list",
-		"--format=get(name)",
-		"--project", c.gcpProject,
-		fmt.Sprintf("--filter=name:%v", instanceName))
-
-	stdOut := &bytes.Buffer{}
-	stdErr := &bytes.Buffer{}
-	cmd.Stdout = stdOut
-	cmd.Stderr = stdErr
-	if err := cmd.Run(); err != nil {
-		return false, fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
-	}
-
-	return stdOut.String() != "", nil
-}
-
-func (c Client) addGCPOwnerBinding(ctx context.Context, instanceName, user string) error {
-	return c.addGCPIAMPolicyBinding(ctx, instanceName, user, "roles/owner")
-}
-
-func (c Client) addGCPKnadaVMUserBinding(ctx context.Context, instanceName, user string) error {
-	return c.addGCPIAMPolicyBinding(ctx, instanceName, user, "projects/knada-gcp/roles/knadvmauser")
-}
-
-func (c Client) addGCPIAMPolicyBinding(ctx context.Context, instanceName, user, role string) error {
-	if c.dryRun {
-		return nil
-	}
-
-	cmd := exec.CommandContext(ctx,
-		"gcloud",
-		"--quiet",
-		"compute",
-		"instances",
-		"add-iam-policy-binding",
-		instanceName,
-		"--zone", c.gcpZone,
-		"--project", c.gcpProject,
-		"--role", role,
-		fmt.Sprintf("--member=user:%v", user),
-	)
-
-	stdOut := &bytes.Buffer{}
-	stdErr := &bytes.Buffer{}
-	cmd.Stdout = stdOut
-	cmd.Stderr = stdErr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
-	}
-
-	return nil
-}
-
-func (c Client) deleteIAMPolicyBinding(ctx context.Context, instanceName, user string) error {
-	if c.dryRun {
-		return nil
-	}
-
-	cmd := exec.CommandContext(ctx,
-		"gcloud",
-		"--quiet",
-		"compute",
-		"instances",
-		"remove-iam-policy-binding",
-		instanceName,
-		"--zone", c.gcpZone,
-		"--project", c.gcpProject,
-		"--role", "projects/knada-gcp/roles/knadvmauser",
-		fmt.Sprintf("--member=user:%v", user),
-	)
-
-	stdOut := &bytes.Buffer{}
-	stdErr := &bytes.Buffer{}
-	cmd.Stdout = stdOut
-	cmd.Stderr = stdErr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
-	}
-
 	return nil
 }
 
@@ -172,6 +82,137 @@ func (c Client) deleteComputeInstanceFromGCP(ctx context.Context, instanceName s
 		instanceName,
 		"--zone", c.gcpZone,
 		"--project", c.gcpProject,
+	)
+
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	}
+
+	return nil
+}
+
+func (c Client) computeInstanceExistsInGCP(ctx context.Context, instanceName string) (bool, error) {
+	cmd := exec.CommandContext(ctx,
+		"gcloud",
+		"--quiet",
+		"compute",
+		"instances",
+		"list",
+		"--format=get(name)",
+		"--project", c.gcpProject,
+		fmt.Sprintf("--filter=name:%v", instanceName))
+
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	if err := cmd.Run(); err != nil {
+		return false, fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	}
+
+	return stdOut.String() != "", nil
+}
+
+func (c Client) createIAMPolicyBindingsInGCP(ctx context.Context, instanceName, email string) error {
+	if c.dryRun {
+		return nil
+	}
+
+	if err := c.addComputeInstanceOwnerBindingInGCP(ctx, instanceName, email); err != nil {
+		return err
+	}
+
+	for _, role := range gcpIAMPolicyBindingsRoles {
+		if err := c.addProjectIAMPolicyBindingInGCP(ctx, instanceName, email, role); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c Client) deleteIAMPolicyBindingsFromGCP(ctx context.Context, instanceName, email string) error {
+	if c.dryRun {
+		return nil
+	}
+
+	for _, role := range gcpIAMPolicyBindingsRoles {
+		if err := c.removeProjectIAMPolicyBindingFromGCP(ctx, instanceName, email, role); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c Client) addComputeInstanceOwnerBindingInGCP(ctx context.Context, instanceName, user string) error {
+	cmd := exec.CommandContext(ctx,
+		"gcloud",
+		"--quiet",
+		"compute",
+		"instances",
+		"add-iam-policy-binding",
+		instanceName,
+		"--zone", c.gcpZone,
+		"--project", c.gcpProject,
+		"--role", "roles/owner",
+		fmt.Sprintf("--member=user:%v", user),
+	)
+
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	}
+
+	return nil
+}
+
+func (c Client) addProjectIAMPolicyBindingInGCP(ctx context.Context, instanceName, user, role string) error {
+	if c.dryRun {
+		return nil
+	}
+
+	cmd := exec.CommandContext(ctx,
+		"gcloud",
+		"--quiet",
+		"projects",
+		"add-iam-policy-binding",
+		c.gcpProject,
+		"--role", role,
+		fmt.Sprintf("--member=user:%v", user),
+	)
+
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	}
+
+	return nil
+}
+
+func (c Client) removeProjectIAMPolicyBindingFromGCP(ctx context.Context, instanceName, user, role string) error {
+	if c.dryRun {
+		return nil
+	}
+
+	cmd := exec.CommandContext(ctx,
+		"gcloud",
+		"--quiet",
+		"projects",
+		"remove-iam-policy-binding",
+		c.gcpProject,
+		"--role", role,
+		fmt.Sprintf("--member=user:%v", user),
 	)
 
 	stdOut := &bytes.Buffer{}

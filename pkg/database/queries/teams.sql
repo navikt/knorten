@@ -1,6 +1,6 @@
 -- name: TeamCreate :exec
-INSERT INTO teams ("id", "users", "slug", "owner")
-VALUES (@id, @users, @slug, @owner);
+INSERT INTO teams ("id", "users", "slug")
+VALUES (@id, @users, @slug);
 
 -- name: TeamUpdate :exec
 UPDATE teams
@@ -10,15 +10,15 @@ WHERE id = @id;
 -- name: TeamsForUserGet :many
 SELECT id, slug
 FROM teams
-WHERE "owner" = @email OR @email::TEXT = ANY ("users");
+WHERE @email::TEXT = ANY ("users");
 
 -- name: TeamGet :one
-SELECT id, "owner", ("owner" || users)::text[] as users, slug
+SELECT id, users, slug
 FROM teams
 WHERE id = @id;
 
 -- name: TeamBySlugGet :one
-SELECT id, "owner", ("owner" || users)::text[] as users, slug
+SELECT id, users, slug
 FROM teams
 WHERE slug = @slug;
 

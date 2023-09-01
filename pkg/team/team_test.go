@@ -90,8 +90,7 @@ func TestTeam(t *testing.T) {
 				team: gensql.Team{
 					ID:    "test-team-1234",
 					Slug:  "test-team",
-					Users: []string{"user.one@nav.on", "user.two@nav.on"},
-					Owner: "dummy@nav.no",
+					Users: []string{"dummy@nav.no", "user.one@nav.on", "user.two@nav.on"},
 				},
 			},
 			want: want{
@@ -99,7 +98,6 @@ func TestTeam(t *testing.T) {
 					ID:    "test-team-1234",
 					Slug:  "test-team",
 					Users: []string{"dummy@nav.no", "user.one@nav.on", "user.two@nav.on"},
-					Owner: "dummy@nav.no",
 				},
 				err: nil,
 			},
@@ -111,8 +109,7 @@ func TestTeam(t *testing.T) {
 				team: gensql.Team{
 					ID:    "already-exists-1234",
 					Slug:  "test-team",
-					Users: []string{},
-					Owner: "dummy@nav.no",
+					Users: []string{"dummy@nav.no"},
 				},
 			},
 			want: want{
@@ -120,28 +117,6 @@ func TestTeam(t *testing.T) {
 					ID:    "test-team-1234",
 					Slug:  "test-team",
 					Users: []string{"dummy@nav.no", "user.one@nav.on", "user.two@nav.on"},
-					Owner: "dummy@nav.no",
-				},
-				err: nil,
-			},
-		},
-		{
-			name:      "Create team no users",
-			eventType: database.EventTypeCreateTeam,
-			args: args{
-				team: gensql.Team{
-					ID:    "other-team-1234",
-					Slug:  "other-team",
-					Users: []string{},
-					Owner: "dummy@nav.no",
-				},
-			},
-			want: want{
-				team: gensql.TeamBySlugGetRow{
-					ID:    "other-team-1234",
-					Slug:  "other-team",
-					Users: []string{"dummy@nav.no"},
-					Owner: "dummy@nav.no",
 				},
 				err: nil,
 			},
@@ -153,7 +128,7 @@ func TestTeam(t *testing.T) {
 				team: gensql.Team{
 					ID:    "test-team-1234",
 					Slug:  "test-team",
-					Users: []string{"new.user@nav.no"},
+					Users: []string{"dummy@nav.no", "new.user@nav.no"},
 				},
 			},
 			want: want{
@@ -161,7 +136,6 @@ func TestTeam(t *testing.T) {
 					ID:    "test-team-1234",
 					Slug:  "test-team",
 					Users: []string{"dummy@nav.no", "new.user@nav.no"},
-					Owner: "dummy@nav.no",
 				},
 				err: nil,
 			},

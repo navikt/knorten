@@ -38,6 +38,12 @@ func (c Client) createComputeInstance(ctx context.Context, instance gensql.Compu
 		return true, err
 	}
 
+	err = c.createIAMPolicyBindingsInGCP(ctx, instance.Name, instance.Owner)
+	if err != nil {
+		log.WithError(err).Error("failed creating IAM policy binding")
+		return true, err
+	}
+
 	if err := c.repo.ComputeInstanceCreate(ctx, instance); err != nil {
 		log.WithError(err).Error("failed saving compute instance to database")
 		return true, err
@@ -74,7 +80,7 @@ func (c Client) deleteComputeInstance(ctx context.Context, email string, log log
 		return true, err
 	}
 
-	if err := c.deleteIAMPolicyBinding(ctx, instance.Name, email); err != nil {
+	if err := c.deleteIAMPolicyBindingsFromGCP(ctx, instance.Name, email); err != nil {
 		log.WithError(err).Error("failed deleting IAM policy binding")
 		return true, err
 	}

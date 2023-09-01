@@ -114,7 +114,6 @@ type Team struct {
 	Slug    string
 	Users   []string
 	Created sql.NullTime
-	Owner   string
 }
 
 type UserGoogleSecretManager struct {

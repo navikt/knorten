@@ -25,6 +25,10 @@ var ValidateRepoBranch validator.Func = func(fl validator.FieldLevel) bool {
 var ValidateAirflowImage validator.Func = func(fl validator.FieldLevel) bool {
 	image := fl.Field().Interface().(string)
 
+	if image == "" {
+		return true
+	}
+
 	imageParts := strings.Split(image, ":")
 	if len(imageParts) != 2 {
 		return false

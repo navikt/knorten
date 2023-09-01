@@ -242,6 +242,10 @@ var ValidateTeamUsers validator.Func = func(fl validator.FieldLevel) bool {
 		return false
 	}
 
+	if len(users) == 0 {
+		return false
+	}
+
 	for _, user := range users {
 		if user == "" {
 			continue

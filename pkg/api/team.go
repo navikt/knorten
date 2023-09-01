@@ -22,7 +22,7 @@ import (
 
 type teamForm struct {
 	Slug      string   `form:"team" binding:"required,validTeamName"`
-	Users     []string `form:"users[]" binding:"validEmail"`
+	Users     []string `form:"users[]" binding:"validEmail,userListNotEmpty"`
 	APIAccess string   `form:"apiaccess"`
 }
 
@@ -47,7 +47,13 @@ func formToTeam(ctx *gin.Context) (gensql.Team, error) {
 
 func (c *client) setupTeamRoutes() {
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-		err := v.RegisterValidation("validEmail", ValidateTeamUsers)
+		err := v.RegisterValidation("validEmail", ValidateUserEmails)
+		if err != nil {
+			c.log.WithError(err).Error("can't register validator")
+			return
+		}
+
+		err = v.RegisterValidation("userListNotEmpty", ValidateTeamUsers)
 		if err != nil {
 			c.log.WithError(err).Error("can't register validator")
 			return
@@ -242,7 +248,12 @@ var ValidateTeamUsers validator.Func = func(fl validator.FieldLevel) bool {
 		return false
 	}
 
-	if len(users) == 0 {
+	return len(users) != 0
+}
+
+var ValidateUserEmails validator.Func = func(fl validator.FieldLevel) bool {
+	users, ok := fl.Field().Interface().([]string)
+	if !ok {
 		return false
 	}
 

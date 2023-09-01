@@ -34,7 +34,7 @@ func (c Client) createGCPTeamResources(ctx context.Context, team gensql.Team) er
 		return err
 	}
 
-	if err := gcp.SetUsersSecretOwnerBinding(ctx, append(team.Users, team.Owner), secret.Name); err != nil {
+	if err := gcp.SetUsersSecretOwnerBinding(ctx, team.Users, secret.Name); err != nil {
 		return err
 	}
 
@@ -150,7 +150,7 @@ func (c Client) updateGCPTeamResources(ctx context.Context, team gensql.Team) er
 		return nil
 	}
 
-	return gcp.SetUsersSecretOwnerBinding(ctx, append(team.Users, team.Owner), fmt.Sprintf("projects/%v/secrets/%v", c.gcpProject, team.ID))
+	return gcp.SetUsersSecretOwnerBinding(ctx, team.Users, fmt.Sprintf("projects/%v/secrets/%v", c.gcpProject, team.ID))
 }
 
 func (c Client) deleteGCPTeamResources(ctx context.Context, teamID string) error {

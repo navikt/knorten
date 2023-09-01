@@ -22,7 +22,6 @@ import (
 
 type teamForm struct {
 	Slug      string   `form:"team" binding:"required,validTeamName"`
-	Owner     string   `form:"owner" binding:"required"`
 	Users     []string `form:"users[]" binding:"validEmail"`
 	APIAccess string   `form:"apiaccess"`
 }
@@ -43,7 +42,6 @@ func formToTeam(ctx *gin.Context) (gensql.Team, error) {
 		ID:    id,
 		Slug:  form.Slug,
 		Users: form.Users,
-		Owner: form.Owner,
 	}, nil
 }
 
@@ -79,9 +77,9 @@ func (c *client) setupTeamRoutes() {
 			return
 		}
 
+		form.Users = []string{user.Email}
 		c.htmlResponseWrapper(ctx, http.StatusOK, "team/new", gin.H{
 			"form":   form,
-			"owner":  user.Email,
 			"errors": flashes,
 		})
 	})
@@ -126,11 +124,6 @@ func (c *client) setupTeamRoutes() {
 			ctx.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
-
-		// Avoid duplicating owner as a user in edit form
-		team.Users = slices.Filter(nil, team.Users, func(s string) bool {
-			return s != team.Owner
-		})
 
 		session := sessions.Default(ctx)
 		flashes := session.Flashes()

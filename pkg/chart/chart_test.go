@@ -277,8 +277,7 @@ func prepareChartTests(ctx context.Context) (gensql.Team, error) {
 	team := gensql.Team{
 		ID:    "test-team-1234",
 		Slug:  "test-team",
-		Users: []string{"user.one@nav.no"},
-		Owner: "dummy@nav.no",
+		Users: []string{"dummy@nav.no", "user.one@nav.no"},
 	}
 
 	if err := helm.UpdateHelmRepositories(); err != nil {

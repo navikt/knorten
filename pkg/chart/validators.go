@@ -21,3 +21,18 @@ var ValidateRepoBranch validator.Func = func(fl validator.FieldLevel) bool {
 	branch := fl.Field().Interface().(string)
 	return !strings.Contains(branch, "/")
 }
+
+var ValidateAirflowImage validator.Func = func(fl validator.FieldLevel) bool {
+	image := fl.Field().Interface().(string)
+
+	imageParts := strings.Split(image, ":")
+	if len(imageParts) != 2 {
+		return false
+	}
+
+	if !strings.HasPrefix(imageParts[0], "ghcr.io/navikt/") && !strings.HasPrefix(imageParts[0], "europe-north1-docker.pkg.dev") {
+		return false
+	}
+
+	return true
+}

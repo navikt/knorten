@@ -436,7 +436,7 @@ func TestAirflowAPI(t *testing.T) {
 		}
 
 		if strings.Join([]string{eventPayload.AirflowImage, eventPayload.AirflowTag}, ":") != customImage {
-			t.Errorf("edit airflow: custom image, expected %v, got %v", customImage, strings.Join([]string{eventPayload.AirflowImage, eventPayload.AirflowTag})
+			t.Errorf("edit airflow: custom image, expected %v, got %v", customImage, strings.Join([]string{eventPayload.AirflowImage, eventPayload.AirflowTag}, ":"))
 		}
 
 		if !eventPayload.RestrictEgress {

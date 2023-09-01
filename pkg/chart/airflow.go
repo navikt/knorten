@@ -35,8 +35,6 @@ type AirflowConfigurableValues struct {
 	TeamID         string
 	DagRepo        string `helm:"webserver.extraContainers.[0].args.[0]"`
 	DagRepoBranch  string `helm:"webserver.extraContainers.[0].args.[1]"`
-	AirflowImage   string `helm:"images.airflow.repository"`
-	AirflowTag     string `helm:"images.airflow.tag"`
 	RestrictEgress bool
 	ApiAccess      bool
 }

@@ -150,6 +150,10 @@ func (c Client) updateGCPTeamResources(ctx context.Context, team gensql.Team) er
 		return nil
 	}
 
+	if err := c.createServiceAccountSecretAccessorBinding(ctx, fmt.Sprintf("%v@%v.iam.gserviceaccount.com", team.ID, c.gcpProject), team.ID); err != nil {
+		return err
+	}
+
 	return gcp.SetUsersSecretOwnerBinding(ctx, team.Users, fmt.Sprintf("projects/%v/secrets/%v", c.gcpProject, team.ID))
 }
 

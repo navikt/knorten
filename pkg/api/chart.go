@@ -38,6 +38,7 @@ func (v jupyterForm) MemoryWithoutUnit() string {
 type airflowForm struct {
 	DagRepo        string `form:"dagrepo" binding:"required,startswith=navikt/,validAirflowRepo"`
 	DagRepoBranch  string `form:"dagrepobranch" binding:"validRepoBranch"`
+	AirflowImage   string `form:"airflowimage" binding:"validAirflowImage"`
 	RestrictEgress string `form:"restrictairflowegress"`
 	ApiAccess      string `form:"apiaccess"`
 }
@@ -75,6 +76,14 @@ func (c *client) setupChartRoutes() {
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		err := v.RegisterValidation("validRepoBranch", chart.ValidateRepoBranch)
+		if err != nil {
+			c.log.WithError(err).Error("can't register validator")
+			return
+		}
+	}
+
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		err := v.RegisterValidation("validAirflowImage", chart.ValidateAirflowImage)
 		if err != nil {
 			c.log.WithError(err).Error("can't register validator")
 			return
@@ -325,12 +334,22 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 			dagRepoBranch = "main"
 		}
 
+		airflowImage := ""
+		airflowTag := ""
+		if form.AirflowImage != "" {
+			imageParts := strings.Split(form.AirflowImage, ":")
+			airflowImage = imageParts[0]
+			airflowTag = imageParts[1]
+		}
+
 		values := chart.AirflowConfigurableValues{
 			TeamID:         team.ID,
 			DagRepo:        form.DagRepo,
 			DagRepoBranch:  dagRepoBranch,
 			RestrictEgress: form.RestrictEgress == "on",
 			ApiAccess:      form.ApiAccess == "on",
+			AirflowImage:   airflowImage,
+			AirflowTag:     airflowTag,
 		}
 
 		return c.repo.RegisterCreateAirflowEvent(ctx, team.ID, values)
@@ -399,11 +418,17 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 			apiAccess = "on"
 		}
 
+		airflowImage := ""
+		if airflowValues.AirflowImage != "" && airflowValues.AirflowTag != "" {
+			airflowImage = fmt.Sprintf("%v:%v", airflowValues.AirflowImage, airflowValues.AirflowTag)
+		}
+
 		form = airflowForm{
 			DagRepo:        airflowValues.DagRepo,
 			DagRepoBranch:  airflowValues.DagRepoBranch,
 			RestrictEgress: restrictEgress,
 			ApiAccess:      apiAccess,
+			AirflowImage:   airflowImage,
 		}
 	}
 
@@ -462,12 +487,22 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 			dagRepoBranch = "main"
 		}
 
+		airflowImage := ""
+		airflowTag := ""
+		if form.AirflowImage != "" {
+			imageParts := strings.Split(form.AirflowImage, ":")
+			airflowImage = imageParts[0]
+			airflowTag = imageParts[1]
+		}
+
 		values := chart.AirflowConfigurableValues{
 			TeamID:         team.ID,
 			DagRepo:        form.DagRepo,
 			DagRepoBranch:  dagRepoBranch,
 			RestrictEgress: form.RestrictEgress == "on",
 			ApiAccess:      form.ApiAccess == "on",
+			AirflowImage:   airflowImage,
+			AirflowTag:     airflowTag,
 		}
 
 		return c.repo.RegisterUpdateAirflowEvent(ctx, team.ID, values)

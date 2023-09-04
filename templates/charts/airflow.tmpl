@@ -65,6 +65,19 @@
                         </a>
                     </div>
                 </fieldset>
+                 <div>
+                    <h2>Eget Airflow image</h2>
+                    <p>
+                        Dersom du ønsker å kjøre Airflow med et annet image enn det plattformen tilbyr spesifiserer du Docker image og tag i feltet under.
+                    </p>
+                    <div class="navds-form-field navds-form-field--medium">
+                        <label for="airflowimage" class="navds-form-field__label navds-label"></label>
+                        <input type="text" name="airflowimage" id="airflowimage" value="{{ or .values.AirflowImage "" }}"
+                            class="navds-text-field__input navds-body-short navds-body-medium"
+                            placeholder="ghcr.io/navikt/mitt-airflow-image:tag"
+                        />
+                    </div>
+                </div>
 
                 <div class="flex gap-2 items-center">
                     <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action">

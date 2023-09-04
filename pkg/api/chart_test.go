@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -403,8 +404,9 @@ func TestAirflowAPI(t *testing.T) {
 		newDagRepo := "navikt/newrepo"
 		newDagRepoBranch := "master"
 		restrictEgress := "on"
+		customImage := "ghcr.io/navikt/myimage:v1"
 
-		data := url.Values{"dagrepo": {newDagRepo}, "dagrepobranch": {newDagRepoBranch}, "restrictairflowegress": {restrictEgress}}
+		data := url.Values{"dagrepo": {newDagRepo}, "dagrepobranch": {newDagRepoBranch}, "restrictairflowegress": {restrictEgress}, "airflowimage": {customImage}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/%v/airflow/edit", server.URL, team.Slug), data)
 		if err != nil {
 			t.Error(err)
@@ -431,6 +433,10 @@ func TestAirflowAPI(t *testing.T) {
 
 		if eventPayload.DagRepoBranch != newDagRepoBranch {
 			t.Errorf("edit airflow: dag repo branch value, expected %v, got %v", newDagRepoBranch, eventPayload.DagRepoBranch)
+		}
+
+		if strings.Join([]string{eventPayload.AirflowImage, eventPayload.AirflowTag}, ":") != customImage {
+			t.Errorf("edit airflow: custom image, expected %v, got %v", customImage, strings.Join([]string{eventPayload.AirflowImage, eventPayload.AirflowTag}, ":"))
 		}
 
 		if !eventPayload.RestrictEgress {

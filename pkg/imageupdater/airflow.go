@@ -10,9 +10,6 @@ import (
 const (
 	airflowImageNameKey = "images.airflow.repository"
 	airflowImageTagKey  = "images.airflow.tag"
-
-	airflowWorkerDefaultImageNameKey = "config.kubernetes_executor.worker_container_repository"
-	airflowWorkerDefaultImageTagKey  = "config.kubernetes_executor.worker_container_tag"
 )
 
 func (c *client) updateAirflowImages(ctx context.Context) error {
@@ -21,12 +18,7 @@ func (c *client) updateAirflowImages(ctx context.Context) error {
 		return fmt.Errorf("updating airflow base image: %w", err)
 	}
 
-	workerUpdated, err := c.updateAirflowWorkerDefaultImage(ctx)
-	if err != nil {
-		return fmt.Errorf("updating airflow worker default image: %w", err)
-	}
-
-	if baseUpdated || workerUpdated {
+	if baseUpdated {
 		if err := c.triggerSync(ctx, gensql.ChartTypeAirflow); err != nil {
 			return err
 		}
@@ -53,33 +45,6 @@ func (c *client) updateAirflowBaseImage(ctx context.Context) (bool, error) {
 
 	if imageTag.Value != garImage.Tag {
 		if err := c.repo.GlobalChartValueInsert(ctx, airflowImageTagKey, garImage.Tag, false, gensql.ChartTypeAirflow); err != nil {
-			return false, err
-		}
-
-		return true, nil
-	}
-
-	return false, nil
-}
-
-func (c *client) updateAirflowWorkerDefaultImage(ctx context.Context) (bool, error) {
-	imageName, err := c.repo.GlobalValueGet(ctx, gensql.ChartTypeAirflow, airflowWorkerDefaultImageNameKey)
-	if err != nil {
-		return false, err
-	}
-
-	imageTag, err := c.repo.GlobalValueGet(ctx, gensql.ChartTypeAirflow, airflowWorkerDefaultImageTagKey)
-	if err != nil {
-		return false, err
-	}
-
-	garImage, err := getLatestImageInGAR(imageName.Value, "")
-	if err != nil {
-		return false, err
-	}
-
-	if imageTag.Value != garImage.Tag {
-		if err := c.repo.GlobalChartValueInsert(ctx, airflowWorkerDefaultImageTagKey, garImage.Tag, false, gensql.ChartTypeAirflow); err != nil {
 			return false, err
 		}
 

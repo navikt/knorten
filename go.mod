@@ -19,7 +19,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/pressly/goose/v3 v3.7.0
-	github.com/sirupsen/logrus v1.9.0
+	github.com/sirupsen/logrus v1.9.3
 	github.com/tdewolff/minify/v2 v2.12.8
 	golang.org/x/exp v0.0.0-20230725093048-515e97ebf090
 	golang.org/x/oauth2 v0.11.0

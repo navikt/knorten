@@ -20,7 +20,7 @@ require (
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/pressly/goose/v3 v3.7.0
 	github.com/sirupsen/logrus v1.9.3
-	github.com/tdewolff/minify/v2 v2.12.8
+	github.com/tdewolff/minify/v2 v2.12.9
 	golang.org/x/exp v0.0.0-20230725093048-515e97ebf090
 	golang.org/x/oauth2 v0.12.0
 	google.golang.org/api v0.138.0
@@ -148,7 +148,7 @@ require (
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/cobra v1.7.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/tdewolff/parse/v2 v2.6.7 // indirect
+	github.com/tdewolff/parse/v2 v2.6.8 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect

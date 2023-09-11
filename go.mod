@@ -5,7 +5,7 @@ go 1.20
 require (
 	cloud.google.com/go/iam v1.1.2
 	cloud.google.com/go/secretmanager v1.11.1
-	cloud.google.com/go/storage v1.32.0
+	cloud.google.com/go/storage v1.33.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/gin-contrib/sessions v0.0.5
 	github.com/gin-gonic/gin v1.9.1

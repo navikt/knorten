@@ -101,14 +101,10 @@
             valueDiv.appendChild(valueInput);
 
             const encryptDiv = document.createElement("div");
-            encryptDiv.setAttribute("class", "navds-checkbox flex gap-2 navds-checkbox--small");
-
-            const encryptLabel = document.createElement("label");
-            encryptLabel.setAttribute("class", "navds-form-field__label navds-label");
-            encryptLabel.innerText = "Encrypt";
+            encryptDiv.setAttribute("class", "navds-checkbox flex gap-2 m-auto navds-checkbox--small");
             
             const encryptCheckbox = document.createElement("input");
-            encryptCheckbox.setAttribute("class", "navds-checkbox__content");
+            encryptCheckbox.setAttribute("class", "navds-checkbox__content cursor-pointer");
             encryptCheckbox.setAttribute("name", key);
             if (encrypted) {
                 encryptCheckbox.setAttribute("checked", "checked");
@@ -116,7 +112,16 @@
             encryptCheckbox.setAttribute("id", key);
             encryptCheckbox.setAttribute("type", "checkbox");
             encryptCheckbox.setAttribute("label", "Encrypt");
-            
+
+            const encryptLabel = document.createElement("label");
+            encryptLabel.setAttribute("class", "navds-form-field__label navds-label");
+            encryptLabel.setAttribute("for", key);
+
+            const encryptSpan = document.createElement("span");
+            encryptSpan.setAttribute("class", "navds-checkbox__content font-normal");
+            encryptSpan.innerText = "Encrypt";
+            encryptLabel.appendChild(encryptSpan);
+
             encryptDiv.appendChild(encryptCheckbox);
             encryptDiv.appendChild(encryptLabel);
 

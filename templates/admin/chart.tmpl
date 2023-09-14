@@ -79,7 +79,7 @@
             inputCounter += 1;
         }
 
-        function addElement(key, value) {
+        function addElement(key, value, encrypted) {
             const valuesDiv = document.getElementById("values")
             const keyValueDiv = document.createElement("div");
             keyValueDiv.setAttribute("class", "mb-4")
@@ -100,6 +100,26 @@
             valueInput.setAttribute("value", value);
             valueDiv.appendChild(valueInput);
 
+            const encryptDiv = document.createElement("div");
+            encryptDiv.setAttribute("class", "navds-checkbox flex gap-2 navds-checkbox--small");
+
+            const encryptLabel = document.createElement("label");
+            encryptLabel.setAttribute("class", "navds-form-field__label navds-label");
+            encryptLabel.innerText = "Encrypt";
+            
+            const encryptCheckbox = document.createElement("input");
+            encryptCheckbox.setAttribute("class", "navds-checkbox__content");
+            encryptCheckbox.setAttribute("name", key);
+            if (encrypted) {
+                encryptCheckbox.setAttribute("checked", "checked");
+            }
+            encryptCheckbox.setAttribute("id", key);
+            encryptCheckbox.setAttribute("type", "checkbox");
+            encryptCheckbox.setAttribute("label", "Encrypt");
+            
+            encryptDiv.appendChild(encryptCheckbox);
+            encryptDiv.appendChild(encryptLabel);
+
             const delButton = document.createElement("button");
             delButton.setAttribute("class", "navds-button navds-button--secondary");
             delButton.setAttribute("type", "button");
@@ -109,13 +129,14 @@
             delLabel.innerText = "Slett";
             delButton.appendChild(delLabel);
 
+            valueDiv.appendChild(encryptDiv);
             valueDiv.appendChild(delButton);
             keyValueDiv.appendChild(valueDiv);
             valuesDiv.appendChild(keyValueDiv);
         }
 
         {{ range .values }}
-        addElement("{{ .Key }}", "{{ .Value }}")
+        addElement("{{ .Key }}", "{{ .Value }}", {{ .Encrypted }})
         {{ end }}
     </script>
     {{ template "footer" }}

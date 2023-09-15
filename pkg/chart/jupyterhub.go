@@ -37,8 +37,6 @@ type jupyterValues struct {
 	MemoryGuarantee  string   `helm:"singleuser.memory.guarantee"`
 	AdminUsers       []string `helm:"hub.config.Authenticator.admin_users"`
 	AllowedUsers     []string `helm:"hub.config.Authenticator.allowed_users"`
-	Hosts            string   `helm:"ingress.hosts"`
-	IngressTLS       string   `helm:"ingress.tls"`
 	OAuthCallbackURL string   `helm:"hub.config.AzureAdOAuthenticator.oauth_callback_url"`
 	KnadaTeamSecret  string   `helm:"singleuser.extraEnv.KNADA_TEAM_SECRET"`
 	ProfileList      string   `helm:"singleuser.profileList"`
@@ -55,6 +53,18 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfi
 	values, err := c.jupyterMergeValues(ctx, team, configurableValues)
 	if err != nil {
 		log.WithError(err).Error("merging jupyter values")
+		return err
+	}
+
+	namespace := k8s.TeamIDToNamespace(team.ID)
+
+	if err := c.createHttpRoute(ctx, team.Slug+".jupyter.knada.io", namespace, gensql.ChartTypeJupyterhub); err != nil {
+		log.WithError(err).Error("creating http route")
+		return err
+	}
+
+	if err := c.createHealtCheckPolicy(ctx, namespace, gensql.ChartTypeJupyterhub); err != nil {
+		log.WithError(err).Error("creating health check policy")
 		return err
 	}
 
@@ -112,8 +122,6 @@ func (c Client) jupyterMergeValues(ctx context.Context, team gensql.TeamGetRow, 
 		MemoryGuarantee:           configurableValues.Memory,
 		AdminUsers:                configurableValues.UserIdents,
 		AllowedUsers:              configurableValues.UserIdents,
-		Hosts:                     fmt.Sprintf(`["%v"]`, team.Slug+".jupyter.knada.io"),
-		IngressTLS:                fmt.Sprintf(`[{"hosts":["%v"], "secretName": "%v"}]`, team.Slug+".jupyter.knada.io", "jupyterhub-certificate"),
 		OAuthCallbackURL:          fmt.Sprintf("https://%v.jupyter.knada.io/hub/oauth_callback", team.Slug),
 		KnadaTeamSecret:           fmt.Sprintf("projects/%v/secrets/%v", c.gcpProject, team.ID),
 		ProfileList:               profileList,
@@ -129,6 +137,18 @@ func (c Client) deleteJupyter(ctx context.Context, teamID string, log logger.Log
 
 	if c.dryRun {
 		return nil
+	}
+
+	namespace := k8s.TeamIDToNamespace(teamID)
+
+	if err := c.deleteHttpRoute(ctx, namespace, gensql.ChartTypeJupyterhub); err != nil {
+		log.WithError(err).Error("deleting http route")
+		return err
+	}
+
+	if err := c.deleteHealtCheckPolicy(ctx, namespace, gensql.ChartTypeJupyterhub); err != nil {
+		log.WithError(err).Error("deleting health check policy")
+		return err
 	}
 
 	return nil

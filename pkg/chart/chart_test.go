@@ -186,19 +186,12 @@ func TestCharts(t *testing.T) {
 				},
 			},
 			want: map[string]string{
-				"webserver.env":                              `[{"name":"AIRFLOW_USERS","value":"dummy@nav.no,user.one@nav.no"}]`,
-				"webserver.extraContainers.[0].args.[0]":     "navikt/my-dags",
-				"webserver.extraContainers.[0].args.[1]":     "main",
-				"scheduler.extraInitContainers.[0].args.[0]": "navikt/my-dags",
-				"scheduler.extraInitContainers.[0].args.[1]": "main",
-				"scheduler.extraContainers.[0].args.[0]":     "navikt/my-dags",
-				"scheduler.extraContainers.[0].args.[1]":     "main",
-				"workers.extraInitContainers.[0].args.[0]":   "navikt/my-dags",
-				"workers.extraInitContainers.[0].args.[1]":   "main",
-				"webserver.serviceAccount.name":              "test-team-1234",
-				"workers.serviceAccount.name":                "test-team-1234",
-				"env":                                        `[{"name":"KNADA_TEAM_SECRET","value":"projects/project/secrets/test-team-1234"},{"name":"TEAM","value":"test-team-1234"},{"name":"NAMESPACE","value":"team-test-team-1234"},{"name":"AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER","value":"gs://airflow-logs-test-team-1234-north"},{"name":"AIRFLOW__LOGGING__REMOTE_LOGGING","value":"True"}]`,
-				"ingress.web.hosts":                          `[{"name":"test-team.airflow.knada.io","tls":{"enabled":true,"secretName":"airflow-certificate"}}]`,
+				"webserver.env":                 `[{"name":"AIRFLOW_USERS","value":"dummy@nav.no,user.one@nav.no"}]`,
+				"dags.gitSync.env":              `[{"name":"DAG_REPO","value":"navikt/my-dags"},{"name":"DAG_REPO_BRANCH","value":"main"},{"name":"DAG_REPO_DIR","value":"/dags"},{"name":"SYNC_TIME","value":"60"}]`,
+				"webserver.serviceAccount.name": "test-team-1234",
+				"workers.serviceAccount.name":   "test-team-1234",
+				"env":                           `[{"name":"KNADA_TEAM_SECRET","value":"projects/project/secrets/test-team-1234"},{"name":"TEAM","value":"test-team-1234"},{"name":"NAMESPACE","value":"team-test-team-1234"},{"name":"AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER","value":"gs://airflow-logs-test-team-1234-north"},{"name":"AIRFLOW__LOGGING__REMOTE_LOGGING","value":"True"}]`,
+				"ingress.web.hosts":             `[{"name":"test-team.airflow.knada.io","tls":{"enabled":true,"secretName":"airflow-certificate"}}]`,
 			},
 		},
 		{
@@ -213,19 +206,12 @@ func TestCharts(t *testing.T) {
 				},
 			},
 			want: map[string]string{
-				"workers.serviceAccount.name":                "test-team-1234",
-				"webserver.serviceAccount.name":              "test-team-1234",
-				"env":                                        `[{"name":"KNADA_TEAM_SECRET","value":"projects/project/secrets/test-team-1234"},{"name":"TEAM","value":"test-team-1234"},{"name":"NAMESPACE","value":"team-test-team-1234"},{"name":"AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER","value":"gs://airflow-logs-test-team-1234-north"},{"name":"AIRFLOW__LOGGING__REMOTE_LOGGING","value":"True"}]`,
-				"webserver.env":                              `[{"name":"AIRFLOW_USERS","value":"dummy@nav.no,user.one@nav.no"}]`,
-				"ingress.web.hosts":                          `[{"name":"test-team.airflow.knada.io","tls":{"enabled":true,"secretName":"airflow-certificate"}}]`,
-				"webserver.extraContainers.[0].args.[0]":     "navikt/other-dags",
-				"webserver.extraContainers.[0].args.[1]":     "master",
-				"scheduler.extraInitContainers.[0].args.[0]": "navikt/other-dags",
-				"scheduler.extraInitContainers.[0].args.[1]": "master",
-				"scheduler.extraContainers.[0].args.[0]":     "navikt/other-dags",
-				"scheduler.extraContainers.[0].args.[1]":     "master",
-				"workers.extraInitContainers.[0].args.[0]":   "navikt/other-dags",
-				"workers.extraInitContainers.[0].args.[1]":   "master",
+				"workers.serviceAccount.name":   "test-team-1234",
+				"webserver.serviceAccount.name": "test-team-1234",
+				"env":                           `[{"name":"KNADA_TEAM_SECRET","value":"projects/project/secrets/test-team-1234"},{"name":"TEAM","value":"test-team-1234"},{"name":"NAMESPACE","value":"team-test-team-1234"},{"name":"AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER","value":"gs://airflow-logs-test-team-1234-north"},{"name":"AIRFLOW__LOGGING__REMOTE_LOGGING","value":"True"}]`,
+				"webserver.env":                 `[{"name":"AIRFLOW_USERS","value":"dummy@nav.no,user.one@nav.no"}]`,
+				"ingress.web.hosts":             `[{"name":"test-team.airflow.knada.io","tls":{"enabled":true,"secretName":"airflow-certificate"}}]`,
+				"dags.gitSync.env":              `[{"name":"DAG_REPO","value":"navikt/other-dags"},{"name":"DAG_REPO_BRANCH","value":"master"},{"name":"DAG_REPO_DIR","value":"/dags"},{"name":"SYNC_TIME","value":"60"}]`,
 			},
 		},
 		{
@@ -282,20 +268,6 @@ func prepareChartTests(ctx context.Context) (gensql.Team, error) {
 
 	if err := helm.UpdateHelmRepositories(); err != nil {
 		return gensql.Team{}, err
-	}
-
-	// global values for airflow
-	globalValues := map[string]string{
-		"webserver.extraContainers":     `[{"name": "git-nada", "image": "registry.k8s.io/git-sync/git-sync:v3.6.3","args": ["", "", "/dags", "60"], "volumeMounts":[{"mountPath":"/dags","name":"dags"}]}]`,
-		"scheduler.extraContainers":     `[{"name": "git-nada", "image": "registry.k8s.io/git-sync/git-sync:v3.6.3","args": ["", "", "/dags", "60"], "volumeMounts":[{"mountPath":"/dags","name":"dags"}]}]`,
-		"scheduler.extraInitContainers": `[{"name": "git-nada-clone", "image": "registry.k8s.io/git-sync/git-sync:v3.6.3","args": ["", "", "/dags", "60"], "volumeMounts":[{"mountPath":"/dags","name":"dags"}]}]`,
-		"workers.extraInitContainers":   `[{"name": "git-nada", "image": "registry.k8s.io/git-sync/git-sync:v3.6.3","args": ["", "", "/dags", "60"], "volumeMounts":[{"mountPath":"/dags","name":"dags"}]}]`,
-	}
-
-	for k, v := range globalValues {
-		if err := repo.GlobalChartValueInsert(ctx, k, v, false, gensql.ChartTypeAirflow); err != nil {
-			return gensql.Team{}, err
-		}
 	}
 
 	return team, repo.TeamCreate(ctx, team)

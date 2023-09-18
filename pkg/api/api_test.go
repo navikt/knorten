@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"database/sql"
 	"html/template"
 	"io"
 	"log"
@@ -22,6 +23,7 @@ import (
 
 var (
 	repo   *database.Repo
+	db     *sql.DB
 	server *httptest.Server
 	user   = auth.User{
 		Name:  "Dum My",
@@ -53,6 +55,10 @@ func TestMain(m *testing.M) {
 	repo, err = database.New(dbConn, "", logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatal(err)
+	}
+	db, err = sql.Open("postgres", dbConn)
+	if err != nil {
+		log.Fatalf("open sql connection: %v", err)
 	}
 
 	azureClient, err := auth.NewAzureClient(true, "", "", "", logger)

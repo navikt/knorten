@@ -336,11 +336,13 @@ func TestAirflowAPI(t *testing.T) {
 		}
 	})
 
+	dagRepo := "navikt/repo"
+	branch := "main"
 	expectedRestrictEgress := false
 	expectedValues := chart.AirflowConfigurableValues{
 		TeamID:         team.ID,
-		DagRepo:        "navikt/repo",
-		DagRepoBranch:  "main",
+		DagRepo:        dagRepo,
+		DagRepoBranch:  branch,
 		RestrictEgress: expectedRestrictEgress,
 	}
 
@@ -348,6 +350,12 @@ func TestAirflowAPI(t *testing.T) {
 		t.Error(err)
 	}
 	if err := repo.TeamChartValueInsert(ctx, chart.TeamValueKeyRestrictEgress, strconv.FormatBool(expectedRestrictEgress), team.ID, gensql.ChartTypeAirflow); err != nil {
+		t.Error(err)
+	}
+	if err := repo.TeamChartValueInsert(ctx, chart.TeamValueDagRepo, dagRepo, team.ID, gensql.ChartTypeAirflow); err != nil {
+		t.Error(err)
+	}
+	if err := repo.TeamChartValueInsert(ctx, chart.TeamValueDagRepoBranch, branch, team.ID, gensql.ChartTypeAirflow); err != nil {
 		t.Error(err)
 	}
 

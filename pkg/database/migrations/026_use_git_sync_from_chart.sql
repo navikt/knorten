@@ -21,7 +21,7 @@ DELETE FROM chart_team_values WHERE "key" IN (
     'workers.extraInitContainers.[0].args.[1]',
     'webserver.extraContainers.[0].args.[0]',
     'webserver.extraContainers.[0].args.[1]'
-)
+);
 
 -- +goose Down
 DELETE FROM chart_global_values WHERE "key" = 'workers.extraInitContainers';
@@ -41,12 +41,28 @@ INSERT INTO chart_global_values ("key","value","chart_type") VALUES
     ('webserver.extraVolumes','[{"name":"airflow-auth","configMap":{"name":"airflow-auth-cm"}},{"name":"airflow-webserver","configMap":{"name":"airflow-webserver-cm"}},{"name":"dags-data","emptyDir":{}},{"name":"github-app-secret","secret":{"defaultMode":448,"secretName":"github-secret"}}]','airflow'),
     ('webserver.extraVolumeMounts','[{"mountPath":"/dags","name":"dags-data"},{"mountPath":"/keys","name":"github-app-secret"},{"mountPath":"/opt/airflow/auth.py","subPath":"auth.py","name":"airflow-auth"},{"mountPath":"/opt/airflow/webserver_config.py","subPath":"webserver_config.py","name":"airflow-webserver"}]','airflow');
 
-INSERT INTO chart_team_values ('key','value','chart_type','team_id')
-    (SELECT 'scheduler.extraInitContainers.[0].args.[0]', "value", "chart_type", "team_id" FROM chart_team_values WHERE "key" = 'dagRepo,omit'),
-    (SELECT 'scheduler.extraInitContainers.[0].args.[1]', "value", "chart_type", "team_id" FROM chart_team_values WHERE "key" = 'dagRepoBranch,omit'),
-    (SELECT 'scheduler.extraContainers.[0].args.[0]', "value", "chart_type", "team_id" FROM chart_team_values WHERE "key" = 'dagRepo,omit'),
-    (SELECT 'scheduler.extraContainers.[0].args.[1]', "value", "chart_type", "team_id" FROM chart_team_values WHERE "key" = 'dagRepoBranch,omit'),
-    (SELECT 'webserver.extraContainers.[0].args.[0]', "value", "chart_type", "team_id" FROM chart_team_values WHERE "key" = 'dagRepo,omit'),
-    (SELECT 'webserver.extraContainers.[0].args.[1]', "value", "chart_type", "team_id" FROM chart_team_values WHERE "key" = 'dagRepoBranch,omit'),
-    (SELECT 'workers.extraInitContainers.[0].args.[0]', "value", "chart_type", "team_id" FROM chart_team_values WHERE "key" = 'dagRepo,omit'),
-    (SELECT 'workers.extraInitContainers.[0].args.[1]', "value", "chart_type", "team_id" FROM chart_team_values WHERE "key" = 'dagRepoBranch,omit');
+INSERT INTO chart_team_values ("key","value","chart_type","team_id","created")
+    (SELECT 'scheduler.extraInitContainers.[0].args.[0]', "value", "chart_type", "team_id", "created" FROM chart_team_values WHERE "key" = 'dagRepo,omit');
+
+INSERT INTO chart_team_values ("key","value","chart_type","team_id","created")
+    (SELECT 'scheduler.extraInitContainers.[0].args.[1]', "value", "chart_type", "team_id", "created" FROM chart_team_values WHERE "key" = 'dagRepoBranch,omit');
+
+INSERT INTO chart_team_values ("key","value","chart_type","team_id","created")
+    (SELECT 'scheduler.extraContainers.[0].args.[0]', "value", "chart_type", "team_id", "created" FROM chart_team_values WHERE "key" = 'dagRepo,omit');
+
+INSERT INTO chart_team_values ("key","value","chart_type","team_id","created")
+    (SELECT 'scheduler.extraContainers.[0].args.[1]', "value", "chart_type", "team_id", "created" FROM chart_team_values WHERE "key" = 'dagRepoBranch,omit');
+
+INSERT INTO chart_team_values ("key","value","chart_type","team_id","created")
+    (SELECT 'webserver.extraContainers.[0].args.[0]', "value", "chart_type", "team_id", "created" FROM chart_team_values WHERE "key" = 'dagRepo,omit');
+
+INSERT INTO chart_team_values ("key","value","chart_type","team_id","created")
+    (SELECT 'webserver.extraContainers.[0].args.[1]', "value", "chart_type", "team_id", "created" FROM chart_team_values WHERE "key" = 'dagRepoBranch,omit');
+
+INSERT INTO chart_team_values ("key","value","chart_type","team_id","created")
+    (SELECT 'workers.extraInitContainers.[0].args.[0]', "value", "chart_type", "team_id", "created" FROM chart_team_values WHERE "key" = 'dagRepo,omit');
+
+INSERT INTO chart_team_values ("key","value","chart_type","team_id","created")
+    (SELECT 'workers.extraInitContainers.[0].args.[1]', "value", "chart_type", "team_id", "created" FROM chart_team_values WHERE "key" = 'dagRepoBranch,omit');
+
+DELETE FROM chart_team_values WHERE "key" IN ('dagRepo,omit','dagRepoBranch,omit');

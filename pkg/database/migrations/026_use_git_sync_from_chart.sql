@@ -14,6 +14,16 @@ INSERT INTO chart_global_values ("key","value","chart_type") VALUES
 UPDATE chart_team_values SET "key" = 'dagRepo,omit' WHERE "key" = 'scheduler.extraContainers.[0].args.[0]';
 UPDATE chart_team_values SET "key" = 'dagRepoBranch,omit' WHERE "key" = 'scheduler.extraContainers.[0].args.[1]';
 
+WITH processing AS (
+  SELECT DISTINCT ON (team_id,key) team_id, key, value, created FROM
+  (SELECT team_id, key, value, created FROM chart_team_values WHERE key = 'workers.extraInitContainers.[0].args.[0]' OR key = 'workers.extraInitContainers.[0].args.[1]' ORDER BY created DESC) as target
+), outers AS (
+  SELECT team_id, ARRAY_AGG(key), ARRAY_AGG(value) as vals FROM processing GROUP BY team_id
+)
+
+INSERT INTO chart_team_values (key,value,team_id,chart_type)
+(SELECT 'dags.gitSync.env', CONCAT('[{"name":"DAG_REPO","value":"',vals[2],'"},{"name":"DAG_REPO_BRANCH","value":"', vals[1],'"},{"name":"DAG_REPO_DIR","value":"/dags"},{"name":"SYNC_TIME","value":"60"}]'), team_id, 'airflow' FROM outers);
+
 DELETE FROM chart_team_values WHERE "key" IN (
     'scheduler.extraInitContainers.[0].args.[0]',
     'scheduler.extraInitContainers.[0].args.[1]',

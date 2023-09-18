@@ -54,21 +54,12 @@ type AirflowValues struct {
 	WebserverSecretKey string // Knorten sets Helm value pointing to k8s secret
 
 	// Generated Helm config
-
-	ExtraEnvs    string `helm:"env"`
-	IngressHosts string `helm:"ingress.web.hosts"`
-	// SchedulerGitInitRepo       string `helm:"scheduler.extraInitContainers.[0].args.[0]"`
-	// SchedulerGitInitRepoBranch string `helm:"scheduler.extraInitContainers.[0].args.[1]"`
-	// SchedulerGitSynkRepo       string `helm:"scheduler.extraContainers.[0].args.[0]"`
-	// SchedulerGitSynkRepoBranch string `helm:"scheduler.extraContainers.[0].args.[1]"`
-	WebserverEnv string `helm:"webserver.env"`
-	GitSyncEnv   string `helm:"dags.gitSync.env"`
-	// WebserverGitSynkRepo       string `helm:"webserver.extraContainers.[0].args.[0]"`
-	// WebserverGitSynkRepoBranch string `helm:"webserver.extraContainers.[0].args.[1]"`
+	ExtraEnvs               string `helm:"env"`
+	IngressHosts            string `helm:"ingress.web.hosts"`
+	WebserverEnv            string `helm:"webserver.env"`
+	GitSyncEnv              string `helm:"dags.gitSync.env"`
 	WebserverServiceAccount string `helm:"webserver.serviceAccount.name"`
 	WorkerServiceAccount    string `helm:"workers.serviceAccount.name"`
-	// WorkersGitSynkRepo         string `helm:"workers.extraInitContainers.[0].args.[0]"`
-	// WorkersGitSynkRepoBranch   string `helm:"workers.extraInitContainers.[0].args.[1]"`
 }
 
 func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfigurableValues, log logger.Logger) error {

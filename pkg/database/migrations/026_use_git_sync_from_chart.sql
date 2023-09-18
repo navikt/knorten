@@ -65,4 +65,4 @@ INSERT INTO chart_team_values ("key","value","chart_type","team_id","created")
 INSERT INTO chart_team_values ("key","value","chart_type","team_id","created")
     (SELECT 'workers.extraInitContainers.[0].args.[1]', "value", "chart_type", "team_id", "created" FROM chart_team_values WHERE "key" = 'dagRepoBranch,omit');
 
-DELETE FROM chart_team_values WHERE "key" IN ('dagRepo,omit','dagRepoBranch,omit');
+DELETE FROM chart_team_values WHERE "key" IN ('dagRepo,omit','dagRepoBranch,omit','dags.gitSync.env','dags.gitSync.extraVolumeMounts','images.gitSync.repository','images.gitSync.tag');

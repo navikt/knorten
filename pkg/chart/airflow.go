@@ -29,12 +29,14 @@ const (
 	teamValueKeyWebserverSecret   = "webserverSecretKey,omit"
 	TeamValueKeyRestrictEgress    = "restrictEgress,omit"
 	TeamValueKeyApiAccess         = "apiAccess,omit"
+	TeamValueDagRepo              = "dagRepo,omit"
+	TeamValueDagRepoBranch        = "dagRepoBranch,omit"
 )
 
 type AirflowConfigurableValues struct {
 	TeamID         string
-	DagRepo        string `helm:"webserver.extraContainers.[0].args.[0]"`
-	DagRepoBranch  string `helm:"webserver.extraContainers.[0].args.[1]"`
+	DagRepo        string
+	DagRepoBranch  string
 	AirflowImage   string `helm:"images.airflow.repository"`
 	AirflowTag     string `helm:"images.airflow.tag"`
 	RestrictEgress bool
@@ -53,19 +55,20 @@ type AirflowValues struct {
 
 	// Generated Helm config
 
-	ExtraEnvs                  string `helm:"env"`
-	IngressHosts               string `helm:"ingress.web.hosts"`
-	SchedulerGitInitRepo       string `helm:"scheduler.extraInitContainers.[0].args.[0]"`
-	SchedulerGitInitRepoBranch string `helm:"scheduler.extraInitContainers.[0].args.[1]"`
-	SchedulerGitSynkRepo       string `helm:"scheduler.extraContainers.[0].args.[0]"`
-	SchedulerGitSynkRepoBranch string `helm:"scheduler.extraContainers.[0].args.[1]"`
-	WebserverEnv               string `helm:"webserver.env"`
-	WebserverGitSynkRepo       string `helm:"webserver.extraContainers.[0].args.[0]"`
-	WebserverGitSynkRepoBranch string `helm:"webserver.extraContainers.[0].args.[1]"`
-	WebserverServiceAccount    string `helm:"webserver.serviceAccount.name"`
-	WorkerServiceAccount       string `helm:"workers.serviceAccount.name"`
-	WorkersGitSynkRepo         string `helm:"workers.extraInitContainers.[0].args.[0]"`
-	WorkersGitSynkRepoBranch   string `helm:"workers.extraInitContainers.[0].args.[1]"`
+	ExtraEnvs    string `helm:"env"`
+	IngressHosts string `helm:"ingress.web.hosts"`
+	// SchedulerGitInitRepo       string `helm:"scheduler.extraInitContainers.[0].args.[0]"`
+	// SchedulerGitInitRepoBranch string `helm:"scheduler.extraInitContainers.[0].args.[1]"`
+	// SchedulerGitSynkRepo       string `helm:"scheduler.extraContainers.[0].args.[0]"`
+	// SchedulerGitSynkRepoBranch string `helm:"scheduler.extraContainers.[0].args.[1]"`
+	WebserverEnv string `helm:"webserver.env"`
+	GitSyncEnv   string `helm:"dags.gitSync.env"`
+	// WebserverGitSynkRepo       string `helm:"webserver.extraContainers.[0].args.[0]"`
+	// WebserverGitSynkRepoBranch string `helm:"webserver.extraContainers.[0].args.[1]"`
+	WebserverServiceAccount string `helm:"webserver.serviceAccount.name"`
+	WorkerServiceAccount    string `helm:"workers.serviceAccount.name"`
+	// WorkersGitSynkRepo         string `helm:"workers.extraInitContainers.[0].args.[0]"`
+	// WorkersGitSynkRepoBranch   string `helm:"workers.extraInitContainers.[0].args.[1]"`
 }
 
 func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfigurableValues, log logger.Logger) error {
@@ -199,14 +202,14 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string, log logger.Log
 // mergeAirflowValues merges the values from the database with the values from the request, generate the missing values and returns the final values.
 func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, configurableValues AirflowConfigurableValues) (AirflowValues, error) {
 	if configurableValues.DagRepo == "" { // only required value
-		dagRepo, err := c.repo.TeamValueGet(ctx, "webserver.extraContainers.[0].args.[0]", team.ID)
+		dagRepo, err := c.repo.TeamValueGet(ctx, TeamValueDagRepo, team.ID)
 		if err != nil {
 			return AirflowValues{}, err
 		}
 
 		configurableValues.DagRepo = dagRepo.Value
 
-		dagRepoBranch, err := c.repo.TeamValueGet(ctx, "webserver.extraContainers.[0].args.[1]", team.ID)
+		dagRepoBranch, err := c.repo.TeamValueGet(ctx, TeamValueDagRepoBranch, team.ID)
 		if err != nil {
 			return AirflowValues{}, err
 		}
@@ -268,24 +271,22 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 		return AirflowValues{}, err
 	}
 
+	gitSyncEnv, err := c.createAirflowGitSyncEnvs(configurableValues.DagRepo, configurableValues.DagRepoBranch)
+	if err != nil {
+		return AirflowValues{}, err
+	}
+
 	return AirflowValues{
-		AirflowConfigurableValues:  configurableValues,
-		ExtraEnvs:                  extraEnvs,
-		FernetKey:                  fernetKey,
-		IngressHosts:               fmt.Sprintf(`[{"name":"%v","tls":{"enabled":true,"secretName":"%v"}}]`, team.Slug+".airflow.knada.io", "airflow-certificate"),
-		PostgresPassword:           postgresPassword,
-		SchedulerGitInitRepo:       configurableValues.DagRepo,
-		SchedulerGitInitRepoBranch: configurableValues.DagRepoBranch,
-		SchedulerGitSynkRepo:       configurableValues.DagRepo,
-		SchedulerGitSynkRepoBranch: configurableValues.DagRepoBranch,
-		WebserverEnv:               webserverEnv,
-		WebserverGitSynkRepo:       configurableValues.DagRepo,
-		WebserverGitSynkRepoBranch: configurableValues.DagRepoBranch,
-		WebserverSecretKey:         webserverSecretKey,
-		WebserverServiceAccount:    team.ID,
-		WorkerServiceAccount:       team.ID,
-		WorkersGitSynkRepo:         configurableValues.DagRepo,
-		WorkersGitSynkRepoBranch:   configurableValues.DagRepoBranch,
+		AirflowConfigurableValues: configurableValues,
+		ExtraEnvs:                 extraEnvs,
+		GitSyncEnv:                gitSyncEnv,
+		FernetKey:                 fernetKey,
+		IngressHosts:              fmt.Sprintf(`[{"name":"%v","tls":{"enabled":true,"secretName":"%v"}}]`, team.Slug+".airflow.knada.io", "airflow-certificate"),
+		PostgresPassword:          postgresPassword,
+		WebserverEnv:              webserverEnv,
+		WebserverSecretKey:        webserverSecretKey,
+		WebserverServiceAccount:   team.ID,
+		WorkerServiceAccount:      team.ID,
 	}, nil
 }
 
@@ -307,6 +308,34 @@ func (Client) createAirflowWebServerEnvs(users []string, apiAccess bool) (string
 			Name:  "AIRFLOW__API__AUTH_BACKENDS",
 			Value: "airflow.api.auth.backend.basic_auth",
 		})
+	}
+
+	envBytes, err := json.Marshal(envs)
+	if err != nil {
+		return "", err
+	}
+
+	return string(envBytes), nil
+}
+
+func (c Client) createAirflowGitSyncEnvs(dagRepo, dagRepoBranch string) (string, error) {
+	envs := []airflowEnv{
+		{
+			Name:  "DAG_REPO",
+			Value: dagRepo,
+		},
+		{
+			Name:  "DAG_REPO_BRANCH",
+			Value: dagRepoBranch,
+		},
+		{
+			Name:  "DAG_REPO_DIR",
+			Value: "/dags",
+		},
+		{
+			Name:  "SYNC_TIME",
+			Value: "60",
+		},
 	}
 
 	envBytes, err := json.Marshal(envs)

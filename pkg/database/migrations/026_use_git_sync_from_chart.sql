@@ -22,7 +22,7 @@ WITH processing AS (
 )
 
 INSERT INTO chart_team_values (key,value,team_id,chart_type)
-(SELECT 'dags.gitSync.env', CONCAT('[{"name":"DAG_REPO","value":"',vals[2],'"},{"name":"DAG_REPO_BRANCH","value":"', vals[1],'"},{"name":"DAG_REPO_DIR","value":"/dags"},{"name":"SYNC_TIME","value":"60"}]'), team_id, 'airflow' FROM outers);
+(SELECT 'dags.gitSync.env', CONCAT('[{"name":"DAG_REPO","value":"',vals[1],'"},{"name":"DAG_REPO_BRANCH","value":"', vals[2],'"},{"name":"DAG_REPO_DIR","value":"/dags"},{"name":"SYNC_TIME","value":"60"}]'), team_id, 'airflow' FROM outers);
 
 DELETE FROM chart_team_values WHERE "key" IN (
     'scheduler.extraInitContainers.[0].args.[0]',

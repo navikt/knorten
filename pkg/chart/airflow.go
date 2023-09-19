@@ -88,27 +88,37 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 	}
 
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, teamValueKeyDatabasePassword, values.PostgresPassword, team.ID); err != nil {
-		log.WithError(err).Error("inserting postgres team value to database")
+		log.WithError(err).Errorf("inserting %v team value to database", teamValueKeyDatabasePassword)
 		return err
 	}
 
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, teamValueKeyFernetKey, values.FernetKey, team.ID); err != nil {
-		log.WithError(err).Error("inserting fernet key team value to database")
+		log.WithError(err).Errorf("inserting %v team value to database", teamValueKeyFernetKey)
 		return err
 	}
 
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, teamValueKeyWebserverSecret, values.WebserverSecretKey, team.ID); err != nil {
-		log.WithError(err).Error("inserting webserver team value to database")
+		log.WithError(err).Errorf("inserting %v team value to database", teamValueKeyWebserverSecret)
 		return err
 	}
 
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, TeamValueKeyRestrictEgress, strconv.FormatBool(values.RestrictEgress), team.ID); err != nil {
-		log.WithError(err).Error("inserting restrict egress team value to database")
+		log.WithError(err).Errorf("inserting %v team value to database", TeamValueKeyRestrictEgress)
 		return err
 	}
 
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, TeamValueKeyApiAccess, strconv.FormatBool(values.ApiAccess), team.ID); err != nil {
-		log.WithError(err).Error("inserting api access team value to database")
+		log.WithError(err).Errorf("inserting %v team value to database", TeamValueKeyApiAccess)
+		return err
+	}
+
+	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, TeamValueDagRepo, values.DagRepo, team.ID); err != nil {
+		log.WithError(err).Errorf("inserting %v team value to database", TeamValueDagRepo)
+		return err
+	}
+
+	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, TeamValueDagRepoBranch, values.DagRepoBranch, team.ID); err != nil {
+		log.WithError(err).Errorf("inserting %v team value to database", TeamValueDagRepoBranch)
 		return err
 	}
 

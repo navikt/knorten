@@ -61,7 +61,7 @@ func (c Client) createKnauditInitContainer(ctx context.Context) (map[string]any,
 					"volumeMounts": []map[string]any{
 						{
 							"mountPath": "/dags",
-							"name":      "dags-data",
+							"name":      "dags",
 						},
 						{
 							"mountPath": "/etc/pki/tls/certs/ca-bundle.crt",

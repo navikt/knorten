@@ -14,7 +14,7 @@ func (c Client) createKnauditInitContainer(ctx context.Context) (map[string]any,
 
 	return map[string]any{
 		"workers": map[string]any{
-			"extraContainers": []map[string]any{
+			"extraInitContainers": []map[string]any{
 				{
 					"name":  "knaudit",
 					"image": knauditImage.Value,

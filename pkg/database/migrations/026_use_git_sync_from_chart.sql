@@ -5,6 +5,7 @@ DELETE FROM chart_global_values WHERE "key" IN ('webserver.extraVolumes','webser
 INSERT INTO chart_global_values ("key","value","chart_type") VALUES
     ('dags.gitSync.enabled','true','airflow'),
     ('dags.gitSync.extraVolumeMounts','[{"mountPath":"/dags","name":"dags-data"},{"mountPath":"/keys","name":"github-app-secret"}]','airflow'),
+    ('dags.gitSync.uid','50000','airflow'),
     ('images.gitSync.repository','europe-north1-docker.pkg.dev/knada-gcp/knada-north/git-sync','airflow'),
     ('images.gitSync.tag','2023-09-18-2c62c53','airflow');
 

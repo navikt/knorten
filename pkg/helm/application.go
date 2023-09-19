@@ -262,6 +262,15 @@ func (c Client) mergeValues(ctx context.Context, chartType gensql.ChartType, tea
 		return err
 	}
 
+	switch chartType {
+	case gensql.ChartTypeAirflow:
+		knauditInitContainer, err := c.createKnauditInitContainer(ctx)
+		if err != nil {
+			return err
+		}
+		mergeMaps(values, knauditInitContainer)
+	}
+
 	mergeMaps(defaultValues, values)
 	return nil
 }

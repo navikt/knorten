@@ -29,14 +29,12 @@ const (
 	teamValueKeyWebserverSecret   = "webserverSecretKey,omit"
 	TeamValueKeyRestrictEgress    = "restrictEgress,omit"
 	TeamValueKeyApiAccess         = "apiAccess,omit"
-	TeamValueDagRepo              = "dagRepo,omit"
-	TeamValueDagRepoBranch        = "dagRepoBranch,omit"
 )
 
 type AirflowConfigurableValues struct {
 	TeamID         string
-	DagRepo        string
-	DagRepoBranch  string
+	DagRepo        string `helm:"dags.gitSync.repo"`
+	DagRepoBranch  string `helm:"dags.gitSync.branch"`
 	AirflowImage   string `helm:"images.airflow.repository"`
 	AirflowTag     string `helm:"images.airflow.tag"`
 	RestrictEgress bool
@@ -57,7 +55,6 @@ type AirflowValues struct {
 	ExtraEnvs               string `helm:"env"`
 	IngressHosts            string `helm:"ingress.web.hosts"`
 	WebserverEnv            string `helm:"webserver.env"`
-	GitSyncEnv              string `helm:"dags.gitSync.env"`
 	WebserverServiceAccount string `helm:"webserver.serviceAccount.name"`
 	WorkerServiceAccount    string `helm:"workers.serviceAccount.name"`
 }
@@ -109,16 +106,6 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, TeamValueKeyApiAccess, strconv.FormatBool(values.ApiAccess), team.ID); err != nil {
 		log.WithError(err).Errorf("inserting %v team value to database", TeamValueKeyApiAccess)
-		return err
-	}
-
-	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, TeamValueDagRepo, values.DagRepo, team.ID); err != nil {
-		log.WithError(err).Errorf("inserting %v team value to database", TeamValueDagRepo)
-		return err
-	}
-
-	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, TeamValueDagRepoBranch, values.DagRepoBranch, team.ID); err != nil {
-		log.WithError(err).Errorf("inserting %v team value to database", TeamValueDagRepoBranch)
 		return err
 	}
 
@@ -203,14 +190,14 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string, log logger.Log
 // mergeAirflowValues merges the values from the database with the values from the request, generate the missing values and returns the final values.
 func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, configurableValues AirflowConfigurableValues) (AirflowValues, error) {
 	if configurableValues.DagRepo == "" { // only required value
-		dagRepo, err := c.repo.TeamValueGet(ctx, TeamValueDagRepo, team.ID)
+		dagRepo, err := c.repo.TeamValueGet(ctx, "dags.gitSync.repo", team.ID)
 		if err != nil {
 			return AirflowValues{}, err
 		}
 
 		configurableValues.DagRepo = dagRepo.Value
 
-		dagRepoBranch, err := c.repo.TeamValueGet(ctx, TeamValueDagRepoBranch, team.ID)
+		dagRepoBranch, err := c.repo.TeamValueGet(ctx, "dags.gitSync.branch", team.ID)
 		if err != nil {
 			return AirflowValues{}, err
 		}
@@ -272,15 +259,9 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 		return AirflowValues{}, err
 	}
 
-	gitSyncEnv, err := c.createAirflowGitSyncEnvs(configurableValues.DagRepo, configurableValues.DagRepoBranch)
-	if err != nil {
-		return AirflowValues{}, err
-	}
-
 	return AirflowValues{
 		AirflowConfigurableValues: configurableValues,
 		ExtraEnvs:                 extraEnvs,
-		GitSyncEnv:                gitSyncEnv,
 		FernetKey:                 fernetKey,
 		IngressHosts:              fmt.Sprintf(`[{"name":"%v","tls":{"enabled":true,"secretName":"%v"}}]`, team.Slug+".airflow.knada.io", "airflow-certificate"),
 		PostgresPassword:          postgresPassword,
@@ -309,34 +290,6 @@ func (Client) createAirflowWebServerEnvs(users []string, apiAccess bool) (string
 			Name:  "AIRFLOW__API__AUTH_BACKENDS",
 			Value: "airflow.api.auth.backend.basic_auth",
 		})
-	}
-
-	envBytes, err := json.Marshal(envs)
-	if err != nil {
-		return "", err
-	}
-
-	return string(envBytes), nil
-}
-
-func (c Client) createAirflowGitSyncEnvs(dagRepo, dagRepoBranch string) (string, error) {
-	envs := []airflowEnv{
-		{
-			Name:  "DAG_REPO",
-			Value: dagRepo,
-		},
-		{
-			Name:  "DAG_REPO_BRANCH",
-			Value: dagRepoBranch,
-		},
-		{
-			Name:  "DAG_REPO_DIR",
-			Value: "/dags",
-		},
-		{
-			Name:  "SYNC_TIME",
-			Value: "60",
-		},
 	}
 
 	envBytes, err := json.Marshal(envs)

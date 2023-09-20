@@ -352,12 +352,6 @@ func TestAirflowAPI(t *testing.T) {
 	if err := repo.TeamChartValueInsert(ctx, chart.TeamValueKeyRestrictEgress, strconv.FormatBool(expectedRestrictEgress), team.ID, gensql.ChartTypeAirflow); err != nil {
 		t.Error(err)
 	}
-	if err := repo.TeamChartValueInsert(ctx, chart.TeamValueDagRepo, dagRepo, team.ID, gensql.ChartTypeAirflow); err != nil {
-		t.Error(err)
-	}
-	if err := repo.TeamChartValueInsert(ctx, chart.TeamValueDagRepoBranch, branch, team.ID, gensql.ChartTypeAirflow); err != nil {
-		t.Error(err)
-	}
 
 	t.Run("get edit airflow html", func(t *testing.T) {
 		resp, err := server.Client().Get(fmt.Sprintf("%v/team/%v/airflow/edit", server.URL, team.Slug))

@@ -398,16 +398,6 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 		}
 	case gensql.ChartTypeAirflow:
 		airflowValues := chartObjects.(*chart.AirflowConfigurableValues)
-		dagRepo, err := c.repo.TeamValueGet(ctx, chart.TeamValueDagRepo, team.ID)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
-		}
-
-		dagRepoBranch, err := c.repo.TeamValueGet(ctx, chart.TeamValueDagRepoBranch, team.ID)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
-		}
-
 		restrictEgressTeamValue, err := c.repo.TeamValueGet(ctx, chart.TeamValueKeyRestrictEgress, team.ID)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return nil, err
@@ -434,8 +424,8 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 		}
 
 		form = airflowForm{
-			DagRepo:        dagRepo.Value,
-			DagRepoBranch:  dagRepoBranch.Value,
+			DagRepo:        airflowValues.DagRepo,
+			DagRepoBranch:  airflowValues.DagRepoBranch,
 			RestrictEgress: restrictEgress,
 			ApiAccess:      apiAccess,
 			AirflowImage:   airflowImage,

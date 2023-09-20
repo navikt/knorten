@@ -33,8 +33,8 @@ const (
 
 type AirflowConfigurableValues struct {
 	TeamID         string
-	DagRepo        string `helm:"webserver.extraContainers.[0].args.[0]"`
-	DagRepoBranch  string `helm:"webserver.extraContainers.[0].args.[1]"`
+	DagRepo        string `helm:"dags.gitSync.repo"`
+	DagRepoBranch  string `helm:"dags.gitSync.branch"`
 	AirflowImage   string `helm:"images.airflow.repository"`
 	AirflowTag     string `helm:"images.airflow.tag"`
 	RestrictEgress bool
@@ -52,20 +52,11 @@ type AirflowValues struct {
 	WebserverSecretKey string // Knorten sets Helm value pointing to k8s secret
 
 	// Generated Helm config
-
-	ExtraEnvs                  string `helm:"env"`
-	IngressHosts               string `helm:"ingress.web.hosts"`
-	SchedulerGitInitRepo       string `helm:"scheduler.extraInitContainers.[0].args.[0]"`
-	SchedulerGitInitRepoBranch string `helm:"scheduler.extraInitContainers.[0].args.[1]"`
-	SchedulerGitSynkRepo       string `helm:"scheduler.extraContainers.[0].args.[0]"`
-	SchedulerGitSynkRepoBranch string `helm:"scheduler.extraContainers.[0].args.[1]"`
-	WebserverEnv               string `helm:"webserver.env"`
-	WebserverGitSynkRepo       string `helm:"webserver.extraContainers.[0].args.[0]"`
-	WebserverGitSynkRepoBranch string `helm:"webserver.extraContainers.[0].args.[1]"`
-	WebserverServiceAccount    string `helm:"webserver.serviceAccount.name"`
-	WorkerServiceAccount       string `helm:"workers.serviceAccount.name"`
-	WorkersGitSynkRepo         string `helm:"workers.extraInitContainers.[0].args.[0]"`
-	WorkersGitSynkRepoBranch   string `helm:"workers.extraInitContainers.[0].args.[1]"`
+	ExtraEnvs               string `helm:"env"`
+	IngressHosts            string `helm:"ingress.web.hosts"`
+	WebserverEnv            string `helm:"webserver.env"`
+	WebserverServiceAccount string `helm:"webserver.serviceAccount.name"`
+	WorkerServiceAccount    string `helm:"workers.serviceAccount.name"`
 }
 
 func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfigurableValues, log logger.Logger) error {
@@ -94,27 +85,27 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 	}
 
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, teamValueKeyDatabasePassword, values.PostgresPassword, team.ID); err != nil {
-		log.WithError(err).Error("inserting postgres team value to database")
+		log.WithError(err).Errorf("inserting %v team value to database", teamValueKeyDatabasePassword)
 		return err
 	}
 
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, teamValueKeyFernetKey, values.FernetKey, team.ID); err != nil {
-		log.WithError(err).Error("inserting fernet key team value to database")
+		log.WithError(err).Errorf("inserting %v team value to database", teamValueKeyFernetKey)
 		return err
 	}
 
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, teamValueKeyWebserverSecret, values.WebserverSecretKey, team.ID); err != nil {
-		log.WithError(err).Error("inserting webserver team value to database")
+		log.WithError(err).Errorf("inserting %v team value to database", teamValueKeyWebserverSecret)
 		return err
 	}
 
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, TeamValueKeyRestrictEgress, strconv.FormatBool(values.RestrictEgress), team.ID); err != nil {
-		log.WithError(err).Error("inserting restrict egress team value to database")
+		log.WithError(err).Errorf("inserting %v team value to database", TeamValueKeyRestrictEgress)
 		return err
 	}
 
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, TeamValueKeyApiAccess, strconv.FormatBool(values.ApiAccess), team.ID); err != nil {
-		log.WithError(err).Error("inserting api access team value to database")
+		log.WithError(err).Errorf("inserting %v team value to database", TeamValueKeyApiAccess)
 		return err
 	}
 
@@ -199,14 +190,14 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string, log logger.Log
 // mergeAirflowValues merges the values from the database with the values from the request, generate the missing values and returns the final values.
 func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, configurableValues AirflowConfigurableValues) (AirflowValues, error) {
 	if configurableValues.DagRepo == "" { // only required value
-		dagRepo, err := c.repo.TeamValueGet(ctx, "webserver.extraContainers.[0].args.[0]", team.ID)
+		dagRepo, err := c.repo.TeamValueGet(ctx, "dags.gitSync.repo", team.ID)
 		if err != nil {
 			return AirflowValues{}, err
 		}
 
 		configurableValues.DagRepo = dagRepo.Value
 
-		dagRepoBranch, err := c.repo.TeamValueGet(ctx, "webserver.extraContainers.[0].args.[1]", team.ID)
+		dagRepoBranch, err := c.repo.TeamValueGet(ctx, "dags.gitSync.branch", team.ID)
 		if err != nil {
 			return AirflowValues{}, err
 		}
@@ -269,23 +260,15 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 	}
 
 	return AirflowValues{
-		AirflowConfigurableValues:  configurableValues,
-		ExtraEnvs:                  extraEnvs,
-		FernetKey:                  fernetKey,
-		IngressHosts:               fmt.Sprintf(`[{"name":"%v","tls":{"enabled":true,"secretName":"%v"}}]`, team.Slug+".airflow.knada.io", "airflow-certificate"),
-		PostgresPassword:           postgresPassword,
-		SchedulerGitInitRepo:       configurableValues.DagRepo,
-		SchedulerGitInitRepoBranch: configurableValues.DagRepoBranch,
-		SchedulerGitSynkRepo:       configurableValues.DagRepo,
-		SchedulerGitSynkRepoBranch: configurableValues.DagRepoBranch,
-		WebserverEnv:               webserverEnv,
-		WebserverGitSynkRepo:       configurableValues.DagRepo,
-		WebserverGitSynkRepoBranch: configurableValues.DagRepoBranch,
-		WebserverSecretKey:         webserverSecretKey,
-		WebserverServiceAccount:    team.ID,
-		WorkerServiceAccount:       team.ID,
-		WorkersGitSynkRepo:         configurableValues.DagRepo,
-		WorkersGitSynkRepoBranch:   configurableValues.DagRepoBranch,
+		AirflowConfigurableValues: configurableValues,
+		ExtraEnvs:                 extraEnvs,
+		FernetKey:                 fernetKey,
+		IngressHosts:              fmt.Sprintf(`[{"name":"%v","tls":{"enabled":true,"secretName":"%v"}}]`, team.Slug+".airflow.knada.io", "airflow-certificate"),
+		PostgresPassword:          postgresPassword,
+		WebserverEnv:              webserverEnv,
+		WebserverSecretKey:        webserverSecretKey,
+		WebserverServiceAccount:   team.ID,
+		WorkerServiceAccount:      team.ID,
 	}, nil
 }
 

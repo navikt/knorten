@@ -336,11 +336,13 @@ func TestAirflowAPI(t *testing.T) {
 		}
 	})
 
+	dagRepo := "navikt/repo"
+	branch := "main"
 	expectedRestrictEgress := false
 	expectedValues := chart.AirflowConfigurableValues{
 		TeamID:         team.ID,
-		DagRepo:        "navikt/repo",
-		DagRepoBranch:  "main",
+		DagRepo:        dagRepo,
+		DagRepoBranch:  branch,
 		RestrictEgress: expectedRestrictEgress,
 	}
 

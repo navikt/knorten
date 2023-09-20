@@ -764,7 +764,11 @@ func prepareAdminTests(ctx context.Context) ([]gensql.Team, error) {
 		return nil, err
 	}
 
-	// global values
+	_, err = db.Exec("DELETE FROM chart_global_values")
+	if err != nil {
+		return nil, err
+	}
+
 	if err := repo.GlobalChartValueInsert(ctx, "jupytervalue", "value", false, gensql.ChartTypeJupyterhub); err != nil {
 		return nil, err
 	}

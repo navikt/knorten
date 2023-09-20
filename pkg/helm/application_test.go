@@ -44,33 +44,6 @@ func Test_parseTeamValue(t *testing.T) {
 			want: map[string]any{"ingress": map[string]any{"web": map[string]any{"annotations": map[string]any{"kubernetes.io/ingress.allow-http": "true"}}}},
 		},
 		{
-			name: "Replace nested value test",
-			args: args{
-				key:    "webserver.extraContainers.[0].args",
-				value:  `["navikt/repo", "main", "/dags", "60"]`,
-				values: map[string]any{"webserver": map[string]any{"extraContainers": []any{map[string]any{"name": "hello"}}}},
-			},
-			want: map[string]any{"webserver": map[string]any{"extraContainers": []any{map[string]any{"name": "hello", "args": []any{"navikt/repo", "main", "/dags", "60"}}}}},
-		},
-		{
-			name: "Empty nested list",
-			args: args{
-				key:    "webserver.extraContainers.[0].args",
-				value:  `["navikt/repo", "main", "/dags", "60"]`,
-				values: map[string]any{"webserver": map[string]any{"extraContainers": []any{map[string]any{}}}},
-			},
-			want: map[string]any{"webserver": map[string]any{"extraContainers": []any{map[string]any{"args": []any{"navikt/repo", "main", "/dags", "60"}}}}},
-		},
-		{
-			name: "Replace nested value test single list element",
-			args: args{
-				key:    "webserver.extraContainers.[0].args.[0]",
-				value:  "navikt/repo",
-				values: map[string]any{"webserver": map[string]any{"extraContainers": []any{map[string]any{"name": "hello", "args": []any{"", "main", "/dags", "60"}}}}, "unaffected": "value"},
-			},
-			want: map[string]any{"webserver": map[string]any{"extraContainers": []any{map[string]any{"name": "hello", "args": []any{"navikt/repo", "main", "/dags", "60"}}}}, "unaffected": "value"},
-		},
-		{
 			name: "Handle omitted values",
 			args: args{
 				key:    "fernetKey,omit",

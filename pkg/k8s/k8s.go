@@ -11,6 +11,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
+	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 )
 
 func CreateClientset(dryRun, inCluster bool) (*kubernetes.Clientset, error) {
@@ -24,6 +25,19 @@ func CreateClientset(dryRun, inCluster bool) (*kubernetes.Clientset, error) {
 	}
 
 	return kubernetes.NewForConfig(config)
+}
+
+func CreateGatewayClientset(dryRun, inCluster bool) (*gateway.Clientset, error) {
+	if dryRun {
+		return nil, nil
+	}
+
+	config, err := createKubeConfig(inCluster)
+	if err != nil {
+		return nil, err
+	}
+
+	return gateway.NewForConfig(config)
 }
 
 func createKubeConfig(inCluster bool) (*rest.Config, error) {

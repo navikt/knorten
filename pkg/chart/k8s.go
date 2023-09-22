@@ -240,7 +240,8 @@ func (c Client) createHttpRoute(ctx context.Context, url, namespace string, char
 		return nil
 	}
 
-	kind := v1beta1.Kind("Gateway")
+	gatewayGroup := v1beta1.Group("gateway.networking.k8s.io")
+	gatewayKind := v1beta1.Kind("Gateway")
 	gatewayNamespace := v1beta1.Namespace("knada-system")
 	httpRoute := &v1beta1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
@@ -250,7 +251,8 @@ func (c Client) createHttpRoute(ctx context.Context, url, namespace string, char
 			CommonRouteSpec: v1beta1.CommonRouteSpec{
 				ParentRefs: []v1beta1.ParentReference{
 					{
-						Kind:      &kind,
+						Kind:      &gatewayKind,
+						Group:     &gatewayGroup,
 						Namespace: &gatewayNamespace,
 						Name:      "knada-io",
 					},
@@ -290,7 +292,7 @@ func (c Client) createHttpRoute(ctx context.Context, url, namespace string, char
 		}
 	}
 
-	_, err := c.k8sClient.RESTClient().Post().AbsPath("/apis/gateway.networking.k8s.io/v1beta1/namespaces/" + namespace + "/httproutes").Body(httpRoute).DoRaw(ctx)
+	_, err := c.k8sGatewayClient.GatewayV1beta1().HTTPRoutes(namespace).Create(ctx, httpRoute, metav1.CreateOptions{})
 	if err != nil && !k8sErrors.IsAlreadyExists(err) {
 		return err
 	}

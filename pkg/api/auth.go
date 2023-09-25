@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"crypto/rand"
 	"database/sql"
 	"encoding/base64"
@@ -98,7 +99,9 @@ func (c *client) callback(ctx *gin.Context) (string, error) {
 
 	tokens, err := c.azureClient.Exchange(ctx.Request.Context(), code)
 	if err != nil {
-		c.log.Errorf("Exchanging authorization code for tokens: %v", err)
+		if !errors.Is(err, context.Canceled) {
+			c.log.Errorf("Exchanging authorization code for tokens: %v", err)
+		}
 		return loginPage + "?error=invalid-state", errors.New("forbidden")
 	}
 

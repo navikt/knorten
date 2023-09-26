@@ -54,7 +54,6 @@ type AirflowValues struct {
 	// Generated Helm config
 
 	ExtraEnvs                  string `helm:"env"`
-	IngressHosts               string `helm:"ingress.web.hosts"`
 	SchedulerGitInitRepo       string `helm:"scheduler.extraInitContainers.[0].args.[0]"`
 	SchedulerGitInitRepoBranch string `helm:"scheduler.extraInitContainers.[0].args.[1]"`
 	SchedulerGitSynkRepo       string `helm:"scheduler.extraContainers.[0].args.[0]"`
@@ -292,7 +291,6 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 		AirflowConfigurableValues:  configurableValues,
 		ExtraEnvs:                  extraEnvs,
 		FernetKey:                  fernetKey,
-		IngressHosts:               fmt.Sprintf(`[{"name":"%v","tls":{"enabled":true,"secretName":"%v"}}]`, team.Slug+".airflow.knada.io", "airflow-certificate"),
 		PostgresPassword:           postgresPassword,
 		SchedulerGitInitRepo:       configurableValues.DagRepo,
 		SchedulerGitInitRepoBranch: configurableValues.DagRepoBranch,

@@ -10,6 +10,8 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/gateway-api/apis/v1beta1"
 )
@@ -340,23 +342,38 @@ func (c Client) createHealtCheckPolicy(ctx context.Context, namespace string, ch
 		requestPath = "/hub/login"
 	}
 
-	hcp := `apiVersion: networking.gke.io/v1
-kind: HealthCheckPolicy
-metadata:
-  name: ` + name + `
-  namespace: ` + namespace + `
-spec:
-  default:
-    config:
-      type: HTTP
-      httpHealthCheck:
-        requestPath: ` + requestPath + `
-  targetRef:
-    group: ""
-    kind: Service
-    name: ` + serviceName
+	schema := schema.GroupVersionResource{
+		Group:    "networking.gke.io",
+		Version:  "v1",
+		Resource: "healthcheckpolicies",
+	}
 
-	_, err := c.k8sClient.RESTClient().Post().AbsPath("/apis/networking.gke.io/v1/namespaces/" + namespace + "/healthcheckpolicies/" + name).Body([]byte(hcp)).DoRaw(ctx)
+	hcpp := &unstructured.Unstructured{}
+	hcpp.SetUnstructuredContent(map[string]interface{}{
+		"apiVersion": "networking.gke.io/v1",
+		"kind":       "HealthCheckPolicy",
+		"metadata": map[string]interface{}{
+			"name":      name,
+			"namespace": namespace,
+		},
+		"spec": map[string]interface{}{
+			"default": map[string]interface{}{
+				"config": map[string]interface{}{
+					"type": "HTTP",
+					"httpHealthCheck": map[string]interface{}{
+						"requestPath": requestPath,
+					},
+				},
+			},
+			"targetRef": map[string]interface{}{
+				"group": "",
+				"kind":  "Service",
+				"name":  serviceName,
+			},
+		},
+	})
+
+	_, err := c.k8sDynamicClient.Resource(schema).Namespace(namespace).Create(ctx, hcpp, metav1.CreateOptions{})
 	if err != nil && !k8sErrors.IsAlreadyExists(err) {
 		return err
 	}

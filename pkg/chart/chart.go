@@ -9,6 +9,7 @@ import (
 	"github.com/nais/knorten/pkg/helm"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/logger"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 )
@@ -16,6 +17,7 @@ import (
 type Client struct {
 	repo                *database.Repo
 	k8sClient           *kubernetes.Clientset
+	k8sDynamicClient    *dynamic.DynamicClient
 	k8sGatewayClient    *gateway.Clientset
 	azureClient         *auth.Azure
 	dryRun              bool
@@ -36,10 +38,16 @@ func NewClient(repo *database.Repo, azureClient *auth.Azure, dryRun, inCluster b
 		return nil, err
 	}
 
+	k8sDynamicClient, err := k8s.CreateDynamicClient(dryRun, inCluster)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Client{
 		repo:                repo,
 		azureClient:         azureClient,
 		k8sClient:           k8sClient,
+		k8sDynamicClient:    k8sDynamicClient,
 		k8sGatewayClient:    k8sGatewayClient,
 		dryRun:              dryRun,
 		chartVersionJupyter: jupyterChartVersion,

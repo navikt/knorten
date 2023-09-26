@@ -262,6 +262,15 @@ func (c Client) mergeValues(ctx context.Context, chartType gensql.ChartType, tea
 		return err
 	}
 
+	switch chartType {
+	case gensql.ChartTypeAirflow:
+		knauditInitContainer, err := c.createKnauditInitContainer(ctx)
+		if err != nil {
+			return err
+		}
+		mergeMaps(values, knauditInitContainer)
+	}
+
 	mergeMaps(defaultValues, values)
 	return nil
 }
@@ -324,11 +333,6 @@ func parseTeamValue(key string, value any, values map[string]any) (any, error) {
 	}
 
 	keys := keySplitHandleEscape(key)
-
-	if pKeys, cKeys, idx, mutate := isMutation(keys); mutate {
-		return mutateGlobalListValue(pKeys, cKeys, idx, value, values)
-	}
-
 	value, err := ParseValue(value)
 	if err != nil {
 		return nil, err
@@ -336,73 +340,6 @@ func parseTeamValue(key string, value any, values map[string]any) (any, error) {
 	SetChartValue(keys, value, values)
 
 	return values, nil
-}
-
-func isMutation(keys []string) ([]string, string, int, bool) {
-	for i, p := range keys {
-		if idx, isListElement := isListElement(p); isListElement {
-			return keys[:i], strings.Join(keys[i+1:], "."), idx, true
-		}
-	}
-	return []string{}, "", 0, false
-}
-
-func isListElement(p string) (int, bool) {
-	if strings.HasPrefix(p, "[") && strings.HasSuffix(p, "]") {
-		v := strings.TrimPrefix(p, "[")
-		v = strings.TrimSuffix(v, "]")
-		idx, err := strconv.Atoi(v)
-		if err != nil {
-			return 0, false
-		}
-		return idx, true
-	}
-
-	return 0, false
-}
-
-func mutateGlobalListValue(pKeys []string, key string, idx int, value any, values map[string]any) (any, error) {
-	parentList := findParentList(pKeys, values)
-	value, err := ParseValue(value)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(parentList) == 0 {
-		parentList = append(parentList, map[string]any{})
-	}
-
-	if parent, ok := parentList[idx].(map[string]any); ok {
-		parent, err := parseTeamValue(key, value, parent)
-		if err != nil {
-			return nil, err
-		}
-
-		return parent, nil
-	}
-
-	parentList[idx] = value
-	return parentList[idx], nil
-}
-
-func findParentList(pKeys []string, values map[string]any) []any {
-	key := pKeys[0]
-
-	if len(pKeys) > 1 {
-		_, ok := values[key].(map[string]any)
-		if !ok {
-			values[key] = map[string]any{}
-		}
-
-		return findParentList(pKeys[1:], values[key].(map[string]any))
-	}
-
-	_, ok := values[key].([]any)
-	if !ok {
-		values[key] = []any{}
-	}
-
-	return values[key].([]any)
 }
 
 func mergeMaps(base, custom map[string]any) map[string]any {

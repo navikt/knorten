@@ -23,6 +23,12 @@ const (
 	k8sJupyterhubResourceName         = "jupyterhub"
 )
 
+var healthCheckPoliciesSchema = schema.GroupVersionResource{
+	Group:    "networking.gke.io",
+	Version:  "v1",
+	Resource: "healthcheckpolicies",
+}
+
 func (c Client) deleteCloudSQLProxyFromKubernetes(ctx context.Context, namespace string) error {
 	if c.dryRun {
 		return nil
@@ -315,7 +321,7 @@ func (c Client) deleteHttpRoute(ctx context.Context, namespace string, chartType
 		name = k8sJupyterhubResourceName
 	}
 
-	err := c.k8sClient.RESTClient().Delete().AbsPath("/apis/gateway.networking.k8s.io/v1beta1/namespaces/" + namespace + "/httproutes/" + name).Do(ctx).Error()
+	err := c.k8sGatewayClient.GatewayV1beta1().HTTPRoutes(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil && !k8sErrors.IsNotFound(err) {
 		return err
 	}
@@ -342,14 +348,8 @@ func (c Client) createHealtCheckPolicy(ctx context.Context, namespace string, ch
 		requestPath = "/hub/login"
 	}
 
-	schema := schema.GroupVersionResource{
-		Group:    "networking.gke.io",
-		Version:  "v1",
-		Resource: "healthcheckpolicies",
-	}
-
-	hcpp := &unstructured.Unstructured{}
-	hcpp.SetUnstructuredContent(map[string]interface{}{
+	healthCheckPolicy := &unstructured.Unstructured{}
+	healthCheckPolicy.SetUnstructuredContent(map[string]interface{}{
 		"apiVersion": "networking.gke.io/v1",
 		"kind":       "HealthCheckPolicy",
 		"metadata": map[string]interface{}{
@@ -373,7 +373,7 @@ func (c Client) createHealtCheckPolicy(ctx context.Context, namespace string, ch
 		},
 	})
 
-	_, err := c.k8sDynamicClient.Resource(schema).Namespace(namespace).Create(ctx, hcpp, metav1.CreateOptions{})
+	_, err := c.k8sDynamicClient.Resource(healthCheckPoliciesSchema).Namespace(namespace).Create(ctx, healthCheckPolicy, metav1.CreateOptions{})
 	if err != nil && !k8sErrors.IsAlreadyExists(err) {
 		return err
 	}
@@ -393,7 +393,7 @@ func (c Client) deleteHealtCheckPolicy(ctx context.Context, namespace string, ch
 	case gensql.ChartTypeJupyterhub:
 		name = k8sJupyterhubResourceName
 	}
-	err := c.k8sClient.RESTClient().Delete().AbsPath("/apis/networking.gke.io/v1/namespaces/" + namespace + "/healthcheckpolicies/" + name).Do(ctx).Error()
+	err := c.k8sDynamicClient.Resource(healthCheckPoliciesSchema).Namespace(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil && !k8sErrors.IsNotFound(err) {
 		return err
 	}

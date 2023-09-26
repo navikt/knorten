@@ -18,7 +18,7 @@ require (
 	github.com/kyleconroy/sqlc v1.19.1
 	github.com/lib/pq v1.10.9
 	github.com/ory/dockertest/v3 v3.10.0
-	github.com/pressly/goose/v3 v3.7.0
+	github.com/pressly/goose/v3 v3.15.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/tdewolff/minify/v2 v2.12.9
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
@@ -62,9 +62,9 @@ require (
 	github.com/containerd/continuity v0.4.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker/cli v23.0.3+incompatible // indirect
+	github.com/docker/cli v24.0.2+incompatible // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
-	github.com/docker/docker v23.0.3+incompatible // indirect
+	github.com/docker/docker v24.0.2+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.7.0 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect

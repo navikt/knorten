@@ -53,7 +53,6 @@ type AirflowValues struct {
 
 	// Generated Helm config
 	ExtraEnvs               string `helm:"env"`
-	IngressHosts            string `helm:"ingress.web.hosts"`
 	WebserverEnv            string `helm:"webserver.env"`
 	WebserverServiceAccount string `helm:"webserver.serviceAccount.name"`
 	WorkerServiceAccount    string `helm:"workers.serviceAccount.name"`
@@ -112,6 +111,16 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 	// Apply values to cluster
 	namespace := k8s.TeamIDToNamespace(team.ID)
 
+	if err := c.createHttpRoute(ctx, team.Slug+".jupyter.knada.io", namespace, gensql.ChartTypeAirflow); err != nil {
+		log.WithError(err).Error("creating http route")
+		return err
+	}
+
+	if err := c.createHealtCheckPolicy(ctx, namespace, gensql.ChartTypeAirflow); err != nil {
+		log.WithError(err).Error("creating health check policy")
+		return err
+	}
+
 	if err := c.defaultEgressNetpolSync(ctx, namespace, values.RestrictEgress); err != nil {
 		log.WithError(err).Error("syncing default egress netpol")
 		return err
@@ -162,6 +171,16 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string, log logger.Log
 	}
 
 	namespace := k8s.TeamIDToNamespace(teamID)
+
+	if err := c.deleteHttpRoute(ctx, namespace, gensql.ChartTypeAirflow); err != nil {
+		log.WithError(err).Error("deleting http route")
+		return err
+	}
+
+	if err := c.deleteHealtCheckPolicy(ctx, namespace, gensql.ChartTypeAirflow); err != nil {
+		log.WithError(err).Error("deleting health check policy")
+		return err
+	}
 
 	if err := c.deleteCloudSQLProxyFromKubernetes(ctx, namespace); err != nil {
 		log.WithError(err).Error("delete cloud sql proxy from Kubernetes")
@@ -263,7 +282,6 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 		AirflowConfigurableValues: configurableValues,
 		ExtraEnvs:                 extraEnvs,
 		FernetKey:                 fernetKey,
-		IngressHosts:              fmt.Sprintf(`[{"name":"%v","tls":{"enabled":true,"secretName":"%v"}}]`, team.Slug+".airflow.knada.io", "airflow-certificate"),
 		PostgresPassword:          postgresPassword,
 		WebserverEnv:              webserverEnv,
 		WebserverSecretKey:        webserverSecretKey,

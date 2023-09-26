@@ -4,18 +4,30 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/nais/knorten/pkg/database/gensql"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 const (
 	cloudSQLProxyName                 = "airflow-sql-proxy"
 	k8sLabelEnableTeamNetworkPolicies = "team-netpols"
+	k8sAirflowResourceName            = "airflow-webserver"
+	k8sJupyterhubResourceName         = "jupyterhub"
 )
+
+var healthCheckPoliciesSchema = schema.GroupVersionResource{
+	Group:    "networking.gke.io",
+	Version:  "v1",
+	Resource: "healthcheckpolicies",
+}
 
 func (c Client) deleteCloudSQLProxyFromKubernetes(ctx context.Context, namespace string) error {
 	if c.dryRun {
@@ -225,6 +237,164 @@ func (c Client) createCloudSQLProxyService(ctx context.Context, name, namespace 
 
 	_, err := c.k8sClient.CoreV1().Services(namespace).Create(ctx, serviceSpec, metav1.CreateOptions{})
 	if err != nil && !k8sErrors.IsAlreadyExists(err) {
+		return err
+	}
+
+	return nil
+}
+
+func (c Client) createHttpRoute(ctx context.Context, url, namespace string, chartType gensql.ChartType) error {
+	if c.dryRun {
+		return nil
+	}
+
+	gatewayGroup := v1beta1.Group("gateway.networking.k8s.io")
+	gatewayKind := v1beta1.Kind("Gateway")
+	gatewayNamespace := v1beta1.Namespace("knada-system")
+	httpRoute := &v1beta1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+		},
+		Spec: v1beta1.HTTPRouteSpec{
+			CommonRouteSpec: v1beta1.CommonRouteSpec{
+				ParentRefs: []v1beta1.ParentReference{
+					{
+						Kind:      &gatewayKind,
+						Group:     &gatewayGroup,
+						Namespace: &gatewayNamespace,
+						Name:      "knada-io",
+					},
+				},
+			},
+			Hostnames: []v1beta1.Hostname{v1beta1.Hostname(url)},
+			Rules: []v1beta1.HTTPRouteRule{
+				{
+					BackendRefs: []v1beta1.HTTPBackendRef{
+						{
+							BackendRef: v1beta1.BackendRef{},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	switch chartType {
+	case gensql.ChartTypeAirflow:
+		httpRoute.Name = k8sAirflowResourceName
+		portNumber := v1beta1.PortNumber(8080)
+		httpRoute.Spec.Rules[0].BackendRefs[0].BackendRef = v1beta1.BackendRef{
+			BackendObjectReference: v1beta1.BackendObjectReference{
+				Name: "airflow-webserver",
+				Port: &portNumber,
+			},
+		}
+	case gensql.ChartTypeJupyterhub:
+		httpRoute.Name = k8sJupyterhubResourceName
+		portNumber := v1beta1.PortNumber(80)
+		httpRoute.Spec.Rules[0].BackendRefs[0].BackendRef = v1beta1.BackendRef{
+			BackendObjectReference: v1beta1.BackendObjectReference{
+				Name: "proxy-public",
+				Port: &portNumber,
+			},
+		}
+	}
+
+	_, err := c.k8sGatewayClient.GatewayV1beta1().HTTPRoutes(namespace).Create(ctx, httpRoute, metav1.CreateOptions{})
+	if err != nil && !k8sErrors.IsAlreadyExists(err) {
+		return err
+	}
+
+	return nil
+}
+
+func (c Client) deleteHttpRoute(ctx context.Context, namespace string, chartType gensql.ChartType) error {
+	if c.dryRun {
+		return nil
+	}
+
+	name := ""
+	switch chartType {
+	case gensql.ChartTypeAirflow:
+		name = k8sAirflowResourceName
+	case gensql.ChartTypeJupyterhub:
+		name = k8sJupyterhubResourceName
+	}
+
+	err := c.k8sGatewayClient.GatewayV1beta1().HTTPRoutes(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil && !k8sErrors.IsNotFound(err) {
+		return err
+	}
+
+	return nil
+}
+
+func (c Client) createHealtCheckPolicy(ctx context.Context, namespace string, chartType gensql.ChartType) error {
+	if c.dryRun {
+		return nil
+	}
+
+	name := ""
+	serviceName := ""
+	requestPath := ""
+	switch chartType {
+	case gensql.ChartTypeAirflow:
+		name = k8sAirflowResourceName
+		serviceName = "airflow-webserver"
+		requestPath = "/health"
+	case gensql.ChartTypeJupyterhub:
+		name = k8sJupyterhubResourceName
+		serviceName = "proxy-public"
+		requestPath = "/hub/login"
+	}
+
+	healthCheckPolicy := &unstructured.Unstructured{}
+	healthCheckPolicy.SetUnstructuredContent(map[string]interface{}{
+		"apiVersion": "networking.gke.io/v1",
+		"kind":       "HealthCheckPolicy",
+		"metadata": map[string]interface{}{
+			"name":      name,
+			"namespace": namespace,
+		},
+		"spec": map[string]interface{}{
+			"default": map[string]interface{}{
+				"config": map[string]interface{}{
+					"type": "HTTP",
+					"httpHealthCheck": map[string]interface{}{
+						"requestPath": requestPath,
+					},
+				},
+			},
+			"targetRef": map[string]interface{}{
+				"group": "",
+				"kind":  "Service",
+				"name":  serviceName,
+			},
+		},
+	})
+
+	_, err := c.k8sDynamicClient.Resource(healthCheckPoliciesSchema).Namespace(namespace).Create(ctx, healthCheckPolicy, metav1.CreateOptions{})
+	if err != nil && !k8sErrors.IsAlreadyExists(err) {
+		return err
+	}
+
+	return nil
+}
+
+func (c Client) deleteHealtCheckPolicy(ctx context.Context, namespace string, chartType gensql.ChartType) error {
+	if c.dryRun {
+		return nil
+	}
+
+	name := ""
+	switch chartType {
+	case gensql.ChartTypeAirflow:
+		name = k8sAirflowResourceName
+	case gensql.ChartTypeJupyterhub:
+		name = k8sJupyterhubResourceName
+	}
+	err := c.k8sDynamicClient.Resource(healthCheckPoliciesSchema).Namespace(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil && !k8sErrors.IsNotFound(err) {
 		return err
 	}
 

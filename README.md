@@ -29,6 +29,13 @@ Husk å skru på [gcp-auth](https://minikube.sigs.k8s.io/docs/handbook/addons/gc
 
 PS: Hver gang du logger inn med `gcloud auth login --update-adc` må kjøre `minikube addons enable gcp-auth --refresh` for å oppdatere tokenet.
 
+#### CRDer for Minikube
+
+Man må legge til følgende CRDer når man kjører lokalt.
+
+    kubectl apply --context minikube -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/main/config/crd/standard/gateway.networking.k8s.io_httproutes.yaml
+    kubectl apply --context minikube -f https://raw.githubusercontent.com/GoogleCloudPlatform/gke-networking-recipes/main/gateway-api/config/servicepolicies/crd/standard/healthcheckpolicy.yaml
+
 ### Generering av CSS
 
 Man kan generere CSS på en av to måter.

@@ -1,0 +1,15 @@
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: knorten
+  namespace: knada-system
+spec:
+  default:
+    config:
+      httpHealthCheck:
+        requestPath: /
+      type: HTTP
+  targetRef:
+    group: ""
+    kind: Service
+    name: knorten

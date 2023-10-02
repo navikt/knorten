@@ -26,7 +26,7 @@ require (
 	google.golang.org/api v0.141.0
 	google.golang.org/grpc v1.58.1
 	gopkg.in/yaml.v3 v3.0.1
-	helm.sh/helm/v3 v3.12.3
+	helm.sh/helm/v3 v3.13.0
 	k8s.io/api v0.28.2
 	k8s.io/apimachinery v0.28.2
 	k8s.io/client-go v0.28.2

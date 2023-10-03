@@ -672,7 +672,8 @@ func TestAdminAPI(t *testing.T) {
 			t.Errorf("get event html: no event found for team %v", teams[0].ID)
 		}
 
-		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/event/%v?status=%v", server.URL, events[0].ID, newStatus), nil)
+		values := url.Values{"status": {newStatus}}
+		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/event/%v", server.URL, events[0].ID), values)
 		if err != nil {
 			t.Error(err)
 		}

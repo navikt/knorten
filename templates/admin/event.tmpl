@@ -17,16 +17,20 @@
             <br>
             <strong>Payload:</strong> {{ printf "%s" .event.Payload }}
         </p>
-        {{ if eq .event.Status "pending" }}
-            <form action="/admin/event/{{ .event.ID }}?status=new" method="POST">
-                <button
-                        type="submit"
-                        onclick="return confirm('Er du sikker på at du vil sette status til new?')"
-                        class="mb-4 navds-button navds-button--secondary navds-button--small">
-                    <span class="navds-label">Sett status til new</span>
-                </button>
-            </form>
-        {{ end }}
+        <label for="change_status" class="navds-form-field__label navds-label">Sett event status</label>
+        <form action="/admin/event/{{ .event.ID }}" method="POST" class="flex gap-2">
+            <select name="status" id="status" class="mb-4 p-2">
+                <option value="new">new</option>
+                <option value="failed">failed</option>
+            </select>
+            <button
+                type="submit"
+                onclick="return confirm('Er du sikker på at du vil endre status?')"
+                class="mb-4 navds-button navds-button--secondary navds-button--small"
+            >
+                    <span class="navds-label">Endre</span>
+            </button>
+        </form>
         <label for="machine_types" class="navds-form-field__label navds-label">Eventlogs</label>
         <div id="{{ .event.ID }}">
             <table class="navds-table navds-table--small">

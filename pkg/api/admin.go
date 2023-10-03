@@ -600,7 +600,7 @@ func (c *client) setEventStatus(ctx *gin.Context) error {
 	}
 
 	var status database.EventStatus
-	switch ctx.Query("status") {
+	switch ctx.PostForm("status") {
 	case string(database.EventStatusNew):
 		status = database.EventStatusNew
 	case string(database.EventStatusFailed):

@@ -579,6 +579,41 @@ func TestAdminAPI(t *testing.T) {
 		}
 	})
 
+	t.Run("delete team", func(t *testing.T) {
+		team := gensql.Team{
+			ID:    "delete-me-1234",
+			Slug:  "delete-me",
+			Users: []string{user.Email},
+		}
+		if err := repo.TeamCreate(ctx, team); err != nil {
+			t.Error(err)
+		}
+		t.Cleanup(func() {
+			if err := repo.TeamDelete(ctx, team.ID); err != nil {
+				t.Error(err)
+			}
+		})
+
+		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/team/%v/delete", server.URL, team.Slug), nil)
+		if err != nil {
+			t.Error(err)
+		}
+		resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("delete team: expected status code 200, got %v", resp.StatusCode)
+		}
+
+		events, err := repo.EventsGetType(ctx, database.EventTypeDeleteTeam)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if !deleteEventCreatedForTeam(events, team.ID) {
+			t.Errorf("delete team: no event registered for team %v", team.ID)
+		}
+	})
+
 	t.Run("get event html", func(t *testing.T) {
 		events, err := repo.EventsByOwnerGet(ctx, teams[0].ID, 1)
 		if err != nil {

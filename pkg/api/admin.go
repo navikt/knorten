@@ -304,6 +304,32 @@ func (c *client) setupAdminRoutes() {
 		ctx.Redirect(http.StatusSeeOther, "/admin")
 	})
 
+	c.router.POST("/admin/team/:team/delete", func(ctx *gin.Context) {
+		session := sessions.Default(ctx)
+		slug := ctx.Param("team")
+
+		team, err := c.repo.TeamBySlugGet(ctx, slug)
+		if err != nil {
+			c.log.WithError(err).Errorf("deleting team")
+			session.AddFlash(err.Error())
+			err = session.Save()
+			if err != nil {
+				c.log.WithError(err).Error("problem saving session")
+			}
+		}
+
+		if err := c.repo.RegisterDeleteTeamEvent(ctx, team.ID); err != nil {
+			c.log.WithError(err).Errorf("registering delete team event")
+			session.AddFlash(err.Error())
+			err = session.Save()
+			if err != nil {
+				c.log.WithError(err).Error("problem saving session")
+			}
+		}
+
+		ctx.Redirect(http.StatusSeeOther, "/admin")
+	})
+
 	c.router.GET("/admin/event/:id", func(ctx *gin.Context) {
 		header, err := c.getEvent(ctx)
 		if err != nil {

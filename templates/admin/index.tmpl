@@ -40,15 +40,6 @@
                 <span class="navds-label">Resync alle airflow</span>
             </button>
         </form>
-        <form action="/admin/compute/sync/all" method="POST">
-            <button
-                    type="submit"
-                    onclick="return confirm('Er du sikker på at du vil resynce alle compute instanser?')"
-                    class="mb-4 navds-button navds-button--secondary navds-button--small"
-            >
-                <span class="navds-label">Resync alle compute instanser</span>
-            </button>
-        </form>
     </article>
 
     {{ range .teams }}

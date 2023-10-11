@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-contrib/sessions"
@@ -31,7 +30,7 @@ func (c *client) setupComputeRoutes() {
 	})
 
 	c.router.POST("/compute/new", func(ctx *gin.Context) {
-		err := c.createOrSyncComputeInstance(ctx, database.EventTypeCreateCompute)
+		err := c.createComputeInstance(ctx, database.EventTypeCreateCompute)
 		if err != nil {
 			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
@@ -152,7 +151,7 @@ func (c *client) deleteComputeInstance(ctx *gin.Context) error {
 	return c.repo.RegisterDeleteComputeEvent(ctx, user.Email)
 }
 
-func (c *client) createOrSyncComputeInstance(ctx *gin.Context, event database.EventType) error {
+func (c *client) createComputeInstance(ctx *gin.Context, event database.EventType) error {
 	user, err := getUser(ctx)
 	if err != nil {
 		return err
@@ -164,12 +163,5 @@ func (c *client) createOrSyncComputeInstance(ctx *gin.Context, event database.Ev
 		DiskSize: "10",
 	}
 
-	switch event {
-	case database.EventTypeCreateCompute:
-		return c.repo.RegisterCreateComputeEvent(ctx, instance.Owner, instance)
-	case database.EventTypeSyncCompute:
-		return c.repo.RegisterSyncComputeEvent(ctx, instance.Owner, instance)
-	default:
-		return fmt.Errorf("invalid event type %v", event)
-	}
+	return c.repo.RegisterCreateComputeEvent(ctx, instance.Owner, instance)
 }

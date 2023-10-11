@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -49,6 +50,63 @@ func TestComputeAPI(t *testing.T) {
 
 		if eventPayload.Name != "compute-"+getNormalizedNameFromEmail(testUser.Email) {
 			t.Errorf("create compute: name expected %v, got %v", "compute-"+getNormalizedNameFromEmail(testUser.Email), eventPayload.Name)
+		}
+	})
+
+	t.Run("resize compute disk", func(t *testing.T) {
+		instance := gensql.ComputeInstance{
+			Owner:    testUser.Email,
+			Name:     "compute-" + getNormalizedNameFromEmail(testUser.Email),
+			DiskSize: "10",
+		}
+		if err := repo.ComputeInstanceCreate(ctx, instance); err != nil {
+			t.Error(err)
+		}
+
+		t.Cleanup(func() {
+			if err := repo.ComputeInstanceDelete(ctx, testUser.Email); err != nil {
+				t.Error(err)
+			}
+		})
+
+		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeResizeCompute)
+		if err != nil {
+			t.Error(err)
+		}
+
+		diskSize := "200"
+		data := url.Values{"diskSize": {diskSize}}
+		resp, err := server.Client().PostForm(fmt.Sprintf("%v/compute/edit", server.URL), data)
+		if err != nil {
+			t.Error(err)
+		}
+		defer resp.Body.Close()
+
+		events, err := repo.EventsGetType(ctx, database.EventTypeResizeCompute)
+		if err != nil {
+			t.Error(err)
+		}
+
+		newEvents := getNewEvents(oldEvents, events)
+		eventPayload, err := getComputeEvent(newEvents, testUser.Email)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if eventPayload.Owner == "" {
+			t.Errorf("resize compute disk: no event registered for user %v", testUser.Email)
+		}
+
+		if eventPayload.Owner != testUser.Email {
+			t.Errorf("resize compute disk: email expected %v, got %v", testUser.Email, eventPayload.Owner)
+		}
+
+		if eventPayload.Name != "compute-"+getNormalizedNameFromEmail(testUser.Email) {
+			t.Errorf("resize compute disk: name expected %v, got %v", "compute-"+getNormalizedNameFromEmail(testUser.Email), eventPayload.Name)
+		}
+
+		if eventPayload.DiskSize != diskSize {
+			t.Errorf("resize compute disk: diskSize expected %v, got %v", diskSize, eventPayload.DiskSize)
 		}
 	})
 

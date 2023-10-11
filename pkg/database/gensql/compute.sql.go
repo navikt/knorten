@@ -17,7 +17,7 @@ VALUES ($1, $2, $3)
 type ComputeInstanceCreateParams struct {
 	Owner    string
 	Name     string
-	DiskSize string
+	DiskSize int32
 }
 
 func (q *Queries) ComputeInstanceCreate(ctx context.Context, arg ComputeInstanceCreateParams) error {
@@ -56,7 +56,7 @@ WHERE "owner" = $2
 `
 
 type ComputeInstanceUpdateParams struct {
-	DiskSize string
+	DiskSize int32
 	Owner    string
 }
 

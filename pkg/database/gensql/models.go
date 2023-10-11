@@ -77,7 +77,7 @@ type ChartTeamValue struct {
 type ComputeInstance struct {
 	Owner    string
 	Name     string
-	DiskSize string
+	DiskSize int32
 }
 
 type Event struct {

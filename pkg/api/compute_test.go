@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -57,7 +58,7 @@ func TestComputeAPI(t *testing.T) {
 		instance := gensql.ComputeInstance{
 			Owner:    testUser.Email,
 			Name:     "compute-" + getNormalizedNameFromEmail(testUser.Email),
-			DiskSize: "10",
+			DiskSize: 10,
 		}
 		if err := repo.ComputeInstanceCreate(ctx, instance); err != nil {
 			t.Error(err)
@@ -74,8 +75,8 @@ func TestComputeAPI(t *testing.T) {
 			t.Error(err)
 		}
 
-		diskSize := "200"
-		data := url.Values{"diskSize": {diskSize}}
+		diskSize := 200
+		data := url.Values{"diskSize": {strconv.Itoa(diskSize)}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/compute/edit", server.URL), data)
 		if err != nil {
 			t.Error(err)
@@ -105,7 +106,7 @@ func TestComputeAPI(t *testing.T) {
 			t.Errorf("resize compute disk: name expected %v, got %v", "compute-"+getNormalizedNameFromEmail(testUser.Email), eventPayload.Name)
 		}
 
-		if eventPayload.DiskSize != diskSize {
+		if eventPayload.DiskSize != int32(diskSize) {
 			t.Errorf("resize compute disk: diskSize expected %v, got %v", diskSize, eventPayload.DiskSize)
 		}
 	})
@@ -114,14 +115,16 @@ func TestComputeAPI(t *testing.T) {
 		instance := gensql.ComputeInstance{
 			Owner:    testUser.Email,
 			Name:     "compute-" + getNormalizedNameFromEmail(testUser.Email),
-			DiskSize: "100",
+			DiskSize: 100,
 		}
 		if err := repo.ComputeInstanceCreate(ctx, instance); err != nil {
 			t.Error(err)
 		}
 
 		t.Cleanup(func() {
-			repo.ComputeInstanceDelete(ctx, testUser.Email)
+			if err := repo.ComputeInstanceDelete(ctx, testUser.Email); err != nil {
+				t.Error(err)
+			}
 		})
 
 		resp, err := server.Client().Get(fmt.Sprintf("%v/compute/edit", server.URL))

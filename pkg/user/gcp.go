@@ -58,7 +58,7 @@ func (c Client) createComputeInstanceInGCP(ctx context.Context, instanceName, em
 	return nil
 }
 
-func (c Client) resizeComputeInstanceDiskGCP(ctx context.Context, instanceName, diskSize string) error {
+func (c Client) resizeComputeInstanceDiskGCP(ctx context.Context, instanceName string, diskSize int32) error {
 	if c.dryRun {
 		return nil
 	}

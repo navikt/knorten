@@ -10,7 +10,7 @@ func (r *Repo) ComputeInstanceCreate(ctx context.Context, instance gensql.Comput
 	return r.querier.ComputeInstanceCreate(ctx, gensql.ComputeInstanceCreateParams(instance))
 }
 
-func (r *Repo) ComputeInstanceUpdate(ctx context.Context, owner, diskSize string) error {
+func (r *Repo) ComputeInstanceUpdate(ctx context.Context, owner string, diskSize int32) error {
 	return r.querier.ComputeInstanceUpdate(ctx, gensql.ComputeInstanceUpdateParams{
 		DiskSize: diskSize,
 		Owner:    owner,

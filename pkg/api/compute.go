@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -132,7 +133,12 @@ func (c *client) editCompute(ctx *gin.Context) error {
 	if err != nil {
 		return err
 	}
-	instance.DiskSize = form.DiskSize
+
+	diskSizeInt, err := strconv.Atoi(form.DiskSize)
+	if err != nil {
+		return err
+	}
+	instance.DiskSize = int32(diskSizeInt)
 
 	if err := c.repo.RegisterResizeComputeDiskEvent(ctx, user.Email, instance); err != nil {
 		return err
@@ -159,7 +165,7 @@ func (c *client) createComputeInstance(ctx *gin.Context) error {
 	instance := gensql.ComputeInstance{
 		Owner:    user.Email,
 		Name:     "compute-" + getNormalizedNameFromEmail(user.Email),
-		DiskSize: "10",
+		DiskSize: 10,
 	}
 
 	return c.repo.RegisterCreateComputeEvent(ctx, instance.Owner, instance)

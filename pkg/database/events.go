@@ -24,8 +24,8 @@ const (
 	EventTypeUpdateAirflow        EventType = "update:airflow"
 	EventTypeDeleteAirflow        EventType = "delete:airflow"
 	EventTypeCreateCompute        EventType = "create:compute"
+	EventTypeResizeCompute        EventType = "resize:compute"
 	EventTypeDeleteCompute        EventType = "delete:compute"
-	EventTypeSyncCompute          EventType = "sync:compute"
 	EventTypeCreateUserGSM        EventType = "create:usergsm"
 	EventTypeDeleteUserGSM        EventType = "delete:usergsm"
 	EventTypeHelmRolloutJupyter   EventType = "rolloutJupyter:helm"
@@ -99,8 +99,8 @@ func (r *Repo) RegisterCreateComputeEvent(ctx context.Context, owner string, val
 	return r.registerEvent(ctx, EventTypeCreateCompute, owner, 5*time.Minute, values)
 }
 
-func (r *Repo) RegisterSyncComputeEvent(ctx context.Context, owner string, values any) error {
-	return r.registerEvent(ctx, EventTypeSyncCompute, owner, 5*time.Minute, values)
+func (r *Repo) RegisterResizeComputeDiskEvent(ctx context.Context, owner string, values any) error {
+	return r.registerEvent(ctx, EventTypeResizeCompute, owner, 5*time.Minute, values)
 }
 
 func (r *Repo) RegisterCreateAirflowEvent(ctx context.Context, teamID string, values any) error {

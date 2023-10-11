@@ -583,7 +583,7 @@ func TestAdminAPI(t *testing.T) {
 		team := gensql.Team{
 			ID:    "delete-me-1234",
 			Slug:  "delete-me",
-			Users: []string{user.Email},
+			Users: []string{testUser.Email},
 		}
 		if err := repo.TeamCreate(ctx, team); err != nil {
 			t.Error(err)
@@ -721,52 +721,6 @@ func TestAdminAPI(t *testing.T) {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
-
-	t.Run("sync all compute", func(t *testing.T) {
-		instance := gensql.ComputeInstance{
-			Owner: user.Email,
-			Name:  "compute-dummy",
-		}
-		if err := repo.ComputeInstanceCreate(ctx, instance); err != nil {
-			t.Error(err)
-		}
-		t.Cleanup(func() {
-			if err := repo.ComputeInstanceDelete(ctx, user.Email); err != nil {
-				t.Error(err)
-			}
-		})
-
-		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeSyncCompute)
-		if err != nil {
-			t.Error(err)
-		}
-
-		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/compute/sync/all", server.URL), nil)
-		if err != nil {
-			t.Error(err)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
-		}
-
-		events, err := repo.EventsGetType(ctx, database.EventTypeSyncCompute)
-		if err != nil {
-			t.Error(err)
-		}
-
-		newEvents := getNewEvents(oldEvents, events)
-
-		if len(newEvents) != 1 {
-			t.Errorf("sync all compute: expected 1 sync event, got %v", len(newEvents))
-		}
-
-		event := newEvents[0]
-		if event.Owner != instance.Owner {
-			t.Errorf("sync all compute: expected event owner %v, got %v", instance.Owner, event.Owner)
-		}
-	})
 }
 
 func prepareAdminTests(ctx context.Context) ([]gensql.Team, error) {
@@ -774,7 +728,7 @@ func prepareAdminTests(ctx context.Context) ([]gensql.Team, error) {
 	teamA := gensql.Team{
 		ID:    "team-a-1234",
 		Slug:  "team-a",
-		Users: []string{user.Email, "user.one@nav.no"},
+		Users: []string{testUser.Email, "user.one@nav.no"},
 	}
 	err := repo.TeamCreate(ctx, teamA)
 	if err != nil {
@@ -787,7 +741,7 @@ func prepareAdminTests(ctx context.Context) ([]gensql.Team, error) {
 	teamB := gensql.Team{
 		ID:    "team-b-1234",
 		Slug:  "team-b",
-		Users: []string{user.Email, "user.one@nav.no", "user.two@nav.no"},
+		Users: []string{testUser.Email, "user.one@nav.no", "user.two@nav.no"},
 	}
 	err = repo.TeamCreate(ctx, teamB)
 	if err != nil {

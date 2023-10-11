@@ -58,6 +58,41 @@ func (c Client) createComputeInstanceInGCP(ctx context.Context, instanceName, em
 	return nil
 }
 
+func (c Client) resizeComputeInstanceDiskGCP(ctx context.Context, instanceName string, diskSize int32) error {
+	if c.dryRun {
+		return nil
+	}
+
+	exists, err := c.computeInstanceExistsInGCP(ctx, instanceName)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		return nil
+	}
+
+	cmd := exec.CommandContext(ctx,
+		"gcloud",
+		"compute",
+		"disks",
+		"resize",
+		instanceName,
+		fmt.Sprintf("--zone=%v", c.gcpZone),
+		fmt.Sprintf("--size=%vGB", diskSize),
+	)
+
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	}
+
+	return nil
+}
+
 func (c Client) deleteComputeInstanceFromGCP(ctx context.Context, instanceName string) error {
 	if c.dryRun {
 		return nil

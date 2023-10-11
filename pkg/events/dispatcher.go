@@ -43,7 +43,7 @@ func (e EventHandler) distributeWork(eventType database.EventType) workerFunc {
 			return e.processWork(ctx, event, logger, &manager)
 		}
 	case database.EventTypeCreateCompute,
-		database.EventTypeSyncCompute:
+		database.EventTypeResizeCompute:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			var instance gensql.ComputeInstance
 			return e.processWork(ctx, event, logger, &instance)
@@ -110,8 +110,8 @@ func (e EventHandler) processWork(ctx context.Context, event gensql.Event, logge
 		retry = e.userClient.DeleteUserGSM(ctx, event.Owner, logger)
 	case database.EventTypeCreateCompute:
 		retry = e.userClient.CreateComputeInstance(ctx, *form.(*gensql.ComputeInstance), logger)
-	case database.EventTypeSyncCompute:
-		retry = e.userClient.SyncComputeInstance(ctx, *form.(*gensql.ComputeInstance), logger)
+	case database.EventTypeResizeCompute:
+		retry = e.userClient.ResizeComputeInstanceDisk(ctx, *form.(*gensql.ComputeInstance), logger)
 	case database.EventTypeDeleteCompute:
 		retry = e.userClient.DeleteComputeInstance(ctx, event.Owner, logger)
 	case database.EventTypeCreateAirflow,

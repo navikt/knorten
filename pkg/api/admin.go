@@ -258,21 +258,6 @@ func (c *client) setupAdminRoutes() {
 		ctx.Redirect(http.StatusSeeOther, "/admin")
 	})
 
-	c.router.POST("/admin/compute/sync/all", func(ctx *gin.Context) {
-		session := sessions.Default(ctx)
-
-		if err := c.syncComputeInstances(ctx); err != nil {
-			c.log.WithError(err).Error("syncing compute instances")
-			session.AddFlash(err.Error())
-			err = session.Save()
-			if err != nil {
-				c.log.WithError(err).Error("problem saving session")
-			}
-		}
-
-		ctx.Redirect(http.StatusSeeOther, "/admin")
-	})
-
 	c.router.POST("/admin/:chart/sync/all", func(ctx *gin.Context) {
 		session := sessions.Default(ctx)
 		chartType := getChartType(ctx.Param("chart"))
@@ -407,21 +392,6 @@ func (c *client) syncChart(ctx context.Context, teamID string, chartType gensql.
 			TeamID: teamID,
 		}
 		return c.repo.RegisterUpdateAirflowEvent(ctx, teamID, values)
-	}
-
-	return nil
-}
-
-func (c *client) syncComputeInstances(ctx context.Context) error {
-	instances, err := c.repo.ComputeInstancesGet(ctx)
-	if err != nil {
-		return err
-	}
-
-	for _, instance := range instances {
-		if err := c.repo.RegisterSyncComputeEvent(ctx, instance.Owner, instance); err != nil {
-			return err
-		}
 	}
 
 	return nil

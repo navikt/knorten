@@ -52,6 +52,32 @@ func (c Client) createComputeInstance(ctx context.Context, instance gensql.Compu
 	return false, nil
 }
 
+func (c Client) ResizeComputeInstanceDisk(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) bool {
+	log.Info("Resizing compute instance disk")
+
+	if err := c.resizeComputeInstanceDisk(ctx, instance, log); err != nil {
+		log.Info("failed to resize compute instance disk")
+		return true
+	}
+
+	log.Info("Successfully resized compute instance disk")
+	return false
+}
+
+func (c Client) resizeComputeInstanceDisk(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) error {
+	if err := c.resizeComputeInstanceDiskGCP(ctx, instance.Name, instance.DiskSize); err != nil {
+		log.WithError(err).Error("resizing compute instance disk")
+		return err
+	}
+
+	if err := c.repo.ComputeInstanceUpdate(ctx, instance.Owner, instance.DiskSize); err != nil {
+		log.WithError(err).Errorf("failed updating compute instance in database for owner %v", instance.Owner)
+		return err
+	}
+
+	return nil
+}
+
 func (c Client) DeleteComputeInstance(ctx context.Context, email string, log logger.Logger) bool {
 	log.Info("Deleting compute instance")
 
@@ -90,32 +116,5 @@ func (c Client) deleteComputeInstance(ctx context.Context, email string, log log
 		return true, err
 	}
 
-	return false, nil
-}
-
-func (c Client) SyncComputeInstance(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) bool {
-	log.Info("Syncing compute instance")
-
-	if retry, err := c.syncComputeInstance(ctx, instance, log); err != nil {
-		log.Info("Failed syncing compute instance")
-		return retry
-	}
-
-	log.Info("Successfully synced compute instance")
-	return false
-}
-
-func (c Client) syncComputeInstance(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) (bool, error) {
-	err := c.createComputeInstanceInGCP(ctx, instance.Name, instance.Owner)
-	if err != nil {
-		log.WithError(err).Error("failed creating compute instance in GCP")
-		return true, err
-	}
-
-	err = c.createIAMPolicyBindingsInGCP(ctx, instance.Name, instance.Owner)
-	if err != nil {
-		log.WithError(err).Error("failed creating IAM policy binding")
-		return true, err
-	}
 	return false, nil
 }

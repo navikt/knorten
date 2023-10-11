@@ -48,7 +48,7 @@ func TestUserAPI(t *testing.T) {
 			t.Error(err)
 		}
 
-		events, err := repo.EventLogsForOwnerGet(ctx, user.Email, 3)
+		events, err := repo.EventLogsForOwnerGet(ctx, testUser.Email, 3)
 		if err != nil {
 			t.Error(err)
 		}
@@ -72,8 +72,8 @@ func TestUserAPI(t *testing.T) {
 					},
 				},
 				Compute: &gensql.ComputeInstance{
-					Owner: user.Email,
-					Name:  "compute-" + getNormalizedNameFromEmail(user.Email),
+					Owner: testUser.Email,
+					Name:  "compute-" + getNormalizedNameFromEmail(testUser.Email),
 				},
 				UserEvents: events,
 			},
@@ -96,7 +96,7 @@ func prepareUserTests(ctx context.Context) (*gensql.Team, error) {
 	team := gensql.Team{
 		ID:    "team",
 		Slug:  "team",
-		Users: []string{user.Email},
+		Users: []string{testUser.Email},
 	}
 	err := repo.TeamCreate(ctx, team)
 	if err != nil {
@@ -112,8 +112,8 @@ func prepareUserTests(ctx context.Context) (*gensql.Team, error) {
 	}
 
 	err = repo.ComputeInstanceCreate(ctx, gensql.ComputeInstance{
-		Owner: user.Email,
-		Name:  "compute-" + getNormalizedNameFromEmail(user.Email),
+		Owner: testUser.Email,
+		Name:  "compute-" + getNormalizedNameFromEmail(testUser.Email),
 	})
 	if err != nil {
 		return nil, err
@@ -123,7 +123,7 @@ func prepareUserTests(ctx context.Context) (*gensql.Team, error) {
 }
 
 func cleanupUserTests(ctx context.Context, teamID string) error {
-	if err := repo.ComputeInstanceDelete(ctx, user.Email); err != nil {
+	if err := repo.ComputeInstanceDelete(ctx, testUser.Email); err != nil {
 		return err
 	}
 

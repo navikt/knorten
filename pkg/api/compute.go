@@ -77,8 +77,6 @@ func (c *client) setupComputeRoutes() {
 			return
 		}
 
-		fmt.Println("asdf", computeInstance.DiskSize)
-
 		c.htmlResponseWrapper(ctx, http.StatusOK, "compute/edit", gin.H{
 			"name":     "compute-" + getNormalizedNameFromEmail(user.Email),
 			"diskSize": computeInstance.DiskSize,

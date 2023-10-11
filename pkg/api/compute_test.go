@@ -53,6 +53,19 @@ func TestComputeAPI(t *testing.T) {
 	})
 
 	t.Run("get edit compute html", func(t *testing.T) {
+		instance := gensql.ComputeInstance{
+			Owner:    user.Email,
+			Name:     "compute-" + getNormalizedNameFromEmail(user.Email),
+			DiskSize: "100",
+		}
+		if err := repo.ComputeInstanceCreate(ctx, instance); err != nil {
+			t.Error(err)
+		}
+
+		t.Cleanup(func() {
+			repo.ComputeInstanceDelete(ctx, user.Email)
+		})
+
 		resp, err := server.Client().Get(fmt.Sprintf("%v/compute/edit", server.URL))
 		if err != nil {
 			t.Error(err)
@@ -77,7 +90,8 @@ func TestComputeAPI(t *testing.T) {
 		}
 
 		expected, err := createExpectedHTML("compute/edit", map[string]any{
-			"name": "compute-" + getNormalizedNameFromEmail(user.Email),
+			"name":     instance.Name,
+			"diskSize": instance.DiskSize,
 		})
 		if err != nil {
 			t.Error(err)

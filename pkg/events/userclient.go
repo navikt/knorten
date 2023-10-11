@@ -10,6 +10,7 @@ import (
 
 type userClient interface {
 	CreateComputeInstance(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) bool
+	ResizeComputeInstanceDisk(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) bool
 	SyncComputeInstance(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) bool
 	DeleteComputeInstance(ctx context.Context, email string, log logger.Logger) bool
 	CreateUserGSM(ctx context.Context, manager gensql.UserGoogleSecretManager, log logger.Logger) bool
@@ -28,6 +29,11 @@ func newUserMock() userMock {
 
 func (cm userMock) CreateComputeInstance(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) bool {
 	cm.EventCounts[database.EventTypeCreateCompute]++
+	return false
+}
+
+func (cm userMock) ResizeComputeInstanceDisk(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) bool {
+	cm.EventCounts[database.EventTypeResizeCompute]++
 	return false
 }
 

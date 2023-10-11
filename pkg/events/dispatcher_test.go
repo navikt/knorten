@@ -12,6 +12,7 @@ func TestEventHandler_distributeWork(t *testing.T) {
 	checkEventType := func(eventType database.EventType, chartMock chartMock, teamMock teamMock, computeMock userMock, helmMock helmMock) int {
 		switch eventType {
 		case database.EventTypeCreateCompute,
+			database.EventTypeResizeCompute,
 			database.EventTypeSyncCompute,
 			database.EventTypeDeleteCompute:
 			return computeMock.EventCounts[eventType]
@@ -40,6 +41,7 @@ func TestEventHandler_distributeWork(t *testing.T) {
 
 	eventTypes := []database.EventType{
 		database.EventTypeCreateCompute,
+		database.EventTypeResizeCompute,
 		database.EventTypeSyncCompute,
 		database.EventTypeDeleteCompute,
 		database.EventTypeCreateTeam,

@@ -8,6 +8,14 @@ import (
 )
 
 func (c *client) setupUserRoutes() {
+	// if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+	// 	err := v.RegisterValidation("validDiskSize", user.ValidateDiskSize)
+	// 	if err != nil {
+	// 		c.log.WithError(err).Error("can't register validator")
+	// 		return
+	// 	}
+	// }
+
 	c.router.GET("/oversikt", func(ctx *gin.Context) {
 		session := sessions.Default(ctx)
 

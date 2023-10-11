@@ -1,10 +1,19 @@
 {{ define "compute/edit" }}
     {{ template "head" . }}
     <article class="bg-white rounded-md p-4">
-        <h2 class="pb-4">Rediger din personlige compute instance</h2>
+        <div class="flex gap-4 items-center pb-4">
+            <h2 class="pb-4">Rediger din personlige compute instance</h2>
+            <form action="delete" method="POST">
+                <button type="submit"
+                            onclick="return confirm('Er du sikker på at du vil slette compute instance? Det er ikke mulig å gjenopprette instansen.')"
+                            class="navds-button navds-button--danger  bg-surface-danger">
+                        <span class="navds-label">Slett</span>
+                </button>
+            </form>
+        </div>
         <p class="flex items-center gap-4 pb-4">
-            Vi støtter ikke endring av instans type i Knorten, så du må logge inn på Google Cloud Console for å
-            endre.
+            Vi støtter kun endring av diskstørrelse gjennom Knorten. Ønsker du å endre andre ting for instansen (f.eks. maskintype) så kan logge inn i Google Cloud Console og endre
+            selv der.
         </p>
         <p class="flex items-center gap-4 pb-4">
             <a class="navds-link" target="_blank"
@@ -13,14 +22,22 @@
             </a>
         </p>
         <br/>
-        <form action="delete" method="POST">
-            <fieldset class="flex gap-2 items-center">
-                <button type="submit"
-                        onclick="return confirm('Er du sikker på at du vil slette compute instance? Det er ikke mulig å gjenopprette instansen.')"
-                        class="navds-button navds-button--danger  bg-surface-danger">
-                    <span class="navds-label">Slett compute instance</span>
-                </button>
-                <a href="/oversikt" class="navds-link">Avbryt</a>
+        <form action="/compute/edit" method="POST">
+            <fieldset class="gap-2 items-center">
+                <div class="w-60 navds-form-field navds-form-field--medium">
+                    <label for="diskSize" class="navds-form-field__label navds-label">Størrelse på disk (GB)</label>
+                    <input type="number" name="diskSize" id="diskSize" value="{{ or .diskSize "10" }}"
+                           placeholder="10" step="10" min="10" max="200"
+                           class="navds-text-field__input navds-body-short navds-body-medium"/>
+                </div>
+                <div class="mt-5 gap-2 items-center">
+                    <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action">
+                            <span class="navds-label">
+                                Lagre
+                            </span>
+                    </button>
+                    <a href="/oversikt" class="navds-link">Avbryt</a>
+                </div>
             </fieldset>
         </form>
     </article>

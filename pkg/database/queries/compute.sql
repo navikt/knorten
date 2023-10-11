@@ -1,6 +1,11 @@
 -- name: ComputeInstanceCreate :exec
-INSERT INTO compute_instances ("owner", "name")
-VALUES (@owner, @name);
+INSERT INTO compute_instances ("owner", "name", "disk_size")
+VALUES (@owner, @name, @disk_size);
+
+-- name: ComputeInstanceUpdate :exec
+UPDATE compute_instances
+SET disk_size = @disk_size
+WHERE "owner" = @owner;
 
 -- name: ComputeInstancesGet :many
 SELECT *

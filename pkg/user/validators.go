@@ -15,9 +15,5 @@ var ValidateDiskSize validator.Func = func(fl validator.FieldLevel) bool {
 		return false
 	}
 
-	if diskSizeInt < 10 {
-		return false
-	}
-
-	return diskSizeInt <= 200
+	return diskSizeInt < 10 || diskSizeInt <= 200
 }

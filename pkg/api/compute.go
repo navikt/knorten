@@ -134,7 +134,7 @@ func (c *client) editCompute(ctx *gin.Context) error {
 		return err
 	}
 
-	diskSizeInt, err := strconv.Atoi(form.DiskSize)
+	diskSizeInt, err := strconv.ParseInt(form.DiskSize, 10, 32)
 	if err != nil {
 		return err
 	}

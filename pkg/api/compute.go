@@ -7,7 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
-	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/user"
 )
@@ -30,7 +29,7 @@ func (c *client) setupComputeRoutes() {
 	})
 
 	c.router.POST("/compute/new", func(ctx *gin.Context) {
-		err := c.createComputeInstance(ctx, database.EventTypeCreateCompute)
+		err := c.createComputeInstance(ctx)
 		if err != nil {
 			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
@@ -151,7 +150,7 @@ func (c *client) deleteComputeInstance(ctx *gin.Context) error {
 	return c.repo.RegisterDeleteComputeEvent(ctx, user.Email)
 }
 
-func (c *client) createComputeInstance(ctx *gin.Context, event database.EventType) error {
+func (c *client) createComputeInstance(ctx *gin.Context) error {
 	user, err := getUser(ctx)
 	if err != nil {
 		return err

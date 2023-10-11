@@ -24,7 +24,7 @@ func TestTeamAPI(t *testing.T) {
 	err := repo.TeamCreate(ctx, gensql.Team{
 		ID:    existingTeamID,
 		Slug:  existingTeam,
-		Users: []string{user.Email},
+		Users: []string{testUser.Email},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -63,7 +63,7 @@ func TestTeamAPI(t *testing.T) {
 
 		expected, err := createExpectedHTML("team/new", map[string]any{
 			"form": gensql.Team{
-				Users: []string{user.Email},
+				Users: []string{testUser.Email},
 			},
 		})
 		if err != nil {
@@ -80,7 +80,7 @@ func TestTeamAPI(t *testing.T) {
 	})
 
 	t.Run("create team", func(t *testing.T) {
-		data := url.Values{"team": {newTeam}, "users[]": []string{user.Email}}
+		data := url.Values{"team": {newTeam}, "users[]": []string{testUser.Email}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/new", server.URL), data)
 		if err != nil {
 			t.Error(err)
@@ -159,7 +159,7 @@ func TestTeamAPI(t *testing.T) {
 			"team": gensql.TeamGetRow{
 				ID:    existingTeamID,
 				Slug:  existingTeam,
-				Users: []string{user.Email},
+				Users: []string{testUser.Email},
 			},
 		})
 		if err != nil {
@@ -178,7 +178,7 @@ func TestTeamAPI(t *testing.T) {
 
 	t.Run("edit team", func(t *testing.T) {
 		users := []string{"user@nav.no"}
-		data := url.Values{"team": {existingTeam}, "owner": {user.Email}, "users[]": users}
+		data := url.Values{"team": {existingTeam}, "owner": {testUser.Email}, "users[]": users}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/%v/edit", server.URL, existingTeam), data)
 		if err != nil {
 			t.Error(err)
@@ -330,7 +330,7 @@ func prepareTeamEventsTest(ctx context.Context) (gensql.Team, error) {
 	team := gensql.Team{
 		ID:    "eventtest-team-1234",
 		Slug:  "eventtest-team",
-		Users: []string{user.Email},
+		Users: []string{testUser.Email},
 	}
 
 	if err := repo.TeamCreate(ctx, team); err != nil {

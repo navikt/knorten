@@ -34,28 +34,28 @@ func TestComputeAPI(t *testing.T) {
 		}
 
 		newEvents := getNewEvents(oldEvents, events)
-		eventPayload, err := getComputeEvent(newEvents, user.Email)
+		eventPayload, err := getComputeEvent(newEvents, testUser.Email)
 		if err != nil {
 			t.Error(err)
 		}
 
 		if eventPayload.Owner == "" {
-			t.Errorf("create compute: no event registered for user %v", user.Email)
+			t.Errorf("create compute: no event registered for user %v", testUser.Email)
 		}
 
-		if eventPayload.Owner != user.Email {
-			t.Errorf("create compute: email expected %v, got %v", user.Email, eventPayload.Owner)
+		if eventPayload.Owner != testUser.Email {
+			t.Errorf("create compute: email expected %v, got %v", testUser.Email, eventPayload.Owner)
 		}
 
-		if eventPayload.Name != "compute-"+getNormalizedNameFromEmail(user.Email) {
-			t.Errorf("create compute: name expected %v, got %v", "compute-"+getNormalizedNameFromEmail(user.Email), eventPayload.Name)
+		if eventPayload.Name != "compute-"+getNormalizedNameFromEmail(testUser.Email) {
+			t.Errorf("create compute: name expected %v, got %v", "compute-"+getNormalizedNameFromEmail(testUser.Email), eventPayload.Name)
 		}
 	})
 
 	t.Run("get edit compute html", func(t *testing.T) {
 		instance := gensql.ComputeInstance{
-			Owner:    user.Email,
-			Name:     "compute-" + getNormalizedNameFromEmail(user.Email),
+			Owner:    testUser.Email,
+			Name:     "compute-" + getNormalizedNameFromEmail(testUser.Email),
 			DiskSize: "100",
 		}
 		if err := repo.ComputeInstanceCreate(ctx, instance); err != nil {
@@ -63,7 +63,7 @@ func TestComputeAPI(t *testing.T) {
 		}
 
 		t.Cleanup(func() {
-			repo.ComputeInstanceDelete(ctx, user.Email)
+			repo.ComputeInstanceDelete(ctx, testUser.Email)
 		})
 
 		resp, err := server.Client().Get(fmt.Sprintf("%v/compute/edit", server.URL))
@@ -118,8 +118,8 @@ func TestComputeAPI(t *testing.T) {
 			t.Error(err)
 		}
 
-		if !deleteEventCreatedForTeam(events, user.Email) {
-			t.Errorf("delete compute: no event registered for user %v", user.Email)
+		if !deleteEventCreatedForTeam(events, testUser.Email) {
+			t.Errorf("delete compute: no event registered for user %v", testUser.Email)
 		}
 	})
 }

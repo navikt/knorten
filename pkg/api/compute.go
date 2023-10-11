@@ -7,15 +7,25 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/validator/v10"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/nais/knorten/pkg/user"
 )
 
 type computeForm struct {
-	DiskSize string `form:"diskSize"`
+	DiskSize string `form:"diskSize" binding:"validDiskSize"`
 }
 
 func (c *client) setupComputeRoutes() {
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		err := v.RegisterValidation("validDiskSize", user.ValidateDiskSize)
+		if err != nil {
+			c.log.WithError(err).Error("can't register validator")
+			return
+		}
+	}
+
 	c.router.GET("/compute/new", func(ctx *gin.Context) {
 		c.htmlResponseWrapper(ctx, http.StatusOK, "compute/new", gin.H{})
 	})
@@ -66,6 +76,8 @@ func (c *client) setupComputeRoutes() {
 			ctx.Redirect(http.StatusSeeOther, "/oversikt")
 			return
 		}
+
+		fmt.Println("asdf", computeInstance.DiskSize)
 
 		c.htmlResponseWrapper(ctx, http.StatusOK, "compute/edit", gin.H{
 			"name":     "compute-" + getNormalizedNameFromEmail(user.Email),
@@ -124,6 +136,7 @@ func (c *client) editCompute(ctx *gin.Context) error {
 	if err != nil {
 		return err
 	}
+	instance.DiskSize = form.DiskSize
 
 	if err := c.repo.RegisterResizeComputeDiskEvent(ctx, user.Email, instance); err != nil {
 		return err

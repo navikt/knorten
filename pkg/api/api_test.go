@@ -22,10 +22,10 @@ import (
 )
 
 var (
-	repo   *database.Repo
-	db     *sql.DB
-	server *httptest.Server
-	user   = auth.User{
+	repo     *database.Repo
+	db       *sql.DB
+	server   *httptest.Server
+	testUser = auth.User{
 		Name:  "Dum My",
 		Email: "dummy@nav.no",
 	}

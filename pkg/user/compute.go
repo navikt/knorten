@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/logger"
@@ -60,8 +59,6 @@ func (c Client) ResizeComputeInstanceDisk(ctx context.Context, instance gensql.C
 		log.Info("failed to resize compute instance disk")
 		return true
 	}
-
-	fmt.Println(instance)
 
 	log.Info("Successfully resized compute instance disk")
 	return false

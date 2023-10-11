@@ -32,14 +32,14 @@ func TestUserGSMAPI(t *testing.T) {
 		}
 
 		newEvents := getNewEvents(oldEvents, events)
-		secretManager, err := getUserGSMEvent(newEvents, user.Email)
+		secretManager, err := getUserGSMEvent(newEvents, testUser.Email)
 		if err != nil {
 			t.Error(err)
 		}
 
 		want := gensql.UserGoogleSecretManager{
-			Owner: user.Email,
-			Name:  getNormalizedNameFromEmail(user.Email),
+			Owner: testUser.Email,
+			Name:  getNormalizedNameFromEmail(testUser.Email),
 		}
 		if diff := cmp.Diff(want, secretManager); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -58,8 +58,8 @@ func TestUserGSMAPI(t *testing.T) {
 			t.Error(err)
 		}
 
-		if !deleteEventCreatedForTeam(events, user.Email) {
-			t.Errorf("delete secret: no event registered for user %v", user.Email)
+		if !deleteEventCreatedForTeam(events, testUser.Email) {
+			t.Errorf("delete secret: no event registered for user %v", testUser.Email)
 		}
 	})
 }

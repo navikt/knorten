@@ -472,7 +472,7 @@ func prepareChartTests(ctx context.Context, teamName string) (gensql.Team, error
 	team := gensql.Team{
 		ID:    teamName + "-1234",
 		Slug:  teamName,
-		Users: []string{user.Email, "user.one@nav.no", "user.two@nav.no"},
+		Users: []string{testUser.Email, "user.one@nav.no", "user.two@nav.no"},
 	}
 
 	return team, repo.TeamCreate(ctx, team)

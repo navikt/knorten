@@ -24,7 +24,7 @@ require (
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 	golang.org/x/oauth2 v0.13.0
 	google.golang.org/api v0.146.0
-	google.golang.org/grpc v1.58.2
+	google.golang.org/grpc v1.58.3
 	gopkg.in/yaml.v3 v3.0.1
 	helm.sh/helm/v3 v3.13.0
 	k8s.io/api v0.28.2

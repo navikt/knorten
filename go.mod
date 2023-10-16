@@ -26,7 +26,7 @@ require (
 	google.golang.org/api v0.147.0
 	google.golang.org/grpc v1.58.3
 	gopkg.in/yaml.v3 v3.0.1
-	helm.sh/helm/v3 v3.13.0
+	helm.sh/helm/v3 v3.13.1
 	k8s.io/api v0.28.2
 	k8s.io/apimachinery v0.28.2
 	k8s.io/client-go v0.28.2
@@ -62,9 +62,9 @@ require (
 	github.com/containerd/continuity v0.4.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker/cli v23.0.3+incompatible // indirect
+	github.com/docker/cli v24.0.6+incompatible // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
-	github.com/docker/docker v23.0.3+incompatible // indirect
+	github.com/docker/docker v24.0.6+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.7.0 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
@@ -193,7 +193,7 @@ require (
 	k8s.io/kubectl v0.28.2 // indirect
 	modernc.org/mathutil v1.5.0 // indirect
 	modernc.org/strutil v1.1.3 // indirect
-	oras.land/oras-go v1.2.3 // indirect
+	oras.land/oras-go v1.2.4 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kustomize/api v0.14.0 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.14.3 // indirect

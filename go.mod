@@ -3,7 +3,7 @@ module github.com/nais/knorten
 go 1.21
 
 require (
-	cloud.google.com/go/iam v1.1.2
+	cloud.google.com/go/iam v1.1.3
 	cloud.google.com/go/secretmanager v1.11.1
 	cloud.google.com/go/storage v1.33.0
 	github.com/coreos/go-oidc v2.2.1+incompatible

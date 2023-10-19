@@ -114,6 +114,82 @@ func TestTeamAPI(t *testing.T) {
 		}
 	})
 
+	t.Run("create team - team already exists", func(t *testing.T) {
+		// Disable automatic redirect. For the test we need to add the session cookie to the subsequent GET request manually
+		server.Client().CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		}
+		existing := gensql.Team{
+			Slug:  "existing-team",
+			ID:    "exists-team-1234",
+			Users: []string{testUser.Email},
+		}
+		if err := repo.TeamCreate(ctx, existing); err != nil {
+			t.Error(err)
+		}
+		t.Cleanup(func() {
+			server.Client().CheckRedirect = nil
+			if err := repo.TeamDelete(ctx, existing.ID); err != nil {
+				t.Error(err)
+			}
+		})
+
+		data := url.Values{"team": {existing.Slug}, "users[]": []string{testUser.Email}}
+		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/new", server.URL), data)
+		if err != nil {
+			t.Error(err)
+		}
+		resp.Body.Close()
+
+		if resp.StatusCode != http.StatusSeeOther {
+			t.Errorf("create team: expected status code 303, got %v", resp.StatusCode)
+		}
+		sessionCookie, err := getSessionCookieFromResponse(resp)
+		if err != nil {
+			t.Error(err)
+		}
+
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%v/team/new", server.URL), nil)
+		if err != nil {
+			t.Error(err)
+		}
+		req.AddCookie(sessionCookie)
+		resp, err = server.Client().Do(req)
+		if err != nil {
+			t.Error(err)
+		}
+		defer resp.Body.Close()
+
+		received, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Error(err)
+		}
+
+		receivedMinimized, err := minimizeHTML(string(received))
+		if err != nil {
+			t.Error(err)
+		}
+
+		expected, err := createExpectedHTML("team/new", map[string]any{
+			"form": map[string]any{
+				"Users": []string{testUser.Email},
+			},
+			"errors": []string{fmt.Sprintf("team %v already exists", existing.Slug)},
+		})
+		if err != nil {
+			t.Error(err)
+		}
+
+		expectedMinimized, err := minimizeHTML(expected)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
 	t.Run("get edit team - team does not exist", func(t *testing.T) {
 		resp, err := server.Client().Get(fmt.Sprintf("%v/team/%v/edit", server.URL, "noexist"))
 		if err != nil {

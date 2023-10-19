@@ -293,6 +293,14 @@ func (c *client) newTeam(ctx *gin.Context) error {
 		return err
 	}
 
+	_, err = c.repo.TeamBySlugGet(ctx, team.Slug)
+	if err == nil {
+		return fmt.Errorf("team %v already exists", team.Slug)
+	}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+
 	team.Users = removeEmptyUsers(team.Users)
 	err = c.ensureUsersExists(team.Users)
 	if err != nil {

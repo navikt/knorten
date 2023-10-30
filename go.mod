@@ -12,7 +12,7 @@ require (
 	github.com/go-playground/validator/v10 v10.15.5
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-cmp v0.6.0
-	github.com/google/uuid v1.3.1
+	github.com/google/uuid v1.4.0
 	github.com/googleapis/gax-go/v2 v2.12.0
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/kyleconroy/sqlc v1.19.1

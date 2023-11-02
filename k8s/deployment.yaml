@@ -55,6 +55,12 @@ spec:
             - name: helm-repos-config
               mountPath: /root/.config/helm/repositories.yaml
               subPath: repositories.yaml
+          resources:
+            limits:
+              memory: 1Gi
+            requests:
+              cpu: 200m
+              memory: 256Mi
         - name: cloudsql-proxy
           command:
             - /cloud-sql-proxy

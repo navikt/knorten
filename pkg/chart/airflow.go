@@ -258,7 +258,7 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 		return AirflowValues{}, err
 	}
 
-	fernetKey, err := c.getOrGeneratePassword(ctx, team.ID, "fernetKey", generateFernetKey)
+	fernetKey, err := c.getOrGeneratePassword(ctx, team.ID, teamValueKeyFernetKey, generateFernetKey)
 	if err != nil {
 		return AirflowValues{}, err
 	}

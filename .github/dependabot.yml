@@ -12,7 +12,13 @@ updates:
     groups:
       k8s-io:
         patterns:
-          - 'k8s.io/*'
+          - '*.k8s.io/*'
+      gomod:
+        patters:
+          - '*'
+        exclude-patterns:
+          - '*.k8s.io/*'
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

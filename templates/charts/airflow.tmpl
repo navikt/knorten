@@ -42,27 +42,12 @@
                         class="navds-checkbox-group navds-checkbox-group--medium navds-fieldset navds-fieldset--medium">
                     <div class="navds-checkbox">
                         <div class="navds-checkbox navds-checkbox--medium">
-                            <input id="restrictairflowegress" name="restrictairflowegress" type="checkbox"
-                                   class="navds-checkbox__input"
-                                   {{ if eq .values.RestrictEgress "on" }}checked{{ end }}/>
-                            <label for="restrictairflowegress" class="navds-checkbox__label">
-                                <span class="navds-checkbox__content">Begrens trafikk fra Airflow workere</span>
-                            </label>
-                        </div>
-
-                        <div class="navds-checkbox navds-checkbox--medium">
                             <input id="apiaccess" name="apiaccess" type="checkbox" class="navds-checkbox__input"
                                    {{ if eq .values.ApiAccess "on" }}checked{{ end }}/>
                             <label for="apiaccess" class="navds-checkbox__label">
                                 <span class="navds-checkbox__content">API-tilgang</span>
                             </label>
                         </div>
-                    </div>
-                    <div class="navds-fieldset__description navds-body-long navds-body-long--small">
-                        <a class="navds-link" target="_blank"
-                           href="https://docs.knada.io/analyse/airflow/knada-airflow/#trafikk-fra-airflow-workere">
-                            Les mer om trafikk fra Airflow workere i dokumentasjonen vår
-                        </a>
                     </div>
                 </fieldset>
                  <div>

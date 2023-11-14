@@ -9,6 +9,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	k8sLabelEnableTeamNetworkPolicies = "team-netpols"
+)
+
 func (c Client) k8sNamespaceExists(ctx context.Context, namespace string) (bool, error) {
 	if c.dryRun {
 		return false, nil
@@ -35,8 +39,7 @@ func (c Client) createK8sNamespace(ctx context.Context, name string) error {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 			Labels: map[string]string{
-				"team-namespace":           "true",
-				"allow-all-jupyter-egress": "true",
+				"team-namespace": "true",
 			},
 		},
 	}
@@ -99,5 +102,32 @@ func (c Client) createK8sServiceAccount(ctx context.Context, teamID, namespace s
 		return err
 	}
 
+	return nil
+}
+
+func (c Client) defaultEgressNetpolSync(ctx context.Context, namespace string, restrictEgress bool) error {
+	if c.dryRun {
+		return nil
+	}
+
+	nsSpec, err := c.k8sClient.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	if restrictEgress {
+		nsSpec.Labels[k8sLabelEnableTeamNetworkPolicies] = "true"
+	} else {
+		delete(nsSpec.Labels, k8sLabelEnableTeamNetworkPolicies)
+		err := c.k8sClient.NetworkingV1().NetworkPolicies(namespace).Delete(ctx, k8sLabelEnableTeamNetworkPolicies, metav1.DeleteOptions{})
+		if err != nil && !k8sErrors.IsNotFound(err) {
+			return err
+		}
+	}
+
+	_, err = c.k8sClient.CoreV1().Namespaces().Update(ctx, nsSpec, metav1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
 	return nil
 }

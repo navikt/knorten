@@ -21,9 +21,10 @@ import (
 )
 
 type teamForm struct {
-	Slug      string   `form:"team" binding:"required,validTeamName"`
-	Users     []string `form:"users[]" binding:"validEmail,userListNotEmpty"`
-	APIAccess string   `form:"apiaccess"`
+	Slug            string   `form:"team" binding:"required,validTeamName"`
+	Users           []string `form:"users[]" binding:"validEmail,userListNotEmpty"`
+	EnableAllowList string   `form:"enableallowlist"`
+	APIAccess       string   `form:"apiaccess"`
 }
 
 func formToTeam(ctx *gin.Context) (gensql.Team, error) {
@@ -39,9 +40,10 @@ func formToTeam(ctx *gin.Context) (gensql.Team, error) {
 	}
 
 	return gensql.Team{
-		ID:    id,
-		Slug:  form.Slug,
-		Users: form.Users,
+		ID:              id,
+		Slug:            form.Slug,
+		Users:           form.Users,
+		EnableAllowlist: sql.NullBool{Bool: form.EnableAllowList == "on", Valid: true},
 	}, nil
 }
 
@@ -138,9 +140,16 @@ func (c *client) setupTeamRoutes() {
 			c.log.WithError(err).Error("problem saving session")
 			return
 		}
+
+		enableAllowList := false
+		if team.EnableAllowlist.Valid {
+			enableAllowList = team.EnableAllowlist.Bool
+		}
+
 		c.htmlResponseWrapper(ctx, http.StatusOK, "team/edit", gin.H{
-			"team":   team,
-			"errors": flashes,
+			"team":            team,
+			"enableallowlist": enableAllowList,
+			"errors":          flashes,
 		})
 	})
 

@@ -254,7 +254,7 @@ func TestTeamAPI(t *testing.T) {
 
 	t.Run("edit team", func(t *testing.T) {
 		users := []string{"user@nav.no"}
-		data := url.Values{"team": {existingTeam}, "owner": {testUser.Email}, "users[]": users}
+		data := url.Values{"team": {existingTeam}, "owner": {testUser.Email}, "users[]": users, "enableallowlist": {"on"}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/%v/edit", server.URL, existingTeam), data)
 		if err != nil {
 			t.Error(err)
@@ -285,6 +285,10 @@ func TestTeamAPI(t *testing.T) {
 
 		if eventPayload.ID != existingTeamID {
 			t.Errorf("edit team: expected team id %v, got %v", existingTeamID, eventPayload.ID)
+		}
+
+		if !eventPayload.EnableAllowlist.Bool {
+			t.Errorf("edit team: expected enable allowlist %v, got %v", true, eventPayload.EnableAllowlist.Bool)
 		}
 
 		if diff := cmp.Diff(eventPayload.Users, users); diff != "" {

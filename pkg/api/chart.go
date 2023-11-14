@@ -36,11 +36,10 @@ func (v jupyterForm) MemoryWithoutUnit() string {
 }
 
 type airflowForm struct {
-	DagRepo        string `form:"dagrepo" binding:"required,startswith=navikt/,validAirflowRepo"`
-	DagRepoBranch  string `form:"dagrepobranch" binding:"validRepoBranch"`
-	AirflowImage   string `form:"airflowimage" binding:"validAirflowImage"`
-	RestrictEgress string `form:"restrictairflowegress"`
-	ApiAccess      string `form:"apiaccess"`
+	DagRepo       string `form:"dagrepo" binding:"required,startswith=navikt/,validAirflowRepo"`
+	DagRepoBranch string `form:"dagrepobranch" binding:"validRepoBranch"`
+	AirflowImage  string `form:"airflowimage" binding:"validAirflowImage"`
+	ApiAccess     string `form:"apiaccess"`
 }
 
 func getChartType(chartType string) gensql.ChartType {
@@ -319,6 +318,7 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 			ImageName:   form.ImageName,
 			ImageTag:    form.ImageTag,
 			CullTimeout: strconv.FormatUint(cullTimeout, 10),
+			AllowList:   form.Allowlist,
 		}
 
 		return c.repo.RegisterCreateJupyterEvent(ctx, team.ID, values)
@@ -343,13 +343,12 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 		}
 
 		values := chart.AirflowConfigurableValues{
-			TeamID:         team.ID,
-			DagRepo:        form.DagRepo,
-			DagRepoBranch:  dagRepoBranch,
-			RestrictEgress: form.RestrictEgress == "on",
-			ApiAccess:      form.ApiAccess == "on",
-			AirflowImage:   airflowImage,
-			AirflowTag:     airflowTag,
+			TeamID:        team.ID,
+			DagRepo:       form.DagRepo,
+			DagRepoBranch: dagRepoBranch,
+			ApiAccess:     form.ApiAccess == "on",
+			AirflowImage:  airflowImage,
+			AirflowTag:    airflowTag,
 		}
 
 		return c.repo.RegisterCreateAirflowEvent(ctx, team.ID, values)
@@ -398,16 +397,6 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 		}
 	case gensql.ChartTypeAirflow:
 		airflowValues := chartObjects.(*chart.AirflowConfigurableValues)
-		restrictEgressTeamValue, err := c.repo.TeamValueGet(ctx, chart.TeamValueKeyRestrictEgress, team.ID)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
-		}
-
-		restrictEgress := ""
-		if restrictEgressTeamValue.Value == "true" {
-			restrictEgress = "on"
-		}
-
 		apiAccessTeamValue, err := c.repo.TeamValueGet(ctx, chart.TeamValueKeyApiAccess, team.ID)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return nil, err
@@ -424,11 +413,10 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 		}
 
 		form = airflowForm{
-			DagRepo:        airflowValues.DagRepo,
-			DagRepoBranch:  airflowValues.DagRepoBranch,
-			RestrictEgress: restrictEgress,
-			ApiAccess:      apiAccess,
-			AirflowImage:   airflowImage,
+			DagRepo:       airflowValues.DagRepo,
+			DagRepoBranch: airflowValues.DagRepoBranch,
+			ApiAccess:     apiAccess,
+			AirflowImage:  airflowImage,
 		}
 	}
 
@@ -472,6 +460,7 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 			ImageName:   form.ImageName,
 			ImageTag:    form.ImageTag,
 			CullTimeout: form.CullTimeout,
+			AllowList:   form.Allowlist,
 		}
 
 		return c.repo.RegisterUpdateJupyterEvent(ctx, team.ID, values)
@@ -496,13 +485,12 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 		}
 
 		values := chart.AirflowConfigurableValues{
-			TeamID:         team.ID,
-			DagRepo:        form.DagRepo,
-			DagRepoBranch:  dagRepoBranch,
-			RestrictEgress: form.RestrictEgress == "on",
-			ApiAccess:      form.ApiAccess == "on",
-			AirflowImage:   airflowImage,
-			AirflowTag:     airflowTag,
+			TeamID:        team.ID,
+			DagRepo:       form.DagRepo,
+			DagRepoBranch: dagRepoBranch,
+			ApiAccess:     form.ApiAccess == "on",
+			AirflowImage:  airflowImage,
+			AirflowTag:    airflowTag,
 		}
 
 		return c.repo.RegisterUpdateAirflowEvent(ctx, team.ID, values)

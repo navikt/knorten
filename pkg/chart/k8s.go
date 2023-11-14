@@ -73,33 +73,6 @@ func (c Client) deleteSecretFromKubernetes(ctx context.Context, name, namespace 
 	return nil
 }
 
-func (c Client) defaultEgressNetpolSync(ctx context.Context, namespace string, restrictEgress bool) error {
-	if c.dryRun {
-		return nil
-	}
-
-	nsSpec, err := c.k8sClient.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-
-	if restrictEgress {
-		nsSpec.Labels[k8sLabelEnableTeamNetworkPolicies] = "true"
-	} else {
-		delete(nsSpec.Labels, k8sLabelEnableTeamNetworkPolicies)
-		err := c.k8sClient.NetworkingV1().NetworkPolicies(namespace).Delete(ctx, k8sLabelEnableTeamNetworkPolicies, metav1.DeleteOptions{})
-		if err != nil && !k8sErrors.IsNotFound(err) {
-			return err
-		}
-	}
-
-	_, err = c.k8sClient.CoreV1().Namespaces().Update(ctx, nsSpec, metav1.UpdateOptions{})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (c Client) createOrUpdateSecret(ctx context.Context, name, namespace string, data map[string]string) error {
 	if c.dryRun {
 		return nil

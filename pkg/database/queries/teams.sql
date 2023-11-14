@@ -1,10 +1,10 @@
 -- name: TeamCreate :exec
-INSERT INTO teams ("id", "users", "slug")
-VALUES (@id, @users, @slug);
+INSERT INTO teams ("id", "users", "slug", "enable_allowlist")
+VALUES (@id, @users, @slug, @enable_allowlist);
 
 -- name: TeamUpdate :exec
 UPDATE teams
-SET users      = @users
+SET users = @users, enable_allowlist = @enable_allowlist
 WHERE id = @id;
 
 -- name: TeamsForUserGet :many
@@ -18,7 +18,7 @@ FROM teams
 WHERE id = @id;
 
 -- name: TeamBySlugGet :one
-SELECT id, users, slug
+SELECT id, users, slug, enable_allowlist
 FROM teams
 WHERE slug = @slug;
 

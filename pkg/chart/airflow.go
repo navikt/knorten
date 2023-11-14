@@ -121,11 +121,6 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 		return err
 	}
 
-	if err := c.defaultEgressNetpolSync(ctx, namespace, values.RestrictEgress); err != nil {
-		log.WithError(err).Error("syncing default egress netpol")
-		return err
-	}
-
 	secretStringData := map[string]string{
 		"connection": fmt.Sprintf("postgresql://%v:%v@%v:5432/%v?sslmode=disable", team.ID, values.PostgresPassword, cloudSQLProxyName, team.ID),
 	}

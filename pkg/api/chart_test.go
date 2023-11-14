@@ -377,16 +377,11 @@ func TestAirflowAPI(t *testing.T) {
 			t.Error(err)
 		}
 
-		restrictEgress := ""
-		if expectedValues.RestrictEgress {
-			restrictEgress = "on"
-		}
 		expected, err := createExpectedHTML("charts/airflow", map[string]any{
 			"team": team.Slug,
 			"values": &airflowForm{
-				DagRepo:        expectedValues.DagRepo,
-				DagRepoBranch:  expectedValues.DagRepoBranch,
-				RestrictEgress: restrictEgress,
+				DagRepo:       expectedValues.DagRepo,
+				DagRepoBranch: expectedValues.DagRepoBranch,
 			},
 		})
 		if err != nil {
@@ -405,10 +400,9 @@ func TestAirflowAPI(t *testing.T) {
 	t.Run("edit airflow", func(t *testing.T) {
 		newDagRepo := "navikt/newrepo"
 		newDagRepoBranch := "master"
-		restrictEgress := "on"
 		customImage := "ghcr.io/navikt/myimage:v1"
 
-		data := url.Values{"dagrepo": {newDagRepo}, "dagrepobranch": {newDagRepoBranch}, "restrictairflowegress": {restrictEgress}, "airflowimage": {customImage}}
+		data := url.Values{"dagrepo": {newDagRepo}, "dagrepobranch": {newDagRepoBranch}, "airflowimage": {customImage}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/%v/airflow/edit", server.URL, team.Slug), data)
 		if err != nil {
 			t.Error(err)
@@ -439,10 +433,6 @@ func TestAirflowAPI(t *testing.T) {
 
 		if strings.Join([]string{eventPayload.AirflowImage, eventPayload.AirflowTag}, ":") != customImage {
 			t.Errorf("edit airflow: custom image, expected %v, got %v", customImage, strings.Join([]string{eventPayload.AirflowImage, eventPayload.AirflowTag}, ":"))
-		}
-
-		if !eventPayload.RestrictEgress {
-			t.Errorf("edit airflow: restrict egress value, expected %v, got %v", true, eventPayload.RestrictEgress)
 		}
 	})
 

@@ -318,6 +318,7 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 			ImageName:   form.ImageName,
 			ImageTag:    form.ImageTag,
 			CullTimeout: strconv.FormatUint(cullTimeout, 10),
+			AllowList:   form.Allowlist,
 		}
 
 		return c.repo.RegisterCreateJupyterEvent(ctx, team.ID, values)
@@ -459,6 +460,7 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 			ImageName:   form.ImageName,
 			ImageTag:    form.ImageTag,
 			CullTimeout: form.CullTimeout,
+			AllowList:   form.Allowlist,
 		}
 
 		return c.repo.RegisterUpdateJupyterEvent(ctx, team.ID, values)

@@ -111,7 +111,7 @@ func (c Client) jupyterMergeValues(ctx context.Context, team gensql.TeamGetRow, 
 
 	var allowList string
 	if len(configurableValues.AllowList) > 0 {
-		allowList = fmt.Sprintf(`{"allowlist": "%v"}`, strings.Join(configurableValues.AllowList, `","`))
+		allowList = fmt.Sprintf(`{"allowlist": "%v"}`, strings.Join(configurableValues.AllowList, ","))
 	}
 
 	return jupyterValues{

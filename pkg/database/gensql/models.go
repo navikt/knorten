@@ -115,7 +115,7 @@ type Team struct {
 	Slug            string
 	Users           []string
 	Created         sql.NullTime
-	EnableAllowlist sql.NullBool
+	EnableAllowlist bool
 }
 
 type UserGoogleSecretManager struct {

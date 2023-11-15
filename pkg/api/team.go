@@ -43,7 +43,7 @@ func formToTeam(ctx *gin.Context) (gensql.Team, error) {
 		ID:              id,
 		Slug:            form.Slug,
 		Users:           form.Users,
-		EnableAllowlist: sql.NullBool{Bool: form.EnableAllowList == "on", Valid: true},
+		EnableAllowlist: form.EnableAllowList == "on",
 	}, nil
 }
 
@@ -141,14 +141,9 @@ func (c *client) setupTeamRoutes() {
 			return
 		}
 
-		enableAllowList := false
-		if team.EnableAllowlist.Valid {
-			enableAllowList = team.EnableAllowlist.Bool
-		}
-
 		c.htmlResponseWrapper(ctx, http.StatusOK, "team/edit", gin.H{
 			"team":            team,
-			"enableallowlist": enableAllowList,
+			"enableallowlist": team.EnableAllowlist,
 			"errors":          flashes,
 		})
 	})

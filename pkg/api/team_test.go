@@ -287,8 +287,8 @@ func TestTeamAPI(t *testing.T) {
 			t.Errorf("edit team: expected team id %v, got %v", existingTeamID, eventPayload.ID)
 		}
 
-		if !eventPayload.EnableAllowlist.Bool {
-			t.Errorf("edit team: expected enable allowlist %v, got %v", true, eventPayload.EnableAllowlist.Bool)
+		if !eventPayload.EnableAllowlist {
+			t.Errorf("edit team: expected enable allowlist %v, got %v", true, eventPayload.EnableAllowlist)
 		}
 
 		if diff := cmp.Diff(eventPayload.Users, users); diff != "" {

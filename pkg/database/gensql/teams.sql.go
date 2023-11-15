@@ -7,7 +7,6 @@ package gensql
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/lib/pq"
 )
@@ -22,7 +21,7 @@ type TeamBySlugGetRow struct {
 	ID              string
 	Users           []string
 	Slug            string
-	EnableAllowlist sql.NullBool
+	EnableAllowlist bool
 }
 
 func (q *Queries) TeamBySlugGet(ctx context.Context, slug string) (TeamBySlugGetRow, error) {
@@ -46,7 +45,7 @@ type TeamCreateParams struct {
 	ID              string
 	Users           []string
 	Slug            string
-	EnableAllowlist sql.NullBool
+	EnableAllowlist bool
 }
 
 func (q *Queries) TeamCreate(ctx context.Context, arg TeamCreateParams) error {
@@ -97,7 +96,7 @@ WHERE id = $3
 
 type TeamUpdateParams struct {
 	Users           []string
-	EnableAllowlist sql.NullBool
+	EnableAllowlist bool
 	ID              string
 }
 

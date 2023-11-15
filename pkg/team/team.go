@@ -71,7 +71,7 @@ func (c Client) create(ctx context.Context, team gensql.Team, log logger.Logger)
 		return true, err
 	}
 
-	if err := c.defaultEgressNetpolSync(ctx, namespace, nullBoolToBool(team.EnableAllowlist)); err != nil {
+	if err := c.defaultEgressNetpolSync(ctx, namespace, team.EnableAllowlist); err != nil {
 		log.WithError(err).Error("syncing default egress netpol")
 		return true, err
 	}
@@ -121,7 +121,7 @@ func (c Client) update(ctx context.Context, team gensql.Team, log logger.Logger)
 		}
 	}
 
-	if err := c.defaultEgressNetpolSync(ctx, namespace, nullBoolToBool(team.EnableAllowlist)); err != nil {
+	if err := c.defaultEgressNetpolSync(ctx, namespace, team.EnableAllowlist); err != nil {
 		log.WithError(err).Error("syncing default egress netpol")
 		return true, err
 	}
@@ -220,11 +220,4 @@ func (c Client) delete(ctx context.Context, teamID string, log logger.Logger) (b
 
 	log.Infof("Successfully deleted team %v", teamID)
 	return false, nil
-}
-
-func nullBoolToBool(nb sql.NullBool) bool {
-	if nb.Valid {
-		return nb.Bool
-	}
-	return false
 }

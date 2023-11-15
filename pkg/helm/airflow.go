@@ -28,6 +28,10 @@ func (c Client) createKnauditInitContainer(ctx context.Context) (map[string]any,
 							"valueFrom": map[string]any{"secretKeyRef": map[string]string{"name": "oracle-url", "key": "ORACLE_URL"}},
 						},
 						{
+							"name":  "KNAUDIT_PROXY_URL",
+							"value": "http://knaudit-proxy.knada-system.svc.cluster.local",
+						},
+						{
 							"name":  "CA_CERT_PATH",
 							"value": "/etc/pki/tls/certs/ca-bundle.crt",
 						},

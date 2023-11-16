@@ -3,7 +3,6 @@ package events
 import (
 	"context"
 	"encoding/json"
-	"runtime"
 	"time"
 
 	"github.com/nais/knorten/pkg/api/auth"
@@ -174,6 +173,8 @@ func NewHandler(ctx context.Context, repo *database.Repo, azureClient *auth.Azur
 }
 
 func (e EventHandler) Run(tickDuration time.Duration) {
+	eventQueue := make(chan struct{}, maxConcurrentEventsHandled)
+
 	go func() {
 		var cancelFuncs []context.CancelFunc
 		for {
@@ -204,10 +205,7 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 			}
 
 			for _, event := range events {
-				if runtime.NumGoroutine() > maxConcurrentEventsHandled {
-					break
-				}
-
+				eventQueue <- struct{}{}
 				worker := e.distributeWork(database.EventType(event.Type))
 				if worker == nil {
 					e.log.WithField("eventID", event.ID).Errorf("No worker found for event type %v", event.Type)
@@ -236,6 +234,7 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 							}
 						}
 					}
+					<-eventQueue
 				}()
 			}
 		}

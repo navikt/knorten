@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 	"encoding/json"
+	"runtime"
 	"time"
 
 	"github.com/nais/knorten/pkg/api/auth"
@@ -26,6 +27,10 @@ type EventHandler struct {
 	chartClient chartClient
 	helmClient  helmClient
 }
+
+const (
+	maxConcurrentEventsHandled = 5
+)
 
 type workerFunc func(context.Context, gensql.Event, logger.Logger) error
 
@@ -199,6 +204,10 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 			}
 
 			for _, event := range events {
+				if runtime.NumGoroutine() > maxConcurrentEventsHandled {
+					break
+				}
+
 				worker := e.distributeWork(database.EventType(event.Type))
 				if worker == nil {
 					e.log.WithField("eventID", event.ID).Errorf("No worker found for event type %v", event.Type)

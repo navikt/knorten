@@ -10,29 +10,32 @@ import (
 	"github.com/nais/knorten/pkg/database/gensql"
 	"github.com/nais/knorten/pkg/k8s"
 	"github.com/nais/knorten/pkg/logger"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 )
 
 type Client struct {
-	repo       *database.Repo
-	k8sClient  *kubernetes.Clientset
-	gcpProject string
-	gcpRegion  string
-	dryRun     bool
+	repo          *database.Repo
+	k8sClient     *kubernetes.Clientset
+	dynamicClient *dynamic.DynamicClient
+	gcpProject    string
+	gcpRegion     string
+	dryRun        bool
 }
 
 func NewClient(repo *database.Repo, gcpProject, gcpRegion string, dryRun, inCluster bool) (*Client, error) {
-	k8sClient, err := k8s.CreateClientset(dryRun, inCluster)
+	k8sClient, dynamicClient, err := k8s.CreateClientsets(dryRun, inCluster)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Client{
-		repo:       repo,
-		k8sClient:  k8sClient,
-		gcpProject: gcpProject,
-		gcpRegion:  gcpRegion,
-		dryRun:     dryRun,
+		repo:          repo,
+		k8sClient:     k8sClient,
+		dynamicClient: dynamicClient,
+		gcpProject:    gcpProject,
+		gcpRegion:     gcpRegion,
+		dryRun:        dryRun,
 	}, nil
 }
 

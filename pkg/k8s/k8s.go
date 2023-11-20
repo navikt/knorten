@@ -15,27 +15,17 @@ import (
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 )
 
-func CreateClientsets(dryRun, inCluster bool) (*kubernetes.Clientset, *dynamic.DynamicClient, error) {
+func CreateClientset(dryRun, inCluster bool) (*kubernetes.Clientset, error) {
 	if dryRun {
-		return nil, nil, nil
+		return nil, nil
 	}
 
 	config, err := createKubeConfig(inCluster)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	dynClient, err := dynamic.NewForConfig(config)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return clientset, dynClient, nil
+	return kubernetes.NewForConfig(config)
 }
 
 func CreateGatewayClientset(dryRun, inCluster bool) (*gateway.Clientset, error) {

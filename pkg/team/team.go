@@ -15,27 +15,32 @@ import (
 )
 
 type Client struct {
-	repo          *database.Repo
-	k8sClient     *kubernetes.Clientset
-	dynamicClient *dynamic.DynamicClient
-	gcpProject    string
-	gcpRegion     string
-	dryRun        bool
+	repo             *database.Repo
+	k8sClient        *kubernetes.Clientset
+	k8sDynamicClient *dynamic.DynamicClient
+	gcpProject       string
+	gcpRegion        string
+	dryRun           bool
 }
 
 func NewClient(repo *database.Repo, gcpProject, gcpRegion string, dryRun, inCluster bool) (*Client, error) {
-	k8sClient, dynamicClient, err := k8s.CreateClientsets(dryRun, inCluster)
+	k8sClient, err := k8s.CreateClientset(dryRun, inCluster)
+	if err != nil {
+		return nil, err
+	}
+
+	k8sDynamicClient, err := k8s.CreateDynamicClient(dryRun, inCluster)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Client{
-		repo:          repo,
-		k8sClient:     k8sClient,
-		dynamicClient: dynamicClient,
-		gcpProject:    gcpProject,
-		gcpRegion:     gcpRegion,
-		dryRun:        dryRun,
+		repo:             repo,
+		k8sClient:        k8sClient,
+		k8sDynamicClient: k8sDynamicClient,
+		gcpProject:       gcpProject,
+		gcpRegion:        gcpRegion,
+		dryRun:           dryRun,
 	}, nil
 }
 
@@ -74,7 +79,7 @@ func (c Client) create(ctx context.Context, team gensql.Team, log logger.Logger)
 		return true, err
 	}
 
-	if err := c.defaultEgressNetpolSync(ctx, namespace, team.EnableAllowlist); err != nil {
+	if err := c.defaultEgressNetpolsSync(ctx, namespace, team.EnableAllowlist); err != nil {
 		log.WithError(err).Error("syncing default egress netpol")
 		return true, err
 	}
@@ -124,7 +129,7 @@ func (c Client) update(ctx context.Context, team gensql.Team, log logger.Logger)
 		}
 	}
 
-	if err := c.defaultEgressNetpolSync(ctx, namespace, team.EnableAllowlist); err != nil {
+	if err := c.defaultEgressNetpolsSync(ctx, namespace, team.EnableAllowlist); err != nil {
 		log.WithError(err).Error("syncing default egress netpol")
 		return true, err
 	}

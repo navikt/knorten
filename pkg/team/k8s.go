@@ -107,7 +107,7 @@ func (c Client) createK8sServiceAccount(ctx context.Context, teamID, namespace s
 	return nil
 }
 
-func (c Client) defaultEgressNetpolSync(ctx context.Context, namespace string, restrictEgress bool) error {
+func (c Client) defaultEgressNetpolsSync(ctx context.Context, namespace string, restrictEgress bool) error {
 	if c.dryRun {
 		return nil
 	}
@@ -151,9 +151,9 @@ func (c Client) removeFQDNNetpols(ctx context.Context, namespace string) error {
 	fqdnNetpolResource := schema.GroupVersionResource{
 		Group:    "networking.gke.io",
 		Version:  "v1alpha3",
-		Resource: "fqdnnetworkpolicy",
+		Resource: "fqdnnetworkpolicies",
 	}
-	fqdnNetpols, err := c.dynamicClient.Resource(fqdnNetpolResource).Namespace(namespace).List(ctx, metav1.ListOptions{
+	fqdnNetpols, err := c.k8sDynamicClient.Resource(fqdnNetpolResource).Namespace(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: replicatorLabel,
 	})
 	if err != nil {
@@ -161,7 +161,7 @@ func (c Client) removeFQDNNetpols(ctx context.Context, namespace string) error {
 	}
 
 	for _, fqdn := range fqdnNetpols.Items {
-		if err := c.dynamicClient.Resource(fqdnNetpolResource).Namespace(namespace).Delete(ctx, fqdn.GetName(), metav1.DeleteOptions{}); err != nil {
+		if err := c.k8sDynamicClient.Resource(fqdnNetpolResource).Namespace(namespace).Delete(ctx, fqdn.GetName(), metav1.DeleteOptions{}); err != nil {
 			return err
 		}
 	}

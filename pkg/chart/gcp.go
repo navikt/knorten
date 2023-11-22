@@ -191,6 +191,7 @@ func createCloudSQLInstance(ctx context.Context, dbInstance, gcpProject, gcpRegi
 		"--project", gcpProject,
 		"--region", gcpRegion,
 		"--database-version=POSTGRES_14",
+		"--deletion-protection",
 		"--cpu=1",
 		"--memory=3.75GB",
 		"--require-ssl",

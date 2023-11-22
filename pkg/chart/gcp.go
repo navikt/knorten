@@ -147,6 +147,10 @@ func deleteCloudSQLInstance(ctx context.Context, instanceName, gcpProject string
 		return nil
 	}
 
+	if err := removeSQLInstanceDeletionProtection(ctx, instanceName, gcpProject); err != nil {
+		return err
+	}
+
 	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",
@@ -346,6 +350,28 @@ func sqlInstanceExistsInGCP(ctx context.Context, instanceName, gcpProject string
 	}
 
 	return stdOut.String() != "", nil
+}
+
+func removeSQLInstanceDeletionProtection(ctx context.Context, instanceName, gcpProject string) error {
+	cmd := exec.CommandContext(ctx,
+		"gcloud",
+		"--quiet",
+		"sql",
+		"instances",
+		"patch",
+		instanceName,
+		"--project", gcpProject,
+		"--no-deletion-protection")
+
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	}
+
+	return nil
 }
 
 func sqlDatabaseExistsInGCP(ctx context.Context, dbInstance, gcpProject, sqlDatabase string) (bool, error) {

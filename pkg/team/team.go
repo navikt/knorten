@@ -79,11 +79,6 @@ func (c Client) create(ctx context.Context, team gensql.Team, log logger.Logger)
 		return true, err
 	}
 
-	if err := c.defaultEgressNetpolsSync(ctx, namespace, team.EnableAllowlist); err != nil {
-		log.WithError(err).Error("syncing default egress netpol")
-		return true, err
-	}
-
 	if err := c.createK8sServiceAccount(ctx, team.ID, namespace); err != nil {
 		log.WithError(err).Error("failed creating k8s service account")
 		return true, err
@@ -127,11 +122,6 @@ func (c Client) update(ctx context.Context, team gensql.Team, log logger.Logger)
 			log.WithError(err).Error("failed creating team namespace")
 			return true, err
 		}
-	}
-
-	if err := c.defaultEgressNetpolsSync(ctx, namespace, team.EnableAllowlist); err != nil {
-		log.WithError(err).Error("syncing default egress netpol")
-		return true, err
 	}
 
 	serviceAccountExists, err := c.k8sServiceAccountExists(ctx, team.ID, namespace)

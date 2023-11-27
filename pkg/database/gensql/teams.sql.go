@@ -12,49 +12,37 @@ import (
 )
 
 const teamBySlugGet = `-- name: TeamBySlugGet :one
-SELECT id, users, slug, enable_allowlist
+SELECT id, users, slug
 FROM teams
 WHERE slug = $1
 `
 
 type TeamBySlugGetRow struct {
-	ID              string
-	Users           []string
-	Slug            string
-	EnableAllowlist bool
+	ID    string
+	Users []string
+	Slug  string
 }
 
 func (q *Queries) TeamBySlugGet(ctx context.Context, slug string) (TeamBySlugGetRow, error) {
 	row := q.db.QueryRowContext(ctx, teamBySlugGet, slug)
 	var i TeamBySlugGetRow
-	err := row.Scan(
-		&i.ID,
-		pq.Array(&i.Users),
-		&i.Slug,
-		&i.EnableAllowlist,
-	)
+	err := row.Scan(&i.ID, pq.Array(&i.Users), &i.Slug)
 	return i, err
 }
 
 const teamCreate = `-- name: TeamCreate :exec
-INSERT INTO teams ("id", "users", "slug", "enable_allowlist")
-VALUES ($1, $2, $3, $4)
+INSERT INTO teams ("id", "users", "slug")
+VALUES ($1, $2, $3)
 `
 
 type TeamCreateParams struct {
-	ID              string
-	Users           []string
-	Slug            string
-	EnableAllowlist bool
+	ID    string
+	Users []string
+	Slug  string
 }
 
 func (q *Queries) TeamCreate(ctx context.Context, arg TeamCreateParams) error {
-	_, err := q.db.ExecContext(ctx, teamCreate,
-		arg.ID,
-		pq.Array(arg.Users),
-		arg.Slug,
-		arg.EnableAllowlist,
-	)
+	_, err := q.db.ExecContext(ctx, teamCreate, arg.ID, pq.Array(arg.Users), arg.Slug)
 	return err
 }
 
@@ -90,18 +78,17 @@ func (q *Queries) TeamGet(ctx context.Context, id string) (TeamGetRow, error) {
 
 const teamUpdate = `-- name: TeamUpdate :exec
 UPDATE teams
-SET users = $1, enable_allowlist = $2
-WHERE id = $3
+SET users = $1
+WHERE id = $2
 `
 
 type TeamUpdateParams struct {
-	Users           []string
-	EnableAllowlist bool
-	ID              string
+	Users []string
+	ID    string
 }
 
 func (q *Queries) TeamUpdate(ctx context.Context, arg TeamUpdateParams) error {
-	_, err := q.db.ExecContext(ctx, teamUpdate, pq.Array(arg.Users), arg.EnableAllowlist, arg.ID)
+	_, err := q.db.ExecContext(ctx, teamUpdate, pq.Array(arg.Users), arg.ID)
 	return err
 }
 
@@ -140,7 +127,7 @@ func (q *Queries) TeamsForUserGet(ctx context.Context, email string) ([]TeamsFor
 }
 
 const teamsGet = `-- name: TeamsGet :many
-select id, slug, users, created, enable_allowlist
+select id, slug, users, created
 from teams
 ORDER BY slug
 `
@@ -159,7 +146,6 @@ func (q *Queries) TeamsGet(ctx context.Context) ([]Team, error) {
 			&i.Slug,
 			pq.Array(&i.Users),
 			&i.Created,
-			&i.EnableAllowlist,
 		); err != nil {
 			return nil, err
 		}

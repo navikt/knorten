@@ -346,7 +346,7 @@ func (c Client) createAirflowExtraEnvs(teamID string, enableGCPSecrets bool) (st
 			},
 			{
 				Name:  "AIRFLOW__SECRETS__BACKEND_KWARGS",
-				Value: `{"connections_prefix": "airflow-connections", "variables_prefix": "airflow-variables", "gcp_project_id": "your-gcp-project-id"}`,
+				Value: `{"connections_prefix": "airflow-connections", "variables_prefix": "airflow-variables", "gcp_project_id": "knada-gcp"}`,
 			},
 		}...)
 	}

@@ -49,6 +49,16 @@
                             </label>
                         </div>
                     </div>
+                    <div class="navds-checkbox">
+                        <div class="navds-checkbox navds-checkbox--medium">
+                            <input id="enablegcpsecrets" name="enablegcpsecrets" type="checkbox" class="navds-checkbox__input"
+                                   {{ if eq .values.EnableGCPSecrets "on" }}checked{{ end }}/>
+                            <label for="enablegcpsecrets" class="navds-checkbox__label">
+                                <span class="navds-checkbox__content">GCP Secrets tilgang</span>
+                            </label>
+                        </div>
+                    </div>
+
                 </fieldset>
                  <div>
                     <h2>Eget Airflow image</h2>

@@ -15,6 +15,8 @@ import (
 	iamv1 "google.golang.org/api/iam/v1"
 )
 
+const airflowGCPSecretPrefix = "airflow-variables-"
+
 func (c Client) createGCPTeamResources(ctx context.Context, team gensql.Team) error {
 	if c.dryRun {
 		return nil
@@ -91,7 +93,7 @@ func (c Client) updateRoleBindingIfExists(bindings []*iamv1.Binding, role, names
 }
 
 func (c Client) createSecret(ctx context.Context, slug, teamID string) (*secretmanagerpb.Secret, error) {
-	return gcp.CreateSecret(ctx, c.gcpProject, c.gcpRegion, teamID, map[string]string{"team": slug})
+	return gcp.CreateSecret(ctx, c.gcpProject, c.gcpRegion, airflowGCPSecretPrefix+teamID, map[string]string{"team": slug})
 }
 
 func (c Client) createServiceAccountSecretAccessorBinding(ctx context.Context, sa, secret string) error {

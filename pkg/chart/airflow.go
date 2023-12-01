@@ -32,13 +32,14 @@ const (
 )
 
 type AirflowConfigurableValues struct {
-	TeamID         string
-	DagRepo        string `helm:"dags.gitSync.repo"`
-	DagRepoBranch  string `helm:"dags.gitSync.branch"`
-	AirflowImage   string `helm:"images.airflow.repository"`
-	AirflowTag     string `helm:"images.airflow.tag"`
-	RestrictEgress bool
-	ApiAccess      bool
+	TeamID           string
+	DagRepo          string `helm:"dags.gitSync.repo"`
+	DagRepoBranch    string `helm:"dags.gitSync.branch"`
+	AirflowImage     string `helm:"images.airflow.repository"`
+	AirflowTag       string `helm:"images.airflow.tag"`
+	RestrictEgress   bool
+	ApiAccess        bool
+	EnableGCPSecrets bool
 }
 
 type AirflowValues struct {
@@ -263,7 +264,7 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 		return AirflowValues{}, err
 	}
 
-	extraEnvs, err := c.createAirflowExtraEnvs(team.ID)
+	extraEnvs, err := c.createAirflowExtraEnvs(team.ID, configurableValues.EnableGCPSecrets)
 	if err != nil {
 		return AirflowValues{}, err
 	}
@@ -313,7 +314,7 @@ func (Client) createAirflowWebServerEnvs(users []string, apiAccess bool) (string
 	return string(envBytes), nil
 }
 
-func (c Client) createAirflowExtraEnvs(teamID string) (string, error) {
+func (c Client) createAirflowExtraEnvs(teamID string, enableGCPSecrets bool) (string, error) {
 	userEnvs := []airflowEnv{
 		{
 			Name:  "KNADA_TEAM_SECRET",
@@ -335,6 +336,19 @@ func (c Client) createAirflowExtraEnvs(teamID string) (string, error) {
 			Name:  "AIRFLOW__LOGGING__REMOTE_LOGGING",
 			Value: "True",
 		},
+	}
+
+	if enableGCPSecrets {
+		userEnvs = append(userEnvs, []airflowEnv{
+			{
+				Name:  "AIRFLOW__SECRETS__BACKEND",
+				Value: "airflow.providers.google.cloud.secrets.secret_manager.CloudSecretManagerBackend",
+			},
+			{
+				Name:  "AIRFLOW__SECRETS__BACKEND_KWARGS",
+				Value: `{"connections_prefix": "airflow-connections", "variables_prefix": "airflow-variables", "gcp_project_id": "your-gcp-project-id"}`,
+			},
+		}...)
 	}
 
 	envBytes, err := json.Marshal(userEnvs)

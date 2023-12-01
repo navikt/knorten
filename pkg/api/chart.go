@@ -36,10 +36,11 @@ func (v jupyterForm) MemoryWithoutUnit() string {
 }
 
 type airflowForm struct {
-	DagRepo       string `form:"dagrepo" binding:"required,startswith=navikt/,validAirflowRepo"`
-	DagRepoBranch string `form:"dagrepobranch" binding:"validRepoBranch"`
-	AirflowImage  string `form:"airflowimage" binding:"validAirflowImage"`
-	ApiAccess     string `form:"apiaccess"`
+	DagRepo          string `form:"dagrepo" binding:"required,startswith=navikt/,validAirflowRepo"`
+	DagRepoBranch    string `form:"dagrepobranch" binding:"validRepoBranch"`
+	AirflowImage     string `form:"airflowimage" binding:"validAirflowImage"`
+	ApiAccess        string `form:"apiaccess"`
+	EnableGCPSecrets string `form:"enablegcpsecrets"`
 }
 
 func getChartType(chartType string) gensql.ChartType {
@@ -347,12 +348,13 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 		}
 
 		values := chart.AirflowConfigurableValues{
-			TeamID:        team.ID,
-			DagRepo:       form.DagRepo,
-			DagRepoBranch: dagRepoBranch,
-			ApiAccess:     form.ApiAccess == "on",
-			AirflowImage:  airflowImage,
-			AirflowTag:    airflowTag,
+			TeamID:           team.ID,
+			DagRepo:          form.DagRepo,
+			DagRepoBranch:    dagRepoBranch,
+			ApiAccess:        form.ApiAccess == "on",
+			AirflowImage:     airflowImage,
+			AirflowTag:       airflowTag,
+			EnableGCPSecrets: form.EnableGCPSecrets == "on",
 		}
 
 		return c.repo.RegisterCreateAirflowEvent(ctx, team.ID, values)

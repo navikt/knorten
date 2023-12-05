@@ -17,7 +17,6 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 	"github.com/nais/knorten/pkg/database/gensql"
-	"k8s.io/utils/strings/slices"
 )
 
 type teamForm struct {
@@ -305,7 +304,7 @@ func (c *client) newTeam(ctx *gin.Context) error {
 		return err
 	}
 
-	team.Users = removeEmptyUsers(team.Users)
+	team.Users = removeEmptySliceElements(team.Users)
 	err = c.ensureUsersExists(team.Users)
 	if err != nil {
 		return err
@@ -326,7 +325,7 @@ func (c *client) editTeam(ctx *gin.Context) error {
 	}
 
 	team.ID = existingTeam.ID
-	team.Users = removeEmptyUsers(team.Users)
+	team.Users = removeEmptySliceElements(team.Users)
 	return c.repo.RegisterUpdateTeamEvent(ctx, team)
 }
 
@@ -338,12 +337,6 @@ func (c *client) ensureUsersExists(users []string) error {
 	}
 
 	return nil
-}
-
-func removeEmptyUsers(formUsers []string) []string {
-	return slices.Filter(nil, formUsers, func(s string) bool {
-		return s != ""
-	})
 }
 
 func (c *client) deleteTeam(ctx *gin.Context, teamSlug string) error {

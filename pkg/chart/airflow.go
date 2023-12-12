@@ -152,7 +152,7 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 		return err
 	}
 
-	if err := grantSATokenCreatorRole(ctx, team.ID, c.gcpProject); err != nil {
+	if err := c.grantTokenCreatorRole(ctx, team.ID); err != nil {
 		log.WithError(err).Error("granting SA token creator role")
 		return err
 	}
@@ -203,7 +203,7 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string, log logger.Log
 		return err
 	}
 
-	if err := deleteTokenCreatorRoleOnSA(ctx, teamID, c.gcpProject); err != nil {
+	if err := c.deleteTokenCreatorRole(ctx, teamID); err != nil {
 		log.WithError(err).Error("deleting SA token creator role")
 		return err
 	}
@@ -457,4 +457,20 @@ func (c Client) registerAirflowHelmEvent(ctx context.Context, teamID string, eve
 	}
 
 	return nil
+}
+
+func (c Client) grantTokenCreatorRole(ctx context.Context, teamID string) error {
+	if c.dryRun {
+		return nil
+	}
+
+	return grantSATokenCreatorRole(ctx, teamID, c.gcpProject)
+}
+
+func (c Client) deleteTokenCreatorRole(ctx context.Context, teamID string) error {
+	if c.dryRun {
+		return nil
+	}
+
+	return deleteTokenCreatorRoleOnSA(ctx, teamID, c.gcpProject)
 }

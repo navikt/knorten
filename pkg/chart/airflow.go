@@ -353,8 +353,11 @@ func (c Client) createAirflowExtraEnvs(teamID string) (string, error) {
 }
 
 func (c Client) createWorkerLabels(teamID string) (string, error) {
-	labels := map[string]string{
-		"team": teamID,
+	labels := []airflowEnv{
+		{
+			Name:  "team",
+			Value: teamID,
+		},
 	}
 
 	labelBytes, err := json.Marshal(labels)

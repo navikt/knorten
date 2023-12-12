@@ -56,6 +56,7 @@ type AirflowValues struct {
 	WebserverEnv            string `helm:"webserver.env"`
 	WebserverServiceAccount string `helm:"webserver.serviceAccount.name"`
 	WorkerServiceAccount    string `helm:"workers.serviceAccount.name"`
+	WorkerLabels            string `helm:"workers.env"`
 }
 
 func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfigurableValues, log logger.Logger) error {
@@ -278,6 +279,11 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 		return AirflowValues{}, err
 	}
 
+	workerLabels, err := c.createWorkerLabels(team.ID)
+	if err != nil {
+		return AirflowValues{}, err
+	}
+
 	webserverEnv, err := c.createAirflowWebServerEnvs(team.Users, configurableValues.ApiAccess)
 	if err != nil {
 		return AirflowValues{}, err
@@ -286,6 +292,7 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 	return AirflowValues{
 		AirflowConfigurableValues: configurableValues,
 		ExtraEnvs:                 extraEnvs,
+		WorkerLabels:              workerLabels,
 		FernetKey:                 fernetKey,
 		PostgresPassword:          postgresPassword,
 		WebserverEnv:              webserverEnv,
@@ -353,6 +360,19 @@ func (c Client) createAirflowExtraEnvs(teamID string) (string, error) {
 	}
 
 	return string(envBytes), nil
+}
+
+func (c Client) createWorkerLabels(teamID string) (string, error) {
+	labels := map[string]string{
+		"team": teamID,
+	}
+
+	labelBytes, err := json.Marshal(labels)
+	if err != nil {
+		return "", err
+	}
+
+	return string(labelBytes), nil
 }
 
 func (c Client) createAirflowDatabase(ctx context.Context, teamID, dbPassword string) error {

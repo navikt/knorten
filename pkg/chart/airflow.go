@@ -152,6 +152,11 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 		return err
 	}
 
+	if err := grantSATokenCreatorRole(ctx, team.ID, c.gcpProject); err != nil {
+		log.WithError(err).Error("granting SA token creator role")
+		return err
+	}
+
 	return nil
 }
 
@@ -195,6 +200,11 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string, log logger.Log
 	instanceName := createAirflowcloudSQLInstanceName(teamID)
 	if err := deleteCloudSQLInstance(ctx, instanceName, c.gcpProject); err != nil {
 		log.WithError(err).Error("delete Cloud SQL instance from GCP")
+		return err
+	}
+
+	if err := deleteTokenCreatorRoleOnSA(ctx, teamID, c.gcpProject); err != nil {
+		log.WithError(err).Error("deleting SA token creator role")
 		return err
 	}
 

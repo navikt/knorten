@@ -56,7 +56,7 @@ type AirflowValues struct {
 	WebserverEnv            string `helm:"webserver.env"`
 	WebserverServiceAccount string `helm:"webserver.serviceAccount.name"`
 	WorkerServiceAccount    string `helm:"workers.serviceAccount.name"`
-	WorkerLabels            string `helm:"workers.env"`
+	WorkerLabels            string `helm:"workers.labels"`
 }
 
 func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfigurableValues, log logger.Logger) error {
@@ -353,11 +353,8 @@ func (c Client) createAirflowExtraEnvs(teamID string) (string, error) {
 }
 
 func (c Client) createWorkerLabels(teamID string) (string, error) {
-	labels := []airflowEnv{
-		{
-			Name:  "team",
-			Value: teamID,
-		},
+	labels := map[string]string{
+		"team": teamID,
 	}
 
 	labelBytes, err := json.Marshal(labels)

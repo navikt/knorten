@@ -3,6 +3,7 @@ package chart
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/nais/knorten/pkg/database"
@@ -75,6 +76,11 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfi
 		return err
 	}
 
+	if err := c.configureNetworkPolicies(ctx, team); err != nil {
+		log.WithError(err).Error("configuring network policies")
+		return err
+	}
+
 	err = c.repo.HelmChartValuesInsert(ctx, gensql.ChartTypeJupyterhub, chartValues, team.ID)
 	if err != nil {
 		log.WithError(err).Error("inserting helm values to database")
@@ -82,6 +88,13 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfi
 	}
 
 	return nil
+}
+
+func (c Client) configureNetworkPolicies(ctx context.Context, team gensql.TeamGetRow) error {
+	if err := c.repo.TeamChartValueInsert(ctx, "singleuser.networkPolicy.egressAllowRules.nonPrivateIPs", strconv.FormatBool(!team.EnableAllowlist), team.ID, gensql.ChartTypeJupyterhub); err != nil {
+		return err
+	}
+	return c.repo.TeamChartValueInsert(ctx, "singleuser.networkPolicy.egressAllowRules.privateIPs", strconv.FormatBool(!team.EnableAllowlist), team.ID, gensql.ChartTypeJupyterhub)
 }
 
 // jupyterReleaseName creates a unique release name based on namespace name.

@@ -313,10 +313,6 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 			return err
 		}
 
-		if err := c.configureNetworkPolicies(ctx, team); err != nil {
-			return err
-		}
-
 		values := chart.JupyterConfigurableValues{
 			TeamID:      team.ID,
 			UserIdents:  userIdents,
@@ -459,10 +455,6 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 			return err
 		}
 
-		if err := c.configureNetworkPolicies(ctx, team); err != nil {
-			return err
-		}
-
 		values := chart.JupyterConfigurableValues{
 			TeamID:      team.ID,
 			UserIdents:  userIdents,
@@ -524,13 +516,6 @@ func (c *client) deleteChart(ctx *gin.Context, teamSlug, chartTypeString string)
 	}
 
 	return fmt.Errorf("chart type %v is not supported", chartTypeString)
-}
-
-func (c *client) configureNetworkPolicies(ctx context.Context, team gensql.TeamBySlugGetRow) error {
-	if err := c.repo.TeamChartValueInsert(ctx, "singleuser.networkPolicy.egressAllowRules.nonPrivateIPs", strconv.FormatBool(!team.EnableAllowlist), team.ID, gensql.ChartTypeJupyterhub); err != nil {
-		return err
-	}
-	return c.repo.TeamChartValueInsert(ctx, "singleuser.networkPolicy.egressAllowRules.privateIPs", strconv.FormatBool(!team.EnableAllowlist), team.ID, gensql.ChartTypeJupyterhub)
 }
 
 func parseCPU(cpu string) (string, error) {

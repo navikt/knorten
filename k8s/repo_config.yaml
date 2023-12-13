@@ -28,4 +28,4 @@ data:
       username: ""
 
   airflow_chart_version: "1.11.0"
-  jupyter_chart_version: "3.0.3"
+  jupyter_chart_version: "3.2.1"

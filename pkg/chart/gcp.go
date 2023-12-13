@@ -171,32 +171,44 @@ func deleteCloudSQLInstance(ctx context.Context, instanceName, gcpProject string
 	return nil
 }
 
-func createCloudSQLInstance(ctx context.Context, dbInstance, gcpProject, gcpRegion string) error {
+func createCloudSQLInstance(ctx context.Context, teamSlug, dbInstance, gcpProject, gcpRegion string) error {
 	exists, err := sqlInstanceExistsInGCP(ctx, dbInstance, gcpProject)
 	if err != nil {
 		return err
 	}
 
+	var cmd *exec.Cmd
 	if exists {
-		return nil
+		cmd = exec.CommandContext(ctx,
+			"gcloud",
+			"beta",
+			"--quiet",
+			"sql",
+			"instances",
+			"patch",
+			dbInstance,
+			"--project", gcpProject,
+			"--update-labels", fmt.Sprintf("created-by=knorten,team=%v,additional-label=value", teamSlug),
+			"--async")
+	} else {
+		cmd = exec.CommandContext(ctx,
+			"gcloud",
+			"--quiet",
+			"sql",
+			"instances",
+			"create",
+			dbInstance,
+			"--project", gcpProject,
+			"--region", gcpRegion,
+			"--database-version=POSTGRES_14",
+			"--deletion-protection",
+			"--cpu=1",
+			fmt.Sprintf("--labels=created-by=knorten,team=%v", teamSlug),
+			"--memory=3.75GB",
+			"--require-ssl",
+			"--backup",
+			"--backup-start-time=02:00")
 	}
-
-	cmd := exec.CommandContext(ctx,
-		"gcloud",
-		"--quiet",
-		"sql",
-		"instances",
-		"create",
-		dbInstance,
-		"--project", gcpProject,
-		"--region", gcpRegion,
-		"--database-version=POSTGRES_14",
-		"--deletion-protection",
-		"--cpu=1",
-		"--memory=3.75GB",
-		"--require-ssl",
-		"--backup",
-		"--backup-start-time=02:00")
 
 	stdOut := &bytes.Buffer{}
 	stdErr := &bytes.Buffer{}

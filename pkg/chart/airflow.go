@@ -381,7 +381,12 @@ func (c Client) createAirflowDatabase(ctx context.Context, teamID, dbPassword st
 	}
 
 	dbInstance := createAirflowcloudSQLInstanceName(teamID)
-	if err := createCloudSQLInstance(ctx, dbInstance, c.gcpProject, c.gcpRegion); err != nil {
+	team, err := c.repo.TeamGet(ctx, teamID)
+	if err != nil {
+		return err
+	}
+
+	if err := createCloudSQLInstance(ctx, team.Slug, dbInstance, c.gcpProject, c.gcpRegion); err != nil {
 		return err
 	}
 

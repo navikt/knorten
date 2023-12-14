@@ -188,7 +188,7 @@ func createCloudSQLInstance(ctx context.Context, teamSlug, dbInstance, gcpProjec
 			"patch",
 			dbInstance,
 			"--project", gcpProject,
-			"--update-labels", fmt.Sprintf("created-by=knorten,team=%v,additional-label=value", teamSlug),
+			"--update-labels", fmt.Sprintf("created-by=knorten,team=%v", teamSlug),
 			"--async")
 	} else {
 		cmd = exec.CommandContext(ctx,

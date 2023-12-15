@@ -24,10 +24,6 @@ func (c Client) createKnauditInitContainer(ctx context.Context) (map[string]any,
 							"valueFrom": map[string]any{"fieldRef": map[string]string{"fieldPath": "metadata.namespace"}},
 						},
 						{
-							"name":      "ORACLE_URL",
-							"valueFrom": map[string]any{"secretKeyRef": map[string]string{"name": "oracle-url", "key": "ORACLE_URL"}},
-						},
-						{
 							"name":  "KNAUDIT_PROXY_URL",
 							"value": "http://knaudit-proxy.knada-system.svc.cluster.local",
 						},

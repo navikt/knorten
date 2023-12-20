@@ -181,8 +181,8 @@ func createCloudSQLInstance(ctx context.Context, teamSlug, dbInstance, gcpProjec
 	if exists {
 		cmd = exec.CommandContext(ctx,
 			"gcloud",
-			"beta",
 			"--quiet",
+			"beta",
 			"sql",
 			"instances",
 			"patch",
@@ -194,6 +194,7 @@ func createCloudSQLInstance(ctx context.Context, teamSlug, dbInstance, gcpProjec
 		cmd = exec.CommandContext(ctx,
 			"gcloud",
 			"--quiet",
+			"beta",
 			"sql",
 			"instances",
 			"create",

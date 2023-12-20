@@ -143,7 +143,7 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 	}
 
 	// Apply values to GCP project
-	if err := c.createAirflowDatabase(ctx, team.ID, values.PostgresPassword); err != nil {
+	if err := c.createAirflowDatabase(ctx, &team, values.PostgresPassword); err != nil {
 		log.WithError(err).Error("creating airflow database")
 		return err
 	}
@@ -375,13 +375,15 @@ func (c Client) createWorkerLabels(teamID string) (string, error) {
 	return string(labelBytes), nil
 }
 
-func (c Client) createAirflowDatabase(ctx context.Context, teamID, dbPassword string) error {
+func (c Client) createAirflowDatabase(ctx context.Context, team *gensql.TeamGetRow, dbPassword string) error {
 	if c.dryRun {
 		return nil
 	}
 
+	teamID := team.ID
 	dbInstance := createAirflowcloudSQLInstanceName(teamID)
-	if err := createCloudSQLInstance(ctx, dbInstance, c.gcpProject, c.gcpRegion); err != nil {
+
+	if err := createCloudSQLInstance(ctx, team.Slug, dbInstance, c.gcpProject, c.gcpRegion); err != nil {
 		return err
 	}
 

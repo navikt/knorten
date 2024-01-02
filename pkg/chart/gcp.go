@@ -171,32 +171,45 @@ func deleteCloudSQLInstance(ctx context.Context, instanceName, gcpProject string
 	return nil
 }
 
-func createCloudSQLInstance(ctx context.Context, dbInstance, gcpProject, gcpRegion string) error {
+func createCloudSQLInstance(ctx context.Context, teamSlug, dbInstance, gcpProject, gcpRegion string) error {
 	exists, err := sqlInstanceExistsInGCP(ctx, dbInstance, gcpProject)
 	if err != nil {
 		return err
 	}
 
+	var cmd *exec.Cmd
 	if exists {
-		return nil
+		cmd = exec.CommandContext(ctx,
+			"gcloud",
+			"--quiet",
+			"beta",
+			"sql",
+			"instances",
+			"patch",
+			dbInstance,
+			"--project", gcpProject,
+			"--update-labels", fmt.Sprintf("created-by=knorten,team=%v", teamSlug),
+			"--async")
+	} else {
+		cmd = exec.CommandContext(ctx,
+			"gcloud",
+			"--quiet",
+			"beta",
+			"sql",
+			"instances",
+			"create",
+			dbInstance,
+			"--project", gcpProject,
+			"--region", gcpRegion,
+			"--database-version=POSTGRES_14",
+			"--deletion-protection",
+			"--cpu=1",
+			fmt.Sprintf("--labels=created-by=knorten,team=%v", teamSlug),
+			"--memory=3.75GB",
+			"--require-ssl",
+			"--backup",
+			"--backup-start-time=02:00")
 	}
-
-	cmd := exec.CommandContext(ctx,
-		"gcloud",
-		"--quiet",
-		"sql",
-		"instances",
-		"create",
-		dbInstance,
-		"--project", gcpProject,
-		"--region", gcpRegion,
-		"--database-version=POSTGRES_14",
-		"--deletion-protection",
-		"--cpu=1",
-		"--memory=3.75GB",
-		"--require-ssl",
-		"--backup",
-		"--backup-start-time=02:00")
 
 	stdOut := &bytes.Buffer{}
 	stdErr := &bytes.Buffer{}
@@ -442,4 +455,56 @@ func roleBindingExistsInGCP(ctx context.Context, gcpProject, teamID, role string
 
 	roles := strings.Split(stdOut.String(), "\n")
 	return slices.Contains(roles, role), nil
+}
+
+func grantSATokenCreatorRole(ctx context.Context, teamID, gcpProject string) error {
+	role := "roles/iam.serviceAccountTokenCreator"
+
+	sa := fmt.Sprintf("%v@%v.iam.gserviceaccount.com", teamID, gcpProject)
+
+	cmd := exec.CommandContext(ctx,
+		"gcloud",
+		"iam",
+		"service-accounts",
+		"add-iam-policy-binding",
+		sa,
+		fmt.Sprintf("--role=%v", role),
+		fmt.Sprintf("--member=serviceAccount:%v", sa),
+		"--quiet",
+	)
+
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	}
+	return nil
+}
+
+func deleteTokenCreatorRoleOnSA(ctx context.Context, teamID, gcpProject string) error {
+	role := "roles/iam.serviceAccountTokenCreator"
+
+	sa := fmt.Sprintf("%v@%v.iam.gserviceaccount.com", teamID, gcpProject)
+
+	cmd := exec.CommandContext(ctx,
+		"gcloud",
+		"iam",
+		"service-accounts",
+		"remove-iam-policy-binding",
+		sa,
+		fmt.Sprintf("--role=%v", role),
+		fmt.Sprintf("--member=serviceAccount:%v", sa),
+		"--quiet",
+	)
+
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	}
+	return nil
 }

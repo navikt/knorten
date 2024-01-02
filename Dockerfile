@@ -9,6 +9,8 @@ RUN go build -o knorten .
 
 FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine
 
+RUN gcloud components install beta
+
 WORKDIR /app
 COPY --from=builder /src/knorten /app/knorten
 COPY --from=builder /src/assets /app/assets

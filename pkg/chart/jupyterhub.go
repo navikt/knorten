@@ -3,6 +3,7 @@ package chart
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/nais/knorten/pkg/database"
@@ -31,16 +32,17 @@ type jupyterValues struct {
 	JupyterConfigurableValues
 
 	// Generated values
-	CPULimit         string   `helm:"singleuser.cpu.limit"`
-	CPUGuarantee     string   `helm:"singleuser.cpu.guarantee"`
-	MemoryLimit      string   `helm:"singleuser.memory.limit"`
-	MemoryGuarantee  string   `helm:"singleuser.memory.guarantee"`
-	AdminUsers       []string `helm:"hub.config.Authenticator.admin_users"`
-	AllowedUsers     []string `helm:"hub.config.Authenticator.allowed_users"`
-	OAuthCallbackURL string   `helm:"hub.config.AzureAdOAuthenticator.oauth_callback_url"`
-	KnadaTeamSecret  string   `helm:"singleuser.extraEnv.KNADA_TEAM_SECRET"`
-	ProfileList      string   `helm:"singleuser.profileList"`
-	ExtraAnnotations string   `helm:"singleuser.extraAnnotations"`
+	CPULimit              string   `helm:"singleuser.cpu.limit"`
+	CPUGuarantee          string   `helm:"singleuser.cpu.guarantee"`
+	MemoryLimit           string   `helm:"singleuser.memory.limit"`
+	MemoryGuarantee       string   `helm:"singleuser.memory.guarantee"`
+	AdminUsers            []string `helm:"hub.config.Authenticator.admin_users"`
+	AllowedUsers          []string `helm:"hub.config.Authenticator.allowed_users"`
+	OAuthCallbackURL      string   `helm:"hub.config.AzureAdOAuthenticator.oauth_callback_url"`
+	KnadaTeamSecret       string   `helm:"singleuser.extraEnv.KNADA_TEAM_SECRET"`
+	ProfileList           string   `helm:"singleuser.profileList"`
+	ExtraAnnotations      string   `helm:"singleuser.extraAnnotations"`
+	SingleUserExtraLabels string   `helm:"singleuser.extraLabels"`
 }
 
 func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfigurableValues, log logger.Logger) error {
@@ -74,6 +76,11 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfi
 		return err
 	}
 
+	if err := c.configureNetworkPolicies(ctx, team); err != nil {
+		log.WithError(err).Error("configuring network policies")
+		return err
+	}
+
 	err = c.repo.HelmChartValuesInsert(ctx, gensql.ChartTypeJupyterhub, chartValues, team.ID)
 	if err != nil {
 		log.WithError(err).Error("inserting helm values to database")
@@ -81,6 +88,13 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfi
 	}
 
 	return nil
+}
+
+func (c Client) configureNetworkPolicies(ctx context.Context, team gensql.TeamGetRow) error {
+	if err := c.repo.TeamChartValueInsert(ctx, "singleuser.networkPolicy.egressAllowRules.nonPrivateIPs", strconv.FormatBool(!team.EnableAllowlist), team.ID, gensql.ChartTypeJupyterhub); err != nil {
+		return err
+	}
+	return c.repo.TeamChartValueInsert(ctx, "singleuser.networkPolicy.egressAllowRules.privateIPs", strconv.FormatBool(!team.EnableAllowlist), team.ID, gensql.ChartTypeJupyterhub)
 }
 
 // jupyterReleaseName creates a unique release name based on namespace name.
@@ -114,6 +128,8 @@ func (c Client) jupyterMergeValues(ctx context.Context, team gensql.TeamGetRow, 
 		allowList = fmt.Sprintf(`{"allowlist": "%v"}`, strings.Join(configurableValues.AllowList, ","))
 	}
 
+	singleuserExtraLabels := fmt.Sprintf(`{"team": "%v"}`, team.ID)
+
 	return jupyterValues{
 		JupyterConfigurableValues: configurableValues,
 		CPULimit:                  configurableValues.CPU,
@@ -126,6 +142,7 @@ func (c Client) jupyterMergeValues(ctx context.Context, team gensql.TeamGetRow, 
 		KnadaTeamSecret:           fmt.Sprintf("projects/%v/secrets/%v", c.gcpProject, team.ID),
 		ProfileList:               profileList,
 		ExtraAnnotations:          allowList,
+		SingleUserExtraLabels:     singleuserExtraLabels,
 	}, nil
 }
 

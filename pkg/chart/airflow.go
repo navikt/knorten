@@ -56,6 +56,7 @@ type AirflowValues struct {
 	WebserverEnv            string `helm:"webserver.env"`
 	WebserverServiceAccount string `helm:"webserver.serviceAccount.name"`
 	WorkerServiceAccount    string `helm:"workers.serviceAccount.name"`
+	WorkerLabels            string `helm:"workers.labels"`
 }
 
 func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfigurableValues, log logger.Logger) error {
@@ -142,13 +143,18 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 	}
 
 	// Apply values to GCP project
-	if err := c.createAirflowDatabase(ctx, team.ID, values.PostgresPassword); err != nil {
+	if err := c.createAirflowDatabase(ctx, &team, values.PostgresPassword); err != nil {
 		log.WithError(err).Error("creating airflow database")
 		return err
 	}
 
 	if err := c.createLogBucketForAirflow(ctx, team.ID); err != nil {
 		log.WithError(err).Error("creating airflow log bucket")
+		return err
+	}
+
+	if err := c.grantTokenCreatorRole(ctx, team.ID); err != nil {
+		log.WithError(err).Error("granting SA token creator role")
 		return err
 	}
 
@@ -195,6 +201,11 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string, log logger.Log
 	instanceName := createAirflowcloudSQLInstanceName(teamID)
 	if err := deleteCloudSQLInstance(ctx, instanceName, c.gcpProject); err != nil {
 		log.WithError(err).Error("delete Cloud SQL instance from GCP")
+		return err
+	}
+
+	if err := c.deleteTokenCreatorRole(ctx, teamID); err != nil {
+		log.WithError(err).Error("deleting SA token creator role")
 		return err
 	}
 
@@ -268,6 +279,11 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 		return AirflowValues{}, err
 	}
 
+	workerLabels, err := c.createWorkerLabels(team.ID)
+	if err != nil {
+		return AirflowValues{}, err
+	}
+
 	webserverEnv, err := c.createAirflowWebServerEnvs(team.Users, configurableValues.ApiAccess)
 	if err != nil {
 		return AirflowValues{}, err
@@ -276,6 +292,7 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 	return AirflowValues{
 		AirflowConfigurableValues: configurableValues,
 		ExtraEnvs:                 extraEnvs,
+		WorkerLabels:              workerLabels,
 		FernetKey:                 fernetKey,
 		PostgresPassword:          postgresPassword,
 		WebserverEnv:              webserverEnv,
@@ -345,13 +362,28 @@ func (c Client) createAirflowExtraEnvs(teamID string) (string, error) {
 	return string(envBytes), nil
 }
 
-func (c Client) createAirflowDatabase(ctx context.Context, teamID, dbPassword string) error {
+func (c Client) createWorkerLabels(teamID string) (string, error) {
+	labels := map[string]string{
+		"team": teamID,
+	}
+
+	labelBytes, err := json.Marshal(labels)
+	if err != nil {
+		return "", err
+	}
+
+	return string(labelBytes), nil
+}
+
+func (c Client) createAirflowDatabase(ctx context.Context, team *gensql.TeamGetRow, dbPassword string) error {
 	if c.dryRun {
 		return nil
 	}
 
+	teamID := team.ID
 	dbInstance := createAirflowcloudSQLInstanceName(teamID)
-	if err := createCloudSQLInstance(ctx, dbInstance, c.gcpProject, c.gcpRegion); err != nil {
+
+	if err := createCloudSQLInstance(ctx, team.Slug, dbInstance, c.gcpProject, c.gcpRegion); err != nil {
 		return err
 	}
 
@@ -447,4 +479,20 @@ func (c Client) registerAirflowHelmEvent(ctx context.Context, teamID string, eve
 	}
 
 	return nil
+}
+
+func (c Client) grantTokenCreatorRole(ctx context.Context, teamID string) error {
+	if c.dryRun {
+		return nil
+	}
+
+	return grantSATokenCreatorRole(ctx, teamID, c.gcpProject)
+}
+
+func (c Client) deleteTokenCreatorRole(ctx context.Context, teamID string) error {
+	if c.dryRun {
+		return nil
+	}
+
+	return deleteTokenCreatorRoleOnSA(ctx, teamID, c.gcpProject)
 }

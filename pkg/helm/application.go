@@ -263,6 +263,10 @@ func (c Client) mergeValues(ctx context.Context, chartType gensql.ChartType, tea
 	}
 
 	switch chartType {
+	case gensql.ChartTypeJupyterhub:
+		if err := c.concatenateImageProfiles(ctx, teamID, values); err != nil {
+			return err
+		}
 	case gensql.ChartTypeAirflow:
 		knauditInitContainer, err := c.createKnauditInitContainer(ctx)
 		if err != nil {

@@ -58,27 +58,21 @@ func (q *Queries) TeamDelete(ctx context.Context, id string) error {
 }
 
 const teamGet = `-- name: TeamGet :one
-SELECT id, users, slug, enable_allowlist
+SELECT id, users, slug
 FROM teams
 WHERE id = $1
 `
 
 type TeamGetRow struct {
-	ID              string
-	Users           []string
-	Slug            string
-	EnableAllowlist bool
+	ID    string
+	Users []string
+	Slug  string
 }
 
 func (q *Queries) TeamGet(ctx context.Context, id string) (TeamGetRow, error) {
 	row := q.db.QueryRowContext(ctx, teamGet, id)
 	var i TeamGetRow
-	err := row.Scan(
-		&i.ID,
-		pq.Array(&i.Users),
-		&i.Slug,
-		&i.EnableAllowlist,
-	)
+	err := row.Scan(&i.ID, pq.Array(&i.Users), &i.Slug)
 	return i, err
 }
 

@@ -13,7 +13,7 @@ FROM teams
 WHERE @email::TEXT = ANY ("users");
 
 -- name: TeamGet :one
-SELECT id, users, slug, enable_allowlist
+SELECT id, users, slug
 FROM teams
 WHERE id = @id;
 

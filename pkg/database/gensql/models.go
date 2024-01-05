@@ -111,11 +111,10 @@ type Session struct {
 }
 
 type Team struct {
-	ID              string
-	Slug            string
-	Users           []string
-	Created         sql.NullTime
-	EnableAllowlist bool
+	ID      string
+	Slug    string
+	Users   []string
+	Created sql.NullTime
 }
 
 type UserGoogleSecretManager struct {

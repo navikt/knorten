@@ -12,18 +12,16 @@ import (
 
 func (r *Repo) TeamCreate(ctx context.Context, team gensql.Team) error {
 	return r.querier.TeamCreate(ctx, gensql.TeamCreateParams{
-		ID:              team.ID,
-		Users:           stringSliceToLower(team.Users),
-		Slug:            team.Slug,
-		EnableAllowlist: team.EnableAllowlist,
+		ID:    team.ID,
+		Users: stringSliceToLower(team.Users),
+		Slug:  team.Slug,
 	})
 }
 
 func (r *Repo) TeamUpdate(ctx context.Context, team gensql.Team) error {
 	return r.querier.TeamUpdate(ctx, gensql.TeamUpdateParams{
-		ID:              team.ID,
-		Users:           stringSliceToLower(team.Users),
-		EnableAllowlist: team.EnableAllowlist,
+		ID:    team.ID,
+		Users: stringSliceToLower(team.Users),
 	})
 }
 

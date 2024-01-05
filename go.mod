@@ -23,7 +23,7 @@ require (
 	github.com/tdewolff/minify/v2 v2.20.10
 	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc
 	golang.org/x/oauth2 v0.15.0
-	google.golang.org/api v0.154.0
+	google.golang.org/api v0.155.0
 	google.golang.org/grpc v1.60.1
 	gopkg.in/yaml.v3 v3.0.1
 	helm.sh/helm/v3 v3.13.3

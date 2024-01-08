@@ -20,7 +20,7 @@ require (
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/pressly/goose/v3 v3.17.0
 	github.com/sirupsen/logrus v1.9.3
-	github.com/tdewolff/minify/v2 v2.20.10
+	github.com/tdewolff/minify/v2 v2.20.12
 	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc
 	golang.org/x/oauth2 v0.15.0
 	google.golang.org/api v0.155.0

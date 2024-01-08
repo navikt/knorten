@@ -486,6 +486,15 @@ func grantSATokenCreatorRole(ctx context.Context, teamID, gcpProject string) err
 func deleteTokenCreatorRoleOnSA(ctx context.Context, teamID, gcpProject string) error {
 	role := "roles/iam.serviceAccountTokenCreator"
 
+	exists, err := roleBindingExistsInGCP(ctx, gcpProject, teamID, role)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return nil
+	}
+
 	sa := fmt.Sprintf("%v@%v.iam.gserviceaccount.com", teamID, gcpProject)
 
 	cmd := exec.CommandContext(ctx,

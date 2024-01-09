@@ -90,4 +90,4 @@ pg_dump -U knorten -h localhost -p5433 > knorten.sql
 psql -U postgres -h localhost -p 5432 -d knorten -f knorten.sql
 ```
 
-PS: Legg merke til at vi bruker port `5433` i kommandoene overnfor, da man mest sannsynligvis har en Postgres-instans kjørende lokalt på `5432`.
+PS: Legg merke til at vi bruker port `5433` i kommandoene ovenfor, da man mest sannsynligvis har en Postgres-instans kjørende lokalt på `5432`.

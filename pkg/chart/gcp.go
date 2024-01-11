@@ -516,27 +516,23 @@ func deleteTokenCreatorRoleOnSA(ctx context.Context, teamID, gcpProject string) 
 }
 
 func serviceAccountExistsInGCP(ctx context.Context, teamID, gcpProject string) (bool, error) {
-	sa := fmt.Sprintf("%v@%v.iam.gserviceaccount.com", teamID, gcpProject)
-
 	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",
 		"iam",
 		"service-accounts",
-		"describe",
-		sa,
-		"--project",
-		gcpProject)
+		"list",
+		"--format=get(email)",
+		"--project", gcpProject,
+		fmt.Sprintf("--filter=email=%v@%v.iam.gserviceaccount.com", teamID, gcpProject))
 
 	stdOut := &bytes.Buffer{}
 	stdErr := &bytes.Buffer{}
 	cmd.Stdout = stdOut
 	cmd.Stderr = stdErr
 	if err := cmd.Run(); err != nil {
-		if strings.Contains(stdErr.String(), "NOT_FOUND") {
-			return false, nil // Service account does not exist
-		}
 		return false, fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
 	}
-	return true, nil // Service account exists
+
+	return stdOut.String() != "", nil
 }

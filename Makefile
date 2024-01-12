@@ -26,9 +26,11 @@ env:
 	echo "AZURE_APP_CLIENT_ID=$(shell kubectl get secret --context=knada --namespace=knada-system knorten -o jsonpath='{.data.AZURE_APP_CLIENT_ID}' | base64 -d)" > .env
 	echo "AZURE_APP_CLIENT_SECRET=$(shell kubectl get secret --context=knada --namespace=knada-system knorten -o jsonpath='{.data.AZURE_APP_CLIENT_SECRET}' | base64 -d)" >> .env
 	echo "AZURE_APP_TENANT_ID=$(shell kubectl get secret --context=knada --namespace=knada-system knorten -o jsonpath='{.data.AZURE_APP_TENANT_ID}' | base64 -d)" >> .env
+.PHONY: env
 
 netpol:
 	$(shell kubectl get --context=knada --namespace=knada-system configmap/airflow-network-policy -o json | jq -r '.data."default-egress-airflow-worker.yaml"' > .default-egress-airflow-worker.yaml)
+.PHONY: netpol
 
 local-online:
 	go run -race . \
@@ -44,7 +46,8 @@ local-online:
 	  --project=nada-dev-db2e \
 	  --region=europe-north1 \
 	  --session-key online-session
-	  --zone=europe-north1-b \
+	  --zone=europe-north1-b
+.PHONY: local-online
 
 local:
 	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" \
@@ -59,26 +62,30 @@ local:
 	  --project=nada-dev-db2e \
 	  --region=europe-north1 \
 	  --session-key offline-session
-	  --zone=europe-north1-b \
+	  --zone=europe-north1-b
+.PHONY: local
 
-generate-sql:
-	$(GOBIN)/sqlc generate
-
-install-sqlc:
-	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+generate-sql: $(SQLC)
+	$(SQLC) generate
+.PHONY: generate-sql
 
 # make goose cmd=status
-goose:
-	goose -dir pkg/database/migrations/ postgres "user=postgres password=postgres dbname=knorten host=localhost sslmode=disable" $(cmd)
+goose: $(GOOSE)
+	$(GOOSE) -dir pkg/database/migrations/ postgres "user=postgres password=postgres dbname=knorten host=localhost sslmode=disable" $(cmd)
+.PHONY: goose
 
 init:
 	go run local/main.go
+.PHONY: init
 
 css:
 	npx tailwindcss --postcss -i local/tailwind.css -o assets/css/main.css
+.PHONY: css
 
 css-watch:
 	npx tailwindcss --postcss -i local/tailwind.css -o assets/css/main.css -w
+.PHONY: css-watch
 
 test:
 	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" go test -v ./... -count=1
+.PHONY: test

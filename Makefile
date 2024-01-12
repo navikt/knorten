@@ -9,9 +9,9 @@ define install-binary
 	 fi
 endef
 
-GOOSE         := $(GOBIN)/goose
+GOOSE         ?= $(shell command -v goose || echo "$(GOBIN)/goose")
 GOOSE_VERSION := v3.17.0
-SQLC          := $(GOBIN)/sqlc
+SQLC          ?= $(shell command -v sqlc || echo "$(GOBIN)/sqlc")
 SQLC_VERSION  := v1.25.0
 
 $(GOOSE):

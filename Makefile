@@ -9,16 +9,21 @@ define install-binary
 	 fi
 endef
 
-GOOSE         ?= $(shell command -v goose || echo "$(GOBIN)/goose")
-GOOSE_VERSION := v3.17.0
-SQLC          ?= $(shell command -v sqlc || echo "$(GOBIN)/sqlc")
-SQLC_VERSION  := v1.25.0
+GOOSE                ?= $(shell command -v goose || echo "$(GOBIN)/goose")
+GOOSE_VERSION        := v3.17.0
+SQLC                 ?= $(shell command -v sqlc || echo "$(GOBIN)/sqlc")
+SQLC_VERSION         := v1.25.0
+GOLANGCILINT         ?= $(shell command -v golangci-lint || echo "$(GOBIN)/golangci-lint")
+GOLANGCILINT_VERSION := v1.55.2
 
 $(GOOSE):
 	$(call install-binary,goose,github.com/pressly/goose/v3/cmd/goose@$(GOOSE_VERSION))
 
 $(SQLC):
 	$(call install-binary,sqlc,github.com/sqlc-dev/sqlc/cmd/sqlc@$(SQLC_VERSION))
+
+$(GOLANGCILINT):
+	$(call install-binary,golangci-lint,github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCILINT_VERSION))
 
 -include .env
 
@@ -89,3 +94,10 @@ css-watch:
 test:
 	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" go test -v ./... -count=1
 .PHONY: test
+
+lint: $(GOLANGCILINT)
+	$(GOLANGCILINT) run
+.PHONY: lint
+
+check: | lint test
+.PHONY: check

@@ -1,10 +1,24 @@
-.PHONY: env local local-offline generate-sql install-sqlc goose
-# Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
-ifeq (,$(shell go env GOBIN))
-	GOBIN=$(shell go env GOPATH)/bin
-else
-	GOBIN=$(shell go env GOBIN)
-endif
+GOPATH := $(shell go env GOPATH)
+GOBIN  ?= $(GOPATH)/bin # Default GOBIN if not set
+
+# A template function for installing binaries
+define install-binary
+	 @if ! command -v $(1) &> /dev/null; then \
+		  echo "$(1) not found, installing..."; \
+		  go install $(2); \
+	 fi
+endef
+
+GOOSE         := $(GOBIN)/goose
+GOOSE_VERSION := v3.17.0
+SQLC          := $(GOBIN)/sqlc
+SQLC_VERSION  := v1.25.0
+
+$(GOOSE):
+	$(call install-binary,goose,github.com/pressly/goose/v3/cmd/goose@$(GOOSE_VERSION))
+
+$(SQLC):
+	$(call install-binary,sqlc,github.com/sqlc-dev/sqlc/cmd/sqlc@$(SQLC_VERSION))
 
 -include .env
 

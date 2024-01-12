@@ -19,6 +19,7 @@ type JupyterConfigurableValues struct {
 
 	// User-configurable values
 	CPU         string `helm:"singleuser.cpu.limit"`
+	CPURequest  string `helm:"singleuser.cpu.guarantee"`
 	Memory      string `helm:"singleuser.memory.limit"`
 	ImageName   string `helm:"singleuser.image.name"`
 	ImageTag    string `helm:"singleuser.image.tag"`
@@ -120,7 +121,7 @@ func (c Client) jupyterMergeValues(ctx context.Context, team gensql.TeamGetRow, 
 	return jupyterValues{
 		JupyterConfigurableValues: configurableValues,
 		CPULimit:                  configurableValues.CPU,
-		CPUGuarantee:              configurableValues.CPU,
+		CPUGuarantee:              configurableValues.CPURequest,
 		MemoryLimit:               configurableValues.Memory,
 		MemoryGuarantee:           configurableValues.Memory,
 		AdminUsers:                configurableValues.UserIdents,

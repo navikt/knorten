@@ -19,7 +19,8 @@ import (
 )
 
 type jupyterForm struct {
-	CPU         string   `form:"cpu"`
+	CPU         string   `form:"cpu" binding:"validCPUSpec"`
+	CPURequest  string   `form:"cpurequest" binding:"validCPUSpec"`
 	Memory      string   `form:"memory"`
 	ImageName   string   `form:"imagename"`
 	ImageTag    string   `form:"imagetag"`
@@ -83,6 +84,22 @@ func (c *client) setupChartRoutes() {
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		err := v.RegisterValidation("validAirflowImage", chart.ValidateAirflowImage)
+		if err != nil {
+			c.log.WithError(err).Error("can't register validator")
+			return
+		}
+	}
+
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		err := v.RegisterValidation("validCPUSpec", chart.ValidateCPUSpec)
+		if err != nil {
+			c.log.WithError(err).Error("can't register validator")
+			return
+		}
+	}
+
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		err := v.RegisterValidation("validMemorySpec", chart.ValidateMemorySpec)
 		if err != nil {
 			c.log.WithError(err).Error("can't register validator")
 			return
@@ -308,6 +325,11 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 			return err
 		}
 
+		cpuRequest, err := parseCPU(form.CPURequest)
+		if err != nil {
+			return err
+		}
+
 		memory, err := parseMemory(form.Memory)
 		if err != nil {
 			return err
@@ -317,6 +339,7 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 			TeamID:      team.ID,
 			UserIdents:  userIdents,
 			CPU:         cpu,
+			CPURequest:  cpuRequest,
 			Memory:      memory,
 			ImageName:   form.ImageName,
 			ImageTag:    form.ImageTag,
@@ -392,6 +415,7 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 
 		form = jupyterForm{
 			CPU:         jupyterhubValues.CPU,
+			CPURequest:  jupyterhubValues.CPURequest,
 			Memory:      jupyterhubValues.Memory,
 			ImageName:   jupyterhubValues.ImageName,
 			ImageTag:    jupyterhubValues.ImageTag,
@@ -450,15 +474,20 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 			return err
 		}
 
-		memory, err := parseMemory(form.Memory)
+		cpuRequest, err := parseCPU(form.CPURequest)
 		if err != nil {
 			return err
 		}
 
+		memory, err := parseMemory(form.Memory)
+		if err != nil {
+			return err
+		}
 		values := chart.JupyterConfigurableValues{
 			TeamID:      team.ID,
 			UserIdents:  userIdents,
 			CPU:         cpu,
+			CPURequest:  cpuRequest,
 			Memory:      memory,
 			ImageName:   form.ImageName,
 			ImageTag:    form.ImageTag,

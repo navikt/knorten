@@ -108,6 +108,7 @@ func TestCharts(t *testing.T) {
 					TeamID:      team.ID,
 					UserIdents:  []string{"d123456", "u654321"},
 					CPU:         "1.0",
+					CPURequest:  "1.0",
 					Memory:      "2G",
 					ImageName:   "ghcr.io/navikt/image",
 					ImageTag:    "v1",

@@ -19,13 +19,14 @@ import (
 )
 
 type jupyterForm struct {
-	CPU         string   `form:"cpu" binding:"validCPUSpec"`
-	CPURequest  string   `form:"cpurequest" binding:"validCPUSpec"`
-	Memory      string   `form:"memory"`
-	ImageName   string   `form:"imagename"`
-	ImageTag    string   `form:"imagetag"`
-	CullTimeout string   `form:"culltimeout"`
-	Allowlist   []string `form:"allowlist[]"`
+	CPU           string   `form:"cpu" binding:"validCPUSpec"`
+	CPURequest    string   `form:"cpurequest" binding:"validCPUSpec"`
+	Memory        string   `form:"memory"`
+	MemoryRequest string   `form:"memoryrequest"`
+	ImageName     string   `form:"imagename"`
+	ImageTag      string   `form:"imagetag"`
+	CullTimeout   string   `form:"culltimeout"`
+	Allowlist     []string `form:"allowlist[]"`
 }
 
 func (v jupyterForm) MemoryWithoutUnit() string {
@@ -335,16 +336,22 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 			return err
 		}
 
+		memoryRequest, err := parseMemory(form.MemoryRequest)
+		if err != nil {
+			return err
+		}
+
 		values := chart.JupyterConfigurableValues{
-			TeamID:      team.ID,
-			UserIdents:  userIdents,
-			CPU:         cpu,
-			CPURequest:  cpuRequest,
-			Memory:      memory,
-			ImageName:   form.ImageName,
-			ImageTag:    form.ImageTag,
-			CullTimeout: strconv.FormatUint(cullTimeout, 10),
-			AllowList:   removeEmptySliceElements(form.Allowlist),
+			TeamID:        team.ID,
+			UserIdents:    userIdents,
+			CPU:           cpu,
+			CPURequest:    cpuRequest,
+			Memory:        memory,
+			MemoryRequest: memoryRequest,
+			ImageName:     form.ImageName,
+			ImageTag:      form.ImageTag,
+			CullTimeout:   strconv.FormatUint(cullTimeout, 10),
+			AllowList:     removeEmptySliceElements(form.Allowlist),
 		}
 
 		return c.repo.RegisterCreateJupyterEvent(ctx, team.ID, values)
@@ -414,13 +421,14 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 		}
 
 		form = jupyterForm{
-			CPU:         jupyterhubValues.CPU,
-			CPURequest:  jupyterhubValues.CPURequest,
-			Memory:      jupyterhubValues.Memory,
-			ImageName:   jupyterhubValues.ImageName,
-			ImageTag:    jupyterhubValues.ImageTag,
-			CullTimeout: jupyterhubValues.CullTimeout,
-			Allowlist:   allowlist,
+			CPU:           jupyterhubValues.CPU,
+			CPURequest:    jupyterhubValues.CPURequest,
+			Memory:        jupyterhubValues.Memory,
+			MemoryRequest: jupyterhubValues.MemoryRequest,
+			ImageName:     jupyterhubValues.ImageName,
+			ImageTag:      jupyterhubValues.ImageTag,
+			CullTimeout:   jupyterhubValues.CullTimeout,
+			Allowlist:     allowlist,
 		}
 	case gensql.ChartTypeAirflow:
 		airflowValues := chartObjects.(*chart.AirflowConfigurableValues)
@@ -483,16 +491,23 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 		if err != nil {
 			return err
 		}
+
+		memoryRequest, err := parseMemory(form.MemoryRequest)
+		if err != nil {
+			return err
+		}
+
 		values := chart.JupyterConfigurableValues{
-			TeamID:      team.ID,
-			UserIdents:  userIdents,
-			CPU:         cpu,
-			CPURequest:  cpuRequest,
-			Memory:      memory,
-			ImageName:   form.ImageName,
-			ImageTag:    form.ImageTag,
-			CullTimeout: form.CullTimeout,
-			AllowList:   removeEmptySliceElements(form.Allowlist),
+			TeamID:        team.ID,
+			UserIdents:    userIdents,
+			CPU:           cpu,
+			CPURequest:    cpuRequest,
+			Memory:        memory,
+			MemoryRequest: memoryRequest,
+			ImageName:     form.ImageName,
+			ImageTag:      form.ImageTag,
+			CullTimeout:   form.CullTimeout,
+			AllowList:     removeEmptySliceElements(form.Allowlist),
 		}
 
 		return c.repo.RegisterUpdateJupyterEvent(ctx, team.ID, values)

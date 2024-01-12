@@ -76,9 +76,10 @@ func TestJupyterAPI(t *testing.T) {
 		cpu := "1.0"
 		cpuRequest := "0.5"
 		memory := "2G"
+		memoryRequest := "1G"
 		culltimeout := "3600"
 
-		data := url.Values{"cpu": {cpu}, "cpurequest": {cpuRequest}, "memory": {memory}, "imagename": {""}, "imagetag": {""}, "culltimeout": {culltimeout}}
+		data := url.Values{"cpu": {cpu}, "cpurequest": {cpuRequest}, "memory": {memory}, "memoryrequest": {memoryRequest}, "imagename": {""}, "imagetag": {""}, "culltimeout": {culltimeout}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/%v/jupyterhub/new", server.URL, team.Slug), data)
 		if err != nil {
 			t.Error(err)
@@ -109,6 +110,10 @@ func TestJupyterAPI(t *testing.T) {
 			t.Errorf("create jupyterhub: memory value - expected %v, got %v", memory, eventPayload.Memory)
 		}
 
+		if eventPayload.MemoryRequest != memoryRequest {
+			t.Errorf("create jupyterhub: memoryRequest value - expected %v, got %v", memoryRequest, eventPayload.MemoryRequest)
+		}
+
 		if eventPayload.CullTimeout != culltimeout {
 			t.Errorf("create jupyterhub: culltimeout value - expected %v, got %v", culltimeout, eventPayload.CullTimeout)
 		}
@@ -119,11 +124,12 @@ func TestJupyterAPI(t *testing.T) {
 	})
 
 	expectedValues := chart.JupyterConfigurableValues{
-		TeamID:      team.ID,
-		CPU:         "1.0",
-		CPURequest:  "0.5",
-		Memory:      "1G",
-		CullTimeout: "3600",
+		TeamID:        team.ID,
+		CPU:           "1.0",
+		CPURequest:    "0.5",
+		Memory:        "1G",
+		MemoryRequest: "1G",
+		CullTimeout:   "3600",
 	}
 
 	if err := createChartForTeam(ctx, team.ID, expectedValues, gensql.ChartTypeJupyterhub); err != nil {
@@ -157,10 +163,11 @@ func TestJupyterAPI(t *testing.T) {
 		expected, err := createExpectedHTML("charts/jupyterhub", map[string]any{
 			"team": team.Slug,
 			"values": &jupyterForm{
-				CPU:         expectedValues.CPU,
-				CPURequest:  expectedValues.CPURequest,
-				Memory:      expectedValues.Memory,
-				CullTimeout: expectedValues.CullTimeout,
+				CPU:           expectedValues.CPU,
+				CPURequest:    expectedValues.CPURequest,
+				Memory:        expectedValues.Memory,
+				MemoryRequest: expectedValues.MemoryRequest,
+				CullTimeout:   expectedValues.CullTimeout,
 			},
 		})
 		if err != nil {
@@ -180,10 +187,11 @@ func TestJupyterAPI(t *testing.T) {
 		newCPU := "2.0"
 		newCPURequest := "1.0"
 		newMemory := "2G"
+		newMemoryRequest := "0.5G"
 		imageName := "ghcr.io/org/repo/image"
 		imageTag := "v1"
 		newCullTimeout := "7200"
-		data := url.Values{"cpu": {newCPU}, "cpurequest": {newCPURequest}, "memory": {newMemory}, "imagename": {imageName}, "imagetag": {imageTag}, "culltimeout": {newCullTimeout}}
+		data := url.Values{"cpu": {newCPU}, "cpurequest": {newCPURequest}, "memory": {newMemory}, "memoryrequest": {newMemoryRequest}, "imagename": {imageName}, "imagetag": {imageTag}, "culltimeout": {newCullTimeout}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/%v/jupyterhub/edit", server.URL, team.Slug), data)
 		if err != nil {
 			t.Error(err)
@@ -214,6 +222,10 @@ func TestJupyterAPI(t *testing.T) {
 
 		if eventPayload.Memory != newMemory {
 			t.Errorf("create jupyterhub: memory value - expected %v, got %v", newMemory, eventPayload.Memory)
+		}
+
+		if eventPayload.MemoryRequest != newMemoryRequest {
+			t.Errorf("create jupyterhub: memoryRequest value - expected %v, got %v", newMemoryRequest, eventPayload.MemoryRequest)
 		}
 
 		if eventPayload.CullTimeout != newCullTimeout {

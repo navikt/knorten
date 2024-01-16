@@ -9,14 +9,18 @@ linters:
     - dogsled
     - dupl
     - errcheck
+    - exportloopref
     - funlen
+    - gochecknoglobals
     - gochecknoinits
+    - gocognit
     - goconst
     - gocyclo
-    - gofumpt
     - gofmt
+    - gofumpt
     - goimports
-    - revive
+    - gomnd
+    - goprintffuncname
     - gosec
     - gosimple
     - govet
@@ -24,7 +28,9 @@ linters:
     - lll
     - misspell
     - nakedret
-    - exportloopref
+    - prealloc
+    - revive
+    - rowserrcheck
     - staticcheck
     - stylecheck
     - typecheck
@@ -32,12 +38,6 @@ linters:
     - unparam
     - unused
     - whitespace
-    - gochecknoglobals
-    - gocognit
-    - gomnd
-    - goprintffuncname
-    - prealloc
-    - rowserrcheck
     - wsl
 
 issues:
@@ -53,8 +53,11 @@ linters-settings:
     line-length: 170
   gocyclo:
     min-complexity: 15
-  golint:
-    min-confidence: 0
+  revive:
+    ignore-generated-header: true
+    rules:
+      - name: package-comments
+        disabled: true
 
 output:
   format: colored-line-number

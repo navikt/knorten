@@ -2,8 +2,13 @@ package helm
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/nais/knorten/pkg/database/gensql"
+)
+
+const (
+	envKey = "env"
 )
 
 func (c Client) createKnauditInitContainer(ctx context.Context) (map[string]any, error) {
@@ -74,4 +79,29 @@ func (c Client) createKnauditInitContainer(ctx context.Context) (map[string]any,
 			},
 		},
 	}, nil
+}
+
+func (c Client) concatenateCommonAirflowEnvs(ctx context.Context, teamID string, values map[string]any) error {
+	globalEnvsSQL, err := c.repo.GlobalValueGet(ctx, gensql.ChartTypeAirflow, envKey)
+	if err != nil {
+		return err
+	}
+	globalEnvs := []map[string]string{}
+	if err := json.Unmarshal([]byte(globalEnvsSQL.Value), &globalEnvs); err != nil {
+		return err
+	}
+
+	teamEnvsSQL, err := c.repo.TeamValueGet(ctx, envKey, teamID)
+	if err != nil {
+		return err
+	}
+	teamEnvs := []map[string]string{}
+	if err := json.Unmarshal([]byte(teamEnvsSQL.Value), &teamEnvs); err != nil {
+		return err
+	}
+
+	mergeMaps(values, map[string]any{
+		"env": append(globalEnvs, teamEnvs...),
+	})
+	return nil
 }

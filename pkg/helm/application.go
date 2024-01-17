@@ -273,6 +273,10 @@ func (c Client) mergeValues(ctx context.Context, chartType gensql.ChartType, tea
 			return err
 		}
 		mergeMaps(values, knauditInitContainer)
+
+		if err := c.concatenateCommonAirflowEnvs(ctx, teamID, values); err != nil {
+			return err
+		}
 	}
 
 	mergeMaps(defaultValues, values)

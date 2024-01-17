@@ -94,17 +94,18 @@ func (c *client) updateGlobalEnvs(ctx context.Context) (bool, error) {
 	globalEnvsUpdated := false
 	for _, env := range globalEnvs {
 		if contains(imageEnvNames, env.Name) {
-			imageParts := strings.Split(env.Value, ":")
-			if len(imageParts) != 2 {
+			currentImageParts := strings.Split(env.Value, ":")
+			if len(currentImageParts) != 2 {
 				return false, fmt.Errorf("invalid image format for image %v, should be <image>:<tag>", env.Value)
 			}
-			garImage, err := getLatestImageInGAR(imageParts[0], "")
+
+			latestImage, err := getLatestImageInGAR(currentImageParts[0], "")
 			if err != nil {
 				return false, err
 			}
 
-			if imageParts[1] != garImage.Tag {
-				env.Value = fmt.Sprintf("%v:%v", imageParts[0], garImage.Tag)
+			if currentImageParts[1] != latestImage.Tag {
+				env.Value = fmt.Sprintf("%v:%v", currentImageParts[0], latestImage.Tag)
 				globalEnvsMarshalled, err := json.Marshal(globalEnvs)
 				if err != nil {
 					return false, err

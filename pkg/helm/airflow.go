@@ -101,7 +101,7 @@ func (c Client) concatenateCommonAirflowEnvs(ctx context.Context, teamID string,
 	}
 
 	mergeMaps(values, map[string]any{
-		"env": append(globalEnvs, teamEnvs...),
+		envKey: append(globalEnvs, teamEnvs...),
 	})
 	return nil
 }

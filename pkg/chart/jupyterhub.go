@@ -47,37 +47,37 @@ type jupyterValues struct {
 func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfigurableValues, log logger.Logger) error {
 	team, err := c.repo.TeamGet(ctx, configurableValues.TeamID)
 	if err != nil {
-		log.WithError(err).Error("getting team from database")
+		log.WithError(err).Info("getting team from database")
 		return err
 	}
 
 	values, err := c.jupyterMergeValues(ctx, team, configurableValues)
 	if err != nil {
-		log.WithError(err).Error("merging jupyter values")
+		log.WithError(err).Info("merging jupyter values")
 		return err
 	}
 
 	namespace := k8s.TeamIDToNamespace(team.ID)
 
 	if err := c.createHttpRoute(ctx, team.Slug+".jupyter.knada.io", namespace, gensql.ChartTypeJupyterhub); err != nil {
-		log.WithError(err).Error("creating http route")
+		log.WithError(err).Info("creating http route")
 		return err
 	}
 
 	if err := c.createHealtCheckPolicy(ctx, namespace, gensql.ChartTypeJupyterhub); err != nil {
-		log.WithError(err).Error("creating health check policy")
+		log.WithError(err).Info("creating health check policy")
 		return err
 	}
 
 	chartValues, err := reflect.CreateChartValues(values)
 	if err != nil {
-		log.WithError(err).Error("creating chart values")
+		log.WithError(err).Info("creating chart values")
 		return err
 	}
 
 	err = c.repo.HelmChartValuesInsert(ctx, gensql.ChartTypeJupyterhub, chartValues, team.ID)
 	if err != nil {
-		log.WithError(err).Error("inserting helm values to database")
+		log.WithError(err).Info("inserting helm values to database")
 		return err
 	}
 
@@ -135,7 +135,7 @@ func (c Client) jupyterMergeValues(ctx context.Context, team gensql.TeamGetRow, 
 
 func (c Client) deleteJupyter(ctx context.Context, teamID string, log logger.Logger) error {
 	if err := c.repo.ChartDelete(ctx, teamID, gensql.ChartTypeJupyterhub); err != nil {
-		log.WithError(err).Error("delete chart from database")
+		log.WithError(err).Info("delete chart from database")
 		return err
 	}
 
@@ -146,12 +146,12 @@ func (c Client) deleteJupyter(ctx context.Context, teamID string, log logger.Log
 	namespace := k8s.TeamIDToNamespace(teamID)
 
 	if err := c.deleteHttpRoute(ctx, namespace, gensql.ChartTypeJupyterhub); err != nil {
-		log.WithError(err).Error("deleting http route")
+		log.WithError(err).Info("deleting http route")
 		return err
 	}
 
 	if err := c.deleteHealtCheckPolicy(ctx, namespace, gensql.ChartTypeJupyterhub); err != nil {
-		log.WithError(err).Error("deleting health check policy")
+		log.WithError(err).Info("deleting health check policy")
 		return err
 	}
 

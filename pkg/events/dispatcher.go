@@ -226,9 +226,9 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 					cancelFuncs = append(cancelFuncs, cancelFunc)
 
 					if err := worker(ctx, event, eventLogger); err != nil {
-						eventLogger.log.WithError(err).Error("failed processing event")
 						if event.RetryCount > 5 {
 							eventLogger.log.Error("event reached max retries")
+							eventLogger.log.WithError(err).Error("failed processing event")
 							if err := e.repo.EventSetStatus(e.context, event.ID, database.EventStatusFailed); err != nil {
 								eventLogger.log.WithError(err).Error("failed setting event status to 'failed'")
 							}

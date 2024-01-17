@@ -24,7 +24,7 @@ func (c Client) CreateComputeInstance(ctx context.Context, instance gensql.Compu
 func (c Client) createComputeInstance(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) (bool, error) {
 	existingInstance, err := c.repo.ComputeInstanceGet(ctx, instance.Owner)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		log.WithError(err).Errorf("failed retrieving compute instance %v", instance.Owner)
+		log.WithError(err).Infof("failed retrieving compute instance %v", instance.Owner)
 		return true, err
 	}
 
@@ -34,18 +34,18 @@ func (c Client) createComputeInstance(ctx context.Context, instance gensql.Compu
 
 	err = c.createComputeInstanceInGCP(ctx, instance.Name, instance.Owner)
 	if err != nil {
-		log.WithError(err).Error("failed creating compute instance in GCP")
+		log.WithError(err).Info("failed creating compute instance in GCP")
 		return true, err
 	}
 
 	err = c.createIAMPolicyBindingsInGCP(ctx, instance.Name, instance.Owner)
 	if err != nil {
-		log.WithError(err).Error("failed creating IAM policy binding")
+		log.WithError(err).Info("failed creating IAM policy binding")
 		return true, err
 	}
 
 	if err := c.repo.ComputeInstanceCreate(ctx, instance); err != nil {
-		log.WithError(err).Error("failed saving compute instance to database")
+		log.WithError(err).Info("failed saving compute instance to database")
 		return true, err
 	}
 
@@ -66,12 +66,12 @@ func (c Client) ResizeComputeInstanceDisk(ctx context.Context, instance gensql.C
 
 func (c Client) resizeComputeInstanceDisk(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) error {
 	if err := c.resizeComputeInstanceDiskGCP(ctx, instance.Name, instance.DiskSize); err != nil {
-		log.WithError(err).Error("resizing compute instance disk")
+		log.WithError(err).Info("resizing compute instance disk")
 		return err
 	}
 
 	if err := c.repo.ComputeInstanceUpdate(ctx, instance.Owner, instance.DiskSize); err != nil {
-		log.WithError(err).Errorf("failed updating compute instance in database for owner %v", instance.Owner)
+		log.WithError(err).Infof("failed updating compute instance in database for owner %v", instance.Owner)
 		return err
 	}
 
@@ -97,22 +97,22 @@ func (c Client) deleteComputeInstance(ctx context.Context, email string, log log
 			return false, nil
 		}
 
-		log.WithError(err).Error("failed retrieving compute instance")
+		log.WithError(err).Info("failed retrieving compute instance")
 		return true, err
 	}
 
 	if err := c.deleteComputeInstanceFromGCP(ctx, instance.Name); err != nil {
-		log.WithError(err).Error("failed deleting compute instance from GCP")
+		log.WithError(err).Info("failed deleting compute instance from GCP")
 		return true, err
 	}
 
 	if err := c.deleteIAMPolicyBindingsFromGCP(ctx, instance.Name, email); err != nil {
-		log.WithError(err).Error("failed deleting IAM policy binding")
+		log.WithError(err).Info("failed deleting IAM policy binding")
 		return true, err
 	}
 
 	if err = c.repo.ComputeInstanceDelete(ctx, email); err != nil {
-		log.WithError(err).Error("failed deleting compute instance from database")
+		log.WithError(err).Info("failed deleting compute instance from database")
 		return true, err
 	}
 

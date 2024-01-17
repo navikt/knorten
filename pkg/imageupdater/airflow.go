@@ -12,22 +12,22 @@ import (
 )
 
 const (
-	airflowBaseImagesRepositoryKey = "images.airflow.repository"
-	airflowBaseImagesTagKey  = "images.airflow.tag"
+	airflowBaseImagesRepositoryKey    = "images.airflow.repository"
+	airflowBaseImagesTagKey           = "images.airflow.tag"
 	airflowGitSyncImagesRepositoryKey = "images.gitSync.repository"
-	airflowGitSyncImagesTagKey  = "images.gitSync.tag"
-	airflowEnvKey     = "env"
+	airflowGitSyncImagesTagKey        = "images.gitSync.tag"
+	airflowEnvKey                     = "env"
 )
 
 var imageEnvNames = []string{"CLONE_REPO_IMAGE", "KNADA_AIRFLOW_OPERATOR_IMAGE"}
 
 func (c *client) updateAirflowImages(ctx context.Context) error {
-	baseImageUpdated, err := c.updateAirflowImage(ctx, airflowBaseImageNameKey, airflowBaseImageTagKey)
+	baseImageUpdated, err := c.updateAirflowImage(ctx, airflowBaseImagesRepositoryKey, airflowBaseImagesTagKey)
 	if err != nil {
 		return fmt.Errorf("updating airflow base image: %w", err)
 	}
 
-	syncImageUpdated, err := c.updateAirflowImage(ctx, airflowSyncImageNameKey, airflowBaseImageTagKey)
+	syncImageUpdated, err := c.updateAirflowImage(ctx, airflowGitSyncImagesRepositoryKey, airflowGitSyncImagesTagKey)
 	if err != nil {
 		return fmt.Errorf("updating airflow git sync image: %w", err)
 	}
@@ -74,7 +74,7 @@ func (c *client) updateAirflowImage(ctx context.Context, imageNameKey, imageTagK
 }
 
 func (c *client) updateGlobalEnvs(ctx context.Context) (bool, error) {
-	globalEnvsSQL, err := c.repo.GlobalValueGet(ctx, gensql.ChartTypeAirflow, airflowGlobalEnvKey)
+	globalEnvsSQL, err := c.repo.GlobalValueGet(ctx, gensql.ChartTypeAirflow, airflowEnvKey)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, nil
@@ -110,7 +110,7 @@ func (c *client) updateGlobalEnvs(ctx context.Context) (bool, error) {
 				if err != nil {
 					return false, err
 				}
-				if err := c.repo.GlobalChartValueInsert(ctx, airflowGlobalEnvKey, string(globalEnvsMarshalled), false, gensql.ChartTypeAirflow); err != nil {
+				if err := c.repo.GlobalChartValueInsert(ctx, airflowEnvKey, string(globalEnvsMarshalled), false, gensql.ChartTypeAirflow); err != nil {
 					return false, err
 				}
 				globalEnvsUpdated = true

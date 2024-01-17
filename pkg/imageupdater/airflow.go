@@ -12,11 +12,11 @@ import (
 )
 
 const (
-	airflowBaseImageNameKey = "images.airflow.repository"
-	airflowBaseImageTagKey  = "images.airflow.tag"
-	airflowSyncImageNameKey = "images.gitSync.repository"
-	airflowSyncImageTagKey  = "images.gitSync.tag"
-	airflowGlobalEnvKey     = "env"
+	airflowBaseImagesRepositoryKey = "images.airflow.repository"
+	airflowBaseImagesTagKey  = "images.airflow.tag"
+	airflowGitSyncImagesRepositoryKey = "images.gitSync.repository"
+	airflowGitSyncImagesTagKey  = "images.gitSync.tag"
+	airflowEnvKey     = "env"
 )
 
 var imageEnvNames = []string{"CLONE_REPO_IMAGE", "KNADA_AIRFLOW_OPERATOR_IMAGE"}

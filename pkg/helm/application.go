@@ -75,19 +75,19 @@ func (c Client) InstallOrUpgrade(ctx context.Context, helmEvent HelmEventData, l
 func (c Client) installOrUpgrade(ctx context.Context, helmEvent HelmEventData, logger logger.Logger) (bool, error) {
 	helmChart, err := c.createChartWithValues(ctx, helmEvent)
 	if err != nil {
-		logger.WithError(err).Error("getting chart values")
+		logger.WithError(err).Info("getting chart values")
 		return false, err
 	}
 
 	if c.dryRun {
 		out, err := yaml.Marshal(helmChart.Values)
 		if err != nil {
-			logger.WithError(err).Error("marshalling team values")
+			logger.WithError(err).Info("marshalling team values")
 			return false, err
 		}
 
 		if err = os.WriteFile(fmt.Sprintf("charts/%v-%v.yaml", helmEvent.ChartType, time.Now().Format("2006.01.02-15:04")), out, 0o644); err != nil {
-			logger.WithError(err).Error("writing values to file")
+			logger.WithError(err).Info("writing values to file")
 			return true, err
 		}
 
@@ -98,13 +98,13 @@ func (c Client) installOrUpgrade(ctx context.Context, helmEvent HelmEventData, l
 	settings.SetNamespace(helmEvent.Namespace)
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "secret", log.Printf); err != nil {
-		logger.WithError(err).Error("action config init")
+		logger.WithError(err).Info("action config init")
 		return false, err
 	}
 
 	exists, err := releaseExists(actionConfig, helmEvent.ReleaseName)
 	if err != nil {
-		logger.WithError(err).Error("checking if release exists")
+		logger.WithError(err).Info("checking if release exists")
 		return false, err
 	}
 
@@ -115,7 +115,7 @@ func (c Client) installOrUpgrade(ctx context.Context, helmEvent HelmEventData, l
 
 		_, err = upgradeClient.RunWithContext(ctx, helmEvent.ReleaseName, helmChart, helmChart.Values)
 		if err != nil {
-			logger.WithError(err).Error("helm upgrade")
+			logger.WithError(err).Info("helm upgrade")
 			return true, err
 		}
 	} else {
@@ -126,7 +126,7 @@ func (c Client) installOrUpgrade(ctx context.Context, helmEvent HelmEventData, l
 
 		_, err = installClient.RunWithContext(ctx, helmChart, helmChart.Values)
 		if err != nil {
-			logger.WithError(err).Error("helm install")
+			logger.WithError(err).Info("helm install")
 			return false, err
 		}
 	}
@@ -154,13 +154,13 @@ func (c Client) uninstall(ctx context.Context, helmEvent HelmEventData, logger l
 	settings.SetNamespace(helmEvent.Namespace)
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "secret", log.Printf); err != nil {
-		logger.WithError(err).Errorf("creating action config for helm uninstall: release %v, team %v", helmEvent.TeamID, helmEvent.TeamID)
+		logger.WithError(err).Infof("creating action config for helm uninstall: release %v, team %v", helmEvent.TeamID, helmEvent.TeamID)
 		return err
 	}
 
 	exists, err := releaseExists(actionConfig, helmEvent.ReleaseName)
 	if err != nil {
-		logger.WithError(err).Errorf("checking if release exists for helm uninstall: release %v, team %v", helmEvent.TeamID, helmEvent.TeamID)
+		logger.WithError(err).Infof("checking if release exists for helm uninstall: release %v, team %v", helmEvent.TeamID, helmEvent.TeamID)
 		return err
 	}
 
@@ -171,7 +171,7 @@ func (c Client) uninstall(ctx context.Context, helmEvent HelmEventData, logger l
 	uninstallClient := action.NewUninstall(actionConfig)
 	_, err = uninstallClient.Run(helmEvent.ReleaseName)
 	if err != nil {
-		logger.WithError(err).Errorf("helm uninstall: release %v, team %v", helmEvent.TeamID, helmEvent.TeamID)
+		logger.WithError(err).Infof("helm uninstall: release %v, team %v", helmEvent.TeamID, helmEvent.TeamID)
 		return err
 	}
 
@@ -199,20 +199,20 @@ func (c Client) rollback(ctx context.Context, helmEvent HelmEventData, logger lo
 	settings.SetNamespace(helmEvent.Namespace)
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), "secret", log.Printf); err != nil {
-		logger.WithError(err).Error("action config init")
+		logger.WithError(err).Info("action config init")
 		return true, nil
 	}
 
 	version, err := lastSuccessfulHelmRelease(helmEvent.ReleaseName, actionConfig)
 	if err != nil {
-		logger.WithError(err).Errorf("unable to rollback chart %v for team %v", helmEvent.ChartName, helmEvent.TeamID)
+		logger.WithError(err).Infof("unable to rollback chart %v for team %v", helmEvent.ChartName, helmEvent.TeamID)
 		return false, err
 	}
 
 	rollbackClient := action.NewRollback(actionConfig)
 	rollbackClient.Version = version
 	if err := rollbackClient.Run(helmEvent.ReleaseName); err != nil {
-		logger.WithError(err).Errorf("rolling back release %v for team %v to version %v", helmEvent.ReleaseName, helmEvent.TeamID, version)
+		logger.WithError(err).Infof("rolling back release %v for team %v to version %v", helmEvent.ReleaseName, helmEvent.TeamID, version)
 		return true, nil
 	}
 

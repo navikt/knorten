@@ -24,7 +24,7 @@ func (c Client) CreateUserGSM(ctx context.Context, manager gensql.UserGoogleSecr
 func (c Client) createGSM(ctx context.Context, manager gensql.UserGoogleSecretManager, log logger.Logger) (bool, error) {
 	existingInstance, err := c.repo.UserGSMGet(ctx, manager.Owner)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		log.WithError(err).Errorf("failed retrieving User Google Secret Manager %v", manager.Owner)
+		log.WithError(err).Infof("failed retrieving User Google Secret Manager %v", manager.Owner)
 		return true, err
 	}
 
@@ -34,12 +34,12 @@ func (c Client) createGSM(ctx context.Context, manager gensql.UserGoogleSecretMa
 
 	err = c.createUserGSMInGCP(ctx, manager.Name, manager.Owner)
 	if err != nil {
-		log.WithError(err).Error("failed creating User Google Secret Manager in GCP")
+		log.WithError(err).Info("failed creating User Google Secret Manager in GCP")
 		return true, err
 	}
 
 	if err := c.repo.UserGSMCreate(ctx, manager); err != nil {
-		log.WithError(err).Error("failed saving User Google Secret Manager to database")
+		log.WithError(err).Info("failed saving User Google Secret Manager to database")
 		return true, err
 	}
 
@@ -65,17 +65,17 @@ func (c Client) deleteGSM(ctx context.Context, email string, log logger.Logger) 
 			return false, nil
 		}
 
-		log.WithError(err).Error("failed retrieving User Google Secret Manager")
+		log.WithError(err).Info("failed retrieving User Google Secret Manager")
 		return true, err
 	}
 
 	if err := c.deleteUserGSMFromGCP(ctx, instance.Name); err != nil {
-		log.WithError(err).Error("failed deleting User Google Secret Manager from GCP")
+		log.WithError(err).Info("failed deleting User Google Secret Manager from GCP")
 		return true, err
 	}
 
 	if err = c.repo.UserGSMDelete(ctx, email); err != nil {
-		log.WithError(err).Error("failed deleting User Google Secret Manager from database")
+		log.WithError(err).Info("failed deleting User Google Secret Manager from database")
 		return true, err
 	}
 

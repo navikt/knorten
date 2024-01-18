@@ -9,4 +9,5 @@ sql:
         out: "pkg/database/gensql"
         emit_interface: true
         emit_empty_slices: true
+        omit_sqlc_version: true
         # emit_result_struct_pointers: true

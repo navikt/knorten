@@ -12,6 +12,7 @@ Ellers blir Knorten satt opp gjennom [nais/knada-gcp](https://github.com/nais/kn
 For å jobbe med Knorten lokalt trenger man å ha Postgres kjørende, og basen må prepouleres med litt data.
 I tillegg benytter vi et oppsett med Tailwind og Designsystemet.
 
+- `docker-compose up -d db` for å starte Postgres.
 - Kjør `make init` etter du har kjørt opp Postgres for å populere databasen.
 - Kjør `npm install` for å sette opp nødvendig rammeverk for Tailwind.
 

@@ -1,0 +1,65 @@
+run:
+  go: '1.21'
+  timeout: 10m
+
+linters:
+  enable-all: true
+  disable:
+    # Linters that check comments for correctness; disallow fixme, todo, etc., missing punctuation, etc.
+    - godox
+    - godot
+
+    # Linters with dubious value
+    - depguard
+    - tagalign
+    - goerr113
+
+    # These linters find structures with uninitialized fields, which is useful under
+    # certain conditions, but shouldn't be generally enabled.
+    - exhaustivestruct
+    - exhaustruct
+    - exhaustive
+
+    # DEPRECATED LINTERS: do not re-enable
+    # These linters have been abandoned by their authors and are no longer maintained, and
+    # most have been replaced by newer linters.
+    - deadcode
+    - golint
+    - ifshort
+    - interfacer
+    - maligned
+    - nosnakecase
+    - scopelint
+    - structcheck
+    - varcheck
+
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    - path: (.+)_test.go
+      # NOTE: We should be very careful about excluding linters for test files, as tests are
+      # also code and should be held to the same standards as the rest of the code.
+      # Only exclude linters that are known to be problematic for test files, or don't
+      # add value.
+      linters:
+        - dogsled
+        - funlen
+  exclude:
+    # should have a package comment, unless it's in another file for this package (golint)
+    - 'in another file for this package'
+
+linters-settings:
+  dupl:
+    threshold: 400
+  lll:
+    line-length: 170
+  gocyclo:
+    min-complexity: 15
+  revive:
+    ignore-generated-header: true
+    rules:
+      - name: package-comments
+        disabled: true
+
+output:
+  format: colored-line-number

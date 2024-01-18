@@ -30,18 +30,24 @@ func IsLeader() (bool, error) {
 }
 
 func getLeader(electorPath string) (string, error) {
-	resp, err := electorRequestWithRetry(electorPath, 3)
+	const numRetries = 3
+
+	resp, err := electorRequestWithRetry(electorPath, numRetries)
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(resp.Body)
+
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
 
 	var electorResponse struct {
-		Name string
+		Name string `json:"name"`
 	}
 
 	if err := json.Unmarshal(bodyBytes, &electorResponse); err != nil {
@@ -52,11 +58,21 @@ func getLeader(electorPath string) (string, error) {
 }
 
 func electorRequestWithRetry(electorPath string, numRetries int) (*http.Response, error) {
+	client := http.Client{
+		Timeout: time.Second * 5,
+	}
+
 	for i := 1; i <= numRetries; i++ {
-		resp, err := http.Get("http://" + electorPath)
+		request, err := http.NewRequest(http.MethodGet, "http://"+electorPath, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := client.Do(request)
 		if err == nil {
 			return resp, nil
 		}
+
 		time.Sleep(time.Second * time.Duration(i))
 	}
 

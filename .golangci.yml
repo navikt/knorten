@@ -8,6 +8,7 @@ linters:
     # Linters that check comments for correctness; disallow fixme, todo, etc., missing punctuation, etc.
     - godox
     - godot
+    - stylecheck
 
     # Linters with dubious value
     - depguard

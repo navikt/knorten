@@ -9,12 +9,18 @@ linters:
     - godox
     - godot
 
+    # Linters with dubious value
+    - depguard
+    - tagalign
+    - goerr113
+
     # These linters find structures with uninitialized fields, which is useful under
     # certain conditions, but shouldn't be generally enabled.
     - exhaustivestruct
     - exhaustruct
+    - exhaustive
 
-    # -- Deprecated linters --
+    # DEPRECATED LINTERS: do not re-enable
     # These linters have been abandoned by their authors and are no longer maintained, and
     # most have been replaced by newer linters.
     - deadcode

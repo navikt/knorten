@@ -86,6 +86,11 @@ func TestValidateMemorySpec(t *testing.T) {
 			wantError: false,
 		},
 		{
+			name:      "decimal G",
+			input:     "0.5G",
+			wantError: false,
+		},
+		{
 			name:      "Gi",
 			input:     "1Gi",
 			wantError: false,

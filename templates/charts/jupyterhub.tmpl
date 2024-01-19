@@ -25,7 +25,7 @@
         <form class="flex flex-col gap-4 w-80" action="" method="POST">
             <fieldset class="flex flex-col gap-4">
                 <div class="navds-form-field navds-form-field--medium">
-                    <label for="cpu" class="navds-form-field__label navds-label">Maksimal CPU (cores)</label>
+                    <label for="cpu" class="navds-form-field__label navds-label">Maksimum CPU (cores)</label>
                     <input type="number" name="cpu" id="cpu" value="{{ or .values.CPU "0.5" }}"
                            placeholder="0.5" step="0.1" min="0.5"
                            class="navds-text-field__input navds-body-short navds-body-medium"/>
@@ -37,14 +37,14 @@
                            class="navds-text-field__input navds-body-short navds-body-medium"/>
                 </div>
                 <div class="navds-form-field navds-form-field--medium">
-                    <label for="memory" class="navds-form-field__label navds-label">Maksimum memory (gigabyte)</label>
+                    <label for="memory" class="navds-form-field__label navds-label">Maksimum minne (gigabyte)</label>
                     <input type="number" name="memory" id="memory" value="{{ or .values.MemoryWithoutUnit "2" }}"
                            placeholder="2" step="0.1" min="1"
                            class="navds-text-field__input navds-body-short navds-body-medium"/>
                 </div>
                 <div class="navds-form-field navds-form-field--medium">
-                    <label for="memoryrequest" class="navds-form-field__label navds-label">Garantert memory (gigabyte)</label>
-                    <input type="number" name="memoryrequest" id="memoryrequest" value="{{ or .values.MemoryWithoutUnit "1" }}"
+                    <label for="memoryrequest" class="navds-form-field__label navds-label">Garantert minne (gigabyte)</label>
+                    <input type="number" name="memoryrequest" id="memoryrequest" value="{{ or .values.MemoryRequestWithoutUnit "1" }}"
                            placeholder="1" step="0.1" min="1"
                            class="navds-text-field__input navds-body-short navds-body-medium"/>
                 </div>

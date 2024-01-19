@@ -21,8 +21,8 @@ import (
 type jupyterForm struct {
 	CPU           string   `form:"cpu" binding:"validCPUSpec"`
 	CPURequest    string   `form:"cpurequest" binding:"validCPUSpec"`
-	Memory        string   `form:"memory"`
-	MemoryRequest string   `form:"memoryrequest"`
+	Memory        string   `form:"memory" binding:"validMemorySpec"`
+	MemoryRequest string   `form:"memoryrequest" binding:"validMemorySpec"`
 	ImageName     string   `form:"imagename"`
 	ImageTag      string   `form:"imagetag"`
 	CullTimeout   string   `form:"culltimeout"`
@@ -35,6 +35,14 @@ func (v jupyterForm) MemoryWithoutUnit() string {
 	}
 
 	return v.Memory[:len(v.Memory)-1]
+}
+
+func (v jupyterForm) MemoryRequestWithoutUnit() string {
+	if v.MemoryRequest == "" {
+		return ""
+	}
+
+	return v.MemoryRequest[:len(v.MemoryRequest)-1]
 }
 
 type airflowForm struct {

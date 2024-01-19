@@ -2,6 +2,7 @@ package chart
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
@@ -45,10 +46,27 @@ var ValidateCPUSpec validator.Func = func(fl validator.FieldLevel) bool {
 	return r.MatchString(CPUSpec)
 }
 
+func parseMemory(memory string) (string, error) {
+	if strings.HasSuffix(memory, "G") {
+		return memory, nil
+	}
+	_, err := strconv.ParseFloat(memory, 64)
+	if err != nil {
+		return "", err
+	}
+	return memory + "G", nil
+}
+
 var ValidateMemorySpec validator.Func = func(fl validator.FieldLevel) bool {
 	memorySpec := fl.Field().Interface().(string)
+	// Right now the frontend sends a API request without suffix
+	// Adding gigabyte suffix manually
+	if _, err := strconv.ParseFloat(memorySpec, 64); err == nil {
+		memorySpec = memorySpec + "G"
+	}
+
 	// The memory resource is measured in bytes. You can express memory as a plain integer
 	// or a fixed-point integer with one of these suffixes: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki.
-	r, _ := regexp.Compile(`^[0-9]+(E|P|T|G|M|K|Ei|Pi|Ti|Gi|Mi|Ki)?$`)
+	r, _ := regexp.Compile(`^(([0-9]+)|([0-9][.][0-9]+))(E|P|T|G|M|K|Ei|Pi|Ti|Gi|Mi|Ki)?$`)
 	return r.MatchString(memorySpec)
 }

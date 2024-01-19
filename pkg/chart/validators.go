@@ -46,17 +46,6 @@ var ValidateCPUSpec validator.Func = func(fl validator.FieldLevel) bool {
 	return r.MatchString(CPUSpec)
 }
 
-func parseMemory(memory string) (string, error) {
-	if strings.HasSuffix(memory, "G") {
-		return memory, nil
-	}
-	_, err := strconv.ParseFloat(memory, 64)
-	if err != nil {
-		return "", err
-	}
-	return memory + "G", nil
-}
-
 var ValidateMemorySpec validator.Func = func(fl validator.FieldLevel) bool {
 	memorySpec := fl.Field().Interface().(string)
 	// Right now the frontend sends a API request without suffix

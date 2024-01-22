@@ -63,7 +63,7 @@ func (c *client) updateAirflowImage(ctx context.Context, imageNameKey, imageTagK
 	}
 
 	if imageTag.Value != garImage.Tag {
-		if err := c.repo.GlobalChartValueInsert(ctx, imageNameKey, garImage.Tag, false, gensql.ChartTypeAirflow); err != nil {
+		if err := c.repo.GlobalChartValueInsert(ctx, imageTagKey, garImage.Tag, false, gensql.ChartTypeAirflow); err != nil {
 			return false, err
 		}
 

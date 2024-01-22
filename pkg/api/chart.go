@@ -19,9 +19,9 @@ import (
 )
 
 type jupyterForm struct {
-	CPU           string   `form:"cpu" binding:"validCPUSpec"`
+	CPULimit      string   `form:"cpulimit" binding:"validCPUSpec"`
 	CPURequest    string   `form:"cpurequest" binding:"validCPUSpec"`
-	Memory        string   `form:"memory" binding:"validMemorySpec"`
+	MemoryLimit   string   `form:"memorylimit" binding:"validMemorySpec"`
 	MemoryRequest string   `form:"memoryrequest" binding:"validMemorySpec"`
 	ImageName     string   `form:"imagename"`
 	ImageTag      string   `form:"imagetag"`
@@ -29,12 +29,12 @@ type jupyterForm struct {
 	Allowlist     []string `form:"allowlist[]"`
 }
 
-func (v jupyterForm) MemoryWithoutUnit() string {
-	if v.Memory == "" {
+func (v jupyterForm) MemoryLimitWithoutUnit() string {
+	if v.MemoryLimit == "" {
 		return ""
 	}
 
-	return v.Memory[:len(v.Memory)-1]
+	return v.MemoryLimit[:len(v.MemoryLimit)-1]
 }
 
 func (v jupyterForm) MemoryRequestWithoutUnit() string {
@@ -329,7 +329,7 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 			return err
 		}
 
-		cpu, err := parseCPU(form.CPU)
+		cpuLimit, err := parseCPU(form.CPULimit)
 		if err != nil {
 			return err
 		}
@@ -339,7 +339,7 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 			return err
 		}
 
-		memory, err := parseMemory(form.Memory)
+		memoryLimit, err := parseMemory(form.MemoryLimit)
 		if err != nil {
 			return err
 		}
@@ -352,9 +352,9 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 		values := chart.JupyterConfigurableValues{
 			TeamID:        team.ID,
 			UserIdents:    userIdents,
-			CPU:           cpu,
+			CPULimit:      cpuLimit,
 			CPURequest:    cpuRequest,
-			Memory:        memory,
+			MemoryLimit:   memoryLimit,
 			MemoryRequest: memoryRequest,
 			ImageName:     form.ImageName,
 			ImageTag:      form.ImageTag,
@@ -429,9 +429,9 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 		}
 
 		form = jupyterForm{
-			CPU:           jupyterhubValues.CPU,
+			CPULimit:      jupyterhubValues.CPULimit,
 			CPURequest:    jupyterhubValues.CPURequest,
-			Memory:        jupyterhubValues.Memory,
+			MemoryLimit:   jupyterhubValues.MemoryLimit,
 			MemoryRequest: jupyterhubValues.MemoryRequest,
 			ImageName:     jupyterhubValues.ImageName,
 			ImageTag:      jupyterhubValues.ImageTag,
@@ -485,7 +485,7 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 			return err
 		}
 
-		cpu, err := parseCPU(form.CPU)
+		cpuLimit, err := parseCPU(form.CPULimit)
 		if err != nil {
 			return err
 		}
@@ -495,7 +495,7 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 			return err
 		}
 
-		memory, err := parseMemory(form.Memory)
+		memoryLimit, err := parseMemory(form.MemoryLimit)
 		if err != nil {
 			return err
 		}
@@ -508,9 +508,9 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 		values := chart.JupyterConfigurableValues{
 			TeamID:        team.ID,
 			UserIdents:    userIdents,
-			CPU:           cpu,
+			CPULimit:      cpuLimit,
 			CPURequest:    cpuRequest,
-			Memory:        memory,
+			MemoryLimit:   memoryLimit,
 			MemoryRequest: memoryRequest,
 			ImageName:     form.ImageName,
 			ImageTag:      form.ImageTag,

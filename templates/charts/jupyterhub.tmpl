@@ -25,8 +25,8 @@
         <form class="flex flex-col gap-4 w-80" action="" method="POST">
             <fieldset class="flex flex-col gap-4">
                 <div class="navds-form-field navds-form-field--medium">
-                    <label for="cpu" class="navds-form-field__label navds-label">Maksimum CPU (cores)</label>
-                    <input type="number" name="cpu" id="cpu" value="{{ or .values.CPU "0.5" }}"
+                    <label for="cpulimit" class="navds-form-field__label navds-label">Maksimum CPU (cores)</label>
+                    <input type="number" name="cpulimit" id="cpulimit" value="{{ or .values.CPULimit "0.5" }}"
                            placeholder="0.5" step="0.1" min="0.5"
                            class="navds-text-field__input navds-body-short navds-body-medium"/>
                 </div>
@@ -37,8 +37,8 @@
                            class="navds-text-field__input navds-body-short navds-body-medium"/>
                 </div>
                 <div class="navds-form-field navds-form-field--medium">
-                    <label for="memory" class="navds-form-field__label navds-label">Maksimum minne (gigabyte)</label>
-                    <input type="number" name="memory" id="memory" value="{{ or .values.MemoryWithoutUnit "2" }}"
+                    <label for="memorylimit" class="navds-form-field__label navds-label">Maksimum minne (gigabyte)</label>
+                    <input type="number" name="memorylimit" id="memorylimit" value="{{ or .values.MemoryLimitWithoutUnit "2" }}"
                            placeholder="2" step="0.1" min="1"
                            class="navds-text-field__input navds-body-short navds-body-medium"/>
                 </div>

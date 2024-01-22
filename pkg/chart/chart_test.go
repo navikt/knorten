@@ -107,9 +107,9 @@ func TestCharts(t *testing.T) {
 				values: JupyterConfigurableValues{
 					TeamID:        team.ID,
 					UserIdents:    []string{"d123456", "u654321"},
-					CPU:           "1.0",
+					CPULimit:      "1.0",
 					CPURequest:    "1.0",
-					Memory:        "2G",
+					MemoryLimit:   "2G",
 					MemoryRequest: "1G",
 					ImageName:     "ghcr.io/navikt/image",
 					ImageTag:      "v1",
@@ -140,8 +140,8 @@ func TestCharts(t *testing.T) {
 				values: JupyterConfigurableValues{
 					TeamID:        team.ID,
 					UserIdents:    []string{"d123456"},
-					CPU:           "1.0",
-					Memory:        "4G",
+					CPULimit:      "1.0",
+					MemoryLimit:   "4G",
 					MemoryRequest: "2G",
 					ImageName:     "ghcr.io/navikt/image",
 					ImageTag:      "v2",

@@ -73,13 +73,13 @@ func TestJupyterAPI(t *testing.T) {
 	})
 
 	t.Run("create new jupyterhub", func(t *testing.T) {
-		cpu := "1.0"
+		cpuLimit := "1.0"
 		cpuRequest := "0.5"
-		memory := "2G"
+		memoryLimit := "2G"
 		memoryRequest := "1G"
 		culltimeout := "3600"
 
-		data := url.Values{"cpu": {cpu}, "cpurequest": {cpuRequest}, "memory": {memory}, "memoryrequest": {memoryRequest}, "imagename": {""}, "imagetag": {""}, "culltimeout": {culltimeout}}
+		data := url.Values{"cpulimit": {cpuLimit}, "cpurequest": {cpuRequest}, "memorylimit": {memoryLimit}, "memoryrequest": {memoryRequest}, "imagename": {""}, "imagetag": {""}, "culltimeout": {culltimeout}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/%v/jupyterhub/new", server.URL, team.Slug), data)
 		if err != nil {
 			t.Error(err)
@@ -99,15 +99,15 @@ func TestJupyterAPI(t *testing.T) {
 		if eventPayload.TeamID == "" {
 			t.Errorf("create jupyterhub: no event registered for team %v", team.ID)
 		}
-		if eventPayload.CPU != cpu {
-			t.Errorf("create jupyterhub: cpu value - expected %v, got %v", cpu, eventPayload.CPU)
+		if eventPayload.CPULimit != cpuLimit {
+			t.Errorf("create jupyterhub: cpu value - expected %v, got %v", cpuLimit, eventPayload.CPULimit)
 		}
 		if eventPayload.CPURequest != cpuRequest {
 			t.Errorf("create jupyterhub: cpuRequest value - expected %v, got %v", cpuRequest, eventPayload.CPURequest)
 		}
 
-		if eventPayload.Memory != memory {
-			t.Errorf("create jupyterhub: memory value - expected %v, got %v", memory, eventPayload.Memory)
+		if eventPayload.MemoryLimit != memoryLimit {
+			t.Errorf("create jupyterhub: memory value - expected %v, got %v", memoryLimit, eventPayload.MemoryLimit)
 		}
 
 		if eventPayload.MemoryRequest != memoryRequest {
@@ -125,9 +125,9 @@ func TestJupyterAPI(t *testing.T) {
 
 	expectedValues := chart.JupyterConfigurableValues{
 		TeamID:        team.ID,
-		CPU:           "1.0",
+		CPULimit:      "1.0",
 		CPURequest:    "0.5",
-		Memory:        "1G",
+		MemoryLimit:   "1G",
 		MemoryRequest: "1G",
 		CullTimeout:   "3600",
 	}
@@ -163,9 +163,9 @@ func TestJupyterAPI(t *testing.T) {
 		expected, err := createExpectedHTML("charts/jupyterhub", map[string]any{
 			"team": team.Slug,
 			"values": &jupyterForm{
-				CPU:           expectedValues.CPU,
+				CPULimit:      expectedValues.CPULimit,
 				CPURequest:    expectedValues.CPURequest,
-				Memory:        expectedValues.Memory,
+				MemoryLimit:   expectedValues.MemoryLimit,
 				MemoryRequest: expectedValues.MemoryRequest,
 				CullTimeout:   expectedValues.CullTimeout,
 			},
@@ -184,14 +184,14 @@ func TestJupyterAPI(t *testing.T) {
 	})
 
 	t.Run("edit jupyterhub", func(t *testing.T) {
-		newCPU := "2.0"
+		newCPULimit := "2.0"
 		newCPURequest := "1.0"
-		newMemory := "2G"
+		newMemoryLimit := "2G"
 		newMemoryRequest := "0.5G"
 		imageName := "ghcr.io/org/repo/image"
 		imageTag := "v1"
 		newCullTimeout := "7200"
-		data := url.Values{"cpu": {newCPU}, "cpurequest": {newCPURequest}, "memory": {newMemory}, "memoryrequest": {newMemoryRequest}, "imagename": {imageName}, "imagetag": {imageTag}, "culltimeout": {newCullTimeout}}
+		data := url.Values{"cpulimit": {newCPULimit}, "cpurequest": {newCPURequest}, "memorylimit": {newMemoryLimit}, "memoryrequest": {newMemoryRequest}, "imagename": {imageName}, "imagetag": {imageTag}, "culltimeout": {newCullTimeout}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/%v/jupyterhub/edit", server.URL, team.Slug), data)
 		if err != nil {
 			t.Error(err)
@@ -212,16 +212,16 @@ func TestJupyterAPI(t *testing.T) {
 			t.Errorf("create jupyterhub: no event registered for team %v", team.ID)
 		}
 
-		if eventPayload.CPU != newCPU {
-			t.Errorf("create jupyterhub: cpu value - expected %v, got %v", newCPU, eventPayload.CPU)
+		if eventPayload.CPULimit != newCPULimit {
+			t.Errorf("create jupyterhub: cpu value - expected %v, got %v", newCPULimit, eventPayload.CPULimit)
 		}
 
 		if eventPayload.CPURequest != newCPURequest {
 			t.Errorf("create jupyterhub: cpuRequest value - expected %v, got %v", newCPURequest, eventPayload.CPURequest)
 		}
 
-		if eventPayload.Memory != newMemory {
-			t.Errorf("create jupyterhub: memory value - expected %v, got %v", newMemory, eventPayload.Memory)
+		if eventPayload.MemoryLimit != newMemoryLimit {
+			t.Errorf("create jupyterhub: memory value - expected %v, got %v", newMemoryLimit, eventPayload.MemoryLimit)
 		}
 
 		if eventPayload.MemoryRequest != newMemoryRequest {

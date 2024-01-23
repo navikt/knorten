@@ -37,6 +37,10 @@ linters:
     - varcheck
 
 issues:
+  # Show only new issues created after git revision
+  # A long-term goal should be to fix all existing issues, and then remove this
+  new-from-rev: HEAD
+
   exclude-use-default: false
   exclude-rules:
     - path: (.+)_test.go

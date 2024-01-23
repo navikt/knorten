@@ -1,6 +1,8 @@
 GOPATH := $(shell go env GOPATH)
 GOBIN  ?= $(GOPATH)/bin # Default GOBIN if not set
 
+GCP_PROJECT_ID ?= knada-gcp
+
 # A template function for installing binaries
 define install-binary
 	 @if ! command -v $(1) &> /dev/null; then \
@@ -28,9 +30,9 @@ $(GOLANGCILINT):
 -include .env
 
 env:
-	echo "AZURE_APP_CLIENT_ID=$(shell kubectl get secret --context=knada --namespace=knada-system knorten -o jsonpath='{.data.AZURE_APP_CLIENT_ID}' | base64 -d)" > .env
-	echo "AZURE_APP_CLIENT_SECRET=$(shell kubectl get secret --context=knada --namespace=knada-system knorten -o jsonpath='{.data.AZURE_APP_CLIENT_SECRET}' | base64 -d)" >> .env
-	echo "AZURE_APP_TENANT_ID=$(shell kubectl get secret --context=knada --namespace=knada-system knorten -o jsonpath='{.data.AZURE_APP_TENANT_ID}' | base64 -d)" >> .env
+	echo "AZURE_APP_CLIENT_ID=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID) --secret=knorten-oauth-client-id)" > .env
+	echo "AZURE_APP_CLIENT_SECRET=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID) --secret=knorten-oauth-client-secret)" >> .env
+	echo "AZURE_APP_TENANT_ID=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID) --secret=knorten-azure-tenant-id)" >> .env
 .PHONY: env
 
 netpol:

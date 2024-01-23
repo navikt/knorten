@@ -49,7 +49,7 @@ ensure-repo:
 				helm repo update)
 
 local-online: | ensure-repo
-	go run -race . \
+	@go run -race . \
 	  --admin-group=nada@nav.no \
 	  --airflow-chart-version=1.10.0 \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \

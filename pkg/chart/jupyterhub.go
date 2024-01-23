@@ -18,12 +18,14 @@ type JupyterConfigurableValues struct {
 	UserIdents []string
 
 	// User-configurable values
-	CPU         string `helm:"singleuser.cpu.limit"`
-	Memory      string `helm:"singleuser.memory.limit"`
-	ImageName   string `helm:"singleuser.image.name"`
-	ImageTag    string `helm:"singleuser.image.tag"`
-	CullTimeout string `helm:"cull.timeout"`
-	AllowList   []string
+	CPULimit      string `helm:"singleuser.cpu.limit"`
+	CPURequest    string `helm:"singleuser.cpu.guarantee"`
+	MemoryLimit   string `helm:"singleuser.memory.limit"`
+	MemoryRequest string `helm:"singleuser.memory.guarantee"`
+	ImageName     string `helm:"singleuser.image.name"`
+	ImageTag      string `helm:"singleuser.image.tag"`
+	CullTimeout   string `helm:"cull.timeout"`
+	AllowList     []string
 }
 
 type jupyterValues struct {
@@ -119,10 +121,10 @@ func (c Client) jupyterMergeValues(ctx context.Context, team gensql.TeamGetRow, 
 
 	return jupyterValues{
 		JupyterConfigurableValues: configurableValues,
-		CPULimit:                  configurableValues.CPU,
-		CPUGuarantee:              configurableValues.CPU,
-		MemoryLimit:               configurableValues.Memory,
-		MemoryGuarantee:           configurableValues.Memory,
+		CPULimit:                  configurableValues.CPULimit,
+		CPUGuarantee:              configurableValues.CPURequest,
+		MemoryLimit:               configurableValues.MemoryLimit,
+		MemoryGuarantee:           configurableValues.MemoryRequest,
 		AdminUsers:                configurableValues.UserIdents,
 		AllowedUsers:              configurableValues.UserIdents,
 		OAuthCallbackURL:          fmt.Sprintf("https://%v.jupyter.knada.io/hub/oauth_callback", team.Slug),

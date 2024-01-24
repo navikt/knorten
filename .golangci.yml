@@ -8,11 +8,14 @@ linters:
     # Linters that check comments for correctness; disallow fixme, todo, etc., missing punctuation, etc.
     - godox
     - godot
+    - stylecheck
 
     # Linters with dubious value
     - depguard
     - tagalign
+    - tagliatelle
     - goerr113
+    - gci
 
     # These linters find structures with uninitialized fields, which is useful under
     # certain conditions, but shouldn't be generally enabled.
@@ -34,6 +37,10 @@ linters:
     - varcheck
 
 issues:
+  # Show only new issues created after git revision
+  # A long-term goal should be to fix all existing issues, and then remove this
+  new-from-rev: HEAD
+
   exclude-use-default: false
   exclude-rules:
     - path: (.+)_test.go

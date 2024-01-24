@@ -2,6 +2,9 @@
   "name": "knorten",
   "version": "1.0.0",
   "description": "> KNADA sin port for bestilling av tjenester",
+  "engines": {
+    "node": ">=20.11.0"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nais/knorten.git"

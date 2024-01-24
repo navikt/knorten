@@ -39,17 +39,9 @@ netpol:
 	$(shell kubectl get --context=knada --namespace=knada-system configmap/airflow-network-policy -o json | jq -r '.data."default-egress-airflow-worker.yaml"' > .default-egress-airflow-worker.yaml)
 .PHONY: netpol
 
-REPO_NAME := apache-airflow
-REPO_URL  := https://airflow.apache.org
-
-ensure-repo:
-	@helm repo list | grep $(REPO_NAME) || \
-		(echo "$(REPO_NAME) repo not found. Adding repo..." && \
-			helm repo add $(REPO_NAME) $(REPO_URL) && \
-				helm repo update)
-
-local-online: | ensure-repo
-	@go run -race . \
+local-online:
+	@HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" \
+	go run -race . \
 	  --admin-group=nada@nav.no \
 	  --airflow-chart-version=1.10.0 \
 	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \

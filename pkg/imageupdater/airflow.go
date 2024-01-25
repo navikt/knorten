@@ -19,7 +19,14 @@ const (
 	airflowEnvKey                     = "env"
 )
 
-var imageEnvNames = []string{"CLONE_REPO_IMAGE", "KNADA_AIRFLOW_OPERATOR_IMAGE"}
+var imageEnvNames = []string{
+	"CLONE_REPO_IMAGE",
+	"DATAVERK_IMAGE_PYTHON_38",
+	"DATAVERK_IMAGE_PYTHON_39",
+	"DATAVERK_IMAGE_PYTHON_310",
+	"DATAVERK_IMAGE_PYTHON_311",
+	"DATAVERK_IMAGE_PYTHON_312",
+}
 
 func (c *client) updateAirflowImages(ctx context.Context) error {
 	baseImageUpdated, err := c.updateAirflowImage(ctx, airflowBaseImagesRepositoryKey, airflowBaseImagesTagKey)

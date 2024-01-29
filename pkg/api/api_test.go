@@ -3,7 +3,6 @@ package api
 import (
 	"bytes"
 	"database/sql"
-	"fmt"
 	"html/template"
 	"io"
 	"log"
@@ -12,6 +11,8 @@ import (
 	"path"
 	"runtime"
 	"testing"
+
+	"github.com/nais/knorten/pkg/api/middlewares"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nais/knorten/local/dbsetup"
@@ -38,6 +39,7 @@ const (
 	jsonContentType = "application/json; charset=utf-8"
 )
 
+// FIXME: we do this so that we can load the assets correctly
 func init() {
 	_, filename, _, _ := runtime.Caller(0)
 	dir := path.Join(path.Dir(filename), "../..")
@@ -48,7 +50,6 @@ func init() {
 }
 
 func TestMain(m *testing.M) {
-	fmt.Println("am I always called?")
 	logger := logrus.NewEntry(logrus.StandardLogger())
 
 	dbConn, err := dbsetup.SetupDBForTests()
@@ -70,6 +71,18 @@ func TestMain(m *testing.M) {
 	}
 
 	router := gin.New()
+	router.Use(middlewares.SetSessionStatus(logger.WithField("subsystem", "status_middleware"), "knorten_session", repo))
+
+	session, err := repo.NewSessionStore("knorten_session")
+	if err != nil {
+		log.Fatalf("creating session store: %v", err)
+	}
+	router.Use(session)
+	router.Static("/assets", "./assets")
+	router.FuncMap = template.FuncMap{
+		"toArray": toArray,
+	}
+	router.LoadHTMLGlob("templates/**/*")
 
 	cfg := Config{
 		AdminGroupEmail: "nada@nav.no",

@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"net"
+	"net/http"
 	"path/filepath"
 	"strings"
 
@@ -58,7 +60,7 @@ type Postgres struct {
 	UserName     string `yaml:"user_name"`
 	Password     string `yaml:"password"`
 	Host         string `yaml:"host"`
-	Port         int    `yaml:"port"`
+	Port         string `yaml:"port"`
 	DatabaseName string `yaml:"database_name"`
 	SSLMode      string `yaml:"ssl_mode"`
 }
@@ -75,11 +77,10 @@ func (p Postgres) Validate() error {
 }
 
 func (p Postgres) ConnectionString() string {
-	return fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?sslmode=%s",
+	return fmt.Sprintf("postgresql://%s:%s@%s/%s?sslmode=%s",
 		p.UserName,
 		p.Password,
-		p.Host,
-		p.Port,
+		net.JoinHostPort(p.Host, p.Port),
 		p.DatabaseName,
 		p.SSLMode,
 	)
@@ -87,7 +88,7 @@ func (p Postgres) ConnectionString() string {
 
 type Server struct {
 	Hostname string `yaml:"hostname"`
-	Port     int    `yaml:"port"`
+	Port     string `yaml:"port"`
 }
 
 func (s Server) Validate() error {
@@ -163,6 +164,19 @@ type CookieSettings struct {
 	HttpOnly bool   `yaml:"http_only"`
 }
 
+func (c CookieSettings) GetSameSite() http.SameSite {
+	switch c.SameSite {
+	case "Strict":
+		return http.SameSiteStrictMode
+	case "Lax":
+		return http.SameSiteLaxMode
+	case "None":
+		return http.SameSiteNoneMode
+	default:
+		return http.SameSiteDefaultMode
+	}
+}
+
 func (c CookieSettings) Validate() error {
 	return validation.ValidateStruct(&c,
 		validation.Field(&c.Name, validation.Required),
@@ -222,6 +236,7 @@ func (fs *FileSystemLoader) Load(name, path, envPrefix string) (Config, error) {
 	v.SetConfigName(name)
 	v.SetConfigType(defaultExtension)
 
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // So that env vars are translated properly
 	v.AutomaticEnv()
 	v.SetEnvPrefix(envPrefix)
 

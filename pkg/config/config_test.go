@@ -74,11 +74,11 @@ func newFakeConfig() config.Config {
 		},
 		Server: config.Server{
 			Hostname: "localhost",
-			Port:     8080,
+			Port:     "8080",
 		},
 		Postgres: config.Postgres{
 			Host:         "localhost",
-			Port:         5432,
+			Port:         "5432",
 			UserName:     "postgres",
 			Password:     "postgres",
 			SSLMode:      "disable",
@@ -144,11 +144,13 @@ func TestLoad(t *testing.T) {
 			expect: func() config.Config {
 				cfg := newFakeConfig()
 				cfg.AdminGroup = "something_super_random"
+				cfg.GCP.Project = "project_x"
 
 				return cfg
 			}(),
 			envs: map[string]string{
 				"ADMIN_GROUP": "something_super_random",
+				"GCP_PROJECT": "project_x",
 			},
 		},
 		{
@@ -160,11 +162,13 @@ func TestLoad(t *testing.T) {
 			expect: func() config.Config {
 				cfg := newFakeConfig()
 				cfg.AdminGroup = "something_super_random"
+				cfg.GCP.Project = "project_x"
 
 				return cfg
 			}(),
 			envs: map[string]string{
 				"KNORTEN_ADMIN_GROUP": "something_super_random",
+				"KNORTEN_GCP_PROJECT": "project_x",
 			},
 		},
 	}

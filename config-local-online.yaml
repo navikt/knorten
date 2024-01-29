@@ -21,7 +21,7 @@ cookies:
         path: /
         domain: localhost
         same_site: Lax
-        secure: true
+        secure: false
         http_only: true
     session:
         name: knorten_session
@@ -29,7 +29,7 @@ cookies:
         path: /
         domain: localhost
         same_site: Lax
-        secure: true
+        secure: false
         http_only: true
 helm:
     airflow_chart_version: 1.10.0
@@ -46,7 +46,7 @@ postgres:
     ssl_mode: disable
 db_enc_key: jegersekstentegn
 admin_group: nada@nav.no
-session_key: online-session
+session_key: offline-session
 login_page: http://localhost:8080/
-dry_run: true
+dry_run: false
 in_cluster: false

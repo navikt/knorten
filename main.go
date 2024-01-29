@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"html/template"
+	"net"
 	"time"
 
 	"github.com/nais/knorten/pkg/api/service"
@@ -47,7 +47,7 @@ func main() {
 		return
 	}
 
-	cfg, err := config.NewFileSystemLoader(afero.NewOsFs()).Load(fileParts.FileName, fileParts.Path, "")
+	cfg, err := config.NewFileSystemLoader(afero.NewOsFs()).Load(fileParts.FileName, fileParts.Path, "KNORTEN")
 	if err != nil {
 		log.WithError(err).Fatal("loading config")
 
@@ -161,7 +161,7 @@ func main() {
 		return
 	}
 
-	err = router.Run(fmt.Sprintf("%s:%d", cfg.Server.Hostname, cfg.Server.Port))
+	err = router.Run(net.JoinHostPort(cfg.Server.Hostname, cfg.Server.Port))
 	if err != nil {
 		log.WithError(err).Fatal("running api")
 

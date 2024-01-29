@@ -27,12 +27,10 @@ $(SQLC):
 $(GOLANGCILINT):
 	$(call install-binary,golangci-lint,github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCILINT_VERSION))
 
--include .env
-
 env:
-	echo "AZURE_APP_CLIENT_ID=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID) --secret=knorten-oauth-client-id)" > .env
-	echo "AZURE_APP_CLIENT_SECRET=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID) --secret=knorten-oauth-client-secret)" >> .env
-	echo "AZURE_APP_TENANT_ID=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID) --secret=knorten-azure-tenant-id)" >> .env
+	echo "KNORTEN_OAUTH_CLIENT_ID=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID) --secret=knorten-oauth-client-id)" > .env
+	echo "KNORTEN_OAUTH_CLIENT_SECRET=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID) --secret=knorten-oauth-client-secret)" >> .env
+	echo "KNORTEN_OAUTH_TENANT_ID=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID) --secret=knorten-azure-tenant-id)" >> .env
 .PHONY: env
 
 netpol:
@@ -40,37 +38,15 @@ netpol:
 .PHONY: netpol
 
 local-online:
-	@HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" \
-	go run -race . \
-	  --admin-group=nada@nav.no \
-	  --airflow-chart-version=1.10.0 \
-	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
-	  --db-enc-key=jegersekstentegn \
-	  --in-cluster=false \
-	  --jupyter-chart-version=2.0.0 \
-	  --oauth2-client-id=$(AZURE_APP_CLIENT_ID) \
-	  --oauth2-client-secret=$(AZURE_APP_CLIENT_SECRET) \
-	  --oauth2-tenant-id=$(AZURE_APP_TENANT_ID) \
-	  --project=nada-dev-db2e \
-	  --region=europe-north1 \
-	  --session-key online-session
-	  --zone=europe-north1-b
+	@echo "Sourcing environment variables..."
+	set -a && source ./.env && set +a && \
+		HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" go run -race . --config=config-local-online.yaml
 .PHONY: local-online
 
 local:
-	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" \
-	go run -race . \
-	  --admin-group=nada@nav.no \
-	  --airflow-chart-version=1.10.0 \
-	  --db-conn-string=postgres://postgres:postgres@localhost:5432/knorten \
-	  --db-enc-key=jegersekstentegn \
-	  --dry-run \
-	  --in-cluster=false \
-	  --jupyter-chart-version=2.0.0 \
-	  --project=nada-dev-db2e \
-	  --region=europe-north1 \
-	  --session-key offline-session
-	  --zone=europe-north1-b
+	@echo "Sourcing environment variables..."
+	set -a && source ./.env && set +a && \
+		HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" go run -race . --config=config-local.yaml
 .PHONY: local
 
 generate-sql: $(SQLC)

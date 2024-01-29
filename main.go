@@ -4,8 +4,20 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"os"
+	"html/template"
 	"time"
+
+	"github.com/nais/knorten/pkg/api/service"
+
+	"github.com/nais/knorten/pkg/api/handlers"
+
+	"github.com/nais/knorten/pkg/api/middlewares"
+
+	"github.com/gin-gonic/gin"
+
+	"github.com/spf13/afero"
+
+	"github.com/nais/knorten/pkg/config"
 
 	"github.com/nais/knorten/pkg/api"
 	"github.com/nais/knorten/pkg/api/auth"
@@ -20,50 +32,48 @@ const (
 	imageUpdaterFrequency = 24 * time.Hour
 )
 
-type Config struct {
-	auth.OauthConfig
-
-	DBConnString        string
-	DBEncKey            string
-	DryRun              bool
-	InCluster           bool
-	GCPProject          string
-	GCPRegion           string
-	GCPZone             string
-	AirflowChartVersion string
-	JupyterChartVersion string
-	AdminGroup          string
-	SessionKey          string
-}
+var configFilePath = flag.String("config", "config.yaml", "path to config file")
 
 func main() {
 	log := logrus.New()
 	log.SetFormatter(&logrus.JSONFormatter{})
 
-	cfg := Config{}
-	flag.StringVar(&cfg.ClientID, "oauth2-client-id", os.Getenv("AZURE_APP_CLIENT_ID"), "Client ID for azure app")
-	flag.StringVar(&cfg.ClientSecret, "oauth2-client-secret", os.Getenv("AZURE_APP_CLIENT_SECRET"), "Client secret for azure app")
-	flag.StringVar(&cfg.TenantID, "oauth2-tenant-id", os.Getenv("AZURE_APP_TENANT_ID"), "OAuth2 tenant ID")
-	flag.StringVar(&cfg.DBConnString, "db-conn-string", os.Getenv("DB_CONN_STRING"), "Database connection string")
-	flag.StringVar(&cfg.DBEncKey, "db-enc-key", os.Getenv("DB_ENC_KEY"), "Chart value encryption key")
-	flag.BoolVar(&cfg.DryRun, "dry-run", false, "Don't run external commands")
-	flag.BoolVar(&cfg.InCluster, "in-cluster", true, "In cluster configuration for go client")
-	flag.StringVar(&cfg.GCPProject, "project", os.Getenv("GCP_PROJECT"), "GCP project")
-	flag.StringVar(&cfg.GCPRegion, "region", os.Getenv("GCP_REGION"), "GCP region")
-	flag.StringVar(&cfg.GCPZone, "zone", os.Getenv("GCP_ZONE"), "GCP zone")
-	flag.StringVar(&cfg.AirflowChartVersion, "airflow-chart-version", os.Getenv("AIRFLOW_CHART_VERSION"), "The chart version for airflow")
-	flag.StringVar(&cfg.JupyterChartVersion, "jupyter-chart-version", os.Getenv("JUPYTER_CHART_VERSION"), "The chart version for jupyter")
-	flag.StringVar(&cfg.AdminGroup, "admin-group", os.Getenv("ADMIN_GROUP"), "Email of admin group used to authenticate Knorten administrators")
-	flag.StringVar(&cfg.SessionKey, "session-key", os.Getenv("SESSION_KEY"), "The session key for Knorten")
 	flag.Parse()
 
-	dbClient, err := database.New(fmt.Sprintf("%v?sslmode=disable", cfg.DBConnString), cfg.DBEncKey, log.WithField("subsystem", "db"))
+	fileParts, err := config.ProcessConfigPath(*configFilePath)
+	if err != nil {
+		log.WithError(err).Fatal("processing config path")
+
+		return
+	}
+
+	cfg, err := config.NewFileSystemLoader(afero.NewOsFs()).Load(fileParts.FileName, fileParts.Path, "")
+	if err != nil {
+		log.WithError(err).Fatal("loading config")
+
+		return
+	}
+
+	err = cfg.Validate()
+	if err != nil {
+		log.WithError(err).Fatal("validating config")
+
+		return
+	}
+
+	dbClient, err := database.New(cfg.Postgres.ConnectionString(), cfg.DBEncKey, log.WithField("subsystem", "db"))
 	if err != nil {
 		log.WithError(err).Fatal("setting up database")
 		return
 	}
 
-	azureClient, err := auth.NewAzureClient(cfg.DryRun, cfg.ClientID, cfg.ClientSecret, cfg.TenantID, log.WithField("subsystem", "auth"))
+	azureClient, err := auth.NewAzureClient(
+		cfg.DryRun,
+		cfg.Oauth.ClientID,
+		cfg.Oauth.ClientSecret,
+		cfg.Oauth.TenantID,
+		log.WithField("subsystem", "auth"),
+	)
 	if err != nil {
 		log.WithError(err).Fatal("creating azure client")
 		return
@@ -78,21 +88,88 @@ func main() {
 		}
 	}
 
-	eventHandler, err := events.NewHandler(context.Background(), dbClient, azureClient, cfg.GCPProject, cfg.GCPRegion, cfg.GCPZone, cfg.AirflowChartVersion, cfg.JupyterChartVersion, cfg.DryRun, cfg.InCluster, log.WithField("subsystem", "events"))
+	eventHandler, err := events.NewHandler(
+		context.Background(),
+		dbClient,
+		azureClient,
+		cfg.GCP.Project,
+		cfg.GCP.Region,
+		cfg.GCP.Zone,
+		cfg.Helm.AirflowChartVersion,
+		cfg.Helm.JupyterChartVersion,
+		cfg.DryRun,
+		cfg.InCluster,
+		log.WithField("subsystem", "events"),
+	)
 	if err != nil {
 		log.WithError(err).Fatal("starting event watcher")
 		return
 	}
 	eventHandler.Run(10 * time.Second)
 
-	router, err := api.New(dbClient, azureClient, cfg.DryRun, cfg.SessionKey, cfg.AdminGroup, cfg.GCPProject, cfg.GCPZone, log.WithField("subsystem", "api"))
+	router := gin.New()
+
+	session, err := dbClient.NewSessionStore(cfg.SessionKey)
+	if err != nil {
+		log.WithError(err).Fatal("creating session store")
+
+		return
+	}
+
+	authService := service.NewAuthService(
+		dbClient,
+		cfg.AdminGroup,
+		1*time.Hour,
+		32,
+		azureClient,
+	)
+
+	authHandler := handlers.NewAuthHandler(
+		authService,
+		cfg.LoginPage,
+		cfg.Cookies,
+		log.WithField("subsystem", "auth"),
+		dbClient,
+	)
+
+	router.Use(session)
+	router.Static("/assets", "./assets")
+	router.FuncMap = template.FuncMap{
+		"toArray": toArray,
+	}
+	router.LoadHTMLGlob("templates/**/*")
+	router.Use(middlewares.SetSessionStatus(log.WithField("subsystem", "status_middleware"), cfg.Cookies.Session.Name, dbClient))
+	router.GET("/", handlers.IndexHandler)
+	router.GET("/oauth2/login", authHandler.LoginHandler(cfg.DryRun))
+	router.GET("/oauth2/callback", authHandler.CallbackHandler())
+	router.GET("/oauth2/logout", authHandler.LogoutHandler())
+	router.Use(middlewares.Authenticate(
+		log.WithField("subsystem", "authentication"),
+		dbClient,
+		azureClient,
+		cfg.DryRun,
+	))
+
+	err = api.New(router, dbClient, azureClient, log.WithField("subsystem", "api"), api.Config{
+		DryRun:          cfg.DryRun,
+		AdminGroupEmail: cfg.AdminGroup,
+		GCPProject:      cfg.GCP.Project,
+		GCPZone:         cfg.GCP.Zone,
+	})
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return
 	}
 
-	err = api.Run(router, cfg.InCluster)
+	err = router.Run(fmt.Sprintf("%s:%d", cfg.Server.Hostname, cfg.Server.Port))
 	if err != nil {
+		log.WithError(err).Fatal("running api")
+
 		return
 	}
+}
+
+// Need to move this
+func toArray(args ...any) []any {
+	return args
 }

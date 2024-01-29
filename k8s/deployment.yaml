@@ -59,7 +59,7 @@ spec:
             limits:
               memory: 1Gi
             requests:
-              cpu: 200m
+              cpu: 50m
               memory: 128Mi
         - name: cloudsql-proxy
           command:
@@ -73,7 +73,7 @@ spec:
             limits:
               memory: 64Mi
             requests:
-              cpu: 200m
+              cpu: 10m
               memory: 24Mi
           ports:
             - containerPort: 5432
@@ -96,7 +96,7 @@ spec:
             limits:
               memory: 64Mi
             requests:
-              cpu: 200m
+              cpu: 10m
               memory: 32Mi
           command:
             - /elector

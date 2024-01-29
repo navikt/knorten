@@ -1,11 +1,7 @@
 package api
 
 import (
-	"database/sql"
-	"errors"
 	"fmt"
-	"net/http"
-	"text/template"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nais/knorten/pkg/api/auth"
@@ -24,9 +20,14 @@ type client struct {
 	gcpZone      string
 }
 
-func New(repo *database.Repo, azureClient *auth.Azure, dryRun bool, sessionKey, adminGroupEmail, gcpProject, gcpZone string, log *logrus.Entry) (*gin.Engine, error) {
-	router := gin.New()
+type Config struct {
+	AdminGroupEmail string
+	DryRun          bool
+	GCPProject      string
+	GCPZone         string
+}
 
+func New(router *gin.Engine, db *database.Repo, azureClient *auth.Azure, log *logrus.Entry, cfg Config) error {
 	router.Use(gin.Recovery())
 	router.Use(func(ctx *gin.Context) {
 		log.WithField("subsystem", "gin").Infof("%v %v %v", ctx.Request.Method, ctx.Request.URL.Path, ctx.Writer.Status())
@@ -35,51 +36,22 @@ func New(repo *database.Repo, azureClient *auth.Azure, dryRun bool, sessionKey, 
 	api := client{
 		azureClient: azureClient,
 		router:      router,
-		repo:        repo,
+		repo:        db,
 		log:         log,
-		dryRun:      dryRun,
-		gcpProject:  gcpProject,
-		gcpZone:     gcpZone,
+		dryRun:      cfg.DryRun,
+		gcpProject:  cfg.GCPProject,
+		gcpZone:     cfg.GCPZone,
 	}
 
-	session, err := repo.NewSessionStore(sessionKey)
-	if err != nil {
-		return nil, err
-	}
-
-	api.router.Use(session)
-	api.router.Static("/assets", "./assets")
-	api.router.FuncMap = template.FuncMap{
-		"toArray": toArray,
-	}
-	api.router.LoadHTMLGlob("templates/**/*")
-	api.setupUnauthenticatedRoutes()
-	api.router.Use(api.authMiddleware())
 	api.setupAuthenticatedRoutes()
 	api.router.Use(api.adminAuthMiddleware())
 	api.setupAdminRoutes()
-	err = api.fetchAdminGroupID(adminGroupEmail)
+	err := api.fetchAdminGroupID(cfg.AdminGroupEmail)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return router, nil
-}
-
-func Run(router *gin.Engine, inCluster bool) error {
-	if inCluster {
-		return router.Run()
-	}
-
-	return router.Run("localhost:8080")
-}
-
-func (c *client) setupUnauthenticatedRoutes() {
-	c.router.GET("/", func(ctx *gin.Context) {
-		c.htmlResponseWrapper(ctx, http.StatusOK, "index", gin.H{})
-	})
-
-	c.setupAuthRoutes()
+	return nil
 }
 
 func (c *client) setupAuthenticatedRoutes() {
@@ -98,8 +70,4 @@ func (c *client) fetchAdminGroupID(adminGroupEmail string) error {
 
 	c.adminGroupID = id
 	return nil
-}
-
-func toArray(args ...any) []any {
-	return args
 }

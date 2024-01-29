@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/nais/knorten/pkg/api/middlewares"
+
 	"github.com/google/uuid"
 	"github.com/nais/knorten/pkg/chart"
 	"github.com/nais/knorten/pkg/database"

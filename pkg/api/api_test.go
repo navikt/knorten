@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"database/sql"
+	"fmt"
 	"html/template"
 	"io"
 	"log"
@@ -12,6 +13,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/nais/knorten/local/dbsetup"
 	"github.com/nais/knorten/pkg/api/auth"
 	"github.com/nais/knorten/pkg/database"
@@ -46,6 +48,7 @@ func init() {
 }
 
 func TestMain(m *testing.M) {
+	fmt.Println("am I always called?")
 	logger := logrus.NewEntry(logrus.StandardLogger())
 
 	dbConn, err := dbsetup.SetupDBForTests()
@@ -66,12 +69,19 @@ func TestMain(m *testing.M) {
 		log.Fatalf("creating azure client: %v", err)
 	}
 
-	srv, err := New(repo, azureClient, true, "jegersekstentegn", "nada@nav.no", "", "", logger)
+	router := gin.New()
+
+	cfg := Config{
+		AdminGroupEmail: "nada@nav.no",
+		DryRun:          true,
+	}
+
+	err = New(router, repo, azureClient, logger, cfg)
 	if err != nil {
 		log.Fatalf("setting up api: %v", err)
 	}
 
-	server = httptest.NewServer(srv)
+	server = httptest.NewServer(router)
 	code := m.Run()
 
 	server.Close()
@@ -107,4 +117,9 @@ func createExpectedHTML(t string, values map[string]any) (string, error) {
 	}
 
 	return string(dataBytes), nil
+}
+
+// Need to move this
+func toArray(args ...any) []any {
+	return args
 }

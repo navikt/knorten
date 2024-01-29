@@ -16,6 +16,7 @@ linters:
     - tagliatelle
     - goerr113
     - gci
+    - varnamelen
 
     # These linters find structures with uninitialized fields, which is useful under
     # certain conditions, but shouldn't be generally enabled.

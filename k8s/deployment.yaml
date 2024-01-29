@@ -57,10 +57,10 @@ spec:
               subPath: repositories.yaml
           resources:
             limits:
-              memory: 2Gi
+              memory: 1Gi
             requests:
               cpu: 200m
-              memory: 256Mi
+              memory: 128Mi
         - name: cloudsql-proxy
           command:
             - /cloud-sql-proxy
@@ -69,6 +69,12 @@ spec:
             - --port=5432
             - knada-gcp:europe-north1:knorten-north
           image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.6.0-alpine
+          resources:
+            limits:
+              memory: 64Mi
+            requests:
+              cpu: 200m
+              memory: 24Mi
           ports:
             - containerPort: 5432
               protocol: TCP
@@ -86,6 +92,12 @@ spec:
           terminationMessagePolicy: File
         - name: elector
           image: europe-north1-docker.pkg.dev/nais-io/nais/images/elector:20230310-120406-3b3cc7d
+          resources:
+            limits:
+              memory: 64Mi
+            requests:
+              cpu: 200m
+              memory: 32Mi
           command:
             - /elector
             - --election=knorten

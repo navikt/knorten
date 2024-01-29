@@ -57,10 +57,10 @@ spec:
               subPath: repositories.yaml
           resources:
             limits:
-              memory: 2Gi
+              memory: 1Gi
             requests:
               cpu: 200m
-              memory: 256Mi
+              memory: 128Mi
         - name: cloudsql-proxy
           command:
             - /cloud-sql-proxy

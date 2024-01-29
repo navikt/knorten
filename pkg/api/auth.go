@@ -285,7 +285,7 @@ func (c *client) adminAuthMiddleware() gin.HandlerFunc {
 		}
 	}
 	return func(ctx *gin.Context) {
-		if !c.isAdmin(ctx) {
+		if !ctx.GetBool(middlewares.AdminKey) {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		}
 

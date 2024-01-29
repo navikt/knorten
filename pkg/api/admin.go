@@ -80,10 +80,12 @@ func (c *client) setupAdminRoutes() {
 			}
 		}
 
-		c.htmlResponseWrapper(ctx, http.StatusOK, "admin/index", gin.H{
+		ctx.HTML(http.StatusOK, "admin/index", gin.H{
 			"errors":     flashes,
 			"teams":      teamApps,
 			"gcpProject": c.gcpProject,
+			"loggedIn":   ctx.GetBool(middlewares.LoggedInKey),
+			"admin":      ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -114,10 +116,12 @@ func (c *client) setupAdminRoutes() {
 			return
 		}
 
-		c.htmlResponseWrapper(ctx, http.StatusOK, "admin/chart", gin.H{
-			"values": values,
-			"errors": flashes,
-			"chart":  string(chartType),
+		ctx.HTML(http.StatusOK, "admin/chart", gin.H{
+			"values":   values,
+			"errors":   flashes,
+			"chart":    string(chartType),
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"admin":    ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -188,9 +192,11 @@ func (c *client) setupAdminRoutes() {
 			return
 		}
 
-		c.htmlResponseWrapper(ctx, http.StatusOK, "admin/confirm", gin.H{
+		ctx.HTML(http.StatusOK, "admin/confirm", gin.H{
 			"changedValues": changedValues,
 			"chart":         string(chartType),
+			"loggedIn":      ctx.GetBool(middlewares.LoggedInKey),
+			"admin":         ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -328,7 +334,10 @@ func (c *client) setupAdminRoutes() {
 			ctx.Redirect(http.StatusSeeOther, "/admin")
 		}
 
-		c.htmlResponseWrapper(ctx, http.StatusOK, "admin/event", header)
+		header["loggedIn"] = ctx.GetBool(middlewares.LoggedInKey)
+		header["admin"] = ctx.GetBool(middlewares.AdminKey)
+
+		ctx.HTML(http.StatusOK, "admin/event", header)
 	})
 
 	c.router.POST("/admin/event/:id", func(ctx *gin.Context) {

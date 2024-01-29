@@ -3,6 +3,8 @@ package api
 import (
 	"net/http"
 
+	"github.com/nais/knorten/pkg/api/middlewares"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
@@ -33,12 +35,14 @@ func (c *client) setupUserRoutes() {
 		}
 
 		services, err := c.repo.ServicesForUser(ctx, user.Email)
-		c.htmlResponseWrapper(ctx, http.StatusOK, "oversikt/index", gin.H{
+		ctx.HTML(http.StatusOK, "oversikt/index", gin.H{
 			"errors":     err,
 			"flashes":    flashes,
 			"user":       services,
 			"gcpProject": c.gcpProject,
 			"gcpZone":    c.gcpZone,
+			"loggedIn":   ctx.GetBool(middlewares.LoggedInKey),
+			"admin":      ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 }

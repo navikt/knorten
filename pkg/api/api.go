@@ -90,57 +90,6 @@ func (c *client) setupAuthenticatedRoutes() {
 	c.setupChartRoutes()
 }
 
-func (c *client) htmlResponseWrapper(ctx *gin.Context, status int, tmplName string, values gin.H) {
-	values["loggedIn"] = c.isLoggedIn(ctx)
-	values["isAdmin"] = c.isAdmin(ctx)
-
-	ctx.HTML(status, tmplName, values)
-}
-
-func (c *client) isLoggedIn(ctx *gin.Context) bool {
-	cookie, err := ctx.Cookie(sessionCookie)
-	if err != nil {
-		if errors.Is(err, http.ErrNoCookie) {
-			return false
-		}
-		c.log.WithError(err).Error("reading session cookie")
-		return false
-	}
-
-	session, err := c.repo.SessionGet(ctx, cookie)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return false
-		}
-		c.log.WithError(err).Error("retrieving session from db")
-		return false
-	}
-
-	return session.Token != ""
-}
-
-func (c *client) isAdmin(ctx *gin.Context) bool {
-	cookie, err := ctx.Cookie(sessionCookie)
-	if err != nil {
-		if errors.Is(err, http.ErrNoCookie) {
-			return false
-		}
-		c.log.WithError(err).Error("reading session cookie")
-		return false
-	}
-
-	session, err := c.repo.SessionGet(ctx, cookie)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return false
-		}
-		c.log.WithError(err).Error("retrieving session from db")
-		return false
-	}
-
-	return session.IsAdmin
-}
-
 func (c *client) fetchAdminGroupID(adminGroupEmail string) error {
 	id, err := c.azureClient.GetGroupID(adminGroupEmail)
 	if err != nil {

@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/nais/knorten/pkg/api/middlewares"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -26,7 +28,10 @@ func (c *client) setupComputeRoutes() {
 	}
 
 	c.router.GET("/compute/new", func(ctx *gin.Context) {
-		c.htmlResponseWrapper(ctx, http.StatusOK, "compute/new", gin.H{})
+		ctx.HTML(http.StatusOK, "compute/new", gin.H{
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"admin":    ctx.GetBool(middlewares.AdminKey),
+		})
 	})
 
 	c.router.POST("/compute/new", func(ctx *gin.Context) {
@@ -76,9 +81,11 @@ func (c *client) setupComputeRoutes() {
 			return
 		}
 
-		c.htmlResponseWrapper(ctx, http.StatusOK, "compute/edit", gin.H{
+		ctx.HTML(http.StatusOK, "compute/edit", gin.H{
 			"name":     "compute-" + getNormalizedNameFromEmail(user.Email),
 			"diskSize": computeInstance.DiskSize,
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"admin":    ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 

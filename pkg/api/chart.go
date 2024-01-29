@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/nais/knorten/pkg/api/middlewares"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -145,10 +147,12 @@ func (c *client) setupChartRoutes() {
 			return
 		}
 
-		c.htmlResponseWrapper(ctx, http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
-			"team":   slug,
-			"form":   form,
-			"errors": flashes,
+		ctx.HTML(http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
+			"team":     slug,
+			"form":     form,
+			"errors":   flashes,
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"admin":    ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -222,10 +226,12 @@ func (c *client) setupChartRoutes() {
 			return
 		}
 
-		c.htmlResponseWrapper(ctx, http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
-			"team":   teamSlug,
-			"values": form,
-			"errors": flashes,
+		ctx.HTML(http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
+			"team":     teamSlug,
+			"values":   form,
+			"errors":   flashes,
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"admin":    ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 

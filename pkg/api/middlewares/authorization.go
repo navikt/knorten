@@ -23,6 +23,7 @@ func SetSessionStatus(log *logrus.Entry, sessionCookie string, repo *database.Re
 		if err != nil {
 			switch {
 			case errors.Is(err, http.ErrNoCookie):
+				// FIXME: is this really an error, if cookie was never set that seems fine
 				log.WithError(err).Error("reading session cookie")
 			case errors.Is(err, sql.ErrNoRows):
 				log.WithError(err).Error("retrieving session from db")

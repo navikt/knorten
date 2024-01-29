@@ -53,6 +53,8 @@ func (h *AuthHandler) LogoutHandler() gin.HandlerFunc {
 
 		// FIXME: Something seems wrong here. I don't think this h.cookies.Session.Name usage is correct
 		// FIXME: Seems like we should delete the token here, so we should get the token from the cookie first?
+		// Looking at the old code, we should be deleting the session from the database based on the retrieved
+		// cookie
 		err := h.authService.DeleteSession(ctx.Request.Context(), h.cookies.Session.Name)
 		if err != nil {
 			session := sessions.Default(ctx)
@@ -164,6 +166,7 @@ func (h *AuthHandler) LoginHandler(dryRun bool) gin.HandlerFunc {
 			return
 		}
 
+		ctx.SetSameSite(h.cookies.Redirect.GetSameSite())
 		ctx.SetCookie(
 			h.cookies.Redirect.Name,
 			ctx.Request.URL.Query().Get("redirect_uri"),
@@ -175,6 +178,7 @@ func (h *AuthHandler) LoginHandler(dryRun bool) gin.HandlerFunc {
 		)
 
 		oauthState := uuid.New().String()
+		ctx.SetSameSite(h.cookies.OauthState.GetSameSite())
 		ctx.SetCookie(
 			h.cookies.OauthState.Name,
 			oauthState,

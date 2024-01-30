@@ -11,6 +11,12 @@ import (
 	"path"
 	"runtime"
 	"testing"
+	"time"
+
+	"github.com/nais/knorten/pkg/api/service"
+	"github.com/nais/knorten/pkg/config"
+
+	"github.com/nais/knorten/pkg/api/handlers"
 
 	"github.com/nais/knorten/pkg/api/middlewares"
 
@@ -71,7 +77,6 @@ func TestMain(m *testing.M) {
 	}
 
 	router := gin.New()
-	router.Use(middlewares.SetSessionStatus(logger.WithField("subsystem", "status_middleware"), "knorten_session", repo))
 
 	session, err := repo.NewSessionStore("knorten_session")
 	if err != nil {
@@ -89,6 +94,33 @@ func TestMain(m *testing.M) {
 		DryRun:          true,
 	}
 
+	authService := service.NewAuthService(
+		repo,
+		cfg.AdminGroupEmail,
+		1*time.Hour,
+		32,
+		azureClient,
+	)
+
+	authHandler := handlers.NewAuthHandler(
+		authService,
+		"http://localhost:8080/",
+		config.Cookies{},
+		logger,
+		repo,
+	)
+
+	router.Use(middlewares.SetSessionStatus(logger.WithField("subsystem", "status_middleware"), "knorten_session", repo))
+	router.GET("/", handlers.IndexHandler)
+	router.GET("/oauth2/login", authHandler.LoginHandler(cfg.DryRun))
+	router.GET("/oauth2/callback", authHandler.CallbackHandler())
+	router.GET("/oauth2/logout", authHandler.LogoutHandler())
+	router.Use(middlewares.Authenticate(
+		logger,
+		repo,
+		azureClient,
+		cfg.DryRun,
+	))
 	err = New(router, repo, azureClient, logger, cfg)
 	if err != nil {
 		log.Fatalf("setting up api: %v", err)

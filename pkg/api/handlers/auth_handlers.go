@@ -1,13 +1,13 @@
 package handlers
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/nais/knorten/pkg/common"
 
 	"github.com/nais/knorten/pkg/api/service"
 
@@ -33,7 +33,7 @@ type AuthHandler struct {
 	authService service.AuthService
 	cookies     config.Cookies
 	log         *logrus.Entry
-	repo        *database.Repo // FIXME: This should not be here
+	repo        *database.Repo
 	loginPage   string
 }
 
@@ -49,13 +49,17 @@ func NewAuthHandler(authService service.AuthService, loginPage string, cookies c
 
 func (h *AuthHandler) LogoutHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		token, err := ctx.Cookie(h.cookies.Session.Name)
+		if err != nil {
+			h.log.WithError(err).Error("unable to get session cookie")
+			ctx.Redirect(http.StatusSeeOther, "/")
+
+			return
+		}
+
 		deleteCookie(ctx, h.cookies.Session.Name, h.cookies.Session.Domain, h.cookies.Session.Path)
 
-		// FIXME: Something seems wrong here. I don't think this h.cookies.Session.Name usage is correct
-		// FIXME: Seems like we should delete the token here, so we should get the token from the cookie first?
-		// Looking at the old code, we should be deleting the session from the database based on the retrieved
-		// cookie
-		err := h.authService.DeleteSession(ctx.Request.Context(), h.cookies.Session.Name)
+		err = h.authService.DeleteSession(ctx.Request.Context(), token)
 		if err != nil {
 			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
@@ -69,6 +73,7 @@ func (h *AuthHandler) LogoutHandler() gin.HandlerFunc {
 
 			return
 		}
+
 		ctx.Redirect(http.StatusSeeOther, h.loginPage)
 	}
 }
@@ -94,7 +99,6 @@ func (h *AuthHandler) CallbackHandler() gin.HandlerFunc {
 }
 
 func (h *AuthHandler) callback(ctx *gin.Context) (string, error) {
-	// FIXME: How is loginPage meant to be used here?
 	loginPage := "/oversikt"
 
 	redirectURI, _ := ctx.Cookie(h.cookies.Redirect.Name)
@@ -153,9 +157,6 @@ func deleteCookie(ctx *gin.Context, name, host, path string) {
 
 func (h *AuthHandler) LoginHandler(dryRun bool) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		// FIXME: We should not propagate dryRun, but rather do this by injecting a
-		//  different service, e.g., a mock service, and by passing in a different
-		// cookie configuration, perhaps?
 		if dryRun {
 			if err := h.createDryRunSession(ctx); err != nil {
 				h.log.Error("creating dryrun session")
@@ -193,10 +194,9 @@ func (h *AuthHandler) LoginHandler(dryRun bool) gin.HandlerFunc {
 	}
 }
 
-// FIXME: Need to get rid of this
 func (h *AuthHandler) createDryRunSession(ctx *gin.Context) error {
 	session := &auth.Session{
-		Token:       generateSecureToken(tokenLength),
+		Token:       common.GenerateSecureToken(tokenLength),
 		Expires:     time.Now().Add(sessionLength),
 		AccessToken: "",
 		IsAdmin:     true,
@@ -218,13 +218,4 @@ func (h *AuthHandler) createDryRunSession(ctx *gin.Context) error {
 	)
 
 	return nil
-}
-
-// a little bit of copy is better than a little bit of depdency
-func generateSecureToken(length int) string {
-	b := make([]byte, length)
-	if _, err := rand.Read(b); err != nil {
-		return ""
-	}
-	return hex.EncodeToString(b)
 }

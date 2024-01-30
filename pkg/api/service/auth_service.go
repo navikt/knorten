@@ -2,13 +2,13 @@ package service
 
 import (
 	"context"
-	"crypto/rand"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/nais/knorten/pkg/common"
 
 	"github.com/nais/knorten/pkg/database"
 
@@ -27,7 +27,7 @@ type authService struct {
 	tokenLength   int
 	sessionLength time.Duration
 	adminGroupID  string
-	repo          *database.Repo // FIXME: Should be an interface authRepo, but we don't have that yet
+	repo          *database.Repo
 }
 
 func (s *authService) DeleteSession(ctx context.Context, token string) error {
@@ -39,7 +39,6 @@ func (s *authService) DeleteSession(ctx context.Context, token string) error {
 	return nil
 }
 
-// FIXME: Verify that we are not trying to do too much in this method
 func (s *authService) CreateSession(ctx context.Context, code string) (*auth.Session, error) {
 	tokens, err := s.azureClient.Exchange(ctx, code)
 	if err != nil {
@@ -58,7 +57,7 @@ func (s *authService) CreateSession(ctx context.Context, code string) (*auth.Ses
 	}
 
 	sess := &auth.Session{
-		Token:       generateSecureToken(s.tokenLength),
+		Token:       common.GenerateSecureToken(s.tokenLength),
 		Expires:     time.Now().Add(s.sessionLength),
 		AccessToken: tokens.AccessToken,
 	}
@@ -132,13 +131,4 @@ func NewAuthService(repo *database.Repo, adminGroupID string, sessionLength time
 		adminGroupID:  adminGroupID,
 		repo:          repo,
 	}
-}
-
-// a little bit of copy is better than a little bit of dependency
-func generateSecureToken(length int) string {
-	b := make([]byte, length)
-	if _, err := rand.Read(b); err != nil {
-		return ""
-	}
-	return hex.EncodeToString(b)
 }

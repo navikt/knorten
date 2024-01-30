@@ -45,7 +45,6 @@ const (
 	jsonContentType = "application/json; charset=utf-8"
 )
 
-// FIXME: we do this so that we can load the assets correctly
 func init() {
 	_, filename, _, _ := runtime.Caller(0)
 	dir := path.Join(path.Dir(filename), "../..")

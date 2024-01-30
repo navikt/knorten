@@ -466,7 +466,6 @@ func TestAirflowAPI(t *testing.T) {
 		}
 		resp.Body.Close()
 
-		// FIXME: All these status checks just take a look at the last request, which is not necessarily the one we want to check
 		if resp.StatusCode != http.StatusOK {
 			t.Errorf("delete team: expected status code 200, got %v", resp.StatusCode)
 		}

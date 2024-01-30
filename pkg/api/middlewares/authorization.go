@@ -5,8 +5,6 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/nais/knorten/pkg/api/auth"
-
 	"github.com/gin-gonic/gin"
 	"github.com/nais/knorten/pkg/database"
 	"github.com/sirupsen/logrus"
@@ -19,39 +17,51 @@ const (
 
 func SetSessionStatus(log *logrus.Entry, sessionCookie string, repo *database.Repo) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		session, err := GetSession(c, sessionCookie, repo)
+		status, err := getSession(c, sessionCookie, repo)
 		if err != nil {
-			switch {
-			case errors.Is(err, http.ErrNoCookie):
-				// FIXME: is this really an error, if cookie was never set that seems fine
-				log.WithError(err).Error("reading session cookie")
-			case errors.Is(err, sql.ErrNoRows):
-				log.WithError(err).Error("retrieving session from db")
-			}
-
-			c.Set(AdminKey, false)
-			c.Set(LoggedInKey, false)
-
-			return
+			log.WithError(err).Error("getting session status")
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		}
 
-		c.Set(AdminKey, session.IsAdmin)
-		c.Set(LoggedInKey, len(session.Token) > 0)
+		c.Set(AdminKey, status.isAdmin)
+		c.Set(LoggedInKey, status.isLoggedIn)
 
 		c.Next()
 	}
 }
 
-func GetSession(c *gin.Context, sessionCookie string, repo *database.Repo) (*auth.Session, error) {
+type sessionStatus struct {
+	isAdmin    bool
+	isLoggedIn bool
+}
+
+func getSession(c *gin.Context, sessionCookie string, repo *database.Repo) (*sessionStatus, error) {
 	cookie, err := c.Cookie(sessionCookie)
 	if err != nil {
+		if errors.Is(err, http.ErrNoCookie) {
+			return &sessionStatus{
+				isAdmin:    false,
+				isLoggedIn: false,
+			}, nil
+		}
+
 		return nil, err
 	}
 
 	session, err := repo.SessionGet(c, cookie)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return &sessionStatus{
+				isAdmin:    false,
+				isLoggedIn: false,
+			}, nil
+		}
+
 		return nil, err
 	}
 
-	return session, nil
+	return &sessionStatus{
+		isAdmin:    session.IsAdmin,
+		isLoggedIn: len(session.Token) > 0,
+	}, nil
 }

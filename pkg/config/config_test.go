@@ -16,17 +16,6 @@ import (
 
 var update = flag.Bool("update", false, "update golden files")
 
-func newFsWithConfig(t *testing.T, path string, data []byte) afero.Fs { //nolint: ireturn
-	t.Helper()
-
-	fs := afero.NewMemMapFs()
-
-	err := afero.WriteFile(fs, path, data, 0o644)
-	t.Errorf("write file: %v", err)
-
-	return fs
-}
-
 func newFakeConfig() config.Config {
 	return config.Config{
 		Oauth: config.Oauth{

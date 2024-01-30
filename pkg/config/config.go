@@ -7,13 +7,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/spf13/afero"
+
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 
 	"github.com/mitchellh/mapstructure"
 
-	"github.com/spf13/afero"
 	"github.com/spf13/viper"
 )
 
@@ -232,6 +233,7 @@ type FileSystemLoader struct {
 func (fs *FileSystemLoader) Load(name, path, envPrefix string) (Config, error) {
 	v := viper.New()
 
+	v.SetFs(fs)
 	v.AddConfigPath(path)
 	v.SetConfigName(name)
 	v.SetConfigType(defaultExtension)

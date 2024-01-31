@@ -15,4 +15,5 @@ WORKDIR /app
 COPY --from=builder /src/knorten /app/knorten
 COPY --from=builder /src/assets /app/assets
 COPY --from=builder /src/templates /app/templates
-CMD ["/app/knorten"]
+
+CMD ["/app/knorten", "--config", "/app/config.yaml"]

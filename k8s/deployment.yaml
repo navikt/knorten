@@ -24,28 +24,16 @@ spec:
           env:
             - name: "GIN_MODE"
               value: "release"
-            - name: AIRFLOW_CHART_VERSION
+            - name: KNORTEN_HELM_AIRFLOW_CHART_VERSION
               valueFrom:
                 configMapKeyRef:
                   name: helm-repos
                   key: airflow_chart_version
-            - name: JUPYTER_CHART_VERSION
+            - name: KNORTEN_HELM_JUPYTER_CHART_VERSION
               valueFrom:
                 configMapKeyRef:
                   name: helm-repos
                   key: jupyter_chart_version
-            - name: AIRFLOW_EGRESS_NETPOL
-              value: /root/.config/netpol/default-egress-airflow-worker.yaml
-            - name: ADMIN_GROUP
-              value: nada@nav.no
-            - name: VM_NETWORK_CONFIG
-              value: network=knada-vpc,subnet=knada,no-address
-            - name: GCP_PROJECT
-              value: knada-gcp
-            - name: GCP_REGION
-              value: europe-north1
-            - name: GCP_ZONE
-              value: europe-north1-b
             - name: ELECTOR_PATH
               value: localhost:4040
           envFrom:
@@ -55,6 +43,9 @@ spec:
             - name: helm-repos-config
               mountPath: /root/.config/helm/repositories.yaml
               subPath: repositories.yaml
+            - name: knorten-config
+              mountPath: /app/config.yaml
+              subPath: config.yaml
           resources:
             limits:
               memory: 1Gi

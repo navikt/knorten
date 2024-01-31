@@ -190,12 +190,6 @@ func (c CookieSettings) Validate() error {
 	)
 }
 
-func NewDefault() Config {
-	return Config{
-		AdminGroup: "nada@nav.no",
-	}
-}
-
 type FileParts struct {
 	FileName string
 	Path     string

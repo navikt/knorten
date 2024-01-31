@@ -78,5 +78,10 @@ lint: $(GOLANGCILINT)
 	$(GOLANGCILINT) run
 .PHONY: lint
 
+update-configmap:
+	kubectl create configmap knorten-config \
+		--from-file=config.yaml=config-prod.yaml --dry-run=client -o yaml \
+			> k8s/configmap.yaml
+
 check: | lint test
 .PHONY: check

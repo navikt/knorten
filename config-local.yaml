@@ -32,8 +32,8 @@ cookies:
         secure: true
         http_only: true
 helm:
-    airflow_chart_version: 1.10.0
-    jupyter_chart_version: 2.0.0
+    airflow_chart_version: 1.11.0
+    jupyter_chart_version: 3.2.1
 server:
     hostname: localhost
     port: 8080

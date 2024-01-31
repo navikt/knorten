@@ -8,14 +8,13 @@ import (
 )
 
 type client struct {
-	azureClient  *auth.Azure
-	router       *gin.Engine
-	repo         *database.Repo
-	log          *logrus.Entry
-	dryRun       bool
-	adminGroupID string
-	gcpProject   string
-	gcpZone      string
+	azureClient *auth.Azure
+	router      *gin.Engine
+	repo        *database.Repo
+	log         *logrus.Entry
+	dryRun      bool
+	gcpProject  string
+	gcpZone     string
 }
 
 type Config struct {

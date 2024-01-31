@@ -12,25 +12,25 @@ cookies:
         max_age: 3600
         path: /
         domain: knorten.knada.io
-        same_site: Strict
+        same_site: Lax
         secure: true
-        http_only: true
+        http_only: false
     oauth_state:
         name: oauth_state
         max_age: 3600
         path: /
         domain: knorten.knada.io
-        same_site: Strict
+        same_site: Lax
         secure: true
-        http_only: true
+        http_only: false
     session:
         name: knorten_session
         max_age: 86400
         path: /
         domain: knorten.knada.io
-        same_site: Strict
+        same_site: Lax
         secure: true
-        http_only: true
+        http_only: false
 helm:
     airflow_chart_version: 1.11.0
     jupyter_chart_version: 3.2.1

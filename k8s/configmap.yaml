@@ -1,4 +1,7 @@
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: knorten-config
 data:
   config.yaml: |
     oauth:
@@ -53,7 +56,3 @@ data:
     login_page: https://knorten.knada.io/
     dry_run: false
     in_cluster: true
-kind: ConfigMap
-metadata:
-  creationTimestamp: null
-  name: knorten-config

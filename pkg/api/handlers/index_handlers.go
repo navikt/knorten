@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/nais/knorten/pkg/api/middlewares"
+	"github.com/navikt/knorten/pkg/api/middlewares"
 
 	"github.com/gin-gonic/gin"
 )

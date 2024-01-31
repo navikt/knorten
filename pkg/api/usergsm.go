@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/database/gensql"
 )
 
 func (c *client) setupSecretRoutes() {

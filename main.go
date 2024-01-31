@@ -7,22 +7,22 @@ import (
 	"net"
 	"time"
 
-	"github.com/nais/knorten/pkg/api/service"
+	"github.com/navikt/knorten/pkg/api/service"
 
-	"github.com/nais/knorten/pkg/api/handlers"
+	"github.com/navikt/knorten/pkg/api/handlers"
 
-	"github.com/nais/knorten/pkg/api/middlewares"
+	"github.com/navikt/knorten/pkg/api/middlewares"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/nais/knorten/pkg/config"
+	"github.com/navikt/knorten/pkg/config"
 
-	"github.com/nais/knorten/pkg/api"
-	"github.com/nais/knorten/pkg/api/auth"
-	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/events"
-	"github.com/nais/knorten/pkg/helm"
-	"github.com/nais/knorten/pkg/imageupdater"
+	"github.com/navikt/knorten/pkg/api"
+	"github.com/navikt/knorten/pkg/api/auth"
+	"github.com/navikt/knorten/pkg/database"
+	"github.com/navikt/knorten/pkg/events"
+	"github.com/navikt/knorten/pkg/helm"
+	"github.com/navikt/knorten/pkg/imageupdater"
 	"github.com/sirupsen/logrus"
 )
 

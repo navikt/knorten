@@ -13,17 +13,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nais/knorten/pkg/api/service"
-	"github.com/nais/knorten/pkg/config"
+	"github.com/navikt/knorten/pkg/api/service"
+	"github.com/navikt/knorten/pkg/config"
 
-	"github.com/nais/knorten/pkg/api/handlers"
+	"github.com/navikt/knorten/pkg/api/handlers"
 
-	"github.com/nais/knorten/pkg/api/middlewares"
+	"github.com/navikt/knorten/pkg/api/middlewares"
 
 	"github.com/gin-gonic/gin"
-	"github.com/nais/knorten/local/dbsetup"
-	"github.com/nais/knorten/pkg/api/auth"
-	"github.com/nais/knorten/pkg/database"
+	"github.com/navikt/knorten/local/dbsetup"
+	"github.com/navikt/knorten/pkg/api/auth"
+	"github.com/navikt/knorten/pkg/database"
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/minify/v2/html"
 

@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nais/knorten/pkg/api/middlewares"
+	"github.com/navikt/knorten/pkg/api/middlewares"
 
 	"github.com/gin-gonic/gin"
-	"github.com/nais/knorten/pkg/api/auth"
+	"github.com/navikt/knorten/pkg/api/auth"
 )
 
 func (c *client) adminAuthMiddleware() gin.HandlerFunc {

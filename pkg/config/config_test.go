@@ -10,7 +10,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/nais/knorten/pkg/config"
+	"github.com/navikt/knorten/pkg/config"
 )
 
 var update = flag.Bool("update", false, "update golden files")

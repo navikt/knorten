@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/database/gensql"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"

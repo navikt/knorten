@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nais/knorten/pkg/common"
+	"github.com/navikt/knorten/pkg/common"
 
-	"github.com/nais/knorten/pkg/database"
+	"github.com/navikt/knorten/pkg/database"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/nais/knorten/pkg/api/auth"
+	"github.com/navikt/knorten/pkg/api/auth"
 )
 
 type AuthService interface {

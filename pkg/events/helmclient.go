@@ -3,9 +3,9 @@ package events
 import (
 	"context"
 
-	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/helm"
-	"github.com/nais/knorten/pkg/logger"
+	"github.com/navikt/knorten/pkg/database"
+	"github.com/navikt/knorten/pkg/helm"
+	"github.com/navikt/knorten/pkg/logger"
 )
 
 type helmClient interface {

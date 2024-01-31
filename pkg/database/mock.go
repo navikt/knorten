@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/database/gensql"
 )
 
 type RepoMock struct{}

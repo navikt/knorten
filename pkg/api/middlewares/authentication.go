@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nais/knorten/pkg/database"
+	"github.com/navikt/knorten/pkg/database"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/nais/knorten/pkg/api/auth"
+	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/sirupsen/logrus"
 )
 

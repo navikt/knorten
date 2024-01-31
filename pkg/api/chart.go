@@ -10,14 +10,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nais/knorten/pkg/api/middlewares"
+	"github.com/navikt/knorten/pkg/api/middlewares"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
-	"github.com/nais/knorten/pkg/chart"
-	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/chart"
+	"github.com/navikt/knorten/pkg/database/gensql"
 )
 
 type jupyterForm struct {

@@ -7,21 +7,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nais/knorten/pkg/common"
+	"github.com/navikt/knorten/pkg/common"
 
-	"github.com/nais/knorten/pkg/api/service"
+	"github.com/navikt/knorten/pkg/api/service"
 
 	"github.com/gin-contrib/sessions"
 
 	"github.com/google/uuid"
 
-	"github.com/nais/knorten/pkg/database"
+	"github.com/navikt/knorten/pkg/database"
 	"github.com/sirupsen/logrus"
 
-	"github.com/nais/knorten/pkg/api/auth"
+	"github.com/navikt/knorten/pkg/api/auth"
 
 	"github.com/gin-gonic/gin"
-	"github.com/nais/knorten/pkg/config"
+	"github.com/navikt/knorten/pkg/config"
 )
 
 const (

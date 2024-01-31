@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/nais/knorten/pkg/gcp"
+	"github.com/navikt/knorten/pkg/gcp"
 )
 
 var gcpIAMPolicyBindingsRoles = []string{

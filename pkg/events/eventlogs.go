@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/database"
+	"github.com/navikt/knorten/pkg/database/gensql"
 	"github.com/sirupsen/logrus"
 )
 

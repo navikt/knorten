@@ -1,4 +1,4 @@
-module github.com/nais/knorten
+module github.com/navikt/knorten
 
 go 1.21
 

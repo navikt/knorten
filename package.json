@@ -7,7 +7,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nais/knorten.git"
+    "url": "git+https://github.com/navikt/knorten.git"
   },
   "scripts": {
     "build:css": "postcss local/tailwind.css -o assets/css/main.css"
@@ -15,9 +15,9 @@
   "author": "",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/nais/knorten/issues"
+    "url": "https://github.com/navikt/knorten/issues"
   },
-  "homepage": "https://github.com/nais/knorten#readme",
+  "homepage": "https://github.com/navikt/knorten#readme",
   "devDependencies": {
     "@fullhuman/postcss-purgecss": "^5.0.0",
     "autoprefixer": "^10.4.13",

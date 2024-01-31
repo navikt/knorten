@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/nais/knorten/local/dbsetup"
+	"github.com/navikt/knorten/local/dbsetup"
 )
 
 const (

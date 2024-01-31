@@ -6,8 +6,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/nais/knorten/pkg/api/auth"
-	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/api/auth"
+	"github.com/navikt/knorten/pkg/database/gensql"
 )
 
 func (r *Repo) SessionCreate(ctx context.Context, session *auth.Session) error {

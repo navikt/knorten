@@ -8,13 +8,13 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/nais/knorten/pkg/api/middlewares"
+	"github.com/navikt/knorten/pkg/api/middlewares"
 
 	"github.com/google/uuid"
-	"github.com/nais/knorten/pkg/chart"
-	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/k8s"
+	"github.com/navikt/knorten/pkg/chart"
+	"github.com/navikt/knorten/pkg/database"
+	"github.com/navikt/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/k8s"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"

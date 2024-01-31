@@ -12,8 +12,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
-	"github.com/nais/knorten/pkg/database/crypto"
-	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/database/crypto"
+	"github.com/navikt/knorten/pkg/database/gensql"
 	"github.com/pressly/goose/v3"
 	"github.com/sirupsen/logrus"
 

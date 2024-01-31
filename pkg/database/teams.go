@@ -6,8 +6,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/reflect"
+	"github.com/navikt/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/reflect"
 )
 
 func (r *Repo) TeamCreate(ctx context.Context, team gensql.Team) error {

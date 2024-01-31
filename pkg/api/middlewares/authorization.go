@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/nais/knorten/pkg/database"
+	"github.com/navikt/knorten/pkg/database"
 	"github.com/sirupsen/logrus"
 )
 

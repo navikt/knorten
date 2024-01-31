@@ -17,14 +17,7 @@ type client struct {
 	gcpZone     string
 }
 
-type Config struct {
-	AdminGroupEmail string
-	DryRun          bool
-	GCPProject      string
-	GCPZone         string
-}
-
-func New(router *gin.Engine, db *database.Repo, azureClient *auth.Azure, log *logrus.Entry, cfg Config) error {
+func New(router *gin.Engine, db *database.Repo, azureClient *auth.Azure, log *logrus.Entry, dryRun bool, project, zone string) error {
 	router.Use(gin.Recovery())
 	router.Use(func(ctx *gin.Context) {
 		log.WithField("subsystem", "gin").Infof("%v %v %v", ctx.Request.Method, ctx.Request.URL.Path, ctx.Writer.Status())
@@ -35,9 +28,9 @@ func New(router *gin.Engine, db *database.Repo, azureClient *auth.Azure, log *lo
 		router:      router,
 		repo:        db,
 		log:         log,
-		dryRun:      cfg.DryRun,
-		gcpProject:  cfg.GCPProject,
-		gcpZone:     cfg.GCPZone,
+		dryRun:      dryRun,
+		gcpProject:  project,
+		gcpZone:     zone,
 	}
 
 	api.setupAuthenticatedRoutes()

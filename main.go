@@ -155,12 +155,7 @@ func main() {
 		cfg.DryRun,
 	))
 
-	err = api.New(router, dbClient, azureClient, log.WithField("subsystem", "api"), api.Config{
-		DryRun:          cfg.DryRun,
-		AdminGroupEmail: cfg.AdminGroup,
-		GCPProject:      cfg.GCP.Project,
-		GCPZone:         cfg.GCP.Zone,
-	})
+	err = api.New(router, dbClient, azureClient, log.WithField("subsystem", "api"), cfg.DryRun, cfg.GCP.Project, cfg.GCP.Zone)
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return

@@ -88,14 +88,9 @@ func TestMain(m *testing.M) {
 	}
 	router.LoadHTMLGlob("templates/**/*")
 
-	cfg := Config{
-		AdminGroupEmail: "nada@nav.no",
-		DryRun:          true,
-	}
-
 	authService := service.NewAuthService(
 		repo,
-		cfg.AdminGroupEmail,
+		"nada@nav.no",
 		1*time.Hour,
 		32,
 		azureClient,
@@ -111,16 +106,17 @@ func TestMain(m *testing.M) {
 
 	router.Use(middlewares.SetSessionStatus(logger.WithField("subsystem", "status_middleware"), "knorten_session", repo))
 	router.GET("/", handlers.IndexHandler)
-	router.GET("/oauth2/login", authHandler.LoginHandler(cfg.DryRun))
+	router.GET("/oauth2/login", authHandler.LoginHandler(true))
 	router.GET("/oauth2/callback", authHandler.CallbackHandler())
 	router.GET("/oauth2/logout", authHandler.LogoutHandler())
 	router.Use(middlewares.Authenticate(
 		logger,
 		repo,
 		azureClient,
-		cfg.DryRun,
+		true,
 	))
-	err = New(router, repo, azureClient, logger, cfg)
+
+	err = New(router, repo, azureClient, logger, true, "", "")
 	if err != nil {
 		log.Fatalf("setting up api: %v", err)
 	}

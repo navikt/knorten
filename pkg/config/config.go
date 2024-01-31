@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/spf13/afero"
-
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
@@ -216,18 +214,15 @@ func ProcessConfigPath(configFile string) (FileParts, error) {
 	}, nil
 }
 
-func NewFileSystemLoader(fs afero.Fs) *FileSystemLoader {
-	return &FileSystemLoader{fs}
+func NewFileSystemLoader() *FileSystemLoader {
+	return &FileSystemLoader{}
 }
 
-type FileSystemLoader struct {
-	afero.Fs
-}
+type FileSystemLoader struct{}
 
 func (fs *FileSystemLoader) Load(name, path, envPrefix string) (Config, error) {
 	v := viper.New()
 
-	v.SetFs(fs)
 	v.AddConfigPath(path)
 	v.SetConfigName(name)
 	v.SetConfigType(defaultExtension)

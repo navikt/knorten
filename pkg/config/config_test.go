@@ -11,7 +11,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/nais/knorten/pkg/config"
-	"github.com/spf13/afero"
 )
 
 var update = flag.Bool("update", false, "update golden files")
@@ -90,7 +89,7 @@ func updateGoldenFiles(t *testing.T, filePath string, cfg config.Config) []byte 
 		t.Errorf("marshal config: %v", err)
 	}
 
-	err = afero.WriteFile(afero.NewOsFs(), filePath, data, 0o644)
+	err = os.WriteFile(filePath, data, 0o600)
 	if err != nil {
 		t.Errorf("write golden file: %v", err)
 	}
@@ -121,7 +120,7 @@ func TestLoad(t *testing.T) {
 			name:      "Standard config",
 			config:    "config",
 			path:      "testdata",
-			loader:    config.NewFileSystemLoader(afero.NewOsFs()),
+			loader:    config.NewFileSystemLoader(),
 			expect:    newFakeConfig(),
 			expectErr: false,
 		},
@@ -129,7 +128,7 @@ func TestLoad(t *testing.T) {
 			name:   "Standard config with env overrides",
 			config: "config",
 			path:   "testdata",
-			loader: config.NewFileSystemLoader(afero.NewOsFs()),
+			loader: config.NewFileSystemLoader(),
 			expect: func() config.Config {
 				cfg := newFakeConfig()
 				cfg.AdminGroup = "something_super_random"
@@ -147,7 +146,7 @@ func TestLoad(t *testing.T) {
 			config:    "config",
 			path:      "testdata",
 			envPrefix: "knorten",
-			loader:    config.NewFileSystemLoader(afero.NewOsFs()),
+			loader:    config.NewFileSystemLoader(),
 			expect: func() config.Config {
 				cfg := newFakeConfig()
 				cfg.AdminGroup = "something_super_random"

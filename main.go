@@ -15,8 +15,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/spf13/afero"
-
 	"github.com/nais/knorten/pkg/config"
 
 	"github.com/nais/knorten/pkg/api"
@@ -47,7 +45,7 @@ func main() {
 		return
 	}
 
-	cfg, err := config.NewFileSystemLoader(afero.NewOsFs()).Load(fileParts.FileName, fileParts.Path, "KNORTEN")
+	cfg, err := config.NewFileSystemLoader().Load(fileParts.FileName, fileParts.Path, "KNORTEN")
 	if err != nil {
 		log.WithError(err).Fatal("loading config")
 

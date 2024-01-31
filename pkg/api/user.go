@@ -42,7 +42,7 @@ func (c *client) setupUserRoutes() {
 			"gcpProject": c.gcpProject,
 			"gcpZone":    c.gcpZone,
 			"loggedIn":   ctx.GetBool(middlewares.LoggedInKey),
-			"admin":      ctx.GetBool(middlewares.AdminKey),
+			"isAdmin":    ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 }

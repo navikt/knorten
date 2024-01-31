@@ -11,6 +11,6 @@ import (
 func IndexHandler(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "index", gin.H{
 		"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-		"admin":    ctx.GetBool(middlewares.AdminKey),
+		"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 	})
 }

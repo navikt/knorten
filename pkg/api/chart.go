@@ -152,7 +152,7 @@ func (c *client) setupChartRoutes() {
 			"form":     form,
 			"errors":   flashes,
 			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-			"admin":    ctx.GetBool(middlewares.AdminKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -231,7 +231,7 @@ func (c *client) setupChartRoutes() {
 			"values":   form,
 			"errors":   flashes,
 			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-			"admin":    ctx.GetBool(middlewares.AdminKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 

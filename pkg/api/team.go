@@ -89,7 +89,7 @@ func (c *client) setupTeamRoutes() {
 			"form":     form,
 			"errors":   flashes,
 			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-			"admin":    ctx.GetBool(middlewares.AdminKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -146,7 +146,7 @@ func (c *client) setupTeamRoutes() {
 			"team":     team,
 			"errors":   flashes,
 			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-			"admin":    ctx.GetBool(middlewares.AdminKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -220,7 +220,7 @@ func (c *client) setupTeamRoutes() {
 			"slug":     team.Slug,
 			"errors":   flashes,
 			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-			"admin":    ctx.GetBool(middlewares.AdminKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 }

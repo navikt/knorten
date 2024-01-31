@@ -30,7 +30,7 @@ func (c *client) setupComputeRoutes() {
 	c.router.GET("/compute/new", func(ctx *gin.Context) {
 		ctx.HTML(http.StatusOK, "compute/new", gin.H{
 			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-			"admin":    ctx.GetBool(middlewares.AdminKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -85,7 +85,7 @@ func (c *client) setupComputeRoutes() {
 			"name":     "compute-" + getNormalizedNameFromEmail(user.Email),
 			"diskSize": computeInstance.DiskSize,
 			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-			"admin":    ctx.GetBool(middlewares.AdminKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 

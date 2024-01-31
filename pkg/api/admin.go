@@ -87,7 +87,7 @@ func (c *client) setupAdminRoutes() {
 			"teams":      teamApps,
 			"gcpProject": c.gcpProject,
 			"loggedIn":   ctx.GetBool(middlewares.LoggedInKey),
-			"admin":      ctx.GetBool(middlewares.AdminKey),
+			"isAdmin":    ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -123,7 +123,7 @@ func (c *client) setupAdminRoutes() {
 			"errors":   flashes,
 			"chart":    string(chartType),
 			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-			"admin":    ctx.GetBool(middlewares.AdminKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -198,7 +198,7 @@ func (c *client) setupAdminRoutes() {
 			"changedValues": changedValues,
 			"chart":         string(chartType),
 			"loggedIn":      ctx.GetBool(middlewares.LoggedInKey),
-			"admin":         ctx.GetBool(middlewares.AdminKey),
+			"isAdmin":       ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -337,7 +337,7 @@ func (c *client) setupAdminRoutes() {
 		}
 
 		header["loggedIn"] = ctx.GetBool(middlewares.LoggedInKey)
-		header["admin"] = ctx.GetBool(middlewares.AdminKey)
+		header["isAdmin"] = ctx.GetBool(middlewares.AdminKey)
 
 		ctx.HTML(http.StatusOK, "admin/event", header)
 	})

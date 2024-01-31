@@ -17,9 +17,9 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 	"k8s.io/utils/strings/slices"
 
-	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/logger"
+	"github.com/navikt/knorten/pkg/database"
+	"github.com/navikt/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/logger"
 )
 
 const (

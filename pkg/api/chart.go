@@ -10,12 +10,14 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/navikt/knorten/pkg/api/middlewares"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
-	"github.com/nais/knorten/pkg/chart"
-	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/chart"
+	"github.com/navikt/knorten/pkg/database/gensql"
 )
 
 type jupyterForm struct {
@@ -145,10 +147,12 @@ func (c *client) setupChartRoutes() {
 			return
 		}
 
-		c.htmlResponseWrapper(ctx, http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
-			"team":   slug,
-			"form":   form,
-			"errors": flashes,
+		ctx.HTML(http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
+			"team":     slug,
+			"form":     form,
+			"errors":   flashes,
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -222,10 +226,12 @@ func (c *client) setupChartRoutes() {
 			return
 		}
 
-		c.htmlResponseWrapper(ctx, http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
-			"team":   teamSlug,
-			"values": form,
-			"errors": flashes,
+		ctx.HTML(http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
+			"team":     teamSlug,
+			"values":   form,
+			"errors":   flashes,
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 

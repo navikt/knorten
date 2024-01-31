@@ -12,11 +12,11 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/nais/knorten/local/dbsetup"
-	"github.com/nais/knorten/pkg/api/auth"
-	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/helm"
+	"github.com/navikt/knorten/local/dbsetup"
+	"github.com/navikt/knorten/pkg/api/auth"
+	"github.com/navikt/knorten/pkg/database"
+	"github.com/navikt/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/helm"
 	"github.com/sirupsen/logrus"
 )
 

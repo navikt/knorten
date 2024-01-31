@@ -8,9 +8,9 @@ import (
 
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
-	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/gcp"
-	"github.com/nais/knorten/pkg/k8s"
+	"github.com/navikt/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/gcp"
+	"github.com/navikt/knorten/pkg/k8s"
 	"google.golang.org/api/googleapi"
 	iamv1 "google.golang.org/api/iam/v1"
 )

@@ -3,7 +3,7 @@ package database
 import (
 	"context"
 
-	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/database/gensql"
 )
 
 func (r *Repo) ComputeInstanceCreate(ctx context.Context, instance gensql.ComputeInstance) error {

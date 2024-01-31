@@ -10,9 +10,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/k8s"
+	"github.com/navikt/knorten/pkg/database"
+	"github.com/navikt/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/k8s"
 )
 
 func TestAdminAPI(t *testing.T) {

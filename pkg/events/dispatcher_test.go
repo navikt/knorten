@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/database"
+	"github.com/navikt/knorten/pkg/database/gensql"
 )
 
 func TestEventHandler_distributeWork(t *testing.T) {

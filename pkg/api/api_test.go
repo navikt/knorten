@@ -11,10 +11,19 @@ import (
 	"path"
 	"runtime"
 	"testing"
+	"time"
 
-	"github.com/nais/knorten/local/dbsetup"
-	"github.com/nais/knorten/pkg/api/auth"
-	"github.com/nais/knorten/pkg/database"
+	"github.com/navikt/knorten/pkg/api/service"
+	"github.com/navikt/knorten/pkg/config"
+
+	"github.com/navikt/knorten/pkg/api/handlers"
+
+	"github.com/navikt/knorten/pkg/api/middlewares"
+
+	"github.com/gin-gonic/gin"
+	"github.com/navikt/knorten/local/dbsetup"
+	"github.com/navikt/knorten/pkg/api/auth"
+	"github.com/navikt/knorten/pkg/database"
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/minify/v2/html"
 
@@ -66,12 +75,53 @@ func TestMain(m *testing.M) {
 		log.Fatalf("creating azure client: %v", err)
 	}
 
-	srv, err := New(repo, azureClient, true, "jegersekstentegn", "nada@nav.no", "", "", logger)
+	router := gin.New()
+
+	session, err := repo.NewSessionStore("knorten_session")
+	if err != nil {
+		log.Fatalf("creating session store: %v", err)
+	}
+	router.Use(session)
+	router.Static("/assets", "./assets")
+	router.FuncMap = template.FuncMap{
+		"toArray": toArray,
+	}
+	router.LoadHTMLGlob("templates/**/*")
+
+	authService := service.NewAuthService(
+		repo,
+		"nada@nav.no",
+		1*time.Hour,
+		32,
+		azureClient,
+	)
+
+	authHandler := handlers.NewAuthHandler(
+		authService,
+		"http://localhost:8080/",
+		config.Cookies{},
+		logger,
+		repo,
+	)
+
+	router.Use(middlewares.SetSessionStatus(logger.WithField("subsystem", "status_middleware"), "knorten_session", repo))
+	router.GET("/", handlers.IndexHandler)
+	router.GET("/oauth2/login", authHandler.LoginHandler(true))
+	router.GET("/oauth2/callback", authHandler.CallbackHandler())
+	router.GET("/oauth2/logout", authHandler.LogoutHandler())
+	router.Use(middlewares.Authenticate(
+		logger,
+		repo,
+		azureClient,
+		true,
+	))
+
+	err = New(router, repo, azureClient, logger, true, "", "")
 	if err != nil {
 		log.Fatalf("setting up api: %v", err)
 	}
 
-	server = httptest.NewServer(srv)
+	server = httptest.NewServer(router)
 	code := m.Run()
 
 	server.Close()
@@ -107,4 +157,9 @@ func createExpectedHTML(t string, values map[string]any) (string, error) {
 	}
 
 	return string(dataBytes), nil
+}
+
+// Need to move this
+func toArray(args ...any) []any {
+	return args
 }

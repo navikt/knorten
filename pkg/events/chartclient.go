@@ -3,9 +3,9 @@ package events
 import (
 	"context"
 
-	"github.com/nais/knorten/pkg/chart"
-	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/logger"
+	"github.com/navikt/knorten/pkg/chart"
+	"github.com/navikt/knorten/pkg/database"
+	"github.com/navikt/knorten/pkg/logger"
 )
 
 type chartClient interface {

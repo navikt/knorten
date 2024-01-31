@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/nais/knorten/local/dbsetup"
+	"github.com/navikt/knorten/local/dbsetup"
 	"github.com/sirupsen/logrus"
 )
 

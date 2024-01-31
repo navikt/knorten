@@ -12,11 +12,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/navikt/knorten/pkg/api/middlewares"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
-	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/database/gensql"
 )
 
 type teamForm struct {
@@ -83,9 +85,11 @@ func (c *client) setupTeamRoutes() {
 		}
 
 		form.Users = []string{user.Email}
-		c.htmlResponseWrapper(ctx, http.StatusOK, "team/new", gin.H{
-			"form":   form,
-			"errors": flashes,
+		ctx.HTML(http.StatusOK, "team/new", gin.H{
+			"form":     form,
+			"errors":   flashes,
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -138,9 +142,11 @@ func (c *client) setupTeamRoutes() {
 			return
 		}
 
-		c.htmlResponseWrapper(ctx, http.StatusOK, "team/edit", gin.H{
-			"team":   team,
-			"errors": flashes,
+		ctx.HTML(http.StatusOK, "team/edit", gin.H{
+			"team":     team,
+			"errors":   flashes,
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -209,10 +215,12 @@ func (c *client) setupTeamRoutes() {
 			return
 		}
 
-		c.htmlResponseWrapper(ctx, http.StatusOK, "team/events", gin.H{
-			"events": events,
-			"slug":   team.Slug,
-			"errors": flashes,
+		ctx.HTML(http.StatusOK, "team/events", gin.H{
+			"events":   events,
+			"slug":     team.Slug,
+			"errors":   flashes,
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 }

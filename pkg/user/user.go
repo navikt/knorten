@@ -1,7 +1,7 @@
 package user
 
 import (
-	"github.com/nais/knorten/pkg/database"
+	"github.com/navikt/knorten/pkg/database"
 )
 
 type Client struct {

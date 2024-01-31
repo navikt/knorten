@@ -1,0 +1,59 @@
+apiVersion: v1
+data:
+  config.yaml: |
+    oauth:
+        client_id: # Set through env var KNORTEN_OAUTH_CLIENT_ID
+        client_secret: # Set through env var KNORTEN_OAUTH_CLIENT_SECRET
+        tenant_id: # Set through env var KNORTEN_OAUTH_TENANT_ID
+    gcp:
+        project: knada-gcp
+        region: europe-north1
+        zone: europe-north1-b
+    cookies:
+        redirect:
+            name: redirecturi
+            max_age: 3600
+            path: /
+            domain: knorten.knada.io
+            same_site: Strict
+            secure: true
+            http_only: true
+        oauth_state:
+            name: oauth_state
+            max_age: 3600
+            path: /
+            domain: knorten.knada.io
+            same_site: Strict
+            secure: true
+            http_only: true
+        session:
+            name: knorten_session
+            max_age: 86400
+            path: /
+            domain: knorten.knada.io
+            same_site: Strict
+            secure: true
+            http_only: true
+    helm:
+        airflow_chart_version: 1.11.0
+        jupyter_chart_version: 3.2.1
+    server:
+        hostname: 0.0.0.0
+        port: 8080
+    postgres:
+        host: 127.0.0.1
+        port: 5432
+        user_name: knorten
+        password: # Set through env var KNORTEN_POSTGRES_PASSWORD
+        database_name: knorten
+        ssl_mode: disable
+    db_enc_key: # Set through env var KNORTEN_DB_ENC_KEY
+    admin_group: nada@nav.no
+    session_key: # Set through env var KNORTEN_SESSION_KEY
+    login_page: https://knorten.knada.io/
+    dry_run: false
+    in_cluster: true
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: knorten-config

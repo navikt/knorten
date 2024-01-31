@@ -3,7 +3,7 @@ package database
 import (
 	"context"
 
-	"github.com/nais/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/database/gensql"
 )
 
 func (r *Repo) GlobalChartValueInsert(ctx context.Context, key, value string, encrypted bool, chartType gensql.ChartType) error {

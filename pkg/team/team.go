@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/nais/knorten/pkg/chart"
-	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/k8s"
-	"github.com/nais/knorten/pkg/logger"
+	"github.com/navikt/knorten/pkg/chart"
+	"github.com/navikt/knorten/pkg/database"
+	"github.com/navikt/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/k8s"
+	"github.com/navikt/knorten/pkg/logger"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 )

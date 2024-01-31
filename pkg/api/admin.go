@@ -8,11 +8,13 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/navikt/knorten/pkg/api/middlewares"
+
 	"github.com/google/uuid"
-	"github.com/nais/knorten/pkg/chart"
-	"github.com/nais/knorten/pkg/database"
-	"github.com/nais/knorten/pkg/database/gensql"
-	"github.com/nais/knorten/pkg/k8s"
+	"github.com/navikt/knorten/pkg/chart"
+	"github.com/navikt/knorten/pkg/database"
+	"github.com/navikt/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/k8s"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -80,10 +82,12 @@ func (c *client) setupAdminRoutes() {
 			}
 		}
 
-		c.htmlResponseWrapper(ctx, http.StatusOK, "admin/index", gin.H{
+		ctx.HTML(http.StatusOK, "admin/index", gin.H{
 			"errors":     flashes,
 			"teams":      teamApps,
 			"gcpProject": c.gcpProject,
+			"loggedIn":   ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":    ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -114,10 +118,12 @@ func (c *client) setupAdminRoutes() {
 			return
 		}
 
-		c.htmlResponseWrapper(ctx, http.StatusOK, "admin/chart", gin.H{
-			"values": values,
-			"errors": flashes,
-			"chart":  string(chartType),
+		ctx.HTML(http.StatusOK, "admin/chart", gin.H{
+			"values":   values,
+			"errors":   flashes,
+			"chart":    string(chartType),
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -188,9 +194,11 @@ func (c *client) setupAdminRoutes() {
 			return
 		}
 
-		c.htmlResponseWrapper(ctx, http.StatusOK, "admin/confirm", gin.H{
+		ctx.HTML(http.StatusOK, "admin/confirm", gin.H{
 			"changedValues": changedValues,
 			"chart":         string(chartType),
+			"loggedIn":      ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":       ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -328,7 +336,10 @@ func (c *client) setupAdminRoutes() {
 			ctx.Redirect(http.StatusSeeOther, "/admin")
 		}
 
-		c.htmlResponseWrapper(ctx, http.StatusOK, "admin/event", header)
+		header["loggedIn"] = ctx.GetBool(middlewares.LoggedInKey)
+		header["isAdmin"] = ctx.GetBool(middlewares.AdminKey)
+
+		ctx.HTML(http.StatusOK, "admin/event", header)
 	})
 
 	c.router.POST("/admin/event/:id", func(ctx *gin.Context) {

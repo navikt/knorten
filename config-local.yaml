@@ -1,0 +1,52 @@
+oauth:
+    client_id: # Populated by env var
+    client_secret: # Populated by env var
+    tenant_id: # Populated by env var
+gcp:
+    project: nada-dev-db2e
+    region: europe-north1
+    zone: europe-north1-b
+cookies:
+    redirect:
+        name: redirecturi
+        max_age: 3600
+        path: /
+        domain: localhost
+        same_site: Lax
+        secure: false
+        http_only: true
+    oauth_state:
+        name: oauth_state
+        max_age: 3600
+        path: /
+        domain: localhost
+        same_site: Lax
+        secure: true
+        http_only: true
+    session:
+        name: knorten_session
+        max_age: 86400
+        path: /
+        domain: localhost
+        same_site: Lax
+        secure: true
+        http_only: true
+helm:
+    airflow_chart_version: 1.11.0
+    jupyter_chart_version: 3.2.1
+server:
+    hostname: localhost
+    port: 8080
+postgres:
+    host: localhost
+    port: 5432
+    user_name: postgres
+    password: postgres
+    database_name: knorten
+    ssl_mode: disable
+db_enc_key: jegersekstentegn
+admin_group: nada@nav.no
+session_key: online-session
+login_page: http://localhost:8080/
+dry_run: true
+in_cluster: false

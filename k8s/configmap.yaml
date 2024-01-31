@@ -2,6 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: knorten-config
+  namespace: knada-system
 data:
   config.yaml: |
     oauth:

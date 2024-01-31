@@ -114,9 +114,16 @@ func main() {
 		return
 	}
 
+	adminGroupID, err := azureClient.GetGroupID(cfg.AdminGroup)
+	if err != nil {
+		log.WithError(err).Fatal("getting admin group id")
+
+		return
+	}
+
 	authService := service.NewAuthService(
 		dbClient,
-		cfg.AdminGroup,
+		adminGroupID,
 		1*time.Hour,
 		32,
 		azureClient,

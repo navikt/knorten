@@ -1,8 +1,6 @@
 package api
 
 import (
-	"fmt"
-
 	"github.com/gin-gonic/gin"
 	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/navikt/knorten/pkg/database"
@@ -46,10 +44,6 @@ func New(router *gin.Engine, db *database.Repo, azureClient *auth.Azure, log *lo
 	api.setupAuthenticatedRoutes()
 	api.router.Use(api.adminAuthMiddleware())
 	api.setupAdminRoutes()
-	err := api.fetchAdminGroupID(cfg.AdminGroupEmail)
-	if err != nil {
-		return err
-	}
 
 	return nil
 }
@@ -60,14 +54,4 @@ func (c *client) setupAuthenticatedRoutes() {
 	c.setupComputeRoutes()
 	c.setupSecretRoutes()
 	c.setupChartRoutes()
-}
-
-func (c *client) fetchAdminGroupID(adminGroupEmail string) error {
-	id, err := c.azureClient.GetGroupID(adminGroupEmail)
-	if err != nil {
-		return fmt.Errorf("retrieve admin group id error: %v", err)
-	}
-
-	c.adminGroupID = id
-	return nil
 }

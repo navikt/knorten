@@ -311,9 +311,9 @@ type airflowEnvValueFrom struct {
 }
 
 type airflowEnv struct {
-	Name      string              `json:"name"`
-	Value     string              `json:"value"`
-	ValueFrom airflowEnvValueFrom `json:"valueFrom,omitempty"`
+	Name      string               `json:"name"`
+	Value     string               `json:"value,omitempty"`
+	ValueFrom *airflowEnvValueFrom `json:"valueFrom,omitempty"`
 }
 
 func (Client) createAirflowWebServerEnvs(users []string, apiAccess bool) (string, error) {
@@ -351,7 +351,7 @@ func (c Client) createAirflowExtraEnvs(teamID string) (string, error) {
 		},
 		{
 			Name: "POD_NAME",
-			ValueFrom: airflowEnvValueFrom{
+			ValueFrom: &airflowEnvValueFrom{
 				FieldRef: airflowEnvFieldRef{
 					FieldPath: "metadata.name",
 				},
@@ -359,7 +359,7 @@ func (c Client) createAirflowExtraEnvs(teamID string) (string, error) {
 		},
 		{
 			Name: "NAMESPACE",
-			ValueFrom: airflowEnvValueFrom{
+			ValueFrom: &airflowEnvValueFrom{
 				FieldRef: airflowEnvFieldRef{
 					FieldPath: "metadata.namespace",
 				},

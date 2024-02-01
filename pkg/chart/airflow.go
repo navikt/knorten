@@ -302,9 +302,18 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 	}, nil
 }
 
+type airflowEnvFieldRef struct {
+	FieldPath string `json:"fieldPath"`
+}
+
+type airflowEnvValueFrom struct {
+	FieldRef airflowEnvFieldRef `json:"fieldRef"`
+}
+
 type airflowEnv struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
+	Name      string              `json:"name"`
+	Value     string              `json:"value"`
+	ValueFrom airflowEnvValueFrom `json:"valueFrom,omitempty"`
 }
 
 func (Client) createAirflowWebServerEnvs(users []string, apiAccess bool) (string, error) {
@@ -341,8 +350,20 @@ func (c Client) createAirflowExtraEnvs(teamID string) (string, error) {
 			Value: teamID,
 		},
 		{
-			Name:  "NAMESPACE",
-			Value: k8s.TeamIDToNamespace(teamID),
+			Name: "POD_NAME",
+			ValueFrom: airflowEnvValueFrom{
+				FieldRef: airflowEnvFieldRef{
+					FieldPath: "metadata.name",
+				},
+			},
+		},
+		{
+			Name: "NAMESPACE",
+			ValueFrom: airflowEnvValueFrom{
+				FieldRef: airflowEnvFieldRef{
+					FieldPath: "metadata.namespace",
+				},
+			},
 		},
 		{
 			Name:  "AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER",

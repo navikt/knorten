@@ -318,7 +318,7 @@ func (Client) createAirflowWebServerEnvs(users []string, apiAccess bool) (string
 	if apiAccess {
 		envs = append(envs, airflowEnv{
 			Name:  "AIRFLOW__API__AUTH_BACKENDS",
-			Value: "airflow.api.auth.backend.basic_auth",
+			Value: "airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session",
 		})
 	}
 

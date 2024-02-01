@@ -101,3 +101,6 @@ spec:
         - name: helm-repos-config
           configMap:
             name: helm-repos
+        - name: knorten-config
+          configMap:
+              name: knorten-config

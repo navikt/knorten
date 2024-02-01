@@ -110,7 +110,7 @@ func (h *AuthHandler) callback(ctx *gin.Context) (string, error) {
 		loginPage = "http://localhost:8080" + loginPage
 	}
 
-	deleteCookie(ctx, h.cookies.Redirect.Name, h.cookies.Redirect.Path, h.cookies.Redirect.Domain)
+	deleteCookie(ctx, h.cookies.Redirect.Name, h.cookies.Redirect.Domain, h.cookies.Redirect.Path)
 
 	code := ctx.Request.URL.Query().Get("code")
 	if len(code) == 0 {
@@ -123,7 +123,7 @@ func (h *AuthHandler) callback(ctx *gin.Context) (string, error) {
 		return loginPage + "?error=invalid-state", errors.New("invalid state")
 	}
 
-	deleteCookie(ctx, h.cookies.OauthState.Name, h.cookies.OauthState.Path, h.cookies.OauthState.Domain)
+	deleteCookie(ctx, h.cookies.OauthState.Name, h.cookies.OauthState.Domain, h.cookies.OauthState.Path)
 
 	state := ctx.Request.URL.Query().Get("state")
 	if state != oauthCookie {

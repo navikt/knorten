@@ -52,8 +52,8 @@ type AirflowValues struct {
 	WebserverSecretKey string // Knorten sets Helm value pointing to k8s secret
 
 	// Generated Helm config
-	Envs                    string `helm:"env"`
-	ExtraEnvs               string `helm:"extraEnv"`
+	Env                     string `helm:"env"`
+	ExtraEnv                string `helm:"extraEnv"`
 	WebserverEnv            string `helm:"webserver.env"`
 	WebserverServiceAccount string `helm:"webserver.serviceAccount.name"`
 	WorkerServiceAccount    string `helm:"workers.serviceAccount.name"`
@@ -275,12 +275,12 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 		return AirflowValues{}, err
 	}
 
-	envs, err := c.createAirflowExtraEnvs(team.ID)
+	envs, err := c.createAirflowEnv(team.ID)
 	if err != nil {
 		return AirflowValues{}, err
 	}
 
-	extraEnvs := createAirflowTemplatedEnvs()
+	extraEnvs := createAirflowExtraEnv()
 
 	workerLabels, err := c.createWorkerLabels(team.ID)
 	if err != nil {
@@ -294,8 +294,8 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 
 	return AirflowValues{
 		AirflowConfigurableValues: configurableValues,
-		Envs:                      envs,
-		ExtraEnvs:                 extraEnvs,
+		Env:                       envs,
+		ExtraEnv:                  extraEnvs,
 		WorkerLabels:              workerLabels,
 		FernetKey:                 fernetKey,
 		PostgresPassword:          postgresPassword,
@@ -343,7 +343,7 @@ func (Client) createAirflowWebServerEnvs(users []string, apiAccess bool) (string
 	return string(envBytes), nil
 }
 
-func (c Client) createAirflowExtraEnvs(teamID string) (string, error) {
+func (c Client) createAirflowEnv(teamID string) (string, error) {
 	userEnvs := []airflowEnv{
 		{
 			Name:  "KNADA_TEAM_SECRET",
@@ -371,7 +371,7 @@ func (c Client) createAirflowExtraEnvs(teamID string) (string, error) {
 	return string(envBytes), nil
 }
 
-func createAirflowTemplatedEnvs() string {
+func createAirflowExtraEnv() string {
 	return `- name: "POD_NAME"
   valueFrom:
     fieldRef:

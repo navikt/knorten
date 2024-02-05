@@ -52,7 +52,8 @@ type AirflowValues struct {
 	WebserverSecretKey string // Knorten sets Helm value pointing to k8s secret
 
 	// Generated Helm config
-	ExtraEnvs               string `helm:"env"`
+	Envs                    string `helm:"env"`
+	ExtraEnvs               string `helm:"extraEnv"`
 	WebserverEnv            string `helm:"webserver.env"`
 	WebserverServiceAccount string `helm:"webserver.serviceAccount.name"`
 	WorkerServiceAccount    string `helm:"workers.serviceAccount.name"`
@@ -274,10 +275,12 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 		return AirflowValues{}, err
 	}
 
-	extraEnvs, err := c.createAirflowExtraEnvs(team.ID)
+	envs, err := c.createAirflowExtraEnvs(team.ID)
 	if err != nil {
 		return AirflowValues{}, err
 	}
+
+	extraEnvs := createAirflowTemplatedEnvs()
 
 	workerLabels, err := c.createWorkerLabels(team.ID)
 	if err != nil {
@@ -291,6 +294,7 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 
 	return AirflowValues{
 		AirflowConfigurableValues: configurableValues,
+		Envs:                      envs,
 		ExtraEnvs:                 extraEnvs,
 		WorkerLabels:              workerLabels,
 		FernetKey:                 fernetKey,
@@ -350,22 +354,6 @@ func (c Client) createAirflowExtraEnvs(teamID string) (string, error) {
 			Value: teamID,
 		},
 		{
-			Name: "POD_NAME",
-			ValueFrom: &airflowEnvValueFrom{
-				FieldRef: airflowEnvFieldRef{
-					FieldPath: "metadata.name",
-				},
-			},
-		},
-		{
-			Name: "NAMESPACE",
-			ValueFrom: &airflowEnvValueFrom{
-				FieldRef: airflowEnvFieldRef{
-					FieldPath: "metadata.namespace",
-				},
-			},
-		},
-		{
 			Name:  "AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER",
 			Value: fmt.Sprintf("gs://%v", createBucketName(teamID)),
 		},
@@ -381,6 +369,18 @@ func (c Client) createAirflowExtraEnvs(teamID string) (string, error) {
 	}
 
 	return string(envBytes), nil
+}
+
+func createAirflowTemplatedEnvs() string {
+	return `- name: "POD_NAME"
+  valueFrom:
+    fieldRef:
+      fieldPath: "metadata.name"
+- name: "NAMESPACE"
+  valueFrom:
+    fieldRef:
+      fieldPath: "metadata.namespace"
+`
 }
 
 func (c Client) createWorkerLabels(teamID string) (string, error) {

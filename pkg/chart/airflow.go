@@ -306,18 +306,9 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 	}, nil
 }
 
-type airflowEnvFieldRef struct {
-	FieldPath string `json:"fieldPath"`
-}
-
-type airflowEnvValueFrom struct {
-	FieldRef airflowEnvFieldRef `json:"fieldRef"`
-}
-
 type airflowEnv struct {
-	Name      string               `json:"name"`
-	Value     string               `json:"value,omitempty"`
-	ValueFrom *airflowEnvValueFrom `json:"valueFrom,omitempty"`
+	Name  string `json:"name"`
+	Value string `json:"value,omitempty"`
 }
 
 func (Client) createAirflowWebServerEnvs(users []string, apiAccess bool) (string, error) {

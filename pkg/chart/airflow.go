@@ -52,8 +52,7 @@ type AirflowValues struct {
 	WebserverSecretKey string // Knorten sets Helm value pointing to k8s secret
 
 	// Generated Helm config
-	Env                     string `helm:"env"`
-	ExtraEnv                string `helm:"extraEnv"`
+	ExtraEnvs               string `helm:"env"`
 	WebserverEnv            string `helm:"webserver.env"`
 	WebserverServiceAccount string `helm:"webserver.serviceAccount.name"`
 	WorkerServiceAccount    string `helm:"workers.serviceAccount.name"`
@@ -275,12 +274,10 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 		return AirflowValues{}, err
 	}
 
-	envs, err := c.createAirflowEnv(team.ID)
+	extraEnvs, err := c.createAirflowExtraEnvs(team.ID)
 	if err != nil {
 		return AirflowValues{}, err
 	}
-
-	extraEnvs := createAirflowExtraEnv()
 
 	workerLabels, err := c.createWorkerLabels(team.ID)
 	if err != nil {
@@ -294,8 +291,7 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 
 	return AirflowValues{
 		AirflowConfigurableValues: configurableValues,
-		Env:                       envs,
-		ExtraEnv:                  extraEnvs,
+		ExtraEnvs:                 extraEnvs,
 		WorkerLabels:              workerLabels,
 		FernetKey:                 fernetKey,
 		PostgresPassword:          postgresPassword,
@@ -308,7 +304,7 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 
 type airflowEnv struct {
 	Name  string `json:"name"`
-	Value string `json:"value,omitempty"`
+	Value string `json:"value"`
 }
 
 func (Client) createAirflowWebServerEnvs(users []string, apiAccess bool) (string, error) {
@@ -334,7 +330,7 @@ func (Client) createAirflowWebServerEnvs(users []string, apiAccess bool) (string
 	return string(envBytes), nil
 }
 
-func (c Client) createAirflowEnv(teamID string) (string, error) {
+func (c Client) createAirflowExtraEnvs(teamID string) (string, error) {
 	userEnvs := []airflowEnv{
 		{
 			Name:  "KNADA_TEAM_SECRET",
@@ -343,6 +339,10 @@ func (c Client) createAirflowEnv(teamID string) (string, error) {
 		{
 			Name:  "TEAM",
 			Value: teamID,
+		},
+		{
+			Name:  "NAMESPACE",
+			Value: k8s.TeamIDToNamespace(teamID),
 		},
 		{
 			Name:  "AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER",
@@ -360,18 +360,6 @@ func (c Client) createAirflowEnv(teamID string) (string, error) {
 	}
 
 	return string(envBytes), nil
-}
-
-func createAirflowExtraEnv() string {
-	return `- name: "POD_NAME"
-  valueFrom:
-    fieldRef:
-      fieldPath: "metadata.name"
-- name: "NAMESPACE"
-  valueFrom:
-    fieldRef:
-      fieldPath: "metadata.namespace"
-`
 }
 
 func (c Client) createWorkerLabels(teamID string) (string, error) {

@@ -86,7 +86,7 @@ func (c Client) concatenateCommonAirflowEnvs(ctx context.Context, teamID string,
 	if err != nil {
 		return err
 	}
-	globalEnvs := []map[string]any{}
+	globalEnvs := []map[string]string{}
 	if err := json.Unmarshal([]byte(globalEnvsSQL.Value), &globalEnvs); err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func (c Client) concatenateCommonAirflowEnvs(ctx context.Context, teamID string,
 	if err != nil {
 		return err
 	}
-	teamEnvs := []map[string]any{}
+	teamEnvs := []map[string]string{}
 	if err := json.Unmarshal([]byte(teamEnvsSQL.Value), &teamEnvs); err != nil {
 		return err
 	}

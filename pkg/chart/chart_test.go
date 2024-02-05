@@ -25,16 +25,6 @@ var (
 	azureClient *auth.Azure
 )
 
-const extraEnv = `- name: "POD_NAME"
-  valueFrom:
-    fieldRef:
-      fieldPath: "metadata.name"
-- name: "NAMESPACE"
-  valueFrom:
-    fieldRef:
-      fieldPath: "metadata.namespace"
-`
-
 func init() {
 	_, filename, _, _ := runtime.Caller(0)
 	dir := path.Join(path.Dir(filename), "../..")
@@ -203,8 +193,7 @@ func TestCharts(t *testing.T) {
 				"webserver.serviceAccount.name": "test-team-1234",
 				"workers.serviceAccount.name":   "test-team-1234",
 				"workers.labels":                `{"team":"test-team-1234"}`,
-				"env":                           `[{"name":"KNADA_TEAM_SECRET","value":"projects/project/secrets/test-team-1234"},{"name":"TEAM","value":"test-team-1234"},{"name":"AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER","value":"gs://airflow-logs-test-team-1234-north"},{"name":"AIRFLOW__LOGGING__REMOTE_LOGGING","value":"True"}]`,
-				"extraEnv":                      extraEnv,
+				"env":                           `[{"name":"KNADA_TEAM_SECRET","value":"projects/project/secrets/test-team-1234"},{"name":"TEAM","value":"test-team-1234"},{"name":"NAMESPACE","value":"team-test-team-1234"},{"name":"AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER","value":"gs://airflow-logs-test-team-1234-north"},{"name":"AIRFLOW__LOGGING__REMOTE_LOGGING","value":"True"}]`,
 			},
 		},
 		{
@@ -221,8 +210,7 @@ func TestCharts(t *testing.T) {
 			want: map[string]string{
 				"workers.serviceAccount.name":   "test-team-1234",
 				"webserver.serviceAccount.name": "test-team-1234",
-				"env":                           `[{"name":"KNADA_TEAM_SECRET","value":"projects/project/secrets/test-team-1234"},{"name":"TEAM","value":"test-team-1234"},{"name":"AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER","value":"gs://airflow-logs-test-team-1234-north"},{"name":"AIRFLOW__LOGGING__REMOTE_LOGGING","value":"True"}]`,
-				"extraEnv":                      extraEnv,
+				"env":                           `[{"name":"KNADA_TEAM_SECRET","value":"projects/project/secrets/test-team-1234"},{"name":"TEAM","value":"test-team-1234"},{"name":"NAMESPACE","value":"team-test-team-1234"},{"name":"AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER","value":"gs://airflow-logs-test-team-1234-north"},{"name":"AIRFLOW__LOGGING__REMOTE_LOGGING","value":"True"}]`,
 				"webserver.env":                 `[{"name":"AIRFLOW_USERS","value":"dummy@nav.no,user.one@nav.no"}]`,
 				"workers.labels":                `{"team":"test-team-1234"}`,
 				"dags.gitSync.repo":             "navikt/other-dags",

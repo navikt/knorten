@@ -25,6 +25,10 @@ func (c Client) createKnauditInitContainer(ctx context.Context) (map[string]any,
 					"image": knauditImage.Value,
 					"env": []map[string]any{
 						{
+							"name":      "POD_NAME",
+							"valueFrom": map[string]any{"fieldRef": map[string]string{"fieldPath": "metadata.name"}},
+						},
+						{
 							"name":      "NAMESPACE",
 							"valueFrom": map[string]any{"fieldRef": map[string]string{"fieldPath": "metadata.namespace"}},
 						},

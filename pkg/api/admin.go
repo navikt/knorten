@@ -584,8 +584,8 @@ func (c *client) setEventStatus(ctx *gin.Context) error {
 	switch ctx.PostForm("status") {
 	case string(database.EventStatusNew):
 		status = database.EventStatusNew
-	case string(database.EventStatusFailed):
-		status = database.EventStatusFailed
+	case string(database.EventStatusManualFailed):
+		status = database.EventStatusManualFailed
 	default:
 		return fmt.Errorf("invalid status %v", ctx.PostForm("status"))
 	}

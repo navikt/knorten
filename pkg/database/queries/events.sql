@@ -24,11 +24,17 @@ FROM events
 WHERE status = 'processing'
 ORDER BY created_at DESC;
 
+-- name: EventsReset :exec
+UPDATE events
+SET status = 'pending'
+WHERE status = 'processing';
+
 -- name: EventsUpcomingGet :many
 SELECT *
 FROM Events
 WHERE status = 'new'
-   OR (status = 'pending' AND updated_at + deadline::interval * retry_count < NOW())
+   OR status = 'pending'
+   OR status = 'deadline_reached'
 ORDER BY created_at ASC;
 
 -- name: EventsGetType :many

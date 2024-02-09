@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/navikt/knorten/pkg/api/auth"
@@ -144,7 +145,10 @@ func (e EventHandler) processWork(ctx context.Context, event gensql.Event, logge
 	}
 
 	if retry {
-		return e.repo.EventSetPendingStatus(e.context, event.ID)
+		if err := e.repo.EventSetPendingStatus(e.context, event.ID); err != nil {
+			return err
+		}
+		return fmt.Errorf("event %v failed, event status reset to pending", event.ID)
 	}
 
 	return e.repo.EventSetStatus(e.context, event.ID, database.EventStatusCompleted)
@@ -175,6 +179,8 @@ func NewHandler(ctx context.Context, repo *database.Repo, azureClient *auth.Azur
 func (e EventHandler) Run(tickDuration time.Duration) {
 	eventQueue := make(chan struct{}, maxConcurrentEventsHandled)
 
+	var isLeader bool
+	var err error
 	go func() {
 		var cancelFuncs []context.CancelFunc
 		for {
@@ -189,7 +195,7 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 				return
 			}
 
-			isLeader, err := leaderelection.IsLeader()
+			isLeader, err = e.isNewLeader(isLeader)
 			if err != nil {
 				e.log.WithError(err).Error("leader election check")
 				continue
@@ -232,6 +238,10 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 							if err := e.repo.EventSetStatus(e.context, event.ID, database.EventStatusFailed); err != nil {
 								eventLogger.log.WithError(err).Error("failed setting event status to 'failed'")
 							}
+						} else {
+							if err := e.repo.EventSetStatus(e.context, event.ID, database.EventStatusDeadlineReached); err != nil {
+								eventLogger.log.WithError(err).Error("failed setting event status to 'deadline_reached'")
+							}
 						}
 					}
 					<-eventQueue
@@ -239,4 +249,20 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 			}
 		}
 	}()
+}
+
+func (e EventHandler) isNewLeader(currentLeaderStatus bool) (bool, error) {
+	isLeader, err := leaderelection.IsLeader()
+	if err != nil {
+		return currentLeaderStatus, err
+	}
+
+	if isLeader != currentLeaderStatus {
+		if err := e.repo.EventsReset(e.context); err != nil {
+			e.log.WithError(err).Error("failed to reset events on new leader")
+			return isLeader, err
+		}
+	}
+
+	return isLeader, nil
 }

@@ -39,11 +39,13 @@ const (
 type EventStatus string
 
 const (
-	EventStatusNew        EventStatus = "new"
-	EventStatusProcessing EventStatus = "processing"
-	EventStatusCompleted  EventStatus = "completed"
-	EventStatusPending    EventStatus = "pending"
-	EventStatusFailed     EventStatus = "failed"
+	EventStatusNew             EventStatus = "new"
+	EventStatusProcessing      EventStatus = "processing"
+	EventStatusCompleted       EventStatus = "completed"
+	EventStatusPending         EventStatus = "pending"
+	EventStatusFailed          EventStatus = "failed"
+	EventStatusManualFailed    EventStatus = "manual_failed"
+	EventStatusDeadlineReached EventStatus = "deadline_reached"
 )
 
 type LogType string
@@ -169,6 +171,10 @@ func (r *Repo) EventSetStatus(ctx context.Context, id uuid.UUID, status EventSta
 // EventSetPendingStatus will set status to pending and increment retry_count by 1
 func (r *Repo) EventSetPendingStatus(ctx context.Context, id uuid.UUID) error {
 	return r.querier.EventSetPendingStatus(ctx, id)
+}
+
+func (r *Repo) EventsReset(ctx context.Context) error {
+	return r.querier.EventsReset(ctx)
 }
 
 func (r *Repo) DispatchableEventsGet(ctx context.Context) ([]gensql.Event, error) {

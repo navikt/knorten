@@ -663,7 +663,7 @@ func TestAdminAPI(t *testing.T) {
 	})
 
 	t.Run("update event status", func(t *testing.T) {
-		newStatus := "failed"
+		newStatus := "manual_failed"
 		events, err := repo.EventsByOwnerGet(ctx, teams[0].ID, 1)
 		if err != nil {
 			t.Error(err)

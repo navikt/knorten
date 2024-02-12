@@ -13,7 +13,11 @@ func (r *RepoMock) EventSetStatus(ctx context.Context, id uuid.UUID, status Even
 	return nil
 }
 
-func (r *RepoMock) EventSetPendingStatus(ctx context.Context, id uuid.UUID) error {
+func (r *RepoMock) EventIncrementRetryCount(ctx context.Context, id uuid.UUID) error {
+	return nil
+}
+
+func (r *RepoMock) EventsReset(ctx context.Context) error {
 	return nil
 }
 

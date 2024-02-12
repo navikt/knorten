@@ -21,7 +21,7 @@
         <form action="/admin/event/{{ .event.ID }}" method="POST" class="flex gap-2">
             <select name="status" id="status" class="mb-4 p-2">
                 <option value="new">new</option>
-                <option value="failed">failed</option>
+                <option value="manual_failed">failed</option>
             </select>
             <button
                 type="submit"

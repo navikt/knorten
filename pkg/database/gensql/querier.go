@@ -18,13 +18,14 @@ type Querier interface {
 	ComputeInstancesGet(ctx context.Context) ([]ComputeInstance, error)
 	EventCreate(ctx context.Context, arg EventCreateParams) error
 	EventGet(ctx context.Context, id uuid.UUID) (Event, error)
+	EventIncrementRetryCount(ctx context.Context, id uuid.UUID) error
 	EventLogCreate(ctx context.Context, arg EventLogCreateParams) error
 	EventLogsForEventGet(ctx context.Context, id uuid.UUID) ([]EventLog, error)
-	EventSetPendingStatus(ctx context.Context, id uuid.UUID) error
 	EventSetStatus(ctx context.Context, arg EventSetStatusParams) error
 	EventsByOwnerGet(ctx context.Context, arg EventsByOwnerGetParams) ([]Event, error)
 	EventsGetType(ctx context.Context, eventType string) ([]Event, error)
 	EventsProcessingGet(ctx context.Context) ([]Event, error)
+	EventsReset(ctx context.Context) error
 	EventsUpcomingGet(ctx context.Context) ([]Event, error)
 	GlobalValueDelete(ctx context.Context, arg GlobalValueDeleteParams) error
 	GlobalValueGet(ctx context.Context, arg GlobalValueGetParams) (ChartGlobalValue, error)

@@ -168,9 +168,8 @@ func (r *Repo) EventSetStatus(ctx context.Context, id uuid.UUID, status EventSta
 	})
 }
 
-// EventSetPendingStatus will set status to pending and increment retry_count by 1
-func (r *Repo) EventSetPendingStatus(ctx context.Context, id uuid.UUID) error {
-	return r.querier.EventSetPendingStatus(ctx, id)
+func (r *Repo) EventIncrementRetryCount(ctx context.Context, id uuid.UUID) error {
+	return r.querier.EventIncrementRetryCount(ctx, id)
 }
 
 func (r *Repo) EventsReset(ctx context.Context) error {

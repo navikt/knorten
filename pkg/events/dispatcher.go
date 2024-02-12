@@ -145,10 +145,7 @@ func (e EventHandler) processWork(ctx context.Context, event gensql.Event, logge
 	}
 
 	if retry {
-		if err := e.repo.EventSetPendingStatus(e.context, event.ID); err != nil {
-			return err
-		}
-		return fmt.Errorf("event %v failed, event status reset to pending", event.ID)
+		return fmt.Errorf("event %v failed", event.ID)
 	}
 
 	return e.repo.EventSetStatus(e.context, event.ID, database.EventStatusCompleted)
@@ -239,8 +236,19 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 								eventLogger.log.WithError(err).Error("failed setting event status to 'failed'")
 							}
 						} else {
-							if err := e.repo.EventSetStatus(e.context, event.ID, database.EventStatusDeadlineReached); err != nil {
-								eventLogger.log.WithError(err).Error("failed setting event status to 'deadline_reached'")
+							if err := e.repo.EventIncrementRetryCount(e.context, event.ID); err != nil {
+								eventLogger.log.WithError(err).Errorf("failed to increment retry count for event %v on error", event.ID)
+							}
+							select {
+							case <-ctx.Done():
+								eventLogger.log.WithError(err).Info("failed processing event, deadline reached")
+								if err := e.repo.EventSetStatus(e.context, event.ID, database.EventStatusDeadlineReached); err != nil {
+									eventLogger.log.WithError(err).Error("failed setting event status to 'deadline_reached'")
+								}
+							default:
+								if err := e.repo.EventSetStatus(e.context, event.ID, database.EventStatusPending); err != nil {
+									eventLogger.log.WithError(err).Error("failed setting event status to 'pending'")
+								}
 							}
 						}
 					}

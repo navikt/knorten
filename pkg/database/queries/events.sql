@@ -47,10 +47,9 @@ UPDATE Events
 SET status = @status
 WHERE id = @id;
 
--- name: EventSetPendingStatus :exec
-UPDATE Events
-SET status      = 'pending',
-    retry_count = retry_count + 1
+-- name: EventIncrementRetryCount :exec
+UPDATE events
+SET retry_count = retry_count + 1
 WHERE id = @id;
 
 -- name: EventLogCreate :exec

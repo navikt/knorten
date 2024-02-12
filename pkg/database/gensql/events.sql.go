@@ -60,6 +60,17 @@ func (q *Queries) EventGet(ctx context.Context, id uuid.UUID) (Event, error) {
 	return i, err
 }
 
+const eventIncrementRetryCount = `-- name: EventIncrementRetryCount :exec
+UPDATE events
+SET retry_count = retry_count + 1
+WHERE id = $1
+`
+
+func (q *Queries) EventIncrementRetryCount(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, eventIncrementRetryCount, id)
+	return err
+}
+
 const eventLogCreate = `-- name: EventLogCreate :exec
 INSERT INTO Event_Logs (event_id, log_type, message)
 VALUES ($1, $2, $3)
@@ -110,18 +121,6 @@ func (q *Queries) EventLogsForEventGet(ctx context.Context, id uuid.UUID) ([]Eve
 		return nil, err
 	}
 	return items, nil
-}
-
-const eventSetPendingStatus = `-- name: EventSetPendingStatus :exec
-UPDATE Events
-SET status      = 'pending',
-    retry_count = retry_count + 1
-WHERE id = $1
-`
-
-func (q *Queries) EventSetPendingStatus(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, eventSetPendingStatus, id)
-	return err
 }
 
 const eventSetStatus = `-- name: EventSetStatus :exec

@@ -14,6 +14,7 @@ type AppService struct {
 	App     string
 	Ingress string
 	Slug    string
+	TeamID  string
 }
 
 type TeamServices struct {
@@ -42,11 +43,12 @@ func createIngress(team string, chartType gensql.ChartType) string {
 	return ""
 }
 
-func createAppService(slug string, chartType gensql.ChartType) *AppService {
+func createAppService(team gensql.TeamsForUserGetRow, chartType gensql.ChartType) *AppService {
 	return &AppService{
 		App:     string(chartType),
-		Ingress: createIngress(slug, chartType),
-		Slug:    slug,
+		Ingress: createIngress(team.Slug, chartType),
+		Slug:    team.Slug,
+		TeamID:  team.ID,
 	}
 }
 
@@ -98,9 +100,9 @@ func (r *Repo) ServicesForUser(ctx context.Context, email string) (UserServices,
 		for _, app := range apps {
 			switch app {
 			case gensql.ChartTypeJupyterhub:
-				teamServices.Jupyterhub = createAppService(team.Slug, app)
+				teamServices.Jupyterhub = createAppService(team, app)
 			case gensql.ChartTypeAirflow:
-				teamServices.Airflow = createAppService(team.Slug, app)
+				teamServices.Airflow = createAppService(team, app)
 			}
 		}
 

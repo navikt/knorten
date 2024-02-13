@@ -1,7 +1,7 @@
 oauth:
-    client_id: # Populated by env var
-    client_secret: # Populated by env var
-    tenant_id: # Populated by env var
+    client_id: fake-id
+    client_secret: fake-secret
+    tenant_id: fake-tenant
 gcp:
     project: nada-dev-db2e
     region: europe-north1

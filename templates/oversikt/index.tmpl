@@ -31,6 +31,7 @@
             <tr class="navds-table__row">
                 <th class="navds-table__header-cell navds-label navds-label--small">Tjeneste</th>
                 <th class="navds-table__header-cell navds-label navds-label--small">Dokumentasjon</th>
+                <td class="navds-table__header-cell navds-label navds-label--small">Dashboard</td>
                 <th class="navds-table__header-cell navds-label navds-label--small"></th>
             </tr>
             </thead>
@@ -43,12 +44,17 @@
                             {{ .Name }}
                         </a>
                     {{ else }}
-                        Compute instans
+                        Compute instance
                     {{ end }}
                 </th>
                 <td class="navds-table__data-cell navds-body-short navds-body-short--small">
                     <a class="navds-link" target="_blank"
                        href="https://docs.knada.io/analyse/knada-vm/#koble-til-vm-med-ssh">docs.knada.io</a>
+                </td>
+                <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+                    <a class="navds-link" target="_blank" href="https://grafana.nav.cloud.nais.io/d/d3b703a2-e3c8-4702-abd7-54f19469b310/knada-vm-er?orgId=1">
+                       Grafana
+                    </a>
                 </td>
                 <td class="navds-table__data-cell navds-body-short navds-body-short--small">
                     {{ if .user.Compute }}
@@ -72,6 +78,7 @@
                 <td class="navds-table__data-cell navds-body-short navds-body-short--small">
                     <a class="navds-link" href="https://docs.knada.io/analyse/google-secret-manager/">docs.knada.io</a>
                 </td>
+                <td class="navds-table__data-cell navds-body-short navds-body-short--small"></td>
                 <td class="navds-table__data-cell navds-body-short navds-body-short--small">
                     {{ with .user.UserGSM }}
                         <form action="/secret/delete" method="POST">
@@ -124,24 +131,38 @@
                 <tr class="navds-table__row">
                     <th class="navds-table__header-cell navds-label navds-label--small">Tjeneste</th>
                     <th class="navds-table__header-cell navds-label navds-label--small">Adresse</th>
+                    <th class="navds-table__header-cell navds-label navds-label--small">Dashboard</th>
                     <th class="navds-table__header-cell navds-label navds-label--small"></th>
                 </tr>
                 </thead>
                 <tbody class="navds-table__body">
                 <tr class="navds-table__row navds-table__row--shade-on-hover">
+                    <th class="navds-table__header-cell navds-label navds-label--small">Teamkostnader</th>
+                    <td class="navds-table__data-cell navds-body-short navds-body-short--small"></td>
+                    <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+                        <a class="navds-link" target="_blank" href="https://metabase.intern.nav.no/dashboard/413-teamkostnader-i-knada?team={{ .Slug }}">
+                            Metabase
+                        </a>
+                    </td>
+                    <td class="navds-table__data-cell navds-body-short navds-body-short--small"></td>
+                </tr>
+                <tr class="navds-table__row navds-table__row--shade-on-hover">
                     <th class="navds-table__header-cell navds-label navds-label--small">Secret Manager</th>
-                    <td class="navds-table__data-cell navds-body-short navds-body-short--small"><a class="navds-link" target="_blank"
-                                                                                                   href="https://console.cloud.google.com/security/secret-manager/secret/{{ $teamID }}/versions?project={{ $.gcpProject }}">
+                    <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+                        <a class="navds-link" target="_blank" href="https://console.cloud.google.com/security/secret-manager/secret/{{ $teamID }}/versions?project={{ $.gcpProject }}">
                             Google Cloud Platform
-                        </a></td>
+                        </a>
+                    </td>
                     <td class="navds-table__data-cell navds-body-short navds-body-short--small">
                     </td>
+                    <td class="navds-table__data-cell navds-body-short navds-body-short--small"></td>
                 </tr>
                 {{ with .Jupyterhub }}
                     {{ template "oversikt/row" . }}
                 {{ else }}
                     <tr class="navds-table__row navds-table__row--shade-on-hover">
                         <th class="navds-table__header-cell navds-label navds-label--small">Jupyter</th>
+                        <td class="navds-table__data-cell navds-body-short navds-body-short--small"></td>
                         <td class="navds-table__data-cell navds-body-short navds-body-short--small"></td>
                         <td class="navds-table__data-cell navds-body-short navds-body-short--small">
                             <a class="navds-link" href="/team/{{ .Slug }}/jupyterhub/new">Installer</a>
@@ -153,6 +174,7 @@
                 {{ else }}
                     <tr class="navds-table__row navds-table__row--shade-on-hover">
                         <th class="navds-table__header-cell navds-label navds-label--small">Airflow</th>
+                        <td class="navds-table__data-cell navds-body-short navds-body-short--small"></td>
                         <td class="navds-table__data-cell navds-body-short navds-body-short--small"></td>
                         <td class="navds-table__data-cell navds-body-short navds-body-short--small">
                             <a class="navds-link" href="/team/{{ .Slug }}/airflow/new">Installer</a>

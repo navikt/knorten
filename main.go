@@ -7,18 +7,13 @@ import (
 	"net"
 	"time"
 
-	"github.com/navikt/knorten/pkg/api/service"
-
-	"github.com/navikt/knorten/pkg/api/handlers"
-
-	"github.com/navikt/knorten/pkg/api/middlewares"
-
 	"github.com/gin-gonic/gin"
-
-	"github.com/navikt/knorten/pkg/config"
-
 	"github.com/navikt/knorten/pkg/api"
 	"github.com/navikt/knorten/pkg/api/auth"
+	"github.com/navikt/knorten/pkg/api/handlers"
+	"github.com/navikt/knorten/pkg/api/middlewares"
+	"github.com/navikt/knorten/pkg/api/service"
+	"github.com/navikt/knorten/pkg/config"
 	"github.com/navikt/knorten/pkg/database"
 	"github.com/navikt/knorten/pkg/events"
 	"github.com/navikt/knorten/pkg/helm"

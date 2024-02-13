@@ -12,12 +12,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/navikt/knorten/pkg/api/middlewares"
-
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
+	"github.com/navikt/knorten/pkg/api/middlewares"
 	"github.com/navikt/knorten/pkg/database/gensql"
 )
 

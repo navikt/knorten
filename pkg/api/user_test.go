@@ -63,11 +63,13 @@ func TestUserAPI(t *testing.T) {
 							App:     string(gensql.ChartTypeJupyterhub),
 							Ingress: fmt.Sprintf("https://%v.jupyter.knada.io", team.Slug),
 							Slug:    team.Slug,
+							TeamID:  team.ID,
 						},
 						Airflow: &database.AppService{
 							App:     string(gensql.ChartTypeAirflow),
 							Ingress: fmt.Sprintf("https://%v.airflow.knada.io", team.Slug),
 							Slug:    team.Slug,
+							TeamID:  team.ID,
 						},
 					},
 				},

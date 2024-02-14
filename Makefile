@@ -83,5 +83,40 @@ update-configmap:
 		--from-file=config.yaml=config-prod.yaml --dry-run=client -o yaml \
 			> k8s/configmap.yaml
 
+gauth:
+	@gcloud auth application-default print-access-token >/dev/null 2>&1 \
+		&& gcloud auth list --filter=status:ACTIVE --format="value(account)" | grep -q "@nav.no" \
+			&& echo "GCP ADC login not required." || gcloud auth login --update-adc
+.PHONY: gauth
+
+KUBERNETES_VERSION ?= v1.28.3
+minikube: | gauth
+	@minikube status >/dev/null 2>&1 && echo "Minikube is already running." || \
+		minikube start --addons=gcp-auth,volumesnapshots --kubernetes-version=$(KUBERNETES_VERSION)
+	@minikube addons enable gcp-auth --refresh
+.PHONY: minikube
+
+minikube-destroy:
+	@minikube delete
+.PHONY: minikube-destroy
+
+deps: | minikube
+	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" helm upgrade --install \
+		cnpg --namespace cnpg-system --create-namespace cnpg/cloudnative-pg
+	docker-compose up -d db
+.PHONY: deps
+
+# These are our main targets
+
 check: | lint test
 .PHONY: check
+
+run: | deps env init local-online
+.PHONY: run
+
+clean: | minikube-destroy
+	@rm .env || echo "No .env file found."
+	@docker-compose down --volumes
+	@gcloud auth revoke || echo "No active account found."
+	@gcloud auth application-default revoke --quiet || echo "No active token found."
+.PHONY: clean

@@ -58,6 +58,10 @@ goose: $(GOOSE)
 	$(GOOSE) -dir pkg/database/migrations/ postgres "user=postgres password=postgres dbname=knorten host=localhost sslmode=disable" $(cmd)
 .PHONY: goose
 
+goose-up: $(GOOSE)
+	$(GOOSE) -dir pkg/database/migrations/ postgres "user=postgres password=postgres dbname=knorten host=localhost sslmode=disable" up
+.PHONY: goose-up
+
 init:
 	go run local/main.go
 .PHONY: init
@@ -69,6 +73,15 @@ css:
 css-watch:
 	npx tailwindcss --postcss -i local/tailwind.css -o assets/css/main.css -w
 .PHONY: css-watch
+
+npm-install:
+	npm install
+.PHONY: npm-install
+
+npm-clean:
+	@npm cache clean --force
+	@rm -rf node_modules || echo "No node_modules directory found."
+.PHONY: npm-clean
 
 test:
 	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" go test -v ./... -count=1
@@ -101,6 +114,8 @@ minikube-destroy:
 .PHONY: minikube-destroy
 
 deps: | minikube
+	kubectl apply --context minikube -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/main/config/crd/standard/gateway.networking.k8s.io_httproutes.yaml
+	kubectl apply --context minikube -f https://raw.githubusercontent.com/GoogleCloudPlatform/gke-networking-recipes/main/gateway-api/config/servicepolicies/crd/standard/healthcheckpolicy.yaml
 	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" helm upgrade --install \
 		cnpg --namespace cnpg-system --create-namespace cnpg/cloudnative-pg
 	docker-compose up -d db
@@ -111,10 +126,10 @@ deps: | minikube
 check: | lint test
 .PHONY: check
 
-run: | deps env init local-online
+run: | deps npm-install css env goose-up init local-online
 .PHONY: run
 
-clean: | minikube-destroy
+clean: | minikube-destroy npm-clean
 	@rm .env || echo "No .env file found."
 	@docker-compose down --volumes
 	@gcloud auth revoke || echo "No active account found."

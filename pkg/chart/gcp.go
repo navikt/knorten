@@ -3,6 +3,7 @@ package chart
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -191,6 +192,9 @@ func createCloudSQLInstance(ctx context.Context, teamSlug, dbInstance, gcpProjec
 			"--update-labels", fmt.Sprintf("created-by=knorten,team=%v", teamSlug),
 			"--async")
 	} else {
+		if err := awaitInstanceOperationsComplete(ctx, dbInstance, gcpProject); err != nil {
+			return err
+		}
 		cmd = exec.CommandContext(ctx,
 			"gcloud",
 			"--quiet",
@@ -222,6 +226,72 @@ func createCloudSQLInstance(ctx context.Context, teamSlug, dbInstance, gcpProjec
 	return nil
 }
 
+type instanceOperation struct {
+	Name string `json:"name"`
+}
+
+func awaitInstanceOperationsComplete(ctx context.Context, dbInstance, gcpProject string) error {
+	runningOps, err := listRunnningSQLInstanceOperations(ctx, dbInstance, gcpProject)
+	if err != nil {
+		return err
+	}
+
+	waitTimeout := 300
+	if deadline, ok := ctx.Deadline(); ok {
+		waitTimeout = int(time.Until(deadline).Seconds())
+	}
+
+	for _, op := range runningOps {
+		cmd := exec.CommandContext(ctx,
+			"gcloud",
+			"--quiet",
+			"sql",
+			"operations",
+			"wait",
+			op.Name,
+			fmt.Sprintf("--timeout=%v", waitTimeout),
+		)
+
+		stdOut := &bytes.Buffer{}
+		stdErr := &bytes.Buffer{}
+		cmd.Stdout = stdOut
+		cmd.Stderr = stdErr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+		}
+	}
+
+	return nil
+}
+
+func listRunnningSQLInstanceOperations(ctx context.Context, dbInstance, gcpProject string) ([]*instanceOperation, error) {
+	cmd := exec.CommandContext(ctx,
+		"gcloud",
+		"--quiet",
+		"sql",
+		"operations",
+		"list",
+		fmt.Sprintf("--instance=%v", dbInstance),
+		"--format=json",
+		"--filter='NOT status:done'",
+	)
+
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	}
+
+	instanceOps := []*instanceOperation{}
+	if err := json.Unmarshal(stdOut.Bytes(), &instanceOps); err != nil {
+		return nil, nil
+	}
+
+	return instanceOps, nil
+}
+
 func createCloudSQLDatabase(ctx context.Context, dbName, dbInstance, gcpProject string) error {
 	exists, err := sqlDatabaseExistsInGCP(ctx, dbInstance, gcpProject, dbName)
 	if err != nil {
@@ -230,6 +300,10 @@ func createCloudSQLDatabase(ctx context.Context, dbName, dbInstance, gcpProject 
 
 	if exists {
 		return nil
+	}
+
+	if err := awaitInstanceOperationsComplete(ctx, dbInstance, gcpProject); err != nil {
+		return err
 	}
 
 	cmd := exec.CommandContext(ctx,
@@ -267,6 +341,9 @@ func createOrUpdateCloudSQLUser(ctx context.Context, user, password, dbInstance,
 }
 
 func updateSQLUser(ctx context.Context, user, password, dbInstance, gcpProject string) error {
+	if err := awaitInstanceOperationsComplete(ctx, dbInstance, gcpProject); err != nil {
+		return err
+	}
 	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",

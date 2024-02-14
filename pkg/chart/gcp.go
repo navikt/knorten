@@ -236,6 +236,11 @@ func awaitInstanceOperationsComplete(ctx context.Context, dbInstance, gcpProject
 		return err
 	}
 
+	waitTimeout := 300
+	if deadline, ok := ctx.Deadline(); ok {
+		waitTimeout = int(time.Until(deadline).Seconds())
+	}
+
 	for _, op := range runningOps {
 		cmd := exec.CommandContext(ctx,
 			"gcloud",
@@ -244,6 +249,7 @@ func awaitInstanceOperationsComplete(ctx context.Context, dbInstance, gcpProject
 			"operations",
 			"wait",
 			op.Name,
+			fmt.Sprintf("--timeout=%v", waitTimeout),
 		)
 
 		stdOut := &bytes.Buffer{}

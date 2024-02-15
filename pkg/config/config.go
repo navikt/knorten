@@ -195,7 +195,7 @@ type Kubernetes struct {
 
 func (k Kubernetes) Validate() error {
 	return validation.ValidateStruct(&k,
-		validation.Field(&k.Context, validation.Required),
+		validation.Field(&k.Context),
 	)
 }
 

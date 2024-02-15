@@ -51,6 +51,8 @@ data:
         password: # Set through env var KNORTEN_POSTGRES_PASSWORD
         database_name: knorten
         ssl_mode: disable
+    kubernetes:
+      context: ""
     db_enc_key: # Set through env var KNORTEN_DB_ENC_KEY
     admin_group: nada@nav.no
     session_key: # Set through env var KNORTEN_SESSION_KEY

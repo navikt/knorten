@@ -26,18 +26,19 @@ type Loader interface {
 }
 
 type Config struct {
-	Oauth      Oauth    `yaml:"oauth"`
-	GCP        GCP      `yaml:"gcp"`
-	Cookies    Cookies  `yaml:"cookies"`
-	Helm       Helm     `yaml:"helm"`
-	Server     Server   `yaml:"server"`
-	Postgres   Postgres `yaml:"postgres"`
-	DBEncKey   string   `yaml:"db_enc_key"`
-	AdminGroup string   `yaml:"admin_group"`
-	SessionKey string   `yaml:"session_key"`
-	LoginPage  string   `yaml:"login_page"`
-	DryRun     bool     `yaml:"dry_run"`
-	InCluster  bool     `yaml:"in_cluster"`
+	Oauth      Oauth      `yaml:"oauth"`
+	GCP        GCP        `yaml:"gcp"`
+	Cookies    Cookies    `yaml:"cookies"`
+	Helm       Helm       `yaml:"helm"`
+	Server     Server     `yaml:"server"`
+	Postgres   Postgres   `yaml:"postgres"`
+	Kubernetes Kubernetes `yaml:"kubernetes"`
+	DBEncKey   string     `yaml:"db_enc_key"`
+	AdminGroup string     `yaml:"admin_group"`
+	SessionKey string     `yaml:"session_key"`
+	LoginPage  string     `yaml:"login_page"`
+	DryRun     bool       `yaml:"dry_run"`
+	InCluster  bool       `yaml:"in_cluster"`
 }
 
 func (c Config) Validate() error {
@@ -185,6 +186,16 @@ func (c CookieSettings) Validate() error {
 		// Valid SameSite values:
 		// - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value
 		validation.Field(&c.SameSite, validation.Required, validation.In("Strict", "Lax", "None")),
+	)
+}
+
+type Kubernetes struct {
+	Context string `yaml:"context"`
+}
+
+func (k Kubernetes) Validate() error {
+	return validation.ValidateStruct(&k,
+		validation.Field(&k.Context, validation.Required),
 	)
 }
 

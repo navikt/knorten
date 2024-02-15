@@ -72,6 +72,9 @@ func newFakeConfig() config.Config {
 			SSLMode:      "disable",
 			DatabaseName: "knorten",
 		},
+		Kubernetes: config.Kubernetes{
+			Context: "minikube",
+		},
 		DBEncKey:   "jegersekstentegn",
 		AdminGroup: "nada@nav.no",
 		SessionKey: "test-session",

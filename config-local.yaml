@@ -44,6 +44,8 @@ postgres:
     password: postgres
     database_name: knorten
     ssl_mode: disable
+kubernetes:
+    context: minikube
 db_enc_key: jegersekstentegn
 admin_group: nada@nav.no
 session_key: online-session

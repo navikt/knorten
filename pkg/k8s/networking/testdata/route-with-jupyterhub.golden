@@ -1,0 +1,20 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  creationTimestamp: null
+  name: test-route
+  namespace: test-namespace
+spec:
+  hostnames:
+  - hostname.example.com
+  parentRefs:
+  - group: gateway.networking.k8s.io/v1
+    kind: Gateway
+    name: knada-io
+    namespace: knada-system
+  rules:
+  - backendRefs:
+    - name: proxy-public
+      port: 80
+status:
+  parents: null

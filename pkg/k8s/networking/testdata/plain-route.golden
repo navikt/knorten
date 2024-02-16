@@ -1,0 +1,11 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  creationTimestamp: null
+  name: test-route
+  namespace: test-namespace
+spec:
+  hostnames:
+  - hostname.example.com
+status:
+  parents: null

@@ -1,0 +1,15 @@
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  creationTimestamp: null
+  name: airflow-test-policy
+  namespace: test-namespace
+spec:
+  default:
+    config:
+      httpHealthCheck:
+        requestPath: /health
+      type: HTTP
+  targetRef:
+    kind: Service
+    name: airflow-webserver

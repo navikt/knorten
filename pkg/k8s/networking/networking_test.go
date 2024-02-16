@@ -3,6 +3,7 @@ package networking_test
 import (
 	"github.com/navikt/knorten/pkg/k8s/networking"
 	"github.com/sebdah/goldie/v2"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	"sigs.k8s.io/yaml"
 	"testing"
@@ -61,6 +62,67 @@ func TestHTTPRoute(t *testing.T) {
 			g := goldie.New(t)
 
 			d, err := yaml.Marshal(tc.route)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			g.Assert(t, tc.name, d)
+		})
+	}
+}
+
+func TestHealthCheckPolicy(t *testing.T) {
+	testCases := []struct {
+		name string
+		desc string
+		fn   func() (*unstructured.Unstructured, error)
+	}{
+		{
+			name: "plain-healthcheckpolicy",
+			desc: "Create a new health check policy",
+			fn: func() (*unstructured.Unstructured, error) {
+				return networking.NewHealthCheckPolicy(
+					"test-policy",
+					"test-namespace",
+				)
+			},
+		},
+		{
+			name: "healthcheckpolicy-with-airflow",
+			desc: "Create a new health check policy with airflow",
+			fn: func() (*unstructured.Unstructured, error) {
+				return networking.NewAirflowHealthCheckPolicy(
+					"airflow-test-policy",
+					"test-namespace",
+				)
+			},
+		},
+		{
+			name: "healthcheckpolicy-with-jupyterhub",
+			desc: "Create a new health check policy with jupyterhub",
+			fn: func() (*unstructured.Unstructured, error) {
+				return networking.NewJupyterhubHealthCheckPolicy(
+					"jupyter-test-policy",
+					"test-namespace",
+				)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			g := goldie.New(t)
+
+			got, err := tc.fn()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			d, err := yaml.Marshal(got)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -1,7 +1,10 @@
 package networking
 
 import (
+	"fmt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -96,6 +99,114 @@ func NewAirflowHTTPRoute(name, namespace, hostname string, options ...HTTPRouteO
 	)
 
 	return NewHTTPRouteWithDefaultGateway(name, namespace, hostname, options...)
+}
+
+const (
+	healthCheckPolicyKind       = "HealthCheckPolicy"
+	healthCheckPolicyAPIVersion = "networking.gke.io/v1"
+	healthCheckPolicyType       = "HTTP"
+
+	serviceKind = "Service"
+)
+
+type HealthCheckPolicy struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec HealthCheckPolicySpec `json:"spec,omitempty"`
+}
+
+type HealthCheckPolicySpec struct {
+	Default   *HealthCheckPolicySpecDefault   `json:"default,omitempty"`
+	TargetRef *HealthCheckPolicySpecTargetRef `json:"targetRef,omitempty"`
+}
+
+type HealthCheckPolicySpecDefault struct {
+	Config *HealthCheckPolicySpecDefaultConfig `json:"config,omitempty"`
+}
+
+type HealthCheckPolicySpecDefaultConfig struct {
+	Type            string                                  `json:"type,omitempty"`
+	HTTPHealthCheck *HealthCheckPolicySpecDefaultConfigHTTP `json:"httpHealthCheck,omitempty"`
+}
+
+type HealthCheckPolicySpecDefaultConfigHTTP struct {
+	RequestPath string `json:"requestPath,omitempty"`
+}
+
+type HealthCheckPolicySpecTargetRef struct {
+	Group string `json:"group,omitempty"`
+	Kind  string `json:"kind,omitempty"`
+	Name  string `json:"name,omitempty"`
+}
+
+type HealthCheckPolicyOption func(*HealthCheckPolicy)
+
+func WithServiceTargetRef(name string) HealthCheckPolicyOption {
+	return func(policy *HealthCheckPolicy) {
+		policy.Spec.TargetRef = &HealthCheckPolicySpecTargetRef{
+			Group: "",
+			Kind:  serviceKind,
+			Name:  name,
+		}
+	}
+}
+
+func WithHTTPHealthCheck(requestPath string) HealthCheckPolicyOption {
+	return func(policy *HealthCheckPolicy) {
+		policy.Spec.Default = &HealthCheckPolicySpecDefault{
+			Config: &HealthCheckPolicySpecDefaultConfig{
+				Type: healthCheckPolicyType,
+				HTTPHealthCheck: &HealthCheckPolicySpecDefaultConfigHTTP{
+					RequestPath: requestPath,
+				},
+			},
+		}
+	}
+}
+
+func NewHealthCheckPolicy(name, namespace string, options ...HealthCheckPolicyOption) (*unstructured.Unstructured, error) {
+	policy := &HealthCheckPolicy{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       healthCheckPolicyKind,
+			APIVersion: healthCheckPolicyAPIVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+
+	for _, option := range options {
+		option(policy)
+	}
+
+	data, err := runtime.DefaultUnstructuredConverter.ToUnstructured(policy)
+	if err != nil {
+		return nil, fmt.Errorf("converting health check policy to unstructured: %w", err)
+	}
+
+	return &unstructured.Unstructured{
+		Object: data,
+	}, nil
+}
+
+func NewAirflowHealthCheckPolicy(name, namespace string) (*unstructured.Unstructured, error) {
+	return NewHealthCheckPolicy(
+		name,
+		namespace,
+		WithServiceTargetRef(defaultAirflowServiceName),
+		WithHTTPHealthCheck("/health"),
+	)
+}
+
+func NewJupyterhubHealthCheckPolicy(name, namespace string) (*unstructured.Unstructured, error) {
+	return NewHealthCheckPolicy(
+		name,
+		namespace,
+		WithServiceTargetRef(defaultJupyterhubServiceName),
+		WithHTTPHealthCheck("/hub/login"),
+	)
 }
 
 func groupPtr(group string) *v1.Group {

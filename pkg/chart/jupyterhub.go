@@ -75,7 +75,7 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfi
 		return err
 	}
 
-	if err := c.createHealtCheckPolicy(ctx, namespace, gensql.ChartTypeJupyterhub); err != nil {
+	if err := c.createHealthCheckPolicy(ctx, namespace, gensql.ChartTypeJupyterhub); err != nil {
 		log.WithError(err).Info("creating health check policy")
 		return err
 	}
@@ -166,7 +166,7 @@ func (c Client) deleteJupyter(ctx context.Context, teamID string, log logger.Log
 		return err
 	}
 
-	if err := c.deleteHealtCheckPolicy(ctx, namespace, gensql.ChartTypeJupyterhub); err != nil {
+	if err := c.deleteHealthCheckPolicy(ctx, namespace, gensql.ChartTypeJupyterhub); err != nil {
 		log.WithError(err).Info("deleting health check policy")
 		return err
 	}

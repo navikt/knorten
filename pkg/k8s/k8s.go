@@ -9,18 +9,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"os"
-	"path/filepath"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	gwapiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	"strings"
 
-	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
 )
 
 func NewClient(context string) (client.Client, error) {
@@ -61,10 +55,59 @@ type Manager interface {
 	DeleteHTTPRoute(ctx context.Context, name, namespace string) error
 	ApplyHealthCheckPolicy(ctx context.Context, policy *unstructured.Unstructured) error
 	DeleteHealthCheckPolicy(ctx context.Context, name, namespace string) error
+	ApplyNamespace(ctx context.Context, namespace *v1.Namespace) error
+	DeleteNamespace(ctx context.Context, name string) error
+	ApplyServiceAccount(ctx context.Context, serviceAccount *v1.ServiceAccount) error
+	DeleteServiceAccount(ctx context.Context, name, namespace string) error
 }
 
 type manager struct {
 	client client.Client
+}
+
+func (m *manager) ApplyServiceAccount(ctx context.Context, serviceAccount *v1.ServiceAccount) error {
+	err := m.apply(ctx, serviceAccount)
+	if err != nil {
+		return fmt.Errorf("applying serviceaccount: %w", err)
+	}
+
+	return nil
+}
+
+func (m *manager) DeleteServiceAccount(ctx context.Context, name, namespace string) error {
+	err := m.delete(ctx, &v1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("deleting serviceaccount: %w", err)
+	}
+
+	return nil
+}
+
+func (m *manager) ApplyNamespace(ctx context.Context, namespace *v1.Namespace) error {
+	err := m.apply(ctx, namespace)
+	if err != nil {
+		return fmt.Errorf("applying namespace: %w", err)
+	}
+
+	return nil
+}
+
+func (m *manager) DeleteNamespace(ctx context.Context, name string) error {
+	err := m.delete(ctx, &v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("deleting namespace: %w", err)
+	}
+
+	return nil
 }
 
 func (m *manager) ApplyPostgresCluster(ctx context.Context, cluster *cnpgv1.Cluster) error {
@@ -202,36 +245,6 @@ func NewManager(client client.Client) Manager {
 	return &manager{
 		client: client,
 	}
-}
-
-func CreateClientset(dryRun, inCluster bool) (*kubernetes.Clientset, error) {
-	if dryRun {
-		return nil, nil
-	}
-
-	config, err := createKubeConfig(inCluster)
-	if err != nil {
-		return nil, err
-	}
-
-	return kubernetes.NewForConfig(config)
-}
-
-func createKubeConfig(inCluster bool) (*rest.Config, error) {
-	if inCluster {
-		return rest.InClusterConfig()
-	}
-
-	kubeconfig := os.Getenv("KUBECONFIG")
-	if kubeconfig == "" {
-		kubeconfig = filepath.Join(homedir.HomeDir(), ".kube", "config")
-	}
-
-	configLoadingRules := &clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfig}
-	// TODO: Virker ikke som at man får satt context på denne måten
-	configOverrides := &clientcmd.ConfigOverrides{CurrentContext: "minikube"}
-
-	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(configLoadingRules, configOverrides).ClientConfig()
 }
 
 // TeamIDToNamespace prefix team- to a team ID. If the ID already has in as a prefix, will add a - after the word team.

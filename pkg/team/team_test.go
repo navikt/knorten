@@ -4,10 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
+	"github.com/navikt/knorten/pkg/k8s"
 	"log"
 	"os"
 	"path"
 	"runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	gwapiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -157,7 +161,20 @@ func TestTeam(t *testing.T) {
 
 	for _, tt := range teamTests {
 		t.Run(tt.name, func(t *testing.T) {
-			teamClient, err := NewClient(repo, "", "", true, false)
+			// FIXME: Can add some logging of requests to this fake client thingy
+			c := fake.NewFakeClient()
+			scheme := c.Scheme()
+
+			// Probably don't need these here as we are using core/v1 schemas
+			if err := cnpgv1.AddToScheme(scheme); err != nil {
+				t.Error(err)
+			}
+
+			if err := gwapiv1.AddToScheme(scheme); err != nil {
+				t.Error(err)
+			}
+
+			teamClient, err := NewClient(repo, k8s.NewManager(c), "", "", true, false)
 			if err != nil {
 				t.Error(err)
 			}

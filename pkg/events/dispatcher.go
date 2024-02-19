@@ -153,7 +153,7 @@ func (e EventHandler) processWork(ctx context.Context, event gensql.Event, logge
 }
 
 func NewHandler(ctx context.Context, repo *database.Repo, azureClient *auth.Azure, mngr k8s.Manager, gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion string, dryRun, inCluster bool, log *logrus.Entry) (EventHandler, error) {
-	teamClient, err := team.NewClient(repo, gcpProject, gcpRegion, dryRun, inCluster)
+	teamClient, err := team.NewClient(repo, mngr, gcpProject, gcpRegion, dryRun, inCluster)
 	if err != nil {
 		return EventHandler{}, err
 	}

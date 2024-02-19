@@ -17,6 +17,8 @@ SQLC                 ?= $(shell command -v sqlc || echo "$(GOBIN)/sqlc")
 SQLC_VERSION         := v1.25.0
 GOLANGCILINT         ?= $(shell command -v golangci-lint || echo "$(GOBIN)/golangci-lint")
 GOLANGCILINT_VERSION := v1.55.2
+GOTEST               ?= $(shell command -v gotest || echo "$(GOBIN)/gotest")
+GOTEST_VERSION       := v0.0.6
 
 $(GOOSE):
 	$(call install-binary,goose,github.com/pressly/goose/v3/cmd/goose@$(GOOSE_VERSION))
@@ -83,8 +85,8 @@ npm-clean:
 	@rm -rf node_modules || echo "No node_modules directory found."
 .PHONY: npm-clean
 
-test:
-	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" go test -v ./... -count=1
+test: $(GOTEST)
+	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" $(GOTEST) -v ./... -count=1
 .PHONY: test
 
 lint: $(GOLANGCILINT)

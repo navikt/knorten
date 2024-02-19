@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/navikt/knorten/pkg/k8s/cnpg"
 	"strconv"
 	"strings"
 
@@ -122,6 +123,7 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 		return err
 	}
 
+	// FIXME: Remove, as this is managed by CNPG
 	secretStringData := map[string]string{
 		"connection": fmt.Sprintf("postgresql://%v:%v@%v:5432/%v?sslmode=disable", team.ID, values.PostgresPassword, cloudSQLProxyName, team.ID),
 	}
@@ -183,7 +185,8 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string, log logger.Log
 		return err
 	}
 
-	if err := c.deleteCloudSQLProxyFromKubernetes(ctx, namespace); err != nil {
+	// FIXME: Make sure this is the right name for the cluster
+	if err := c.deleteCloudNativePGCluster(ctx, teamID, namespace); err != nil {
 		log.WithError(err).Info("delete cloud sql proxy from Kubernetes")
 		return err
 	}
@@ -383,23 +386,8 @@ func (c Client) createAirflowDatabase(ctx context.Context, team *gensql.TeamGetR
 	teamID := team.ID
 	dbInstance := createAirflowcloudSQLInstanceName(teamID)
 
-	if err := createCloudSQLInstance(ctx, team.Slug, dbInstance, c.gcpProject, c.gcpRegion); err != nil {
-		return err
-	}
-
-	if err := createCloudSQLDatabase(ctx, teamID, dbInstance, c.gcpProject); err != nil {
-		return err
-	}
-
-	if err := createOrUpdateCloudSQLUser(ctx, teamID, dbPassword, dbInstance, c.gcpProject); err != nil {
-		return err
-	}
-
-	if err := setSQLClientIAMBinding(ctx, teamID, c.gcpProject); err != nil {
-		return err
-	}
-
-	return c.createCloudSQLProxy(ctx, "airflow-sql-proxy", teamID, k8s.TeamIDToNamespace(teamID), dbInstance)
+	// FIXME: Check that teamID is a sensible thing to use here
+	return c.manager.ApplyPostgresCluster(ctx, cnpg.NewCluster(dbInstance, k8s.TeamIDToNamespace(teamID), teamID, teamID))
 }
 
 func (c Client) createLogBucketForAirflow(ctx context.Context, teamID string) error {

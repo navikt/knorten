@@ -151,13 +151,13 @@ func (e EventHandler) processWork(ctx context.Context, event gensql.Event, logge
 	return e.repo.EventSetStatus(e.context, event.ID, database.EventStatusCompleted)
 }
 
-func NewHandler(ctx context.Context, repo *database.Repo, azureClient *auth.Azure, gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion string, dryRun, inCluster bool, log *logrus.Entry) (EventHandler, error) {
+func NewHandler(ctx context.Context, repo *database.Repo, azureClient *auth.Azure, context, gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion string, dryRun, inCluster bool, log *logrus.Entry) (EventHandler, error) {
 	teamClient, err := team.NewClient(repo, gcpProject, gcpRegion, dryRun, inCluster)
 	if err != nil {
 		return EventHandler{}, err
 	}
 
-	chartClient, err := chart.NewClient(repo, azureClient, dryRun, inCluster, airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion)
+	chartClient, err := chart.NewClient(repo, azureClient, context, dryRun, airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion)
 	if err != nil {
 		return EventHandler{}, err
 	}

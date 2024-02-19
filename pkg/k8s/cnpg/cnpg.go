@@ -56,7 +56,7 @@ func WithRequests(cpu, mem string) ClusterOption {
 	}
 }
 
-func New(name, namespace, database, owner string, options ...ClusterOption) *cnpgv1.Cluster {
+func NewCluster(name, namespace, database, owner string, options ...ClusterOption) *cnpgv1.Cluster {
 	c := &cnpgv1.Cluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       cnpgv1.ClusterKind,

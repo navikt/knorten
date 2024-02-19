@@ -232,7 +232,7 @@ func TestCharts(t *testing.T) {
 
 	for _, tt := range teamTests {
 		t.Run(tt.name, func(t *testing.T) {
-			chartClient, err := NewClient(repo, azureClient, true, false, "1.10.0", "2.0.0", "project", "")
+			chartClient, err := NewClient(repo, azureClient, "minikube", true, "1.10.0", "2.0.0", "project", "")
 			if err != nil {
 				t.Error(err)
 			}

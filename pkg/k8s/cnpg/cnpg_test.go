@@ -18,7 +18,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "default-cluster",
 			desc: "Create a new default cluster",
-			cluster: cnpg.New(
+			cluster: cnpg.NewCluster(
 				"test-cluster",
 				"test-namespace",
 				"test-database",
@@ -28,7 +28,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "cluster-with-backup",
 			desc: "Create a new cluster with backup",
-			cluster: cnpg.New(
+			cluster: cnpg.NewCluster(
 				"test-cluster",
 				"test-namespace",
 				"test-database",
@@ -39,7 +39,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "cluster-with-storage-size",
 			desc: "Create a new cluster with storage size",
-			cluster: cnpg.New(
+			cluster: cnpg.NewCluster(
 				"test-cluster",
 				"test-namespace",
 				"test-database",
@@ -50,7 +50,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "cluster-with-instance-count",
 			desc: "Create a new cluster with instance count",
-			cluster: cnpg.New(
+			cluster: cnpg.NewCluster(
 				"test-cluster",
 				"test-namespace",
 				"test-database",
@@ -61,7 +61,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "cluster-with-requests",
 			desc: "Create a new cluster with requests",
-			cluster: cnpg.New(
+			cluster: cnpg.NewCluster(
 				"test-cluster",
 				"test-namespace",
 				"test-database",

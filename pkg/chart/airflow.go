@@ -23,9 +23,7 @@ import (
 
 const (
 	k8sAirflowFernetKeySecretName = "airflow-fernet-key"
-	k8sAirflowDatabaseSecretName  = "airflow-db"
 	k8sAirflowWebserverSecretName = "airflow-webserver"
-	teamValueKeyDatabasePassword  = "databasePassword,omit"
 	teamValueKeyFernetKey         = "fernetKey,omit"
 	teamValueKeyWebserverSecret   = "webserverSecretKey,omit"
 	TeamValueKeyRestrictEgress    = "restrictEgress,omit"
@@ -47,9 +45,7 @@ type AirflowValues struct {
 	AirflowConfigurableValues
 
 	// Manually save to database
-
 	FernetKey          string // Knorten sets Helm value pointing to k8s secret
-	PostgresPassword   string // Knorten sets Helm value pointing to k8s secret
 	WebserverSecretKey string // Knorten sets Helm value pointing to k8s secret
 
 	// Generated Helm config
@@ -85,11 +81,6 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 		return err
 	}
 
-	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, teamValueKeyDatabasePassword, values.PostgresPassword, team.ID); err != nil {
-		log.WithError(err).Infof("inserting %v team value to database", teamValueKeyDatabasePassword)
-		return err
-	}
-
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, teamValueKeyFernetKey, values.FernetKey, team.ID); err != nil {
 		log.WithError(err).Infof("inserting %v team value to database", teamValueKeyFernetKey)
 		return err
@@ -118,34 +109,27 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfi
 		return err
 	}
 
-	if err := c.createHealtCheckPolicy(ctx, namespace, gensql.ChartTypeAirflow); err != nil {
+	if err := c.createHealthCheckPolicy(ctx, namespace, gensql.ChartTypeAirflow); err != nil {
 		log.WithError(err).Info("creating health check policy")
 		return err
 	}
 
-	// FIXME: Remove, as this is managed by CNPG
-	secretStringData := map[string]string{
-		"connection": fmt.Sprintf("postgresql://%v:%v@%v:5432/%v?sslmode=disable", team.ID, values.PostgresPassword, cloudSQLProxyName, team.ID),
-	}
-	if err := c.createOrUpdateSecret(ctx, k8sAirflowDatabaseSecretName, namespace, secretStringData); err != nil {
-		log.WithError(err).Info("creating or updating airflow db secret")
-		return err
-	}
-
-	secretStringData = map[string]string{"webserver-secret-key": values.WebserverSecretKey}
-	if err := c.createOrUpdateSecret(ctx, k8sAirflowWebserverSecretName, namespace, secretStringData); err != nil {
+	if err := c.createOrUpdateSecret(ctx, k8sAirflowWebserverSecretName, namespace, map[string]string{
+		"webserver-secret-key": values.WebserverSecretKey,
+	}); err != nil {
 		log.WithError(err).Info("creating or updating airflow webserver secret")
 		return err
 	}
 
-	secretStringData = map[string]string{"fernet-key": values.FernetKey}
-	if err := c.createOrUpdateSecret(ctx, k8sAirflowFernetKeySecretName, namespace, secretStringData); err != nil {
+	if err := c.createOrUpdateSecret(ctx, k8sAirflowFernetKeySecretName, namespace, map[string]string{
+		"fernet-key": values.FernetKey,
+	}); err != nil {
 		log.WithError(err).Info("creating or updating airflow fernet key secret")
 		return err
 	}
 
 	// Apply values to GCP project
-	if err := c.createAirflowDatabase(ctx, &team, values.PostgresPassword); err != nil {
+	if err := c.createAirflowDatabase(ctx, &team); err != nil {
 		log.WithError(err).Info("creating airflow database")
 		return err
 	}
@@ -175,12 +159,22 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string, log logger.Log
 
 	namespace := k8s.TeamIDToNamespace(teamID)
 
+	if err := c.deleteSecretFromKubernetes(ctx, k8sAirflowFernetKeySecretName, namespace); err != nil {
+		log.WithError(err).Info("deleting fernet key secret")
+		return err
+	}
+
+	if err := c.deleteSecretFromKubernetes(ctx, k8sAirflowWebserverSecretName, namespace); err != nil {
+		log.WithError(err).Info("deleting webserver secret")
+		return err
+	}
+
 	if err := c.deleteHttpRoute(ctx, namespace, gensql.ChartTypeAirflow); err != nil {
 		log.WithError(err).Info("deleting http route")
 		return err
 	}
 
-	if err := c.deleteHealtCheckPolicy(ctx, namespace, gensql.ChartTypeAirflow); err != nil {
+	if err := c.deleteHealthCheckPolicy(ctx, namespace, gensql.ChartTypeAirflow); err != nil {
 		log.WithError(err).Info("deleting health check policy")
 		return err
 	}
@@ -188,22 +182,6 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string, log logger.Log
 	// FIXME: Make sure this is the right name for the cluster
 	if err := c.deleteCloudNativePGCluster(ctx, teamID, namespace); err != nil {
 		log.WithError(err).Info("delete cloud sql proxy from Kubernetes")
-		return err
-	}
-
-	if err := c.deleteSecretFromKubernetes(ctx, k8sAirflowDatabaseSecretName, namespace); err != nil {
-		log.WithError(err).Info("delete Airflow database secret from Kubernetes")
-		return err
-	}
-
-	if err := removeSQLClientIAMBinding(ctx, c.gcpProject, teamID); err != nil {
-		log.WithError(err).Info("remove SQL client IAM binding")
-		return err
-	}
-
-	instanceName := createAirflowcloudSQLInstanceName(teamID)
-	if err := deleteCloudSQLInstance(ctx, instanceName, c.gcpProject); err != nil {
-		log.WithError(err).Info("delete Cloud SQL instance from GCP")
 		return err
 	}
 
@@ -262,11 +240,6 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 
 	}
 
-	postgresPassword, err := c.getOrGeneratePassword(ctx, team.ID, teamValueKeyDatabasePassword, generatePassword)
-	if err != nil {
-		return AirflowValues{}, err
-	}
-
 	fernetKey, err := c.getOrGeneratePassword(ctx, team.ID, teamValueKeyFernetKey, generateFernetKey)
 	if err != nil {
 		return AirflowValues{}, err
@@ -297,7 +270,6 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 		ExtraEnvs:                 extraEnvs,
 		WorkerLabels:              workerLabels,
 		FernetKey:                 fernetKey,
-		PostgresPassword:          postgresPassword,
 		WebserverEnv:              webserverEnv,
 		WebserverSecretKey:        webserverSecretKey,
 		WebserverServiceAccount:   team.ID,
@@ -378,13 +350,13 @@ func (c Client) createWorkerLabels(teamID string) (string, error) {
 	return string(labelBytes), nil
 }
 
-func (c Client) createAirflowDatabase(ctx context.Context, team *gensql.TeamGetRow, dbPassword string) error {
+func (c Client) createAirflowDatabase(ctx context.Context, team *gensql.TeamGetRow) error {
 	if c.dryRun {
 		return nil
 	}
 
 	teamID := team.ID
-	dbInstance := createAirflowcloudSQLInstanceName(teamID)
+	dbInstance := getAirflowDatabaseName(teamID)
 
 	// FIXME: Check that teamID is a sensible thing to use here
 	return c.manager.ApplyPostgresCluster(ctx, cnpg.NewCluster(dbInstance, k8s.TeamIDToNamespace(teamID), teamID, teamID))
@@ -407,8 +379,15 @@ func (c Client) createLogBucketForAirflow(ctx context.Context, teamID string) er
 	return nil
 }
 
-func createAirflowcloudSQLInstanceName(teamID string) string {
-	return "airflow-" + teamID + "-north"
+// FIXME: use this or remove it
+// CNPG creates a secret with all the necessary information to connect to the db:
+// - https://cloudnative-pg.io/documentation/1.22/applications/#secrets
+// func getAirflowDatabaseSecretName(teamID string) string {
+// 	return fmt.Sprintf("%s-app", getAirflowDatabaseName(teamID))
+// }
+
+func getAirflowDatabaseName(teamID string) string {
+	return fmt.Sprintf("airflow-%s", teamID)
 }
 
 func createBucketName(teamID string) string {

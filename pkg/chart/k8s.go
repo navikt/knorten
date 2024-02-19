@@ -4,14 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/navikt/knorten/pkg/database/gensql"
-	"github.com/navikt/knorten/pkg/k8s/cnpg"
 	"github.com/navikt/knorten/pkg/k8s/core"
 	"github.com/navikt/knorten/pkg/k8s/networking"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 const (
-	cloudSQLProxyName         = "airflow-sql-proxy"
 	k8sAirflowResourceName    = "airflow-webserver"
 	k8sJupyterhubResourceName = "jupyterhub"
 )
@@ -22,10 +20,6 @@ func (c Client) deleteSecretFromKubernetes(ctx context.Context, name, namespace 
 
 func (c Client) createOrUpdateSecret(ctx context.Context, name, namespace string, data map[string]string) error {
 	return c.manager.ApplySecret(ctx, core.NewSecret(name, namespace, data))
-}
-
-func (c Client) createCloudNativePGCluster(ctx context.Context, name, namespace string) error {
-	return c.manager.ApplyPostgresCluster(ctx, cnpg.NewCluster(name, namespace, "airflow", "airflow"))
 }
 
 func (c Client) deleteCloudNativePGCluster(ctx context.Context, name, namespace string) error {
@@ -62,7 +56,7 @@ func (c Client) deleteHttpRoute(ctx context.Context, namespace string, chartType
 	return c.manager.DeleteHTTPRoute(ctx, name, namespace)
 }
 
-func (c Client) createHealtCheckPolicy(ctx context.Context, namespace string, chartType gensql.ChartType) error {
+func (c Client) createHealthCheckPolicy(ctx context.Context, namespace string, chartType gensql.ChartType) error {
 	switch chartType {
 	case gensql.ChartTypeAirflow:
 		policy, err := networking.NewAirflowHealthCheckPolicy(k8sAirflowResourceName, namespace)
@@ -83,7 +77,7 @@ func (c Client) createHealtCheckPolicy(ctx context.Context, namespace string, ch
 	}
 }
 
-func (c Client) deleteHealtCheckPolicy(ctx context.Context, namespace string, chartType gensql.ChartType) error {
+func (c Client) deleteHealthCheckPolicy(ctx context.Context, namespace string, chartType gensql.ChartType) error {
 	var name string
 
 	switch chartType {

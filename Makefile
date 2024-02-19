@@ -19,6 +19,8 @@ GOLANGCILINT         ?= $(shell command -v golangci-lint || echo "$(GOBIN)/golan
 GOLANGCILINT_VERSION := v1.55.2
 GOTEST               ?= $(shell command -v gotest || echo "$(GOBIN)/gotest")
 GOTEST_VERSION       := v0.0.6
+STATICCHECK          ?= $(shell command -v staticcheck || echo "$(GOBIN)/staticcheck")
+STATICCHECK_VERSION  := v0.4.6
 
 $(GOOSE):
 	$(call install-binary,goose,github.com/pressly/goose/v3/cmd/goose@$(GOOSE_VERSION))
@@ -31,6 +33,9 @@ $(GOLANGCILINT):
 
 $(GOTEST):
 	$(call install-binary,gotest,github.com/rakyll/gotest@$(GOTEST_VERSION))
+
+$(STATICCHECK):
+	$(call install-binary,staticcheck,honnef.co/go/tools/cmd/staticcheck@$(STATICCHECK_VERSION))
 
 env:
 	echo "KNORTEN_OAUTH_CLIENT_ID=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID) --secret=knorten-oauth-client-id)" > .env
@@ -91,6 +96,9 @@ npm-clean:
 test: $(GOTEST)
 	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" $(GOTEST) -v ./... -count=1
 .PHONY: test
+
+staticcheck: $(STATICCHECK)
+	$(STATICCHECK) ./...
 
 lint: $(GOLANGCILINT)
 	$(GOLANGCILINT) run

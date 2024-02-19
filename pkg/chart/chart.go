@@ -3,7 +3,6 @@ package chart
 import (
 	"context"
 	"fmt"
-
 	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/navikt/knorten/pkg/database"
 	"github.com/navikt/knorten/pkg/helm"
@@ -22,21 +21,10 @@ type Client struct {
 	gcpRegion           string
 }
 
-func NewClient(repo *database.Repo, azureClient *auth.Azure, context string, dryRun bool, airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion string) (*Client, error) {
-	// FIXME: Should inject this client
-	// FIXME: When we move to main.go, should check if we should use NewDryRunClient instead of NewClient
-	c, err := k8s.NewClient(context)
-	if err != nil {
-		return nil, err
-	}
-
-	if dryRun {
-		c = k8s.NewDryRunClient(c)
-	}
-
+func NewClient(repo *database.Repo, azureClient *auth.Azure, mngr k8s.Manager, dryRun bool, airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion string) (*Client, error) {
 	return &Client{
 		repo:                repo,
-		manager:             k8s.NewManager(c),
+		manager:             mngr,
 		azureClient:         azureClient,
 		dryRun:              dryRun,
 		chartVersionJupyter: jupyterChartVersion,

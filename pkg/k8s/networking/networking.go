@@ -5,7 +5,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	v1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwapiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 const (
@@ -19,13 +19,13 @@ const (
 	gatewayKind                     = "Gateway"
 )
 
-type HTTPRouteOption func(*v1.HTTPRoute)
+type HTTPRouteOption func(*gwapiv1.HTTPRoute)
 
 func WithDefaultGatewayRef() HTTPRouteOption {
-	return func(route *v1.HTTPRoute) {
-		route.Spec.CommonRouteSpec.ParentRefs = []v1.ParentReference{
+	return func(route *gwapiv1.HTTPRoute) {
+		route.Spec.CommonRouteSpec.ParentRefs = []gwapiv1.ParentReference{
 			{
-				Group:     groupPtr(v1.GroupVersion.String()),
+				Group:     groupPtr(gwapiv1.GroupVersion.String()),
 				Kind:      kindPtr(gatewayKind),
 				Namespace: namespacePtr(defaultHTTPRouteSystemNamespace),
 				Name:      defaultHTTPRouteName,
@@ -35,16 +35,16 @@ func WithDefaultGatewayRef() HTTPRouteOption {
 }
 
 func WithServiceBackend(serviceName string, port int) HTTPRouteOption {
-	return func(route *v1.HTTPRoute) {
-		route.Spec.Rules = []v1.HTTPRouteRule{
+	return func(route *gwapiv1.HTTPRoute) {
+		route.Spec.Rules = []gwapiv1.HTTPRouteRule{
 			{
-				BackendRefs: []v1.HTTPBackendRef{
+				BackendRefs: []gwapiv1.HTTPBackendRef{
 					{
-						BackendRef: v1.BackendRef{
+						BackendRef: gwapiv1.BackendRef{
 							// Defaults to core API and Service when not defined:
 							// - https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.BackendObjectReference
-							BackendObjectReference: v1.BackendObjectReference{
-								Name: v1.ObjectName(serviceName),
+							BackendObjectReference: gwapiv1.BackendObjectReference{
+								Name: gwapiv1.ObjectName(serviceName),
 								Port: portPtr(port),
 							},
 						},
@@ -55,19 +55,19 @@ func WithServiceBackend(serviceName string, port int) HTTPRouteOption {
 	}
 }
 
-func NewHTTPRoute(name, namespace, hostname string, options ...HTTPRouteOption) *v1.HTTPRoute {
-	route := &v1.HTTPRoute{
+func NewHTTPRoute(name, namespace, hostname string, options ...HTTPRouteOption) *gwapiv1.HTTPRoute {
+	route := &gwapiv1.HTTPRoute{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       httpRouteKind,
-			APIVersion: v1.GroupVersion.String(),
+			APIVersion: gwapiv1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
-		Spec: v1.HTTPRouteSpec{
-			Hostnames: []v1.Hostname{
-				v1.Hostname(hostname),
+		Spec: gwapiv1.HTTPRouteSpec{
+			Hostnames: []gwapiv1.Hostname{
+				gwapiv1.Hostname(hostname),
 			},
 		},
 	}
@@ -79,11 +79,11 @@ func NewHTTPRoute(name, namespace, hostname string, options ...HTTPRouteOption) 
 	return route
 }
 
-func NewHTTPRouteWithDefaultGateway(name, namespace, hostname string, options ...HTTPRouteOption) *v1.HTTPRoute {
+func NewHTTPRouteWithDefaultGateway(name, namespace, hostname string, options ...HTTPRouteOption) *gwapiv1.HTTPRoute {
 	return NewHTTPRoute(name, namespace, hostname, append(options, WithDefaultGatewayRef())...)
 }
 
-func NewJupyterhubHTTPRoute(name, namespace, hostname string, options ...HTTPRouteOption) *v1.HTTPRoute {
+func NewJupyterhubHTTPRoute(name, namespace, hostname string, options ...HTTPRouteOption) *gwapiv1.HTTPRoute {
 	options = append(
 		options,
 		WithServiceBackend(defaultJupyterhubServiceName, defaultJupyterhubPort),
@@ -92,7 +92,7 @@ func NewJupyterhubHTTPRoute(name, namespace, hostname string, options ...HTTPRou
 	return NewHTTPRouteWithDefaultGateway(name, namespace, hostname, options...)
 }
 
-func NewAirflowHTTPRoute(name, namespace, hostname string, options ...HTTPRouteOption) *v1.HTTPRoute {
+func NewAirflowHTTPRoute(name, namespace, hostname string, options ...HTTPRouteOption) *gwapiv1.HTTPRoute {
 	options = append(
 		options,
 		WithServiceBackend(defaultAirflowServiceName, defaultAirflowPort),
@@ -209,22 +209,22 @@ func NewJupyterhubHealthCheckPolicy(name, namespace string) (*unstructured.Unstr
 	)
 }
 
-func groupPtr(group string) *v1.Group {
-	g := v1.Group(group)
+func groupPtr(group string) *gwapiv1.Group {
+	g := gwapiv1.Group(group)
 	return &g
 }
 
-func kindPtr(kind string) *v1.Kind {
-	k := v1.Kind(kind)
+func kindPtr(kind string) *gwapiv1.Kind {
+	k := gwapiv1.Kind(kind)
 	return &k
 }
 
-func namespacePtr(namespace string) *v1.Namespace {
-	n := v1.Namespace(namespace)
+func namespacePtr(namespace string) *gwapiv1.Namespace {
+	n := gwapiv1.Namespace(namespace)
 	return &n
 }
 
-func portPtr(port int) *v1.PortNumber {
-	p := v1.PortNumber(port)
+func portPtr(port int) *gwapiv1.PortNumber {
+	p := gwapiv1.PortNumber(port)
 	return &p
 }

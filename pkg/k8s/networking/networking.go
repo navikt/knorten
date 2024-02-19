@@ -25,7 +25,7 @@ func WithDefaultGatewayRef() HTTPRouteOption {
 	return func(route *gwapiv1.HTTPRoute) {
 		route.Spec.CommonRouteSpec.ParentRefs = []gwapiv1.ParentReference{
 			{
-				Group:     groupPtr(gwapiv1.GroupVersion.String()),
+				Group:     groupPtr(gwapiv1.GroupName),
 				Kind:      kindPtr(gatewayKind),
 				Namespace: namespacePtr(defaultHTTPRouteSystemNamespace),
 				Name:      defaultHTTPRouteName,

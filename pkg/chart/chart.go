@@ -9,16 +9,11 @@ import (
 	"github.com/navikt/knorten/pkg/helm"
 	"github.com/navikt/knorten/pkg/k8s"
 	"github.com/navikt/knorten/pkg/logger"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
-	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 )
 
 type Client struct {
 	repo                *database.Repo
-	k8sClient           *kubernetes.Clientset
-	k8sDynamicClient    *dynamic.DynamicClient
-	k8sGatewayClient    *gateway.Clientset
+	manager             k8s.Manager
 	azureClient         *auth.Azure
 	dryRun              bool
 	chartVersionAirflow string
@@ -27,28 +22,22 @@ type Client struct {
 	gcpRegion           string
 }
 
-func NewClient(repo *database.Repo, azureClient *auth.Azure, dryRun, inCluster bool, airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion string) (*Client, error) {
-	k8sClient, err := k8s.CreateClientset(dryRun, inCluster)
+func NewClient(repo *database.Repo, azureClient *auth.Azure, context string, dryRun bool, airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion string) (*Client, error) {
+	// FIXME: Should inject this client
+	// FIXME: When we move to main.go, should check if we should use NewDryRunClient instead of NewClient
+	c, err := k8s.NewClient(context)
 	if err != nil {
 		return nil, err
 	}
 
-	k8sGatewayClient, err := k8s.CreateGatewayClientset(dryRun, inCluster)
-	if err != nil {
-		return nil, err
-	}
-
-	k8sDynamicClient, err := k8s.CreateDynamicClient(dryRun, inCluster)
-	if err != nil {
-		return nil, err
+	if dryRun {
+		c = k8s.NewDryRunClient(c)
 	}
 
 	return &Client{
 		repo:                repo,
+		manager:             k8s.NewManager(c),
 		azureClient:         azureClient,
-		k8sClient:           k8sClient,
-		k8sDynamicClient:    k8sDynamicClient,
-		k8sGatewayClient:    k8sGatewayClient,
 		dryRun:              dryRun,
 		chartVersionJupyter: jupyterChartVersion,
 		chartVersionAirflow: airflowChartVersion,

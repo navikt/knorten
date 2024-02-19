@@ -85,6 +85,7 @@ func main() {
 		context.Background(),
 		dbClient,
 		azureClient,
+		cfg.Kubernetes.Context, // FIXME: Should inject the Client instead here, or probably the manager
 		cfg.GCP.Project,
 		cfg.GCP.Region,
 		cfg.GCP.Zone,

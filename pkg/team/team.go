@@ -4,32 +4,27 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/navikt/knorten/pkg/k8s/core"
 
 	"github.com/navikt/knorten/pkg/chart"
 	"github.com/navikt/knorten/pkg/database"
 	"github.com/navikt/knorten/pkg/database/gensql"
 	"github.com/navikt/knorten/pkg/k8s"
 	"github.com/navikt/knorten/pkg/logger"
-	"k8s.io/client-go/kubernetes"
 )
 
 type Client struct {
 	repo       *database.Repo
-	k8sClient  *kubernetes.Clientset
+	manager    k8s.Manager
 	gcpProject string
 	gcpRegion  string
 	dryRun     bool
 }
 
-func NewClient(repo *database.Repo, gcpProject, gcpRegion string, dryRun, inCluster bool) (*Client, error) {
-	k8sClient, err := k8s.CreateClientset(dryRun, inCluster)
-	if err != nil {
-		return nil, err
-	}
-
+func NewClient(repo *database.Repo, mngr k8s.Manager, gcpProject, gcpRegion string, dryRun, inCluster bool) (*Client, error) {
 	return &Client{
 		repo:       repo,
-		k8sClient:  k8sClient,
+		manager:    mngr,
 		gcpProject: gcpProject,
 		gcpRegion:  gcpRegion,
 		dryRun:     dryRun,
@@ -66,12 +61,13 @@ func (c Client) create(ctx context.Context, team gensql.Team, log logger.Logger)
 	}
 
 	namespace := k8s.TeamIDToNamespace(team.ID)
-	if err := c.createK8sNamespace(ctx, namespace); err != nil {
-		log.WithError(err).Info("failed creating team namespace")
+	err = c.manager.ApplyNamespace(ctx, core.NewNamespace(namespace))
+	if err != nil {
+		log.WithError(err).Info("failed updating k8s namespace")
 		return true, err
 	}
 
-	if err := c.createK8sServiceAccount(ctx, team.ID, namespace); err != nil {
+	if err := c.manager.ApplyServiceAccount(ctx, core.NewServiceAccount(team.ID, namespace)); err != nil {
 		log.WithError(err).Info("failed creating k8s service account")
 		return true, err
 	}
@@ -103,30 +99,15 @@ func (c Client) update(ctx context.Context, team gensql.Team, log logger.Logger)
 	}
 
 	namespace := k8s.TeamIDToNamespace(team.ID)
-	namespaceExists, err := c.k8sNamespaceExists(ctx, namespace)
+	err = c.manager.ApplyNamespace(ctx, core.NewNamespace(namespace))
 	if err != nil {
-		log.WithError(err).Info("failed while checking if namespace exists")
+		log.WithError(err).Info("failed updating k8s namespace")
 		return true, err
 	}
 
-	if !namespaceExists {
-		if err := c.createK8sNamespace(ctx, namespace); err != nil {
-			log.WithError(err).Info("failed creating team namespace")
-			return true, err
-		}
-	}
-
-	serviceAccountExists, err := c.k8sServiceAccountExists(ctx, team.ID, namespace)
-	if err != nil {
-		log.WithError(err).Info("failed while checking if service accpunt exists")
+	if err := c.manager.ApplyServiceAccount(ctx, core.NewServiceAccount(team.ID, namespace)); err != nil {
+		log.WithError(err).Info("failed creating k8s service account")
 		return true, err
-	}
-
-	if !serviceAccountExists {
-		if err := c.createK8sServiceAccount(ctx, team.ID, namespace); err != nil {
-			log.WithError(err).Info("failed creating k8s service account")
-			return true, err
-		}
 	}
 
 	if err := c.updateGCPTeamResources(ctx, team); err != nil {
@@ -191,7 +172,7 @@ func (c Client) delete(ctx context.Context, teamID string, log logger.Logger) (b
 		return true, err
 	}
 
-	if err = c.deleteK8sNamespace(ctx, k8s.TeamIDToNamespace(team.ID)); err != nil {
+	if err = c.manager.DeleteNamespace(ctx, k8s.TeamIDToNamespace(team.ID)); err != nil {
 		log.WithError(err).Info("failed while deleting k8s namespace")
 		return true, err
 	}

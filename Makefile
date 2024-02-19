@@ -29,6 +29,9 @@ $(SQLC):
 $(GOLANGCILINT):
 	$(call install-binary,golangci-lint,github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCILINT_VERSION))
 
+$(GOTEST):
+	$(call install-binary,gotest,github.com/rakyll/gotest@$(GOTEST_VERSION))
+
 env:
 	echo "KNORTEN_OAUTH_CLIENT_ID=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID) --secret=knorten-oauth-client-id)" > .env
 	echo "KNORTEN_OAUTH_CLIENT_SECRET=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID) --secret=knorten-oauth-client-secret)" >> .env

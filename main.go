@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/navikt/knorten/pkg/k8s"
 	"html/template"
 	"net"
 	"time"
@@ -81,11 +82,21 @@ func main() {
 		}
 	}
 
+	c, err := k8s.NewClient(cfg.Kubernetes.Context)
+	if err != nil {
+		log.WithError(err).Fatal("creating k8s client")
+		return
+	}
+
+	if cfg.DryRun {
+		c = k8s.NewDryRunClient(c)
+	}
+
 	eventHandler, err := events.NewHandler(
 		context.Background(),
 		dbClient,
 		azureClient,
-		cfg.Kubernetes.Context, // FIXME: Should inject the Client instead here, or probably the manager
+		k8s.NewManager(c),
 		cfg.GCP.Project,
 		cfg.GCP.Region,
 		cfg.GCP.Zone,

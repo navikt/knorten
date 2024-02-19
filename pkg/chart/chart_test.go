@@ -4,10 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
+	"github.com/navikt/knorten/pkg/k8s"
 	"log"
 	"os"
 	"path"
 	"runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	gwapiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	"strings"
 	"testing"
 
@@ -232,7 +236,19 @@ func TestCharts(t *testing.T) {
 
 	for _, tt := range teamTests {
 		t.Run(tt.name, func(t *testing.T) {
-			chartClient, err := NewClient(repo, azureClient, "minikube", true, "1.10.0", "2.0.0", "project", "")
+			// FIXME: Can add some logging of requests to this fake client thingy
+			c := fake.NewFakeClient()
+			scheme := c.Scheme()
+
+			if err := cnpgv1.AddToScheme(scheme); err != nil {
+				t.Error(err)
+			}
+
+			if err := gwapiv1.AddToScheme(scheme); err != nil {
+				t.Error(err)
+			}
+
+			chartClient, err := NewClient(repo, azureClient, k8s.NewManager(c), true, "1.10.0", "2.0.0", "project", "")
 			if err != nil {
 				t.Error(err)
 			}

@@ -14,7 +14,9 @@ spec:
     namespace: knada-system
   rules:
   - backendRefs:
-    - name: proxy-public
+    - group: core
+      kind: Service
+      name: proxy-public
       port: 80
 status:
   parents: null

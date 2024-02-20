@@ -1,7 +1,8 @@
 GOPATH := $(shell go env GOPATH)
 GOBIN  ?= $(GOPATH)/bin # Default GOBIN if not set
 
-GCP_PROJECT_ID ?= knada-gcp
+GCP_PROJECT_ID_PRO ?= knada-gcp
+GCP_PROJECT_ID_DEV ?= nada-dev-db2e
 
 # A template function for installing binaries
 define install-binary
@@ -38,9 +39,10 @@ $(STATICCHECK):
 	$(call install-binary,staticcheck,honnef.co/go/tools/cmd/staticcheck@$(STATICCHECK_VERSION))
 
 env:
-	echo "KNORTEN_OAUTH_CLIENT_ID=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID) --secret=knorten-oauth-client-id)" > .env
-	echo "KNORTEN_OAUTH_CLIENT_SECRET=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID) --secret=knorten-oauth-client-secret)" >> .env
-	echo "KNORTEN_OAUTH_TENANT_ID=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID) --secret=knorten-azure-tenant-id)" >> .env
+	# We need to fetch the secrets from GCP Secret Manager in PRO environment
+	echo "KNORTEN_OAUTH_CLIENT_ID=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID_PRO) --secret=knorten-oauth-client-id)" > .env
+	echo "KNORTEN_OAUTH_CLIENT_SECRET=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID_PRO) --secret=knorten-oauth-client-secret)" >> .env
+	echo "KNORTEN_OAUTH_TENANT_ID=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID_PRO) --secret=knorten-azure-tenant-id)" >> .env
 .PHONY: env
 
 netpol:
@@ -113,6 +115,7 @@ gauth:
 	@gcloud auth application-default print-access-token >/dev/null 2>&1 \
 		&& gcloud auth list --filter=status:ACTIVE --format="value(account)" | grep -q "@nav.no" \
 			&& echo "GCP ADC login not required." || gcloud auth login --update-adc
+	@glcoud set project $(GCP_PROJECT_ID_DEV)
 .PHONY: gauth
 
 KUBERNETES_VERSION ?= v1.28.3

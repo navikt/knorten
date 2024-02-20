@@ -17,6 +17,10 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
+const (
+	fieldManager = "knorten"
+)
+
 func NewClient(context string) (client.Client, error) {
 	cfg, err := config.GetConfigWithContext(context)
 	if err != nil {
@@ -237,8 +241,10 @@ func (m *manager) apply(ctx context.Context, obj client.Object) error {
 		return fmt.Errorf("checking resource: %w", err)
 	}
 
-	// Otherwise we update it
-	return m.client.Update(ctx, obj)
+	// Otherwise, we update it
+	return m.client.Patch(ctx, obj, client.Apply, &client.PatchOptions{
+		FieldManager: fieldManager,
+	})
 }
 
 func NewManager(client client.Client) Manager {

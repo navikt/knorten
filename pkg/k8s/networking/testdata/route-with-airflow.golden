@@ -14,7 +14,9 @@ spec:
     namespace: knada-system
   rules:
   - backendRefs:
-    - name: airflow-webserver
+    - group: core
+      kind: Service
+      name: airflow-webserver
       port: 8080
 status:
   parents: null

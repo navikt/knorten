@@ -11,5 +11,6 @@ spec:
         requestPath: /hub/login
       type: HTTP
   targetRef:
+    group: core
     kind: Service
     name: proxy-public

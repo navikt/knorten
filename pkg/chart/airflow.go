@@ -158,6 +158,7 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string, log logger.Log
 	}
 
 	namespace := k8s.TeamIDToNamespace(teamID)
+	dbInstance := getAirflowDatabaseName(teamID)
 
 	if err := c.deleteSecretFromKubernetes(ctx, k8sAirflowFernetKeySecretName, namespace); err != nil {
 		log.WithError(err).Info("deleting fernet key secret")
@@ -179,9 +180,8 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string, log logger.Log
 		return err
 	}
 
-	// FIXME: Make sure this is the right name for the cluster
-	if err := c.deleteCloudNativePGCluster(ctx, teamID, namespace); err != nil {
-		log.WithError(err).Info("delete cloud sql proxy from Kubernetes")
+	if err := c.deleteCloudNativePGCluster(ctx, dbInstance, namespace); err != nil {
+		log.WithError(err).Info("delete postgres cluster")
 		return err
 	}
 

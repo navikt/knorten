@@ -17,6 +17,8 @@ const (
 	defaultHTTPRouteName            = "knada-io"
 	httpRouteKind                   = "HTTPRoute"
 	gatewayKind                     = "Gateway"
+	serviceKind                     = "Service"
+	groupNameCore                   = "core"
 )
 
 type HTTPRouteOption func(*gwapiv1.HTTPRoute)
@@ -44,8 +46,10 @@ func WithServiceBackend(serviceName string, port int) HTTPRouteOption {
 							// Defaults to core API and Service when not defined:
 							// - https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.BackendObjectReference
 							BackendObjectReference: gwapiv1.BackendObjectReference{
-								Name: gwapiv1.ObjectName(serviceName),
-								Port: portPtr(port),
+								Group: groupPtr(groupNameCore),
+								Kind:  kindPtr(serviceKind),
+								Name:  gwapiv1.ObjectName(serviceName),
+								Port:  portPtr(port),
 							},
 						},
 					},
@@ -105,8 +109,6 @@ const (
 	healthCheckPolicyKind       = "HealthCheckPolicy"
 	healthCheckPolicyAPIVersion = "networking.gke.io/v1"
 	healthCheckPolicyType       = "HTTP"
-
-	serviceKind = "Service"
 )
 
 type HealthCheckPolicy struct {
@@ -135,7 +137,7 @@ type HealthCheckPolicySpecDefaultConfigHTTP struct {
 }
 
 type HealthCheckPolicySpecTargetRef struct {
-	Group string `json:"group,omitempty"`
+	Group string `json:"group"`
 	Kind  string `json:"kind,omitempty"`
 	Name  string `json:"name,omitempty"`
 }
@@ -145,7 +147,7 @@ type HealthCheckPolicyOption func(*HealthCheckPolicy)
 func WithServiceTargetRef(name string) HealthCheckPolicyOption {
 	return func(policy *HealthCheckPolicy) {
 		policy.Spec.TargetRef = &HealthCheckPolicySpecTargetRef{
-			Group: "",
+			Group: groupNameCore,
 			Kind:  serviceKind,
 			Name:  name,
 		}

@@ -22,8 +22,12 @@ const (
 	WorkloadIdentityUser           ServiceAccountRole = "roles/iam.workloadIdentityUser"
 )
 
-type ServiceAccountManager interface {
+type ServiceAccountChecker interface {
 	Exists(ctx context.Context, name string) (bool, error)
+}
+
+type ServiceAccountFetcher interface {
+	Get(ctx context.Context, name string) (*iam.ServiceAccount, error)
 }
 
 type ServiceAccountPolicyManager interface {
@@ -161,13 +165,36 @@ func NewServiceAccountPolicyBinder(project string, manager ServiceAccountPolicyM
 	}
 }
 
-type serviceAccountManager struct {
+type serviceAccountFetcher struct {
 	*iam.Service
 	project string
 }
 
-func (s *serviceAccountManager) Exists(ctx context.Context, name string) (bool, error) {
-	_, err := s.Projects.ServiceAccounts.Get(ServiceAccountResource(name, s.project)).Context(ctx).Do()
+func (s *serviceAccountFetcher) Get(ctx context.Context, name string) (*iam.ServiceAccount, error) {
+	resource := ServiceAccountResource(name, s.project)
+
+	sa, err := s.Projects.ServiceAccounts.Get(resource).Context(ctx).Do()
+	if err != nil {
+		return nil, err
+	}
+
+	return sa, nil
+}
+
+func NewServiceAccountFetcher(project string, service *iam.Service) ServiceAccountFetcher {
+	return &serviceAccountFetcher{
+		Service: service,
+		project: project,
+	}
+}
+
+type serviceAccountChecker struct {
+	fetcher ServiceAccountFetcher
+	project string
+}
+
+func (s *serviceAccountChecker) Exists(ctx context.Context, name string) (bool, error) {
+	_, err := s.fetcher.Get(ctx, name)
 	if err != nil {
 		if IsGoogleApiErrorWithCode(err, http.StatusNotFound) {
 			return false, nil
@@ -179,9 +206,9 @@ func (s *serviceAccountManager) Exists(ctx context.Context, name string) (bool, 
 	return true, nil
 }
 
-func NewServiceAccountManager(project string, service *iam.Service) ServiceAccountManager {
-	return &serviceAccountManager{
-		Service: service,
+func NewServiceAccountChecker(project string, fetcher ServiceAccountFetcher) ServiceAccountChecker {
+	return &serviceAccountChecker{
+		fetcher: fetcher,
 		project: project,
 	}
 }

@@ -28,3 +28,19 @@ func NewServiceAccountPolicyManager(policy *iam.Policy, err error) *ServiceAccou
 		},
 	}
 }
+
+type ServiceAccountFetcher struct {
+	GetFunc func(ctx context.Context, name string) (*iam.ServiceAccount, error)
+}
+
+func (f *ServiceAccountFetcher) Get(ctx context.Context, name string) (*iam.ServiceAccount, error) {
+	return f.GetFunc(ctx, name)
+}
+
+func NewServiceAccountFetcher(sa *iam.ServiceAccount, err error) *ServiceAccountFetcher {
+	return &ServiceAccountFetcher{
+		GetFunc: func(ctx context.Context, name string) (*iam.ServiceAccount, error) {
+			return sa, err
+		},
+	}
+}

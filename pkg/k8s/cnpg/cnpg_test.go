@@ -77,14 +77,14 @@ func TestNew(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			g := goldie.New(t)
+			goldenFile := goldie.New(t)
 
-			d, err := yaml.Marshal(tc.cluster)
+			output, err := yaml.Marshal(tc.cluster)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			g.Assert(t, tc.name, d)
+			goldenFile.Assert(t, tc.name, output)
 		})
 	}
 }

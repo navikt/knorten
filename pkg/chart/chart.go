@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/navikt/knorten/pkg/database"
+	"github.com/navikt/knorten/pkg/gcpapi"
 	"github.com/navikt/knorten/pkg/helm"
 	"github.com/navikt/knorten/pkg/k8s"
 	"github.com/navikt/knorten/pkg/logger"
@@ -13,6 +14,8 @@ import (
 type Client struct {
 	repo                *database.Repo
 	manager             k8s.Manager
+	saBinder            gcpapi.ServiceAccountPolicyBinder
+	saChecker           gcpapi.ServiceAccountChecker
 	azureClient         *auth.Azure
 	dryRun              bool
 	chartVersionAirflow string
@@ -21,14 +24,24 @@ type Client struct {
 	gcpRegion           string
 }
 
-func NewClient(repo *database.Repo, azureClient *auth.Azure, mngr k8s.Manager, dryRun bool, airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion string) (*Client, error) {
+func NewClient(
+	repo *database.Repo,
+	azureClient *auth.Azure,
+	mngr k8s.Manager,
+	saBinder gcpapi.ServiceAccountPolicyBinder,
+	saChecker gcpapi.ServiceAccountChecker,
+	dryRun bool,
+	airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion string,
+) (*Client, error) {
 	return &Client{
 		repo:                repo,
 		manager:             mngr,
+		saBinder:            saBinder,
+		saChecker:           saChecker,
 		azureClient:         azureClient,
 		dryRun:              dryRun,
-		chartVersionJupyter: jupyterChartVersion,
 		chartVersionAirflow: airflowChartVersion,
+		chartVersionJupyter: jupyterChartVersion,
 		gcpProject:          gcpProject,
 		gcpRegion:           gcpRegion,
 	}, nil

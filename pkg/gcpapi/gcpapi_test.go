@@ -47,7 +47,7 @@ func echoResponder(t *testing.T) httpmock.Responder {
 func mustService(t *testing.T) *iam.Service {
 	t.Helper()
 
-	s, err := gcpapi.NewIAMService(context.Background(), testutils.NewLoggingHttpClient())
+	s, err := gcpapi.NewIAMService(context.Background(), testutils.NewLoggingHttpClient(), "fake-gcp-project")
 	if err != nil {
 		t.Fatalf("creating IAM service: %v", err)
 	}
@@ -59,19 +59,19 @@ func TestServiceAccountPolicyManager_GetPolicy(t *testing.T) {
 	name, project := "fake-sa-name", "fake-gcp-project"
 
 	testCases := []struct {
-		name               string
-		serviceAccountName string
-		method             string
-		url                string
-		responder          httpmock.Responder
-		expectErr          bool
-		expect             any
+		name      string
+		resource  string
+		method    string
+		url       string
+		responder httpmock.Responder
+		expectErr bool
+		expect    any
 	}{
 		{
-			name:               "Should get policy",
-			serviceAccountName: name,
-			method:             http.MethodPost,
-			url:                "https://iam.googleapis.com/v1/projects/fake-gcp-project/serviceAccounts/fake-sa-name@fake-gcp-project.iam.gserviceaccount.com:getIamPolicy?alt=json&prettyPrint=false",
+			name:     "Should get policy",
+			resource: gcpapi.ServiceAccountResource(name, project),
+			method:   http.MethodPost,
+			url:      "https://iam.googleapis.com/v1/projects/fake-gcp-project/serviceAccounts/fake-sa-name@fake-gcp-project.iam.gserviceaccount.com:getIamPolicy?alt=json&prettyPrint=false",
 			responder: httpmock.NewJsonResponderOrPanic(http.StatusOK, &iam.Policy{
 				Bindings: []*iam.Binding{
 					gcpapi.ServiceAccountTokenCreatorRoleBinding(name, project),
@@ -103,7 +103,7 @@ func TestServiceAccountPolicyManager_GetPolicy(t *testing.T) {
 
 			var got any
 
-			got, err := gcpapi.NewServiceAccountPolicyManager(project, mustService(t)).GetPolicy(context.Background(), tc.serviceAccountName)
+			got, err := gcpapi.NewServiceAccountPolicyManager(project, mustService(t)).GetPolicy(context.Background(), tc.resource)
 			if tc.expectErr {
 				if err == nil {
 					t.Fatalf("expected error, got nil")
@@ -125,18 +125,18 @@ func TestServiceAccountPolicyManager_SetPolicy(t *testing.T) {
 	name, project := "fake-sa-name", "fake-gcp-project"
 
 	testCases := []struct {
-		name               string
-		serviceAccountName string
-		policy             *iam.Policy
-		method             string
-		url                string
-		responder          httpmock.Responder
-		expectErr          bool
-		expect             any
+		name      string
+		resource  string
+		policy    *iam.Policy
+		method    string
+		url       string
+		responder httpmock.Responder
+		expectErr bool
+		expect    any
 	}{
 		{
-			name:               "Should set policy",
-			serviceAccountName: name,
+			name:     "Should set policy",
+			resource: gcpapi.ServiceAccountResource(name, project),
 			policy: &iam.Policy{
 				Bindings: []*iam.Binding{
 					gcpapi.ServiceAccountTokenCreatorRoleBinding(name, project),
@@ -167,7 +167,7 @@ func TestServiceAccountPolicyManager_SetPolicy(t *testing.T) {
 
 			httpmock.RegisterResponder(tc.method, tc.url, tc.responder)
 
-			got, err := gcpapi.NewServiceAccountPolicyManager(project, mustService(t)).SetPolicy(context.Background(), tc.serviceAccountName, tc.policy)
+			got, err := gcpapi.NewServiceAccountPolicyManager(project, mustService(t)).SetPolicy(context.Background(), tc.resource, tc.policy)
 			if tc.expectErr {
 				if err == nil {
 					t.Fatalf("expected error, got nil")

@@ -359,8 +359,7 @@ func (c Client) createAirflowDatabase(ctx context.Context, team *gensql.TeamGetR
 	teamID := team.ID
 	dbInstance := getAirflowDatabaseName(teamID)
 
-	// FIXME: Check that teamID is a sensible thing to use here
-	return c.manager.ApplyPostgresCluster(ctx, cnpg.NewCluster(dbInstance, k8s.TeamIDToNamespace(teamID), teamID, teamID))
+	return c.manager.ApplyPostgresCluster(ctx, cnpg.NewCluster(teamID, k8s.TeamIDToNamespace(teamID), dbInstance, teamID))
 }
 
 func (c Client) createLogBucketForAirflow(ctx context.Context, teamID string) error {

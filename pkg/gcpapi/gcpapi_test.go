@@ -10,6 +10,7 @@ import (
 	"github.com/navikt/knorten/pkg/testutils"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iam/v1"
+	"google.golang.org/api/option"
 	"net/http"
 	"testing"
 )
@@ -47,7 +48,7 @@ func echoResponder(t *testing.T) httpmock.Responder {
 func mustService(t *testing.T) *iam.Service {
 	t.Helper()
 
-	s, err := gcpapi.NewIAMService(context.Background(), testutils.NewLoggingHttpClient(), "fake-gcp-project")
+	s, err := iam.NewService(context.Background(), option.WithHTTPClient(testutils.NewLoggingHttpClient()))
 	if err != nil {
 		t.Fatalf("creating IAM service: %v", err)
 	}

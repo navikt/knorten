@@ -11,9 +11,6 @@ import (
 const (
 	defaultImageName     = "ghcr.io/cloudnative-pg/postgresql:16.1"
 	defaultInstanceCount = 2
-	// It is possible to create additional volume snapshot classes
-	// via knada-gcp if required, with different properties.
-	// - https://kubernetes.io/docs/concepts/storage/volume-snapshot-classes/
 	defaultVolumeSnapshotClassName = "cnpg-vps"
 	defaultStorageSize             = "1Gi"
 	defaultRequestMemory           = "512Mi"

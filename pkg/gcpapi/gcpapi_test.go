@@ -15,8 +15,7 @@ import (
 )
 
 const (
-	unusedParameter = ""
-	notFoundError   = `{
+	notFoundError = `{
   "error": {
     "code": 404,
     "message": "Unknown service account",
@@ -60,19 +59,19 @@ func TestServiceAccountPolicyManager_GetPolicy(t *testing.T) {
 	name, project := "fake-sa-name", "fake-gcp-project"
 
 	testCases := []struct {
-		name      string
-		resource  string
-		method    string
-		url       string
-		responder httpmock.Responder
-		expectErr bool
-		expect    any
+		name               string
+		serviceAccountName string
+		method             string
+		url                string
+		responder          httpmock.Responder
+		expectErr          bool
+		expect             any
 	}{
 		{
-			name:     "Should get policy",
-			resource: gcpapi.ServiceAccountResource(name, project),
-			method:   http.MethodPost,
-			url:      "https://iam.googleapis.com/v1/projects/fake-gcp-project/serviceAccounts/fake-sa-name@fake-gcp-project.iam.gserviceaccount.com:getIamPolicy?alt=json&prettyPrint=false",
+			name:               "Should get policy",
+			serviceAccountName: name,
+			method:             http.MethodPost,
+			url:                "https://iam.googleapis.com/v1/projects/fake-gcp-project/serviceAccounts/fake-sa-name@fake-gcp-project.iam.gserviceaccount.com:getIamPolicy?alt=json&prettyPrint=false",
 			responder: httpmock.NewJsonResponderOrPanic(http.StatusOK, &iam.Policy{
 				Bindings: []*iam.Binding{
 					gcpapi.ServiceAccountTokenCreatorRoleBinding(name, project),
@@ -104,7 +103,7 @@ func TestServiceAccountPolicyManager_GetPolicy(t *testing.T) {
 
 			var got any
 
-			got, err := gcpapi.NewServiceAccountPolicyManager(mustService(t)).GetPolicy(context.Background(), tc.resource)
+			got, err := gcpapi.NewServiceAccountPolicyManager(project, mustService(t)).GetPolicy(context.Background(), tc.serviceAccountName)
 			if tc.expectErr {
 				if err == nil {
 					t.Fatalf("expected error, got nil")
@@ -126,18 +125,18 @@ func TestServiceAccountPolicyManager_SetPolicy(t *testing.T) {
 	name, project := "fake-sa-name", "fake-gcp-project"
 
 	testCases := []struct {
-		name      string
-		resource  string
-		policy    *iam.Policy
-		method    string
-		url       string
-		responder httpmock.Responder
-		expectErr bool
-		expect    any
+		name               string
+		serviceAccountName string
+		policy             *iam.Policy
+		method             string
+		url                string
+		responder          httpmock.Responder
+		expectErr          bool
+		expect             any
 	}{
 		{
-			name:     "Should set policy",
-			resource: gcpapi.ServiceAccountResource(name, project),
+			name:               "Should set policy",
+			serviceAccountName: name,
 			policy: &iam.Policy{
 				Bindings: []*iam.Binding{
 					gcpapi.ServiceAccountTokenCreatorRoleBinding(name, project),
@@ -168,7 +167,7 @@ func TestServiceAccountPolicyManager_SetPolicy(t *testing.T) {
 
 			httpmock.RegisterResponder(tc.method, tc.url, tc.responder)
 
-			got, err := gcpapi.NewServiceAccountPolicyManager(mustService(t)).SetPolicy(context.Background(), tc.resource, tc.policy)
+			got, err := gcpapi.NewServiceAccountPolicyManager(project, mustService(t)).SetPolicy(context.Background(), tc.serviceAccountName, tc.policy)
 			if tc.expectErr {
 				if err == nil {
 					t.Fatalf("expected error, got nil")
@@ -188,15 +187,15 @@ func TestServiceAccountPolicyBinder_AddPolicyBinding(t *testing.T) {
 	name, project := "fake-sa-name", "fake-gcp-project"
 
 	testCases := []struct {
-		name    string
-		binding *iam.Binding
-		binder  gcpapi.ServiceAccountPolicyBinder
-		expect  *iam.Policy
+		name   string
+		role   gcpapi.ServiceAccountRole
+		binder gcpapi.ServiceAccountPolicyBinder
+		expect *iam.Policy
 	}{
 		{
-			name:    "Should add policy binding to empty policy",
-			binding: gcpapi.ServiceAccountTokenCreatorRoleBinding(name, project),
-			binder: gcpapi.NewServiceAccountPolicyBinder(mock.NewServiceAccountPolicyManager(
+			name: "Should add policy binding to empty policy",
+			role: gcpapi.ServiceAccountTokenCreatorRole,
+			binder: gcpapi.NewServiceAccountPolicyBinder(project, mock.NewServiceAccountPolicyManager(
 				&iam.Policy{}, nil,
 			)),
 			expect: &iam.Policy{
@@ -206,13 +205,13 @@ func TestServiceAccountPolicyBinder_AddPolicyBinding(t *testing.T) {
 			},
 		},
 		{
-			name:    "Should add member to existing binding",
-			binding: gcpapi.ServiceAccountTokenCreatorRoleBinding(name, project),
-			binder: gcpapi.NewServiceAccountPolicyBinder(mock.NewServiceAccountPolicyManager(
+			name: "Should add member to existing binding",
+			role: gcpapi.ServiceAccountTokenCreatorRole,
+			binder: gcpapi.NewServiceAccountPolicyBinder(project, mock.NewServiceAccountPolicyManager(
 				&iam.Policy{
 					Bindings: []*iam.Binding{
 						{
-							Role:    gcpapi.ServiceAccountTokenCreatorRole,
+							Role:    gcpapi.ServiceAccountTokenCreatorRole.String(),
 							Members: []string{"serviceAccount:something"},
 						},
 					},
@@ -222,16 +221,16 @@ func TestServiceAccountPolicyBinder_AddPolicyBinding(t *testing.T) {
 			expect: &iam.Policy{
 				Bindings: []*iam.Binding{
 					{
-						Role:    gcpapi.ServiceAccountTokenCreatorRole,
+						Role:    gcpapi.ServiceAccountTokenCreatorRole.String(),
 						Members: []string{"serviceAccount:something", gcpapi.ServiceAccountEmailMember(name, project)},
 					},
 				},
 			},
 		},
 		{
-			name:    "Should ignore existing member",
-			binding: gcpapi.ServiceAccountTokenCreatorRoleBinding(name, project),
-			binder: gcpapi.NewServiceAccountPolicyBinder(mock.NewServiceAccountPolicyManager(
+			name: "Should ignore existing member",
+			role: gcpapi.ServiceAccountTokenCreatorRole,
+			binder: gcpapi.NewServiceAccountPolicyBinder(project, mock.NewServiceAccountPolicyManager(
 				&iam.Policy{
 					Bindings: []*iam.Binding{
 						gcpapi.ServiceAccountTokenCreatorRoleBinding(name, project),
@@ -251,66 +250,7 @@ func TestServiceAccountPolicyBinder_AddPolicyBinding(t *testing.T) {
 		tc := tc
 
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := tc.binder.AddPolicyBinding(context.Background(), unusedParameter, tc.binding)
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			diff := cmp.Diff(tc.expect, got)
-			if diff != "" {
-				t.Fatalf("unexpected policy:\n\n%s\n", diff)
-			}
-		})
-	}
-}
-
-func TestServiceAccountPolicyBinder_RemovePolicyRoleMemberBinding(t *testing.T) {
-	name, project := "fake-sa-name", "fake-gcp-project"
-
-	testCases := []struct {
-		name    string
-		binding *iam.Binding
-		binder  gcpapi.ServiceAccountPolicyBinder
-		expect  *iam.Policy
-	}{
-		{
-			name:    "Should remove policy binding from empty policy",
-			binding: gcpapi.ServiceAccountTokenCreatorRoleBinding(name, project),
-			binder: gcpapi.NewServiceAccountPolicyBinder(mock.NewServiceAccountPolicyManager(
-				&iam.Policy{}, nil,
-			)),
-			expect: &iam.Policy{},
-		},
-		{
-			name:    "Should remove member from existing binding",
-			binding: gcpapi.ServiceAccountTokenCreatorRoleBinding(name, project),
-			binder: gcpapi.NewServiceAccountPolicyBinder(mock.NewServiceAccountPolicyManager(
-				&iam.Policy{
-					Bindings: []*iam.Binding{
-						{
-							Role:    gcpapi.ServiceAccountTokenCreatorRole,
-							Members: []string{gcpapi.ServiceAccountEmailMember(name, project)},
-						},
-					},
-				},
-				nil,
-			)),
-			expect: &iam.Policy{
-				Bindings: []*iam.Binding{
-					{
-						Members: []string{},
-						Role:    gcpapi.ServiceAccountTokenCreatorRole,
-					},
-				},
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		tc := tc
-
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := tc.binder.RemovePolicyRoleMemberBinding(context.Background(), unusedParameter, tc.binding)
+			got, err := tc.binder.AddPolicyRole(context.Background(), name, tc.role)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -328,14 +268,14 @@ func TestServiceAccountPolicyBinder_RemovePolicyRoleBinding(t *testing.T) {
 
 	testCases := []struct {
 		name   string
-		role   string
+		role   gcpapi.ServiceAccountRole
 		binder gcpapi.ServiceAccountPolicyBinder
 		expect *iam.Policy
 	}{
 		{
 			name: "Should remove role binding from empty policy",
 			role: gcpapi.ServiceAccountTokenCreatorRole,
-			binder: gcpapi.NewServiceAccountPolicyBinder(mock.NewServiceAccountPolicyManager(
+			binder: gcpapi.NewServiceAccountPolicyBinder(project, mock.NewServiceAccountPolicyManager(
 				&iam.Policy{}, nil,
 			)),
 			expect: &iam.Policy{},
@@ -343,11 +283,11 @@ func TestServiceAccountPolicyBinder_RemovePolicyRoleBinding(t *testing.T) {
 		{
 			name: "Should remove member from existing binding",
 			role: gcpapi.ServiceAccountTokenCreatorRole,
-			binder: gcpapi.NewServiceAccountPolicyBinder(mock.NewServiceAccountPolicyManager(
+			binder: gcpapi.NewServiceAccountPolicyBinder(project, mock.NewServiceAccountPolicyManager(
 				&iam.Policy{
 					Bindings: []*iam.Binding{
 						{
-							Role:    gcpapi.ServiceAccountTokenCreatorRole,
+							Role:    gcpapi.ServiceAccountTokenCreatorRole.String(),
 							Members: []string{gcpapi.ServiceAccountEmailMember(name, project)},
 						},
 					},
@@ -364,7 +304,7 @@ func TestServiceAccountPolicyBinder_RemovePolicyRoleBinding(t *testing.T) {
 		tc := tc
 
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := tc.binder.RemovePolicyRoleBinding(context.Background(), unusedParameter, tc.role)
+			got, err := tc.binder.RemovePolicyRole(context.Background(), name, tc.role)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -413,7 +353,7 @@ func TestServiceAccountManager_Exists(t *testing.T) {
 
 			httpmock.RegisterResponder(tc.method, tc.url, tc.responder)
 
-			got, err := gcpapi.NewServiceAccountManager(mustService(t)).Exists(context.Background(), name, project)
+			got, err := gcpapi.NewServiceAccountManager(project, mustService(t)).Exists(context.Background(), name)
 			if tc.expectErr {
 				if err == nil {
 					t.Fatalf("expected error, got nil")

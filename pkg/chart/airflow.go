@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/navikt/knorten/pkg/gcpapi"
 	"github.com/navikt/knorten/pkg/k8s/cnpg"
 	"strconv"
 	"strings"
@@ -449,17 +450,28 @@ func (c Client) registerAirflowHelmEvent(ctx context.Context, teamID string, eve
 }
 
 func (c Client) grantTokenCreatorRole(ctx context.Context, teamID string) error {
-	if c.dryRun {
-		return nil
+	_, err := c.saBinder.AddPolicyRole(ctx, teamID, gcpapi.ServiceAccountTokenCreatorRole)
+	if err != nil {
+		return err
 	}
 
-	return grantSATokenCreatorRole(ctx, teamID, c.gcpProject)
+	return nil
 }
 
 func (c Client) deleteTokenCreatorRole(ctx context.Context, teamID string) error {
-	if c.dryRun {
+	exists, err := c.saChecker.Exists(ctx, teamID)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
 		return nil
 	}
 
-	return deleteTokenCreatorRoleOnSA(ctx, teamID, c.gcpProject)
+	_, err = c.saBinder.RemovePolicyRole(ctx, teamID, gcpapi.ServiceAccountTokenCreatorRole)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

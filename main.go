@@ -9,7 +9,6 @@ import (
 	"google.golang.org/api/iam/v1"
 	"html/template"
 	"net"
-	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -98,9 +97,12 @@ func main() {
 
 	ctx := context.Background()
 
-	iamService, err := gcpapi.NewIAMService(ctx, &http.Client{
-		Timeout: 5 * time.Second,
-	}, cfg.GCP.Project)
+	iamService, err := iam.NewService(ctx)
+	if err != nil {
+		log.WithError(err).Fatal("creating iam service")
+
+		return
+	}
 
 	policyManager := gcpapi.NewServiceAccountPolicyManager(cfg.GCP.Project, iamService)
 	fetcher := gcpapi.NewServiceAccountFetcher(cfg.GCP.Project, iamService)

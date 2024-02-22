@@ -3,9 +3,13 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/navikt/knorten/pkg/gcpapi"
+	"github.com/navikt/knorten/pkg/gcpapi/mock"
 	"github.com/navikt/knorten/pkg/k8s"
+	"google.golang.org/api/iam/v1"
 	"html/template"
 	"net"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -92,11 +96,30 @@ func main() {
 		c = k8s.NewDryRunClient(c)
 	}
 
+	ctx := context.Background()
+
+	iamService, err := gcpapi.NewIAMService(ctx, &http.Client{
+		Timeout: 5 * time.Second,
+	}, cfg.GCP.Project)
+
+	policyManager := gcpapi.NewServiceAccountPolicyManager(cfg.GCP.Project, iamService)
+	fetcher := gcpapi.NewServiceAccountFetcher(cfg.GCP.Project, iamService)
+
+	if cfg.DryRun {
+		policyManager = mock.NewServiceAccountPolicyManager(&iam.Policy{}, nil)
+		fetcher = mock.NewServiceAccountFetcher(&iam.ServiceAccount{}, nil)
+	}
+
+	binder := gcpapi.NewServiceAccountPolicyBinder(cfg.GCP.Project, policyManager)
+	checker := gcpapi.NewServiceAccountChecker(cfg.GCP.Project, fetcher)
+
 	eventHandler, err := events.NewHandler(
-		context.Background(),
+		ctx,
 		dbClient,
 		azureClient,
 		k8s.NewManager(c),
+		binder,
+		checker,
 		cfg.GCP.Project,
 		cfg.GCP.Region,
 		cfg.GCP.Zone,

@@ -2,6 +2,8 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   creationTimestamp: null
+  labels:
+    managed-by: knorten.knada.io
   name: test-route
   namespace: test-namespace
 spec:

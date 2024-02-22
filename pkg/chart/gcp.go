@@ -1,10 +1,8 @@
 package chart
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -101,84 +99,4 @@ func createServiceAccountObjectAdminBinding(ctx context.Context, teamID, bucketN
 	}
 
 	return nil
-}
-
-func grantSATokenCreatorRole(ctx context.Context, teamID, gcpProject string) error {
-	role := "roles/iam.serviceAccountTokenCreator"
-
-	sa := fmt.Sprintf("%v@%v.iam.gserviceaccount.com", teamID, gcpProject)
-
-	cmd := exec.CommandContext(ctx,
-		"gcloud",
-		"iam",
-		"service-accounts",
-		"add-iam-policy-binding",
-		sa,
-		fmt.Sprintf("--role=%v", role),
-		fmt.Sprintf("--member=serviceAccount:%v", sa),
-		"--quiet",
-	)
-
-	stdOut := &bytes.Buffer{}
-	stdErr := &bytes.Buffer{}
-	cmd.Stdout = stdOut
-	cmd.Stderr = stdErr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
-	}
-	return nil
-}
-
-func deleteTokenCreatorRoleOnSA(ctx context.Context, teamID, gcpProject string) error {
-	if exist, err := serviceAccountExistsInGCP(ctx, teamID, gcpProject); err != nil {
-		return err
-	} else if !exist {
-		return nil
-	}
-
-	role := "roles/iam.serviceAccountTokenCreator"
-
-	sa := fmt.Sprintf("%v@%v.iam.gserviceaccount.com", teamID, gcpProject)
-
-	cmd := exec.CommandContext(ctx,
-		"gcloud",
-		"iam",
-		"service-accounts",
-		"remove-iam-policy-binding",
-		sa,
-		fmt.Sprintf("--role=%v", role),
-		fmt.Sprintf("--member=serviceAccount:%v", sa),
-		"--quiet",
-	)
-
-	stdOut := &bytes.Buffer{}
-	stdErr := &bytes.Buffer{}
-	cmd.Stdout = stdOut
-	cmd.Stderr = stdErr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
-	}
-	return nil
-}
-
-func serviceAccountExistsInGCP(ctx context.Context, teamID, gcpProject string) (bool, error) {
-	cmd := exec.CommandContext(ctx,
-		"gcloud",
-		"--quiet",
-		"iam",
-		"service-accounts",
-		"list",
-		"--format=get(email)",
-		"--project", gcpProject,
-		fmt.Sprintf("--filter=email=%v@%v.iam.gserviceaccount.com", teamID, gcpProject))
-
-	stdOut := &bytes.Buffer{}
-	stdErr := &bytes.Buffer{}
-	cmd.Stdout = stdOut
-	cmd.Stderr = stdErr
-	if err := cmd.Run(); err != nil {
-		return false, fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
-	}
-
-	return stdOut.String() != "", nil
 }

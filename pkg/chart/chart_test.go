@@ -5,7 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
+	"github.com/navikt/knorten/pkg/gcpapi"
+	"github.com/navikt/knorten/pkg/gcpapi/mock"
 	"github.com/navikt/knorten/pkg/k8s"
+	"google.golang.org/api/iam/v1"
 	"log"
 	"os"
 	"path"
@@ -248,7 +251,21 @@ func TestCharts(t *testing.T) {
 				t.Error(err)
 			}
 
-			chartClient, err := NewClient(repo, azureClient, k8s.NewManager(c), true, "1.10.0", "2.0.0", "project", "")
+			fetcher := mock.NewServiceAccountFetcher(&iam.ServiceAccount{}, nil)
+			manager := mock.NewServiceAccountPolicyManager(&iam.Policy{}, nil)
+
+			chartClient, err := NewClient(
+				repo,
+				azureClient,
+				k8s.NewManager(c),
+				gcpapi.NewServiceAccountPolicyBinder("project", manager),
+				gcpapi.NewServiceAccountChecker("project", fetcher),
+				true,
+				"1.10.0",
+				"2.0.0",
+				"project",
+				"",
+			)
 			if err != nil {
 				t.Error(err)
 			}

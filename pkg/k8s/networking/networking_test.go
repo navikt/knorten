@@ -59,14 +59,14 @@ func TestHTTPRoute(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			g := goldie.New(t)
+			goldenFilen := goldie.New(t)
 
-			d, err := yaml.Marshal(tc.route)
+			output, err := yaml.Marshal(tc.route)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			g.Assert(t, tc.name, d)
+			goldenFilen.Assert(t, tc.name, output)
 		})
 	}
 }

@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"github.com/navikt/knorten/pkg/k8s/meta"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -22,6 +23,7 @@ func NewSecret(name, namespace string, data map[string]string) *v1.Secret {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
+			Labels:    meta.DefaultLabels(),
 		},
 		StringData: data,
 	}
@@ -34,7 +36,8 @@ func NewNamespace(name string) *v1.Namespace {
 			APIVersion: apiVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
+			Name:   name,
+			Labels: meta.DefaultLabels(),
 		},
 	}
 }
@@ -58,6 +61,7 @@ func NewServiceAccount(name, namespace string, options ...ServiceAccountOption) 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
+			Labels:    meta.DefaultLabels(),
 		},
 	}
 

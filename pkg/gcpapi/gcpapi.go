@@ -11,24 +11,29 @@ import (
 	"slices"
 )
 
+type ServiceAccountRole string
+
+func (r ServiceAccountRole) String() string {
+	return string(r)
+}
+
 const (
-	ServiceAccountTokenCreatorRole = "roles/iam.serviceAccountTokenCreator"
-	WorkloadIdentityUser           = "roles/iam.workloadIdentityUser"
+	ServiceAccountTokenCreatorRole ServiceAccountRole = "roles/iam.serviceAccountTokenCreator"
+	WorkloadIdentityUser           ServiceAccountRole = "roles/iam.workloadIdentityUser"
 )
 
 type ServiceAccountManager interface {
-	Exists(ctx context.Context, name, project string) (bool, error)
+	Exists(ctx context.Context, name string) (bool, error)
 }
 
 type ServiceAccountPolicyManager interface {
-	GetPolicy(ctx context.Context, resource string) (*iam.Policy, error)
-	SetPolicy(ctx context.Context, resource string, policy *iam.Policy) (*iam.Policy, error)
+	GetPolicy(ctx context.Context, name string) (*iam.Policy, error)
+	SetPolicy(ctx context.Context, name string, policy *iam.Policy) (*iam.Policy, error)
 }
 
 type ServiceAccountPolicyBinder interface {
-	AddPolicyBinding(ctx context.Context, resource string, policy *iam.Binding) (*iam.Policy, error)
-	RemovePolicyRoleBinding(ctx context.Context, resource string, role string) (*iam.Policy, error)
-	RemovePolicyRoleMemberBinding(ctx context.Context, resource string, binding *iam.Binding) (*iam.Policy, error)
+	AddPolicyRole(ctx context.Context, name string, role ServiceAccountRole) (*iam.Policy, error)
+	RemovePolicyRole(ctx context.Context, name string, role ServiceAccountRole) (*iam.Policy, error)
 }
 
 // ServiceAccountResource returns a fully qualified resource name for a service account.
@@ -50,7 +55,7 @@ func ServiceAccountKubernetesMember(name, namespace, project string) string {
 }
 
 func ServiceAccountTokenCreatorRoleBinding(name, project string) *iam.Binding {
-	return NewBinding(ServiceAccountTokenCreatorRole, ServiceAccountEmailMember(name, project))
+	return NewBinding(ServiceAccountTokenCreatorRole.String(), ServiceAccountEmailMember(name, project))
 }
 
 func NewBinding(role, member string) *iam.Binding {
@@ -62,9 +67,12 @@ func NewBinding(role, member string) *iam.Binding {
 
 type serviceAccountPolicyManager struct {
 	*iam.Service
+	project string
 }
 
-func (s *serviceAccountPolicyManager) SetPolicy(ctx context.Context, resource string, policy *iam.Policy) (*iam.Policy, error) {
+func (s *serviceAccountPolicyManager) SetPolicy(ctx context.Context, name string, policy *iam.Policy) (*iam.Policy, error) {
+	resource := ServiceAccountResource(name, s.project)
+
 	request := &iam.SetIamPolicyRequest{
 		Policy: policy,
 	}
@@ -80,7 +88,9 @@ func (s *serviceAccountPolicyManager) SetPolicy(ctx context.Context, resource st
 	return p, nil
 }
 
-func (s *serviceAccountPolicyManager) GetPolicy(ctx context.Context, resource string) (*iam.Policy, error) {
+func (s *serviceAccountPolicyManager) GetPolicy(ctx context.Context, name string) (*iam.Policy, error) {
+	resource := ServiceAccountResource(name, s.project)
+
 	policy, err := s.Projects.ServiceAccounts.GetIamPolicy(resource).Context(ctx).Do()
 	if err != nil {
 		return nil, fmt.Errorf("getting service account policy: %w", err)
@@ -89,17 +99,22 @@ func (s *serviceAccountPolicyManager) GetPolicy(ctx context.Context, resource st
 	return policy, nil
 }
 
-func NewServiceAccountPolicyManager(service *iam.Service) ServiceAccountPolicyManager {
+func NewServiceAccountPolicyManager(project string, service *iam.Service) ServiceAccountPolicyManager {
 	return &serviceAccountPolicyManager{
 		Service: service,
+		project: project,
 	}
 }
 
 type serviceAccountPolicyBinder struct {
 	manager ServiceAccountPolicyManager
+	project string
 }
 
-func (b *serviceAccountPolicyBinder) AddPolicyBinding(ctx context.Context, resource string, binding *iam.Binding) (*iam.Policy, error) {
+func (b *serviceAccountPolicyBinder) AddPolicyRole(ctx context.Context, name string, role ServiceAccountRole) (*iam.Policy, error) {
+	resource := ServiceAccountResource(name, b.project)
+	member := ServiceAccountEmailMember(name, b.project)
+
 	p, err := b.manager.GetPolicy(ctx, resource)
 	if err != nil {
 		return nil, err
@@ -108,69 +123,51 @@ func (b *serviceAccountPolicyBinder) AddPolicyBinding(ctx context.Context, resou
 	foundRole := false
 
 	for _, b := range p.Bindings {
-		if b.Role == binding.Role {
+		if b.Role == role.String() {
 			foundRole = true
 
-			for _, m := range binding.Members {
-				if !slices.Contains(b.Members, m) {
-					b.Members = append(b.Members, m)
-				}
+			if !slices.Contains(b.Members, member) {
+				b.Members = append(b.Members, member)
 			}
 		}
 	}
 
 	if !foundRole {
-		p.Bindings = append(p.Bindings, binding)
+		p.Bindings = append(p.Bindings, NewBinding(role.String(), member))
 	}
 
 	return b.manager.SetPolicy(ctx, resource, p)
 }
 
-func (b *serviceAccountPolicyBinder) RemovePolicyRoleMemberBinding(ctx context.Context, resource string, binding *iam.Binding) (*iam.Policy, error) {
-	p, err := b.manager.GetPolicy(ctx, resource)
-	if err != nil {
-		return nil, err
-	}
+func (b *serviceAccountPolicyBinder) RemovePolicyRole(ctx context.Context, name string, role ServiceAccountRole) (*iam.Policy, error) {
+	resource := ServiceAccountResource(name, b.project)
 
-	for _, b := range p.Bindings {
-		if b.Role == binding.Role {
-			for _, m := range binding.Members {
-				b.Members = slices.DeleteFunc(b.Members, func(e string) bool {
-					return e == m
-				})
-			}
-
-		}
-	}
-
-	return b.manager.SetPolicy(ctx, resource, p)
-}
-
-func (b *serviceAccountPolicyBinder) RemovePolicyRoleBinding(ctx context.Context, resource string, role string) (*iam.Policy, error) {
 	p, err := b.manager.GetPolicy(ctx, resource)
 	if err != nil {
 		return nil, err
 	}
 
 	p.Bindings = slices.DeleteFunc(p.Bindings, func(e *iam.Binding) bool {
-		return e.Role == role
+		return e.Role == role.String()
 	})
 
 	return b.manager.SetPolicy(ctx, resource, p)
 }
 
-func NewServiceAccountPolicyBinder(manager ServiceAccountPolicyManager) ServiceAccountPolicyBinder {
+func NewServiceAccountPolicyBinder(project string, manager ServiceAccountPolicyManager) ServiceAccountPolicyBinder {
 	return &serviceAccountPolicyBinder{
 		manager: manager,
+		project: project,
 	}
 }
 
 type serviceAccountManager struct {
 	*iam.Service
+	project string
 }
 
-func (s *serviceAccountManager) Exists(ctx context.Context, name, project string) (bool, error) {
-	_, err := s.Projects.ServiceAccounts.Get(ServiceAccountResource(name, project)).Context(ctx).Do()
+func (s *serviceAccountManager) Exists(ctx context.Context, name string) (bool, error) {
+	_, err := s.Projects.ServiceAccounts.Get(ServiceAccountResource(name, s.project)).Context(ctx).Do()
 	if err != nil {
 		if IsGoogleApiErrorWithCode(err, http.StatusNotFound) {
 			return false, nil
@@ -182,9 +179,10 @@ func (s *serviceAccountManager) Exists(ctx context.Context, name, project string
 	return true, nil
 }
 
-func NewServiceAccountManager(service *iam.Service) ServiceAccountManager {
+func NewServiceAccountManager(project string, service *iam.Service) ServiceAccountManager {
 	return &serviceAccountManager{
 		Service: service,
+		project: project,
 	}
 }
 

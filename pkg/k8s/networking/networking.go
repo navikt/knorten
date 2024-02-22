@@ -44,8 +44,6 @@ func WithServiceBackend(serviceName string, port int) HTTPRouteOption {
 				BackendRefs: []gwapiv1.HTTPBackendRef{
 					{
 						BackendRef: gwapiv1.BackendRef{
-							// Defaults to core API and Service when not defined:
-							// - https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.BackendObjectReference
 							BackendObjectReference: gwapiv1.BackendObjectReference{
 								Group: groupPtr(groupNameCore),
 								Kind:  kindPtr(serviceKind),

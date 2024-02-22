@@ -2,6 +2,7 @@ package cnpg
 
 import (
 	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
+	"github.com/navikt/knorten/pkg/k8s/meta"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,6 +66,7 @@ func NewCluster(name, namespace, database, owner string, options ...ClusterOptio
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
+			Labels:    meta.DefaultLabels(),
 		},
 		Spec: cnpgv1.ClusterSpec{
 			Instances:             defaultInstanceCount,

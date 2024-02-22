@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/navikt/knorten/pkg/gcpapi"
 	"github.com/navikt/knorten/pkg/k8s"
 	"time"
 
@@ -152,13 +153,34 @@ func (e EventHandler) processWork(ctx context.Context, event gensql.Event, logge
 	return e.repo.EventSetStatus(e.context, event.ID, database.EventStatusCompleted)
 }
 
-func NewHandler(ctx context.Context, repo *database.Repo, azureClient *auth.Azure, mngr k8s.Manager, gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion string, dryRun, inCluster bool, log *logrus.Entry) (EventHandler, error) {
+func NewHandler(
+	ctx context.Context,
+	repo *database.Repo,
+	azureClient *auth.Azure,
+	mngr k8s.Manager,
+	saBinder gcpapi.ServiceAccountPolicyBinder,
+	saChecker gcpapi.ServiceAccountChecker,
+	gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion string,
+	dryRun, inCluster bool,
+	log *logrus.Entry,
+) (EventHandler, error) {
 	teamClient, err := team.NewClient(repo, mngr, gcpProject, gcpRegion, dryRun, inCluster)
 	if err != nil {
 		return EventHandler{}, err
 	}
 
-	chartClient, err := chart.NewClient(repo, azureClient, mngr, dryRun, airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion)
+	chartClient, err := chart.NewClient(
+		repo,
+		azureClient,
+		mngr,
+		saBinder,
+		saChecker,
+		dryRun,
+		airflowChartVersion,
+		jupyterChartVersion,
+		gcpProject,
+		gcpRegion,
+	)
 	if err != nil {
 		return EventHandler{}, err
 	}

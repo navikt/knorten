@@ -31,8 +31,8 @@ type ServiceAccountFetcher interface {
 }
 
 type ServiceAccountPolicyManager interface {
-	GetPolicy(ctx context.Context, name string) (*iam.Policy, error)
-	SetPolicy(ctx context.Context, name string, policy *iam.Policy) (*iam.Policy, error)
+	GetPolicy(ctx context.Context, resource string) (*iam.Policy, error)
+	SetPolicy(ctx context.Context, resource string, policy *iam.Policy) (*iam.Policy, error)
 }
 
 type ServiceAccountPolicyBinder interface {
@@ -74,9 +74,7 @@ type serviceAccountPolicyManager struct {
 	project string
 }
 
-func (s *serviceAccountPolicyManager) SetPolicy(ctx context.Context, name string, policy *iam.Policy) (*iam.Policy, error) {
-	resource := ServiceAccountResource(name, s.project)
-
+func (s *serviceAccountPolicyManager) SetPolicy(ctx context.Context, resource string, policy *iam.Policy) (*iam.Policy, error) {
 	request := &iam.SetIamPolicyRequest{
 		Policy: policy,
 	}
@@ -92,9 +90,7 @@ func (s *serviceAccountPolicyManager) SetPolicy(ctx context.Context, name string
 	return p, nil
 }
 
-func (s *serviceAccountPolicyManager) GetPolicy(ctx context.Context, name string) (*iam.Policy, error) {
-	resource := ServiceAccountResource(name, s.project)
-
+func (s *serviceAccountPolicyManager) GetPolicy(ctx context.Context, resource string) (*iam.Policy, error) {
 	policy, err := s.Projects.ServiceAccounts.GetIamPolicy(resource).Context(ctx).Do()
 	if err != nil {
 		return nil, fmt.Errorf("getting service account policy: %w", err)
@@ -213,8 +209,8 @@ func NewServiceAccountChecker(project string, fetcher ServiceAccountFetcher) Ser
 	}
 }
 
-func NewIAMService(ctx context.Context, c *http.Client) (*iam.Service, error) {
-	s, err := iam.NewService(ctx, option.WithHTTPClient(c))
+func NewIAMService(ctx context.Context, c *http.Client, project string) (*iam.Service, error) {
+	s, err := iam.NewService(ctx, option.WithHTTPClient(c), option.WithQuotaProject(project))
 	if err != nil {
 		return nil, fmt.Errorf("creating iam service: %w", err)
 	}

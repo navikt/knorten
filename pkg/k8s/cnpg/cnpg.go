@@ -9,8 +9,7 @@ import (
 )
 
 const (
-	defaultImageName     = "ghcr.io/cloudnative-pg/postgresql:16.1"
-	defaultInstanceCount = 2
+	defaultInstanceCount           = 2
 	defaultVolumeSnapshotClassName = "cnpg-vps"
 	defaultStorageSize             = "1Gi"
 	defaultRequestMemory           = "512Mi"

@@ -6,7 +6,6 @@ import (
 	"github.com/hashicorp/errwrap"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iam/v1"
-	"google.golang.org/api/option"
 	"net/http"
 	"slices"
 )
@@ -79,10 +78,7 @@ func (s *serviceAccountPolicyManager) SetPolicy(ctx context.Context, resource st
 		Policy: policy,
 	}
 
-	p, err := s.Projects.ServiceAccounts.
-		SetIamPolicy(resource, request).
-		Context(ctx).
-		Do()
+	p, err := s.Projects.ServiceAccounts.SetIamPolicy(resource, request).Context(ctx).Do()
 	if err != nil {
 		return nil, fmt.Errorf("setting service account policy: %w", err)
 	}
@@ -207,15 +203,6 @@ func NewServiceAccountChecker(project string, fetcher ServiceAccountFetcher) Ser
 		fetcher: fetcher,
 		project: project,
 	}
-}
-
-func NewIAMService(ctx context.Context, c *http.Client, project string) (*iam.Service, error) {
-	s, err := iam.NewService(ctx, option.WithHTTPClient(c), option.WithQuotaProject(project))
-	if err != nil {
-		return nil, fmt.Errorf("creating iam service: %w", err)
-	}
-
-	return s, nil
 }
 
 // Borrowed from Hashicorp's GCP provider:

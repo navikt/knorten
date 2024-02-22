@@ -39,7 +39,7 @@ $(STATICCHECK):
 	$(call install-binary,staticcheck,honnef.co/go/tools/cmd/staticcheck@$(STATICCHECK_VERSION))
 
 env:
-	# We need to fetch the secrets from GCP Secret Manager in PRO environment
+	# We need to fetch the secrets from GCP Secret Manager in PROD environment
 	echo "KNORTEN_OAUTH_CLIENT_ID=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID_PRO) --secret=knorten-oauth-client-id)" > .env
 	echo "KNORTEN_OAUTH_CLIENT_SECRET=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID_PRO) --secret=knorten-oauth-client-secret)" >> .env
 	echo "KNORTEN_OAUTH_TENANT_ID=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID_PRO) --secret=knorten-azure-tenant-id)" >> .env

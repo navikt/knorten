@@ -353,7 +353,7 @@ func TestServiceAccountManager_Exists(t *testing.T) {
 
 			httpmock.RegisterResponder(tc.method, tc.url, tc.responder)
 
-			got, err := gcpapi.NewServiceAccountManager(project, mustService(t)).Exists(context.Background(), name)
+			got, err := gcpapi.NewServiceAccountChecker(project, gcpapi.NewServiceAccountFetcher(project, mustService(t))).Exists(context.Background(), name)
 			if tc.expectErr {
 				if err == nil {
 					t.Fatalf("expected error, got nil")

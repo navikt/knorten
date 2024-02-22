@@ -2,6 +2,8 @@ apiVersion: networking.gke.io/v1
 kind: HealthCheckPolicy
 metadata:
   creationTimestamp: null
+  labels:
+    managed-by: knorten.knada.io
   name: jupyter-test-policy
   namespace: test-namespace
 spec:

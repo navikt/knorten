@@ -2,6 +2,7 @@ package networking
 
 import (
 	"fmt"
+	"github.com/navikt/knorten/pkg/k8s/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -68,6 +69,7 @@ func NewHTTPRoute(name, namespace, hostname string, options ...HTTPRouteOption) 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
+			Labels:    meta.DefaultLabels(),
 		},
 		Spec: gwapiv1.HTTPRouteSpec{
 			Hostnames: []gwapiv1.Hostname{
@@ -176,6 +178,7 @@ func NewHealthCheckPolicy(name, namespace string, options ...HealthCheckPolicyOp
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
+			Labels:    meta.DefaultLabels(),
 		},
 	}
 

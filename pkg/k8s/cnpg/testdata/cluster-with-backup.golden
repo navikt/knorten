@@ -2,6 +2,8 @@ apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
   creationTimestamp: null
+  labels:
+    managed-by: knorten.knada.io
   name: test-cluster
   namespace: test-namespace
 spec:

@@ -19,8 +19,6 @@ const (
 
 type ClusterOption func(*cnpgv1.Cluster)
 
-// WithBackup sets the backup configuration for the cluster,
-// with the given retention policy.
 func WithBackup(retentionPolicy string) ClusterOption {
 	return func(c *cnpgv1.Cluster) {
 		c.Spec.Backup = &cnpgv1.BackupConfiguration{

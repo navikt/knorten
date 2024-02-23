@@ -56,12 +56,12 @@ func (c *client) updateAirflowImages(ctx context.Context) error {
 func (c *client) updateAirflowImage(ctx context.Context, imageNameKey, imageTagKey string) (bool, error) {
 	imageName, err := c.repo.GlobalValueGet(ctx, gensql.ChartTypeAirflow, imageNameKey)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("getting image name: %w", err)
 	}
 
 	imageTag, err := c.repo.GlobalValueGet(ctx, gensql.ChartTypeAirflow, imageTagKey)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("getting image tag: %w", err)
 	}
 
 	garImage, err := getLatestImageInGAR(imageName.Value, "")

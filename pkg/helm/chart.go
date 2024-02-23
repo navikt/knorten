@@ -25,7 +25,7 @@ func FetchChart(repo, chartName, version string) (*chart.Chart, error) {
 		registry.ClientOptCredentialsFile(settings.RegistryConfig),
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating registry client: %w", err)
 	}
 
 	actionConfig := new(action.Configuration)
@@ -37,10 +37,15 @@ func FetchChart(repo, chartName, version string) (*chart.Chart, error) {
 
 	_, err = client.Run(chartRef)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("running helm pull: %w", err)
 	}
 
-	return loader.Load(fmt.Sprintf("%v/%v-%v.tgz", destDir, chartName, version))
+	ch, err := loader.Load(fmt.Sprintf("%v/%v-%v.tgz", destDir, chartName, version))
+	if err != nil {
+		return nil, fmt.Errorf("loading chart: %w", err)
+	}
+
+	return ch, nil
 }
 
 func UpdateHelmRepositories() error {

@@ -240,12 +240,12 @@ func lastSuccessfulHelmRelease(releaseName string, actionConfig *action.Configur
 func (c Client) createChartWithValues(ctx context.Context, helmEvent HelmEventData) (*chart.Chart, error) {
 	helmChart, err := FetchChart(helmEvent.ChartRepo, helmEvent.ChartName, helmEvent.ChartVersion)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("fetching chart: %w", err)
 	}
 
 	err = c.mergeValues(ctx, helmEvent.ChartType, helmEvent.TeamID, helmChart.Values)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("merging values: %w", err)
 	}
 
 	return helmChart, nil
@@ -265,17 +265,17 @@ func (c Client) mergeValues(ctx context.Context, chartType gensql.ChartType, tea
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
 		if err := c.concatenateImageProfiles(ctx, teamID, values); err != nil {
-			return err
+			return fmt.Errorf("concatenating image profiles: %w", err)
 		}
 	case gensql.ChartTypeAirflow:
 		knauditInitContainer, err := c.createKnauditInitContainer(ctx)
 		if err != nil {
-			return err
+			return fmt.Errorf("creating knaudit init container: %w", err)
 		}
 		mergeMaps(values, knauditInitContainer)
 
 		if err := c.concatenateCommonAirflowEnvs(ctx, teamID, values); err != nil {
-			return err
+			return fmt.Errorf("concatenating common airflow envs: %w", err)
 		}
 	}
 
@@ -286,7 +286,7 @@ func (c Client) mergeValues(ctx context.Context, chartType gensql.ChartType, tea
 func (c Client) globalValues(ctx context.Context, chartType gensql.ChartType) (map[string]any, error) {
 	dbValues, err := c.repo.GlobalValuesGet(ctx, chartType)
 	if err != nil {
-		return map[string]any{}, err
+		return map[string]any{}, fmt.Errorf("getting global values: %w", err)
 	}
 
 	values := map[string]any{}
@@ -294,14 +294,14 @@ func (c Client) globalValues(ctx context.Context, chartType gensql.ChartType) (m
 		if v.Encrypted {
 			v.Value, err = c.repo.DecryptValue(v.Value)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("decrypting value: %w", err)
 			}
 		}
 
 		keys := keySplitHandleEscape(v.Key)
 		value, err := ParseValue(v.Value)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("parsing value: %w", err)
 		}
 		SetChartValue(keys, value, values)
 	}
@@ -312,7 +312,7 @@ func (c Client) globalValues(ctx context.Context, chartType gensql.ChartType) (m
 func (c Client) enrichWithTeamValues(ctx context.Context, chartType gensql.ChartType, teamID string, values map[string]any) error {
 	dbValues, err := c.repo.TeamValuesGet(ctx, chartType, teamID)
 	if err != nil {
-		return err
+		return fmt.Errorf("getting team values: %w", err)
 	}
 
 	for _, v := range dbValues {
@@ -322,7 +322,7 @@ func (c Client) enrichWithTeamValues(ctx context.Context, chartType gensql.Chart
 
 		_, err = parseTeamValue(v.Key, v.Value, values)
 		if err != nil {
-			return err
+			return fmt.Errorf("parsing team value: %w", err)
 		}
 	}
 

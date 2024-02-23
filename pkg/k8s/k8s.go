@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	gwapiv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -243,6 +244,7 @@ func (m *manager) apply(ctx context.Context, obj client.Object) error {
 
 	// Otherwise, we update it
 	return m.client.Patch(ctx, obj, client.Apply, &client.PatchOptions{
+		Force:        ptr.To(true), // Need to force the update to take ownership of the resource
 		FieldManager: fieldManager,
 	})
 }

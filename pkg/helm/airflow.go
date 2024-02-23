@@ -3,6 +3,7 @@ package helm
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/navikt/knorten/pkg/database/gensql"
 )
@@ -88,8 +89,9 @@ func (c Client) createKnauditInitContainer(ctx context.Context) (map[string]any,
 func (c Client) concatenateCommonAirflowEnvs(ctx context.Context, teamID string, values map[string]any) error {
 	globalEnvsSQL, err := c.repo.GlobalValueGet(ctx, gensql.ChartTypeAirflow, envKey)
 	if err != nil {
-		return err
+		return fmt.Errorf("getting global envs: %w", err)
 	}
+
 	globalEnvs := []map[string]string{}
 	if err := json.Unmarshal([]byte(globalEnvsSQL.Value), &globalEnvs); err != nil {
 		return err
@@ -97,8 +99,9 @@ func (c Client) concatenateCommonAirflowEnvs(ctx context.Context, teamID string,
 
 	teamEnvsSQL, err := c.repo.TeamValueGet(ctx, envKey, teamID)
 	if err != nil {
-		return err
+		return fmt.Errorf("getting team envs: %w", err)
 	}
+
 	teamEnvs := []map[string]string{}
 	if err := json.Unmarshal([]byte(teamEnvsSQL.Value), &teamEnvs); err != nil {
 		return err

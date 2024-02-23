@@ -1,6 +1,6 @@
 module github.com/navikt/knorten
 
-go 1.21
+go 1.22
 
 require (
 	cloud.google.com/go/iam v1.1.6

@@ -78,6 +78,9 @@ func SetupDB(ctx context.Context, dbURL, dbname string) error {
 		{"airflow", "webserverSecretKeySecretName", "airflow-webserver"},
 		{"airflow", "workers.extraInitContainers", airflowContainer("git-nada")},
 		{"airflow", "workers.serviceAccount.create", "false"},
+		{"airflow", "images.airflow.repository", "europe-north1-docker.pkg.dev/knada-gcp/knada-north/airflow"},
+		{"airflow", "images.airflow.tag", "2024-02-16-d06f032"},
+		{"airflow", "env", `[{"name":"CLONE_REPO_IMAGE","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/git-sync:2024-01-19-0d0d790"},{"name":"KNADA_AIRFLOW_OPERATOR_IMAGE","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow:2024-01-12-09bd685"},{"name":"DATAVERK_IMAGE_PYTHON_38","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.8:2024-02-16-d06f032"},{"name":"DATAVERK_IMAGE_PYTHON_39","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.9:2024-02-09-15e79cd"},{"name":"DATAVERK_IMAGE_PYTHON_310","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.10:2024-02-09-15e79cd"},{"name":"DATAVERK_IMAGE_PYTHON_311","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.11:2024-02-09-15e79cd"},{"name":"DATAVERK_IMAGE_PYTHON_312","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.12:2024-02-16-d06f032"}]`},
 		{"jupyterhub", "singleuser.profileList", "[]"},
 	}
 	_, err = db.CopyFrom(ctx,

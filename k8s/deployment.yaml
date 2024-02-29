@@ -50,7 +50,7 @@ spec:
             limits:
               memory: 1Gi
             requests:
-              cpu: 50m
+              cpu: 100m
               memory: 128Mi
           securityContext:
             runAsUser: 1001
@@ -100,6 +100,7 @@ spec:
             - --election-namespace=knada-system
           securityContext:
             runAsUser: 65534
+            runAsGroup: 65534
             allowPrivilegeEscalation: false
           env:
             - name: ELECTOR_LOG_FORMAT

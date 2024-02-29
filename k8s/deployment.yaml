@@ -41,7 +41,7 @@ spec:
                 name: knorten
           volumeMounts:
             - name: helm-repos-config
-              mountPath: /root/.config/helm/repositories.yaml
+              mountPath: /home/knorten/.config/helm/repositories.yaml
               subPath: repositories.yaml
             - name: knorten-config
               mountPath: /app/config.yaml
@@ -52,6 +52,10 @@ spec:
             requests:
               cpu: 50m
               memory: 128Mi
+          securityContext:
+            runAsUser: 1001
+            runAsGroup: 1001
+            allowPrivilegeEscalation: false
         - name: cloudsql-proxy
           command:
             - /cloud-sql-proxy
@@ -82,7 +86,7 @@ spec:
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
         - name: elector
-          image: europe-north1-docker.pkg.dev/nais-io/nais/images/elector:20230310-120406-3b3cc7d
+          image: europe-north1-docker.pkg.dev/nais-io/nais/images/elector:2023-12-19-121147-d47e080
           resources:
             limits:
               memory: 64Mi
@@ -94,6 +98,9 @@ spec:
             - --election=knorten
             - --http=localhost:4040
             - --election-namespace=knada-system
+          securityContext:
+            runAsUser: 65534
+            allowPrivilegeEscalation: false
           env:
             - name: ELECTOR_LOG_FORMAT
               value: json
@@ -101,6 +108,9 @@ spec:
         - name: helm-repos-config
           configMap:
             name: helm-repos
+            defaultMode: 420
         - name: knorten-config
           configMap:
               name: knorten-config
+      securityContext:
+        runAsNonRoot: true

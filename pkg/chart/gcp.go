@@ -180,6 +180,10 @@ func createCloudSQLInstance(ctx context.Context, teamSlug, dbInstance, gcpProjec
 
 	var cmd *exec.Cmd
 	if exists {
+		if err := awaitInstanceOperationsComplete(ctx, dbInstance, gcpProject); err != nil {
+			return err
+		}
+
 		cmd = exec.CommandContext(ctx,
 			"gcloud",
 			"--quiet",
@@ -192,9 +196,6 @@ func createCloudSQLInstance(ctx context.Context, teamSlug, dbInstance, gcpProjec
 			"--update-labels", fmt.Sprintf("created-by=knorten,team=%v", teamSlug),
 			"--async")
 	} else {
-		if err := awaitInstanceOperationsComplete(ctx, dbInstance, gcpProject); err != nil {
-			return err
-		}
 		cmd = exec.CommandContext(ctx,
 			"gcloud",
 			"--quiet",
@@ -245,6 +246,7 @@ func awaitInstanceOperationsComplete(ctx context.Context, dbInstance, gcpProject
 		cmd := exec.CommandContext(ctx,
 			"gcloud",
 			"--quiet",
+			"--project", gcpProject,
 			"sql",
 			"operations",
 			"wait",
@@ -302,10 +304,6 @@ func createCloudSQLDatabase(ctx context.Context, dbName, dbInstance, gcpProject 
 		return nil
 	}
 
-	if err := awaitInstanceOperationsComplete(ctx, dbInstance, gcpProject); err != nil {
-		return err
-	}
-
 	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",
@@ -344,6 +342,7 @@ func updateSQLUser(ctx context.Context, user, password, dbInstance, gcpProject s
 	if err := awaitInstanceOperationsComplete(ctx, dbInstance, gcpProject); err != nil {
 		return err
 	}
+
 	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",

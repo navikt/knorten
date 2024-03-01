@@ -10,6 +10,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/navikt/knorten/pkg/database"
 	"github.com/navikt/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/k8s"
 )
 
 func TestUserAPI(t *testing.T) {
@@ -60,16 +61,16 @@ func TestUserAPI(t *testing.T) {
 						TeamID: team.ID,
 						Slug:   team.Slug,
 						Jupyterhub: &database.AppService{
-							App:     string(gensql.ChartTypeJupyterhub),
-							Ingress: fmt.Sprintf("https://%v.jupyter.knada.io", team.Slug),
-							Slug:    team.Slug,
-							TeamID:  team.ID,
+							App:       string(gensql.ChartTypeJupyterhub),
+							Ingress:   fmt.Sprintf("https://%v.jupyter.knada.io", team.Slug),
+							Slug:      team.Slug,
+							Namespace: k8s.TeamIDToNamespace(team.ID),
 						},
 						Airflow: &database.AppService{
-							App:     string(gensql.ChartTypeAirflow),
-							Ingress: fmt.Sprintf("https://%v.airflow.knada.io", team.Slug),
-							Slug:    team.Slug,
-							TeamID:  team.ID,
+							App:       string(gensql.ChartTypeAirflow),
+							Ingress:   fmt.Sprintf("https://%v.airflow.knada.io", team.Slug),
+							Slug:      team.Slug,
+							Namespace: k8s.TeamIDToNamespace(team.ID),
 						},
 					},
 				},

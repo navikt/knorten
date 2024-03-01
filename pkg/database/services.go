@@ -7,14 +7,15 @@ import (
 	"fmt"
 
 	"github.com/navikt/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/k8s"
 	"golang.org/x/exp/slices"
 )
 
 type AppService struct {
-	App     string
-	Ingress string
-	Slug    string
-	TeamID  string
+	App       string
+	Ingress   string
+	Slug      string
+	Namespace string
 }
 
 type TeamServices struct {
@@ -45,10 +46,10 @@ func createIngress(team string, chartType gensql.ChartType) string {
 
 func createAppService(team gensql.TeamsForUserGetRow, chartType gensql.ChartType) *AppService {
 	return &AppService{
-		App:     string(chartType),
-		Ingress: createIngress(team.Slug, chartType),
-		Slug:    team.Slug,
-		TeamID:  team.ID,
+		App:       string(chartType),
+		Ingress:   createIngress(team.Slug, chartType),
+		Slug:      team.Slug,
+		Namespace: k8s.TeamIDToNamespace(team.ID),
 	}
 }
 

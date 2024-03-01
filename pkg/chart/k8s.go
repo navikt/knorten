@@ -108,25 +108,30 @@ func (c Client) createOrUpdateSecret(ctx context.Context, name, namespace string
 	return nil
 }
 
-func (c Client) createCloudSQLProxy(ctx context.Context, name, teamID, namespace, dbInstance string) error {
+func (c Client) createOrUpdateCloudSQLProxy(ctx context.Context, name, teamID, namespace, dbInstance string) error {
 	if c.dryRun {
 		return nil
 	}
 
 	port := int32(5432)
 
-	if err := c.createCloudSQLProxyDeployment(ctx, name, namespace, teamID, dbInstance, port); err != nil {
+	if err := c.createOrUpdateCloudSQLProxyDeployment(ctx, name, namespace, teamID, dbInstance, port); err != nil {
 		return err
 	}
 
-	if err := c.createCloudSQLProxyService(ctx, name, namespace, port); err != nil {
+	if err := c.createOrUpdateCloudSQLProxyService(ctx, name, namespace, port); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (c Client) createCloudSQLProxyDeployment(ctx context.Context, name, namespace, saName, dbInstance string, port int32) error {
+func (c Client) createOrUpdateCloudSQLProxyDeployment(ctx context.Context, name, namespace, saName, dbInstance string, port int32) error {
+	runAsNonRoot := true
+	allowPrivilegeEscalation := false
+	userID := int64(65532)
+	groupID := int64(65532)
+
 	deploySpec := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -173,7 +178,15 @@ func (c Client) createCloudSQLProxyDeployment(ctx context.Context, name, namespa
 									v1.ResourceMemory: resource.MustParse("128Mi"),
 								},
 							},
+							SecurityContext: &v1.SecurityContext{
+								RunAsUser:                &userID,
+								RunAsGroup:               &groupID,
+								AllowPrivilegeEscalation: &allowPrivilegeEscalation,
+							},
 						},
+					},
+					SecurityContext: &v1.PodSecurityContext{
+						RunAsNonRoot: &runAsNonRoot,
 					},
 				},
 			},
@@ -181,14 +194,20 @@ func (c Client) createCloudSQLProxyDeployment(ctx context.Context, name, namespa
 	}
 
 	_, err := c.k8sClient.AppsV1().Deployments(namespace).Create(ctx, deploySpec, metav1.CreateOptions{})
-	if err != nil && !k8sErrors.IsAlreadyExists(err) {
-		return err
+	if err != nil {
+		if !k8sErrors.IsAlreadyExists(err) {
+			return err
+		}
+		_, err := c.k8sClient.AppsV1().Deployments(namespace).Update(ctx, deploySpec, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (c Client) createCloudSQLProxyService(ctx context.Context, name, namespace string, port int32) error {
+func (c Client) createOrUpdateCloudSQLProxyService(ctx context.Context, name, namespace string, port int32) error {
 	serviceSpec := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -209,8 +228,14 @@ func (c Client) createCloudSQLProxyService(ctx context.Context, name, namespace 
 	}
 
 	_, err := c.k8sClient.CoreV1().Services(namespace).Create(ctx, serviceSpec, metav1.CreateOptions{})
-	if err != nil && !k8sErrors.IsAlreadyExists(err) {
-		return err
+	if err != nil {
+		if !k8sErrors.IsAlreadyExists(err) {
+			return err
+		}
+		_, err := c.k8sClient.CoreV1().Services(namespace).Update(ctx, serviceSpec, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

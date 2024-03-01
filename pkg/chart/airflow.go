@@ -399,7 +399,7 @@ func (c Client) createAirflowDatabase(ctx context.Context, team *gensql.TeamGetR
 		return err
 	}
 
-	return c.createCloudSQLProxy(ctx, "airflow-sql-proxy", teamID, k8s.TeamIDToNamespace(teamID), dbInstance)
+	return c.createOrUpdateCloudSQLProxy(ctx, "airflow-sql-proxy", teamID, k8s.TeamIDToNamespace(teamID), dbInstance)
 }
 
 func (c Client) createLogBucketForAirflow(ctx context.Context, teamID string) error {

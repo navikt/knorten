@@ -176,7 +176,7 @@ func (c Client) deleteJupyter(ctx context.Context, teamID string, log logger.Log
 
 func (c Client) registerJupyterHelmEvent(ctx context.Context, teamID string, eventType database.EventType, logger logger.Logger) error {
 	namespace := k8s.TeamIDToNamespace(teamID)
-	helmEventData := helm.HelmEventData{
+	helmEventData := helm.EventData{
 		TeamID:       teamID,
 		Namespace:    namespace,
 		ReleaseName:  jupyterReleaseName(namespace),

@@ -3,13 +3,14 @@ package main
 import (
 	"context"
 	"flag"
+	"html/template"
+	"net"
+	"time"
+
 	"github.com/navikt/knorten/pkg/gcpapi"
 	"github.com/navikt/knorten/pkg/gcpapi/mock"
 	"github.com/navikt/knorten/pkg/k8s"
 	"google.golang.org/api/iam/v1"
-	"html/template"
-	"net"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/navikt/knorten/pkg/api"

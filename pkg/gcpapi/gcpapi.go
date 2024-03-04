@@ -3,11 +3,12 @@ package gcpapi
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"slices"
+
 	"github.com/hashicorp/errwrap"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iam/v1"
-	"net/http"
-	"slices"
 )
 
 type ServiceAccountRole string

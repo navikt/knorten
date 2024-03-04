@@ -4,15 +4,17 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
-	"github.com/navikt/knorten/pkg/k8s"
 	"log"
 	"os"
 	"path"
 	"runtime"
+	"testing"
+
+	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
+	"github.com/navikt/knorten/pkg/k8s"
+
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	gwapiv1 "sigs.k8s.io/gateway-api/apis/v1"
-	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/navikt/knorten/local/dbsetup"

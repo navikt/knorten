@@ -3,6 +3,9 @@ package gcpapi_test
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"testing"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/jarcoal/httpmock"
 	"github.com/navikt/knorten/pkg/gcpapi"
@@ -11,8 +14,6 @@ import (
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iam/v1"
 	"google.golang.org/api/option"
-	"net/http"
-	"testing"
 )
 
 const (
@@ -117,7 +118,6 @@ func TestServiceAccountPolicyManager_GetPolicy(t *testing.T) {
 			if diff != "" {
 				t.Fatalf("unexpected policy:\n\n%s\n", diff)
 			}
-
 		})
 	}
 }
@@ -179,7 +179,6 @@ func TestServiceAccountPolicyManager_SetPolicy(t *testing.T) {
 					t.Fatalf("unexpected policy:\n\n%s\n", diff)
 				}
 			}
-
 		})
 	}
 }

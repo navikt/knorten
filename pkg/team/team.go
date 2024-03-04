@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+
 	"github.com/navikt/knorten/pkg/k8s/core"
 
 	"github.com/navikt/knorten/pkg/chart"

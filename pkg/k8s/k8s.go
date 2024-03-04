@@ -3,6 +3,9 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
 	"github.com/navikt/knorten/pkg/k8s/core"
 	"github.com/navikt/knorten/pkg/k8s/networking"
@@ -19,8 +22,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	gwapiv1 "sigs.k8s.io/gateway-api/apis/v1"
-	"strings"
-	"time"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
@@ -34,8 +35,10 @@ type Client struct {
 	RESTConfig *rest.Config
 }
 
-type SchemeAdderFn func(scheme *runtime.Scheme) error
-type IsReadyFn func(*unstructured.Unstructured) bool
+type (
+	SchemeAdderFn func(scheme *runtime.Scheme) error
+	IsReadyFn     func(*unstructured.Unstructured) bool
+)
 
 func DefaultSchemeAdder() SchemeAdderFn {
 	return func(scheme *runtime.Scheme) error {

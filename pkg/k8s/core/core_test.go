@@ -1,11 +1,12 @@
 package core_test
 
 import (
+	"testing"
+
 	"github.com/navikt/knorten/pkg/k8s/core"
 	"github.com/sebdah/goldie/v2"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
-	"testing"
 )
 
 func TestNamespace(t *testing.T) {

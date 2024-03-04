@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+
 	"github.com/navikt/knorten/pkg/k8s/meta"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -1,12 +1,12 @@
 package cnpg_test
 
 import (
+	"testing"
+
 	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
 	"github.com/navikt/knorten/pkg/k8s/cnpg"
 	"github.com/sebdah/goldie/v2"
 	"sigs.k8s.io/yaml"
-
-	"testing"
 )
 
 func TestNew(t *testing.T) {

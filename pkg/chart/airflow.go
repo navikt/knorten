@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/navikt/knorten/pkg/gcpapi"
 	"github.com/navikt/knorten/pkg/k8s/cnpg"
+	"github.com/navikt/knorten/pkg/k8s/core"
 	"strconv"
 	"strings"
 
@@ -357,8 +358,34 @@ func (c Client) createAirflowDatabase(ctx context.Context, team *gensql.TeamGetR
 
 	teamID := team.ID
 	dbInstance := getAirflowDatabaseName(teamID)
+	namespace := k8s.TeamIDToNamespace(teamID)
 
-	return c.manager.ApplyPostgresCluster(ctx, cnpg.NewCluster(teamID, k8s.TeamIDToNamespace(teamID), dbInstance, teamID))
+	err := c.manager.ApplyPostgresCluster(ctx, cnpg.NewCluster(teamID, namespace, dbInstance, teamID))
+	if err != nil {
+		return err
+	}
+
+	// FIXME: Should we introduce a maintenance loop that updates the airflow-db secret
+	dbSecret, err := c.manager.WaitForSecret(ctx, fmt.Sprintf("%s-app", teamID), namespace)
+	if err != nil {
+		return err
+	}
+
+	connectionURI, hasKey := dbSecret.Data["uri"]
+	if !hasKey {
+		return fmt.Errorf("missing uri key in secret %s", dbSecret.Name)
+	}
+
+	airflowDbSecret := core.NewSecret("airflow-db", namespace, map[string]string{
+		"connection": string(connectionURI),
+	})
+
+	err = c.manager.ApplySecret(ctx, airflowDbSecret)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c Client) createLogBucketForAirflow(ctx context.Context, teamID string) error {

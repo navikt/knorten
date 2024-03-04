@@ -4,16 +4,23 @@ import (
 	"context"
 	"fmt"
 	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
+	"github.com/navikt/knorten/pkg/k8s/core"
 	"github.com/navikt/knorten/pkg/k8s/networking"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	gwapiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	"strings"
+	"time"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
@@ -22,7 +29,29 @@ const (
 	fieldManager = "knorten"
 )
 
-func NewClient(context string) (client.Client, error) {
+type Client struct {
+	client.Client
+	RESTConfig *rest.Config
+}
+
+type SchemeAdderFn func(scheme *runtime.Scheme) error
+type IsReadyFn func(*unstructured.Unstructured) bool
+
+func DefaultSchemeAdder() SchemeAdderFn {
+	return func(scheme *runtime.Scheme) error {
+		if err := cnpgv1.AddToScheme(scheme); err != nil {
+			return fmt.Errorf("adding cloudnative-pg scheme: %w", err)
+		}
+
+		if err := gwapiv1.AddToScheme(scheme); err != nil {
+			return fmt.Errorf("adding gateway-api scheme: %w", err)
+		}
+
+		return nil
+	}
+}
+
+func NewClient(context string, fn SchemeAdderFn) (*Client, error) {
 	cfg, err := config.GetConfigWithContext(context)
 	if err != nil {
 		return nil, fmt.Errorf("getting kubeconfig: %w", err)
@@ -33,16 +62,19 @@ func NewClient(context string) (client.Client, error) {
 		return nil, fmt.Errorf("creating k8s client: %w", err)
 	}
 
-	scheme := c.Scheme()
-	if err := cnpgv1.AddToScheme(scheme); err != nil {
-		return nil, fmt.Errorf("adding cloudnative-pg scheme: %w", err)
+	if fn != nil {
+		scheme := c.Scheme()
+		if err := fn(scheme); err != nil {
+			return nil, fmt.Errorf("adding scheme: %w", err)
+		}
 	}
 
-	if err := gwapiv1.AddToScheme(scheme); err != nil {
-		return nil, fmt.Errorf("adding gateway-api scheme: %w", err)
-	}
+	log.SetLogger(klog.NewKlogr())
 
-	return c, nil
+	return &Client{
+		Client:     c,
+		RESTConfig: cfg,
+	}, nil
 }
 
 // NewDryRunClient creates a dry run client which will not apply any
@@ -56,6 +88,7 @@ type Manager interface {
 	DeletePostgresCluster(ctx context.Context, name, namespace string) error
 	ApplySecret(ctx context.Context, secret *v1.Secret) error
 	DeleteSecret(ctx context.Context, name, namespace string) error
+	WaitForSecret(ctx context.Context, name, namespace string) (*v1.Secret, error)
 	ApplyHTTPRoute(ctx context.Context, route *gwapiv1.HTTPRoute) error
 	DeleteHTTPRoute(ctx context.Context, name, namespace string) error
 	ApplyHealthCheckPolicy(ctx context.Context, policy *unstructured.Unstructured) error
@@ -67,7 +100,26 @@ type Manager interface {
 }
 
 type manager struct {
-	client client.Client
+	client *Client
+}
+
+func (m *manager) GetSecret(ctx context.Context, name, namespace string) (*v1.Secret, error) {
+	secret, err := m.get(ctx, &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("getting secret: %w", err)
+	}
+
+	s, ok := secret.(*v1.Secret)
+	if !ok {
+		return nil, fmt.Errorf("unable to cast object to secret")
+	}
+
+	return s, nil
 }
 
 func (m *manager) ApplyServiceAccount(ctx context.Context, serviceAccount *v1.ServiceAccount) error {
@@ -161,6 +213,36 @@ func (m *manager) DeleteSecret(ctx context.Context, name, namespace string) erro
 	return nil
 }
 
+func SecretIsReadyFn() IsReadyFn {
+	// A Secret is ready when it exists
+	return func(obj *unstructured.Unstructured) bool {
+		return true
+	}
+}
+
+func (m *manager) WaitForSecret(ctx context.Context, name, namespace string) (*v1.Secret, error) {
+	var cancelFn context.CancelFunc
+
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+		ctx, cancelFn = context.WithDeadline(ctx, time.Now().Add(2*time.Minute))
+	}
+
+	defer func() {
+		if cancelFn != nil {
+			cancelFn()
+		}
+	}()
+
+	into := &v1.Secret{}
+
+	err := m.waitForResource(ctx, core.NewSecret(name, namespace, nil), into, SecretIsReadyFn())
+	if err != nil {
+		return nil, fmt.Errorf("waiting for secret: %w", err)
+	}
+
+	return into, nil
+}
+
 func (m *manager) ApplyHTTPRoute(ctx context.Context, route *gwapiv1.HTTPRoute) error {
 	err := m.apply(ctx, route)
 	if err != nil {
@@ -207,6 +289,67 @@ func (m *manager) DeleteHealthCheckPolicy(ctx context.Context, name, namespace s
 	return nil
 }
 
+func (m *manager) waitForResource(ctx context.Context, from client.Object, toPtr any, fn IsReadyFn) error {
+	watcher, err := client.NewWithWatch(m.client.RESTConfig, client.Options{})
+	if err != nil {
+		return fmt.Errorf("creating client with watcher: %w", err)
+	}
+
+	name := from.GetName()
+	namespace := from.GetNamespace()
+
+	resource, err := runtime.DefaultUnstructuredConverter.ToUnstructured(from)
+	if err != nil {
+		return fmt.Errorf("converting to unstructured: %w", err)
+	}
+
+	w, err := watcher.Watch(ctx, &unstructured.Unstructured{
+		Object: resource,
+	}, client.InNamespace(namespace))
+	if err != nil {
+		return fmt.Errorf("creating resource watcher: %w", err)
+	}
+
+	defer w.Stop()
+
+	ctxDoneCh := ctx.Done()
+
+	// FIXME: Set a default timeout
+	var timeoutCh <-chan time.Time
+	if deadline, ok := ctx.Deadline(); ok {
+		timeoutCh = time.After(time.Until(deadline))
+	}
+
+	for {
+		select {
+		case <-timeoutCh:
+			return fmt.Errorf("timed out waiting for resource: %s/%s", namespace, name)
+		case <-ctxDoneCh:
+			return fmt.Errorf("context done when waiting for resource: %s/%s", namespace, name)
+		case evt := <-w.ResultChan():
+			if evt.Type == watch.Error {
+				return fmt.Errorf("watcher error: %v", evt.Object)
+			}
+
+			obj, ok := evt.Object.(*unstructured.Unstructured)
+			if !ok {
+				return fmt.Errorf("unable to cast object to unstructured")
+			}
+
+			if obj.GetName() == from.GetName() && fn(obj) {
+				err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, toPtr)
+				if err != nil {
+					return fmt.Errorf("converting unstructured: %w", err)
+				}
+
+				return nil
+			}
+		default:
+			time.Sleep(5 * time.Second)
+		}
+	}
+}
+
 func (m *manager) delete(ctx context.Context, obj client.Object) error {
 	existing, ok := obj.DeepCopyObject().(client.Object)
 	if !ok {
@@ -224,6 +367,15 @@ func (m *manager) delete(ctx context.Context, obj client.Object) error {
 	}
 
 	return m.client.Delete(ctx, existing)
+}
+
+func (m *manager) get(ctx context.Context, into client.Object) (client.Object, error) {
+	err := m.client.Get(ctx, client.ObjectKeyFromObject(into), into)
+	if err != nil {
+		return nil, fmt.Errorf("getting resource: %w", err)
+	}
+
+	return into, nil
 }
 
 func (m *manager) apply(ctx context.Context, obj client.Object) error {
@@ -249,9 +401,9 @@ func (m *manager) apply(ctx context.Context, obj client.Object) error {
 	})
 }
 
-func NewManager(client client.Client) Manager {
+func NewManager(c *Client) Manager {
 	return &manager{
-		client: client,
+		client: c,
 	}
 }
 

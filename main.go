@@ -85,14 +85,14 @@ func main() {
 		}
 	}
 
-	c, err := k8s.NewClient(cfg.Kubernetes.Context)
+	c, err := k8s.NewClient(cfg.Kubernetes.Context, k8s.DefaultSchemeAdder())
 	if err != nil {
 		log.WithError(err).Fatal("creating k8s client")
 		return
 	}
 
 	if cfg.DryRun {
-		c = k8s.NewDryRunClient(c)
+		c.Client = k8s.NewDryRunClient(c.Client)
 	}
 
 	ctx := context.Background()

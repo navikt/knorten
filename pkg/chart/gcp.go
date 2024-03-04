@@ -2,6 +2,7 @@ package chart
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -16,9 +17,12 @@ import (
 func createBucket(ctx context.Context, teamID, bucketName, gcpProject, gcpRegion string) error {
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating storage client: %w", err)
 	}
-	defer client.Close()
+
+	defer func(client *storage.Client) {
+		_ = client.Close()
+	}(client)
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
 	defer cancel()
@@ -27,9 +31,11 @@ func createBucket(ctx context.Context, teamID, bucketName, gcpProject, gcpRegion
 	for {
 		b, err := buckets.Next()
 		if err != nil {
-			if err == iterator.Done {
+			if errors.Is(err, iterator.Done) {
 				break
 			}
+
+			return fmt.Errorf("iterating buckets: %w", err)
 		}
 		if b.Name == bucketName {
 			return nil
@@ -58,7 +64,7 @@ func createBucket(ctx context.Context, teamID, bucketName, gcpProject, gcpRegion
 
 			if apiError.GRPCStatus().Code() == codes.Unknown {
 				if strings.Contains(apiError.GRPCStatus().Message(), "Error 409") {
-					// Error 409: Your previous request to create the named bucket succeeded and you already own it., conflict
+					// Error 409: Your previous request to create the named bucket succeeded, and you already own it., conflict
 					return nil
 				}
 			}

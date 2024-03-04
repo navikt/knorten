@@ -8,6 +8,7 @@ import (
 
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
+
 	"github.com/navikt/knorten/pkg/database/gensql"
 	"github.com/navikt/knorten/pkg/gcp"
 	"github.com/navikt/knorten/pkg/k8s"
@@ -22,24 +23,24 @@ func (c Client) createGCPTeamResources(ctx context.Context, team gensql.Team) er
 
 	sa, err := c.createIAMServiceAccount(ctx, team.ID)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating service account: %w", err)
 	}
 
 	secret, err := c.createSecret(ctx, team.Slug, team.ID)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating secret: %w", err)
 	}
 
 	if err := c.createServiceAccountSecretAccessorBinding(ctx, sa.Email, secret.Name); err != nil {
-		return err
+		return fmt.Errorf("creating secret accessor binding: %w", err)
 	}
 
 	if err := gcp.SetUsersSecretOwnerBinding(ctx, team.Users, secret.Name); err != nil {
-		return err
+		return fmt.Errorf("setting secret owner binding: %w", err)
 	}
 
 	if err := c.createSAWorkloadIdentityBinding(ctx, sa.Email, team.ID); err != nil {
-		return err
+		return fmt.Errorf("creating workload identity binding: %w", err)
 	}
 
 	return nil
@@ -118,7 +119,7 @@ func (c Client) createServiceAccountSecretAccessorBinding(ctx context.Context, s
 func (c Client) createIAMServiceAccount(ctx context.Context, team string) (*iamv1.ServiceAccount, error) {
 	service, err := iamv1.NewService(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating IAM service: %w", err)
 	}
 
 	request := &iamv1.CreateServiceAccountRequest{
@@ -139,7 +140,7 @@ func (c Client) createIAMServiceAccount(ctx context.Context, team string) (*iamv
 			}
 		}
 
-		return nil, err
+		return nil, fmt.Errorf("creating service account: %w", err)
 	}
 
 	return account, nil

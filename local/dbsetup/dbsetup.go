@@ -3,6 +3,7 @@ package dbsetup
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -23,9 +24,9 @@ func SetupDB(ctx context.Context, dbURL, dbname string) error {
 	fmt.Println("Successfully connected!")
 
 	if err := db.QueryRow(ctx, "SELECT FROM pg_catalog.pg_database WHERE datname = $1", dbname).Scan(); err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			fmt.Printf("Creating database %v\n", dbname)
-			_, err := db.Exec(ctx, fmt.Sprintf("CREATE DATABASE %v", dbname))
+			_, err := db.Exec(ctx, "CREATE DATABASE $1", dbname)
 			if err != nil {
 				return err
 			}
@@ -46,7 +47,7 @@ func SetupDB(ctx context.Context, dbURL, dbname string) error {
 	defer db.Close(ctx)
 
 	if err := db.QueryRow(ctx, "SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = $1", "goose_db_version").Scan(); err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			fmt.Println("You need to run `make goose cmd=up`")
 			os.Exit(1)
 		} else {
@@ -62,25 +63,19 @@ func SetupDB(ctx context.Context, dbURL, dbname string) error {
 
 	db.TypeMap().RegisterType(&pgtype.Type{Name: "chart_type", OID: oid, Codec: &pgtype.EnumCodec{}})
 
-	airflowContainer := func(name string) string {
-		return fmt.Sprintf(`[{"name": "%v", "image": "registry.k8s.io/git-sync/git-sync:v3.6.3","args": ["", "", "/dags", "60"], "volumeMounts":[{"mountPath":"/dags","name":"dags"}]}]`, name)
-	}
-
 	fmt.Println("Time to insert dummy data for local development")
 	rows := [][]interface{}{
 		{"airflow", "config.core.dags_folder", `"/dags"`},
 		{"airflow", "createUserJob.serviceAccount.create", "false"},
 		{"airflow", "postgresql.enabled", "false"},
-		{"airflow", "scheduler.extraContainers", airflowContainer("git-nada")},
-		{"airflow", "scheduler.extraInitContainers", airflowContainer("git-nada-clone")},
-		{"airflow", "webserver.extraContainers", airflowContainer("git-nada")},
 		{"airflow", "webserver.serviceAccount.create", "false"},
 		{"airflow", "webserverSecretKeySecretName", "airflow-webserver"},
-		{"airflow", "workers.extraInitContainers", airflowContainer("git-nada")},
 		{"airflow", "workers.serviceAccount.create", "false"},
-		{"airflow", "images.airflow.repository", "europe-north1-docker.pkg.dev/knada-gcp/knada-north/airflow"},
-		{"airflow", "images.airflow.tag", "2024-02-16-d06f032"},
-		{"airflow", "env", `[{"name":"CLONE_REPO_IMAGE","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/git-sync:2024-01-19-0d0d790"},{"name":"KNADA_AIRFLOW_OPERATOR_IMAGE","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow:2024-01-12-09bd685"},{"name":"DATAVERK_IMAGE_PYTHON_38","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.8:2024-02-16-d06f032"},{"name":"DATAVERK_IMAGE_PYTHON_39","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.9:2024-02-09-15e79cd"},{"name":"DATAVERK_IMAGE_PYTHON_310","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.10:2024-02-09-15e79cd"},{"name":"DATAVERK_IMAGE_PYTHON_311","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.11:2024-02-09-15e79cd"},{"name":"DATAVERK_IMAGE_PYTHON_312","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.12:2024-02-16-d06f032"}]`},
+		{"airflow", "images.airflow.repository", "apache/airflow"},
+		{"airflow", "images.airflow.tag", "2.8.1-python3.11"},
+		{"airflow", "env", `[{"name":"CLONE_REPO_IMAGE","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/git-sync:2024-03-01-9d7687c"},{"name":"KNADA_AIRFLOW_OPERATOR_IMAGE","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow:2024-01-12-09bd685"},{"name":"DATAVERK_IMAGE_PYTHON_38","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.8:2024-02-16-d06f032"},{"name":"DATAVERK_IMAGE_PYTHON_39","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.9:2024-02-09-15e79cd"},{"name":"DATAVERK_IMAGE_PYTHON_310","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.10:2024-02-09-15e79cd"},{"name":"DATAVERK_IMAGE_PYTHON_311","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.11:2024-02-09-15e79cd"},{"name":"DATAVERK_IMAGE_PYTHON_312","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.12:2024-02-16-d06f032"}]`},
+		{"airflow", "registry.secretName", "gcp-auth"},
+		{"airflow", "data.metadataSecretName", "airflow-db"},
 		{"jupyterhub", "singleuser.profileList", "[]"},
 	}
 	_, err = db.CopyFrom(ctx,

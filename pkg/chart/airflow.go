@@ -430,7 +430,7 @@ func (c Client) getOrGeneratePassword(ctx context.Context, teamID, key string, g
 }
 
 func (c Client) registerAirflowHelmEvent(ctx context.Context, teamID string, eventType database.EventType, logger logger.Logger) error {
-	helmEventData := helm.HelmEventData{
+	helmEventData := helm.EventData{
 		TeamID:       teamID,
 		Namespace:    k8s.TeamIDToNamespace(teamID),
 		ReleaseName:  string(gensql.ChartTypeAirflow),

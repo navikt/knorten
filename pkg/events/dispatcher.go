@@ -81,7 +81,7 @@ func (e EventHandler) distributeWork(eventType database.EventType) workerFunc {
 		database.EventTypeHelmRolloutAirflow,
 		database.EventTypeHelmRollbackAirflow,
 		database.EventTypeHelmUninstallAirflow:
-		var values helm.HelmEventData
+		var values helm.EventData
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			return e.processWork(ctx, event, logger, &values)
 		}
@@ -133,13 +133,13 @@ func (e EventHandler) processWork(ctx context.Context, event gensql.Event, logge
 		retry = e.chartClient.DeleteJupyter(ctx, event.Owner, logger)
 	case database.EventTypeHelmRolloutJupyter,
 		database.EventTypeHelmRolloutAirflow:
-		err = e.helmClient.InstallOrUpgrade(ctx, *form.(*helm.HelmEventData), logger)
+		err = e.helmClient.InstallOrUpgrade(ctx, *form.(*helm.EventData), logger)
 	case database.EventTypeHelmRollbackJupyter,
 		database.EventTypeHelmRollbackAirflow:
-		retry, err = e.helmClient.Rollback(ctx, *form.(*helm.HelmEventData), logger)
+		retry, err = e.helmClient.Rollback(ctx, *form.(*helm.EventData), logger)
 	case database.EventTypeHelmUninstallJupyter,
 		database.EventTypeHelmUninstallAirflow:
-		retry = e.helmClient.Uninstall(ctx, *form.(*helm.HelmEventData), logger)
+		retry = e.helmClient.Uninstall(ctx, *form.(*helm.EventData), logger)
 	}
 
 	if err != nil {

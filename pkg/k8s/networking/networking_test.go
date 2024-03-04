@@ -1,12 +1,13 @@
 package networking_test
 
 import (
+	"testing"
+
 	"github.com/navikt/knorten/pkg/k8s/networking"
 	"github.com/sebdah/goldie/v2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	"sigs.k8s.io/yaml"
-	"testing"
 )
 
 func TestHTTPRoute(t *testing.T) {

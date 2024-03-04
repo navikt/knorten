@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/navikt/knorten/pkg/gcpapi"
 	"github.com/navikt/knorten/pkg/k8s"
-	"time"
 
 	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/navikt/knorten/pkg/chart"

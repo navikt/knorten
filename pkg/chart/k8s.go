@@ -3,6 +3,7 @@ package chart
 import (
 	"context"
 	"fmt"
+
 	"github.com/navikt/knorten/pkg/database/gensql"
 	"github.com/navikt/knorten/pkg/k8s/core"
 	"github.com/navikt/knorten/pkg/k8s/networking"

@@ -2,6 +2,7 @@ package networking
 
 import (
 	"fmt"
+
 	"github.com/navikt/knorten/pkg/k8s/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

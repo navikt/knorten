@@ -3,6 +3,7 @@ package chart
 import (
 	"context"
 	"fmt"
+
 	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/navikt/knorten/pkg/database"
 	"github.com/navikt/knorten/pkg/gcpapi"

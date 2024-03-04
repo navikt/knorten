@@ -115,7 +115,7 @@ func (c Client) DeleteAirflow(ctx context.Context, teamID string, log logger.Log
 	return false
 }
 
-func (c Client) registerHelmEvent(ctx context.Context, eventType database.EventType, teamID string, helmEventData helm.HelmEventData, logger logger.Logger) error {
+func (c Client) registerHelmEvent(ctx context.Context, eventType database.EventType, teamID string, helmEventData helm.EventData, logger logger.Logger) error {
 	switch eventType {
 	case database.EventTypeHelmRolloutJupyter:
 		if err := c.repo.RegisterHelmRolloutJupyterEvent(ctx, teamID, helmEventData); err != nil {

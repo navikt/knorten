@@ -26,7 +26,7 @@ const (
 	timeout = 30 * time.Minute
 )
 
-type HelmEventData struct {
+type EventData struct {
 	TeamID       string
 	Namespace    string
 	ReleaseName  string
@@ -48,7 +48,7 @@ func NewClient(dryRun bool, repo *database.Repo) Client {
 	}
 }
 
-func (c Client) InstallOrUpgrade(ctx context.Context, helmEvent HelmEventData, logger logger.Logger) error {
+func (c Client) InstallOrUpgrade(ctx context.Context, helmEvent EventData, logger logger.Logger) error {
 	logger.Infof("Installing or upgrading %v", helmEvent.ChartType)
 	rollback, err := c.installOrUpgrade(ctx, helmEvent, logger)
 	if rollback {
@@ -72,7 +72,7 @@ func (c Client) InstallOrUpgrade(ctx context.Context, helmEvent HelmEventData, l
 	return nil
 }
 
-func (c Client) installOrUpgrade(ctx context.Context, helmEvent HelmEventData, logger logger.Logger) (bool, error) {
+func (c Client) installOrUpgrade(ctx context.Context, helmEvent EventData, logger logger.Logger) (bool, error) {
 	helmChart, err := c.createChartWithValues(ctx, helmEvent)
 	if err != nil {
 		logger.WithError(err).Info("getting chart values")
@@ -145,7 +145,7 @@ func (c Client) Uninstall(ctx context.Context, helmEvent HelmEventData, logger l
 	return false
 }
 
-func (c Client) uninstall(ctx context.Context, helmEvent HelmEventData, logger logger.Logger) error {
+func (c Client) uninstall(ctx context.Context, helmEvent EventData, logger logger.Logger) error {
 	if c.dryRun {
 		return nil
 	}
@@ -178,7 +178,7 @@ func (c Client) uninstall(ctx context.Context, helmEvent HelmEventData, logger l
 	return nil
 }
 
-func (c Client) Rollback(ctx context.Context, helmEvent HelmEventData, logger logger.Logger) (bool, error) {
+func (c Client) Rollback(ctx context.Context, helmEvent EventData, logger logger.Logger) (bool, error) {
 	logger.Infof("Rolling back %v", helmEvent.ChartType)
 	retry, err := c.rollback(ctx, helmEvent, logger)
 	if retry || err != nil {
@@ -190,7 +190,7 @@ func (c Client) Rollback(ctx context.Context, helmEvent HelmEventData, logger lo
 	return false, nil
 }
 
-func (c Client) rollback(ctx context.Context, helmEvent HelmEventData, logger logger.Logger) (bool, error) {
+func (c Client) rollback(ctx context.Context, helmEvent EventData, logger logger.Logger) (bool, error) {
 	if c.dryRun {
 		return false, nil
 	}
@@ -237,7 +237,7 @@ func lastSuccessfulHelmRelease(releaseName string, actionConfig *action.Configur
 	return 0, fmt.Errorf("no previous successful helm releases for %v", releaseName)
 }
 
-func (c Client) createChartWithValues(ctx context.Context, helmEvent HelmEventData) (*chart.Chart, error) {
+func (c Client) createChartWithValues(ctx context.Context, helmEvent EventData) (*chart.Chart, error) {
 	helmChart, err := FetchChart(helmEvent.ChartRepo, helmEvent.ChartName, helmEvent.ChartVersion)
 	if err != nil {
 		return nil, fmt.Errorf("fetching chart: %w", err)

@@ -42,6 +42,7 @@ func (c Client) createComputeInstanceInGCP(ctx context.Context, instanceName, em
 		"--machine-type", "n2-standard-2",
 		"--network-interface", "network=knada-vpc,subnet=knada,no-address",
 		fmt.Sprintf("--labels=goog-ops-agent-policy=v2-x86-template-1-2-0,created-by=knorten,user=%v", normalizeEmailToName(email)),
+	        "--tags=knadavm",
 		"--metadata=block-project-ssh-keys=TRUE,enable-osconfig=TRUE",
 		"--service-account=knada-vm-ops-agent@knada-gcp.iam.gserviceaccount.com",
 		"--no-scopes",

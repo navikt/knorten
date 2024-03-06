@@ -3,8 +3,6 @@ package chart
 import (
 	"context"
 	"fmt"
-	"github.com/navikt/knorten/pkg/common"
-
 	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/navikt/knorten/pkg/database"
 	"github.com/navikt/knorten/pkg/gcpapi"
@@ -51,12 +49,12 @@ func NewClient(
 func (c Client) SyncJupyter(ctx context.Context, values *JupyterConfigurableValues) error {
 	err := c.syncJupyter(ctx, values)
 	if err != nil {
-		return common.NewErrRetry(err)
+		return fmt.Errorf("syncing jupyter: %w", err)
 	}
 
 	err = c.registerJupyterHelmEvent(ctx, values.TeamID, database.EventTypeHelmRolloutJupyter)
 	if err != nil {
-		return common.NewErrRetry(err)
+		return fmt.Errorf("registering jupyter helm event: %w", err)
 	}
 
 	return nil
@@ -65,12 +63,12 @@ func (c Client) SyncJupyter(ctx context.Context, values *JupyterConfigurableValu
 func (c Client) DeleteJupyter(ctx context.Context, teamID string) error {
 	err := c.deleteJupyter(ctx, teamID)
 	if err != nil {
-		return common.NewErrRetry(err)
+		return fmt.Errorf("deleting jupyter: %w", err)
 	}
 
 	err = c.registerJupyterHelmEvent(ctx, teamID, database.EventTypeHelmUninstallJupyter)
 	if err != nil {
-		return common.NewErrRetry(err)
+		return fmt.Errorf("registering jupyter helm event: %w", err)
 	}
 
 	return nil
@@ -79,12 +77,12 @@ func (c Client) DeleteJupyter(ctx context.Context, teamID string) error {
 func (c Client) SyncAirflow(ctx context.Context, values *AirflowConfigurableValues) error {
 	err := c.syncAirflow(ctx, values)
 	if err != nil {
-		return common.NewErrRetry(err)
+		return fmt.Errorf("syncing airflow: %w", err)
 	}
 
 	err = c.registerAirflowHelmEvent(ctx, values.TeamID, database.EventTypeHelmRolloutAirflow)
 	if err != nil {
-		return common.NewErrRetry(err)
+		return fmt.Errorf("registering airflow helm event: %w", err)
 	}
 
 	return nil
@@ -93,12 +91,12 @@ func (c Client) SyncAirflow(ctx context.Context, values *AirflowConfigurableValu
 func (c Client) DeleteAirflow(ctx context.Context, teamID string) error {
 	err := c.deleteAirflow(ctx, teamID)
 	if err != nil {
-		return common.NewErrRetry(err)
+		return fmt.Errorf("deleting airflow: %w", err)
 	}
 
 	err = c.registerAirflowHelmEvent(ctx, teamID, database.EventTypeHelmUninstallAirflow)
 	if err != nil {
-		return common.NewErrRetry(err)
+		return fmt.Errorf("registering airflow helm event: %w", err)
 	}
 
 	return nil

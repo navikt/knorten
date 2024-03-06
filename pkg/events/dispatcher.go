@@ -3,9 +3,7 @@ package events
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/navikt/knorten/pkg/common"
 	"time"
 
 	"github.com/navikt/knorten/pkg/gcpapi"
@@ -200,14 +198,8 @@ func (e EventHandler) processWork(ctx context.Context, event gensql.Event, logge
 	}
 
 	if err != nil {
-		var retryErr *common.ErrRetry
-		if errors.As(err, &retryErr) {
-			logger.Errorf("retrying event: %v", err)
-
-			return fmt.Errorf("retrying event: %w", err)
-		}
-
-		return e.repo.EventSetStatus(e.context, event.ID, database.EventStatusFailed)
+		logger.WithError(err).Error("failed processing event")
+		return fmt.Errorf("failed processing event: %w", err)
 	}
 
 	return e.repo.EventSetStatus(e.context, event.ID, database.EventStatusCompleted)

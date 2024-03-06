@@ -5,21 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/navikt/knorten/pkg/common"
-
 	"github.com/navikt/knorten/pkg/database/gensql"
 )
 
 func (c Client) CreateUserGSM(ctx context.Context, manager *gensql.UserGoogleSecretManager) error {
-	err := c.createGSM(ctx, manager)
-	if err != nil {
-		return common.NewErrRetry(err)
-	}
-
-	return nil
-}
-
-func (c Client) createGSM(ctx context.Context, manager *gensql.UserGoogleSecretManager) error {
 	existingInstance, err := c.repo.UserGSMGet(ctx, manager.Owner)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("retrieving User Google Secret Manager: %w", err)
@@ -42,15 +31,6 @@ func (c Client) createGSM(ctx context.Context, manager *gensql.UserGoogleSecretM
 }
 
 func (c Client) DeleteUserGSM(ctx context.Context, email string) error {
-	err := c.deleteGSM(ctx, email)
-	if err != nil {
-		return common.NewErrRetry(err)
-	}
-
-	return nil
-}
-
-func (c Client) deleteGSM(ctx context.Context, email string) error {
 	instance, err := c.repo.UserGSMGet(ctx, email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

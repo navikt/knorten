@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"github.com/navikt/knorten/pkg/common"
 
 	"github.com/navikt/knorten/pkg/k8s/core"
 
@@ -11,7 +13,6 @@ import (
 	"github.com/navikt/knorten/pkg/database"
 	"github.com/navikt/knorten/pkg/database/gensql"
 	"github.com/navikt/knorten/pkg/k8s"
-	"github.com/navikt/knorten/pkg/logger"
 )
 
 type Client struct {
@@ -22,7 +23,7 @@ type Client struct {
 	dryRun     bool
 }
 
-func NewClient(repo *database.Repo, mngr k8s.Manager, gcpProject, gcpRegion string, dryRun, inCluster bool) (*Client, error) {
+func NewClient(repo *database.Repo, mngr k8s.Manager, gcpProject, gcpRegion string, dryRun bool) (*Client, error) {
 	return &Client{
 		repo:       repo,
 		manager:    mngr,
@@ -32,164 +33,126 @@ func NewClient(repo *database.Repo, mngr k8s.Manager, gcpProject, gcpRegion stri
 	}, nil
 }
 
-func (c Client) Create(ctx context.Context, team gensql.Team, log logger.Logger) bool {
-	log.Infof("Creating team %v", team.ID)
-
-	if retry, err := c.create(ctx, team, log); err != nil {
-		log.Info("failed creating team")
-		return retry
-	}
-
-	log.Infof("Successfully created team %v", team.ID)
-	return false
-}
-
-func (c Client) create(ctx context.Context, team gensql.Team, log logger.Logger) (bool, error) {
+func (c Client) Create(ctx context.Context, team *gensql.Team) error {
 	existingTeam, err := c.repo.TeamBySlugGet(ctx, team.Slug)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		log.WithError(err).Info("failed retrieving team from database")
-		return true, err
+		return common.NewErrRetry(err)
 	}
 
 	if existingTeam.Slug == team.Slug {
-		log.Errorf("there already exists a team with name %v", team.Slug)
-		return false, err
+		return fmt.Errorf("team with slug %v already exists", team.Slug)
 	}
 
 	if err := c.createGCPTeamResources(ctx, team); err != nil {
-		log.WithError(err).Info("failed creating GCP resources")
-		return true, err
+		return common.NewErrRetry(fmt.Errorf("creating GCP resources: %w", err))
 	}
 
 	namespace := k8s.TeamIDToNamespace(team.ID)
 	err = c.manager.ApplyNamespace(ctx, core.NewNamespace(namespace))
 	if err != nil {
-		log.WithError(err).Info("failed updating k8s namespace")
-		return true, err
+		return common.NewErrRetry(fmt.Errorf("creating k8s namespace: %w", err))
 	}
 
 	if err := c.manager.ApplyServiceAccount(ctx, core.NewServiceAccount(team.ID, namespace)); err != nil {
-		log.WithError(err).Info("failed creating k8s service account")
-		return true, err
+		return common.NewErrRetry(fmt.Errorf("creating k8s service account: %w", err))
 	}
 
 	if err := c.repo.TeamCreate(ctx, team); err != nil {
-		log.WithError(err).Info("failed saving team to database")
-		return true, err
+		return common.NewErrRetry(fmt.Errorf("saving team to database: %w", err))
 	}
 
-	return false, nil
+	return nil
 }
 
-func (c Client) Update(ctx context.Context, team gensql.Team, log logger.Logger) bool {
-	log.Infof("Updating team %v", team.ID)
-
-	if retry, err := c.update(ctx, team, log); err != nil {
-		log.Info("failed updating team")
-		return retry
+func (c Client) Update(ctx context.Context, team *gensql.Team) error {
+	err := c.update(ctx, team)
+	if err != nil {
+		return common.NewErrRetry(err)
 	}
 
-	return false
+	return nil
 }
 
-func (c Client) update(ctx context.Context, team gensql.Team, log logger.Logger) (bool, error) {
+func (c Client) update(ctx context.Context, team *gensql.Team) error {
 	err := c.repo.TeamUpdate(ctx, team)
 	if err != nil {
-		log.WithError(err).Info("failed updating team in database")
-		return true, err
+		return fmt.Errorf("updating team in database: %w", err)
 	}
 
 	namespace := k8s.TeamIDToNamespace(team.ID)
 	err = c.manager.ApplyNamespace(ctx, core.NewNamespace(namespace))
 	if err != nil {
-		log.WithError(err).Info("failed updating k8s namespace")
-		return true, err
+		return fmt.Errorf("updating k8s namespace: %w", err)
 	}
 
-	if err := c.manager.ApplyServiceAccount(ctx, core.NewServiceAccount(team.ID, namespace)); err != nil {
-		log.WithError(err).Info("failed creating k8s service account")
-		return true, err
+	err = c.manager.ApplyServiceAccount(ctx, core.NewServiceAccount(team.ID, namespace))
+	if err != nil {
+		return fmt.Errorf("updating k8s service account: %w", err)
 	}
 
 	if err := c.updateGCPTeamResources(ctx, team); err != nil {
-		log.WithError(err).Info("failed while updating GCP resources")
-		return true, err
+		return fmt.Errorf("updating GCP resources: %w", err)
 	}
 
 	apps, err := c.repo.ChartsForTeamGet(ctx, team.ID)
 	if err != nil {
-		log.WithError(err).Infof("failed getting apps for team %v", team.ID)
-		return true, err
+		return fmt.Errorf("getting apps for team: %w", err)
 	}
 
 	for _, app := range apps {
 		switch app {
 		case gensql.ChartTypeJupyterhub:
-			log.Info("Trigger update of Jupyter")
 			jupyterValues := chart.JupyterConfigurableValues{
 				TeamID: team.ID,
 			}
 			if err := c.repo.RegisterUpdateJupyterEvent(ctx, team.ID, jupyterValues); err != nil {
-				log.WithError(err).Info("failed while registering Jupyter update event")
-				return true, err
+				return fmt.Errorf("registering Jupyter update event: %w", err)
 			}
 		case gensql.ChartTypeAirflow:
-			log.Info("Trigger update of Airflow")
 			airflowValues := chart.AirflowConfigurableValues{
 				TeamID: team.ID,
 			}
 			if err := c.repo.RegisterUpdateAirflowEvent(ctx, team.ID, airflowValues); err != nil {
-				log.WithError(err).Info("failed while registering Airflow update event")
-				return true, err
+				return fmt.Errorf("registering Airflow update event: %w", err)
 			}
 		}
 	}
 
-	log.Infof("Successfully updated team %v", team.Slug)
-	return false, nil
+	return nil
 }
 
-func (c Client) Delete(ctx context.Context, teamID string, log logger.Logger) bool {
-	log.Infof("Deleting team %v", teamID)
-
-	if retry, err := c.delete(ctx, teamID, log); err != nil {
-		log.Info("failed updating team")
-		return retry
+func (c Client) Delete(ctx context.Context, teamID string) error {
+	err := c.delete(ctx, teamID)
+	if err != nil {
+		return common.NewErrRetry(err)
 	}
 
-	log.Infof("Successfully deleted team %v", teamID)
-	return false
+	return nil
 }
 
-func (c Client) delete(ctx context.Context, teamID string, log logger.Logger) (bool, error) {
+func (c Client) delete(ctx context.Context, teamID string) error {
 	team, err := c.repo.TeamGet(ctx, teamID)
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
-		log.WithError(err).Info("failed retrieving team from database")
-		return true, err
+		return fmt.Errorf("getting team from database: %w", err)
 	}
 
 	if err = c.deleteGCPTeamResources(ctx, team.ID); err != nil {
-		log.WithError(err).Info("failed while deleting GCP resources")
-		return true, err
+		return fmt.Errorf("deleting GCP resources: %w", err)
 	}
 
 	if err = c.manager.DeleteNamespace(ctx, k8s.TeamIDToNamespace(team.ID)); err != nil {
-		log.WithError(err).Info("failed while deleting k8s namespace")
-		return true, err
+		return fmt.Errorf("deleting k8s namespace: %w", err)
 	}
 
 	if err = c.repo.TeamDelete(ctx, team.ID); err != nil && errors.Is(err, sql.ErrNoRows) {
-		log.WithError(err).Info("failed deleting team from database")
-		return true, err
+		return fmt.Errorf("deleting team from database: %w", err)
 	}
 
-	log.Info("Trigger delete of Airflow")
 	// Kun Airflow som har ressurser utenfor clusteret
-	if err := c.repo.RegisterDeleteAirflowEvent(ctx, team.ID); err != nil {
-		log.WithError(err).Info("failed while registering Airflow delete event")
-		return true, err
+	err = c.repo.RegisterDeleteAirflowEvent(ctx, team.ID)
+	if err != nil {
+		return fmt.Errorf("registering Airflow delete event: %w", err)
 	}
 
-	log.Infof("Successfully deleted team %v", teamID)
-	return false, nil
+	return nil
 }

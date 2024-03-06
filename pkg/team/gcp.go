@@ -16,7 +16,7 @@ import (
 	iamv1 "google.golang.org/api/iam/v1"
 )
 
-func (c Client) createGCPTeamResources(ctx context.Context, team gensql.Team) error {
+func (c Client) createGCPTeamResources(ctx context.Context, team *gensql.Team) error {
 	if c.dryRun {
 		return nil
 	}
@@ -146,7 +146,7 @@ func (c Client) createIAMServiceAccount(ctx context.Context, team string) (*iamv
 	return account, nil
 }
 
-func (c Client) updateGCPTeamResources(ctx context.Context, team gensql.Team) error {
+func (c Client) updateGCPTeamResources(ctx context.Context, team *gensql.Team) error {
 	if c.dryRun {
 		return nil
 	}

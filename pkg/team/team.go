@@ -5,8 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/navikt/knorten/pkg/common"
-
 	"github.com/navikt/knorten/pkg/k8s/core"
 
 	"github.com/navikt/knorten/pkg/chart"
@@ -36,7 +34,7 @@ func NewClient(repo *database.Repo, mngr k8s.Manager, gcpProject, gcpRegion stri
 func (c Client) Create(ctx context.Context, team *gensql.Team) error {
 	existingTeam, err := c.repo.TeamBySlugGet(ctx, team.Slug)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return common.NewErrRetry(err)
+		return fmt.Errorf("retrieving team by slug: %w", err)
 	}
 
 	if existingTeam.Slug == team.Slug {
@@ -44,36 +42,27 @@ func (c Client) Create(ctx context.Context, team *gensql.Team) error {
 	}
 
 	if err := c.createGCPTeamResources(ctx, team); err != nil {
-		return common.NewErrRetry(fmt.Errorf("creating GCP resources: %w", err))
+		return fmt.Errorf("creating GCP resources: %w", err)
 	}
 
 	namespace := k8s.TeamIDToNamespace(team.ID)
 	err = c.manager.ApplyNamespace(ctx, core.NewNamespace(namespace))
 	if err != nil {
-		return common.NewErrRetry(fmt.Errorf("creating k8s namespace: %w", err))
+		return fmt.Errorf("creating k8s namespace: %w", err)
 	}
 
 	if err := c.manager.ApplyServiceAccount(ctx, core.NewServiceAccount(team.ID, namespace)); err != nil {
-		return common.NewErrRetry(fmt.Errorf("creating k8s service account: %w", err))
+		return fmt.Errorf("creating k8s service account: %w", err)
 	}
 
 	if err := c.repo.TeamCreate(ctx, team); err != nil {
-		return common.NewErrRetry(fmt.Errorf("saving team to database: %w", err))
+		return fmt.Errorf("saving team to database: %w", err)
 	}
 
 	return nil
 }
 
 func (c Client) Update(ctx context.Context, team *gensql.Team) error {
-	err := c.update(ctx, team)
-	if err != nil {
-		return common.NewErrRetry(err)
-	}
-
-	return nil
-}
-
-func (c Client) update(ctx context.Context, team *gensql.Team) error {
 	err := c.repo.TeamUpdate(ctx, team)
 	if err != nil {
 		return fmt.Errorf("updating team in database: %w", err)
@@ -122,15 +111,6 @@ func (c Client) update(ctx context.Context, team *gensql.Team) error {
 }
 
 func (c Client) Delete(ctx context.Context, teamID string) error {
-	err := c.delete(ctx, teamID)
-	if err != nil {
-		return common.NewErrRetry(err)
-	}
-
-	return nil
-}
-
-func (c Client) delete(ctx context.Context, teamID string) error {
 	team, err := c.repo.TeamGet(ctx, teamID)
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("getting team from database: %w", err)

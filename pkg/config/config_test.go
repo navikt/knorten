@@ -57,6 +57,7 @@ func newFakeConfig() config.Config {
 			},
 		},
 		Helm: config.Helm{
+			RepositoryConfig:    "some/path/repositories.yaml",
 			AirflowChartVersion: "1.10.0",
 			JupyterChartVersion: "2.0.0",
 		},

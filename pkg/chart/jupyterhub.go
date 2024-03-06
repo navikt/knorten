@@ -10,7 +10,6 @@ import (
 	"github.com/navikt/knorten/pkg/database/gensql"
 	"github.com/navikt/knorten/pkg/helm"
 	"github.com/navikt/knorten/pkg/k8s"
-	"github.com/navikt/knorten/pkg/logger"
 	"github.com/navikt/knorten/pkg/reflect"
 )
 
@@ -32,7 +31,7 @@ type JupyterConfigurableValues struct {
 
 type jupyterValues struct {
 	// User-configurable values
-	JupyterConfigurableValues
+	*JupyterConfigurableValues
 
 	// Generated values
 	CPULimit              string   `helm:"singleuser.cpu.limit"`
@@ -50,17 +49,15 @@ type jupyterValues struct {
 
 const TeamValueKeyPYPIAccess = "pypiAccess,omit"
 
-func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfigurableValues, log logger.Logger) error {
+func (c Client) syncJupyter(ctx context.Context, configurableValues *JupyterConfigurableValues) error {
 	team, err := c.repo.TeamGet(ctx, configurableValues.TeamID)
 	if err != nil {
-		log.WithError(err).Info("getting team from database")
-		return err
+		return fmt.Errorf("retrieving team: %w", err)
 	}
 
 	values, err := c.jupyterMergeValues(ctx, team, configurableValues)
 	if err != nil {
-		log.WithError(err).Info("merging jupyter values")
-		return err
+		return fmt.Errorf("merging values: %w", err)
 	}
 
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeJupyterhub, TeamValueKeyPYPIAccess, strconv.FormatBool(values.PYPIAccess), team.ID); err != nil {
@@ -71,13 +68,11 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfi
 	namespace := k8s.TeamIDToNamespace(team.ID)
 
 	if err := c.createHttpRoute(ctx, team.Slug+".jupyter.knada.io", namespace, gensql.ChartTypeJupyterhub); err != nil {
-		log.WithError(err).Info("creating http route")
-		return err
+		return fmt.Errorf("creating http route: %w", err)
 	}
 
 	if err := c.createHealthCheckPolicy(ctx, namespace, gensql.ChartTypeJupyterhub); err != nil {
-		log.WithError(err).Info("creating health check policy")
-		return err
+		return fmt.Errorf("creating health check policy: %w", err)
 	}
 
 	if err := c.alterJupyterDefaultFQDNNetpol(ctx, namespace, configurableValues.PYPIAccess); err != nil {
@@ -87,14 +82,12 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfi
 
 	chartValues, err := reflect.CreateChartValues(values)
 	if err != nil {
-		log.WithError(err).Info("creating chart values")
-		return err
+		return fmt.Errorf("creating chart values: %w", err)
 	}
 
 	err = c.repo.HelmChartValuesInsert(ctx, gensql.ChartTypeJupyterhub, chartValues, team.ID)
 	if err != nil {
-		log.WithError(err).Info("inserting helm values to database")
-		return err
+		return fmt.Errorf("saving chart values to database: %w", err)
 	}
 
 	return nil
@@ -107,7 +100,7 @@ func jupyterReleaseName(namespace string) string {
 	return fmt.Sprintf("%v-%v", string(gensql.ChartTypeJupyterhub), namespace)
 }
 
-func (c Client) jupyterMergeValues(ctx context.Context, team gensql.TeamGetRow, configurableValues JupyterConfigurableValues) (jupyterValues, error) {
+func (c Client) jupyterMergeValues(ctx context.Context, team gensql.TeamGetRow, configurableValues *JupyterConfigurableValues) (jupyterValues, error) {
 	if len(configurableValues.UserIdents) == 0 {
 		err := c.repo.TeamConfigurableValuesGet(ctx, gensql.ChartTypeJupyterhub, team.ID, &configurableValues)
 		if err != nil {
@@ -149,10 +142,9 @@ func (c Client) jupyterMergeValues(ctx context.Context, team gensql.TeamGetRow, 
 	}, nil
 }
 
-func (c Client) deleteJupyter(ctx context.Context, teamID string, log logger.Logger) error {
+func (c Client) deleteJupyter(ctx context.Context, teamID string) error {
 	if err := c.repo.ChartDelete(ctx, teamID, gensql.ChartTypeJupyterhub); err != nil {
-		log.WithError(err).Info("delete chart from database")
-		return err
+		return fmt.Errorf("deleting chart values: %w", err)
 	}
 
 	if c.dryRun {
@@ -162,19 +154,17 @@ func (c Client) deleteJupyter(ctx context.Context, teamID string, log logger.Log
 	namespace := k8s.TeamIDToNamespace(teamID)
 
 	if err := c.deleteHttpRoute(ctx, namespace, gensql.ChartTypeJupyterhub); err != nil {
-		log.WithError(err).Info("deleting http route")
-		return err
+		return fmt.Errorf("deleting http route: %w", err)
 	}
 
 	if err := c.deleteHealthCheckPolicy(ctx, namespace, gensql.ChartTypeJupyterhub); err != nil {
-		log.WithError(err).Info("deleting health check policy")
-		return err
+		return fmt.Errorf("deleting health check policy: %w", err)
 	}
 
 	return nil
 }
 
-func (c Client) registerJupyterHelmEvent(ctx context.Context, teamID string, eventType database.EventType, logger logger.Logger) error {
+func (c Client) registerJupyterHelmEvent(ctx context.Context, teamID string, eventType database.EventType) error {
 	namespace := k8s.TeamIDToNamespace(teamID)
 	helmEventData := helm.EventData{
 		TeamID:       teamID,
@@ -186,7 +176,7 @@ func (c Client) registerJupyterHelmEvent(ctx context.Context, teamID string, eve
 		ChartVersion: c.chartVersionJupyter,
 	}
 
-	if err := c.registerHelmEvent(ctx, eventType, teamID, helmEventData, logger); err != nil {
+	if err := c.registerHelmEvent(ctx, eventType, teamID, helmEventData); err != nil {
 		return err
 	}
 

@@ -9,10 +9,10 @@ import (
 )
 
 type chartClient interface {
-	SyncJupyter(ctx context.Context, values chart.JupyterConfigurableValues, log logger.Logger) bool
-	DeleteJupyter(ctx context.Context, teamID string, log logger.Logger) bool
-	SyncAirflow(ctx context.Context, values chart.AirflowConfigurableValues, log logger.Logger) bool
-	DeleteAirflow(ctx context.Context, teamID string, log logger.Logger) bool
+	SyncJupyter(ctx context.Context, values *chart.JupyterConfigurableValues) error
+	DeleteJupyter(ctx context.Context, teamID string) error
+	SyncAirflow(ctx context.Context, values *chart.AirflowConfigurableValues) error
+	DeleteAirflow(ctx context.Context, teamID string) error
 }
 
 type chartMock struct {
@@ -25,24 +25,24 @@ func newChartMock() chartMock {
 	}
 }
 
-func (cm chartMock) SyncJupyter(ctx context.Context, values chart.JupyterConfigurableValues, log logger.Logger) bool {
+func (cm chartMock) SyncJupyter(ctx context.Context, values chart.JupyterConfigurableValues) error {
 	cm.EventCounts[database.EventTypeCreateJupyter]++
 	cm.EventCounts[database.EventTypeUpdateJupyter]++
-	return false
+	return nil
 }
 
-func (cm chartMock) DeleteJupyter(ctx context.Context, teamID string, log logger.Logger) bool {
+func (cm chartMock) DeleteJupyter(ctx context.Context, teamID string) error {
 	cm.EventCounts[database.EventTypeDeleteJupyter]++
-	return false
+	return nil
 }
 
-func (cm chartMock) SyncAirflow(ctx context.Context, values chart.AirflowConfigurableValues, log logger.Logger) bool {
+func (cm chartMock) SyncAirflow(ctx context.Context, values chart.AirflowConfigurableValues) error {
 	cm.EventCounts[database.EventTypeCreateAirflow]++
 	cm.EventCounts[database.EventTypeUpdateAirflow]++
-	return false
+	return nil
 }
 
-func (cm chartMock) DeleteAirflow(ctx context.Context, teamID string, log logger.Logger) bool {
+func (cm chartMock) DeleteAirflow(ctx context.Context, teamID string, log logger.Logger) error {
 	cm.EventCounts[database.EventTypeDeleteAirflow]++
-	return false
+	return nil
 }

@@ -81,6 +81,7 @@ func newFakeConfig() config.Config {
 		SessionKey: "test-session",
 		LoginPage:  "http://localhost:8080/",
 		DryRun:     false,
+		Debug:      false,
 		InCluster:  false,
 	}
 }

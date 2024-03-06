@@ -4,7 +4,9 @@ import (
 	"context"
 	"flag"
 	"html/template"
+	"io"
 	"net"
+	"os"
 	"time"
 
 	"github.com/navikt/knorten/pkg/gcpapi"
@@ -116,6 +118,25 @@ func main() {
 	binder := gcpapi.NewServiceAccountPolicyBinder(cfg.GCP.Project, policyManager)
 	checker := gcpapi.NewServiceAccountChecker(cfg.GCP.Project, fetcher)
 
+	errOut := io.Discard
+	if cfg.Debug {
+		errOut = os.Stderr
+	}
+
+	out := io.Discard
+	if cfg.Debug {
+		out = os.Stdout
+	}
+
+	helmClient := helm.NewClient(&helm.Config{
+		Debug:            cfg.Debug,
+		DryRun:           cfg.DryRun,
+		Err:              errOut,
+		KubeContext:      cfg.Kubernetes.Context,
+		Out:              out,
+		RepositoryConfig: cfg.Helm.RepositoryConfig,
+	}, dbClient)
+
 	eventHandler, err := events.NewHandler(
 		ctx,
 		dbClient,
@@ -123,6 +144,7 @@ func main() {
 		k8s.NewManager(c),
 		binder,
 		checker,
+		helmClient,
 		cfg.GCP.Project,
 		cfg.GCP.Region,
 		cfg.GCP.Zone,

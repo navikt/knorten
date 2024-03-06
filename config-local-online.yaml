@@ -32,6 +32,7 @@ cookies:
         secure: false
         http_only: true
 helm:
+    repository_config: ./.helm-repositories.yaml
     airflow_chart_version: 1.11.0
     jupyter_chart_version: 3.2.1
 server:

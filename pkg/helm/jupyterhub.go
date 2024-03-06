@@ -13,7 +13,7 @@ const (
 	profileListKey = "singleuser.profileList"
 )
 
-func (c Client) concatenateImageProfiles(ctx context.Context, teamID string, values map[string]any) error {
+func (c *Client) concatenateImageProfiles(ctx context.Context, teamID string, values map[string]any) error {
 	userProfileList, err := c.repo.TeamValueGet(ctx, profileListKey, teamID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

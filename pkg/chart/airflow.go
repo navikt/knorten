@@ -45,7 +45,7 @@ type AirflowConfigurableValues struct {
 
 type AirflowValues struct {
 	// User-configurable values
-	AirflowConfigurableValues
+	*AirflowConfigurableValues
 
 	// Manually save to database
 	FernetKey          string // Knorten sets Helm value pointing to k8s secret
@@ -59,101 +59,85 @@ type AirflowValues struct {
 	WorkerLabels            string `helm:"workers.labels"`
 }
 
-func (c Client) syncAirflow(ctx context.Context, configurableValues AirflowConfigurableValues, log logger.Logger) error {
+func (c Client) syncAirflow(ctx context.Context, configurableValues *AirflowConfigurableValues) error {
 	team, err := c.repo.TeamGet(ctx, configurableValues.TeamID)
 	if err != nil {
-		log.WithError(err).Infof("getting team %v from database", configurableValues.TeamID)
-		return err
+		return fmt.Errorf("getting team: %w", err)
 	}
 
 	values, err := c.mergeAirflowValues(ctx, team, configurableValues)
 	if err != nil {
-		log.WithError(err).Info("merging airflow values")
-		return err
+		return fmt.Errorf("merging airflow values: %w", err)
 	}
 
 	helmChartValues, err := reflect.CreateChartValues(values)
 	if err != nil {
-		log.WithError(err).Info("creating chart values")
-		return err
+		return fmt.Errorf("creating helm chart values: %w", err)
 	}
 
 	// First we save all variables to the database, then we apply them to the cluster.
 	if err := c.repo.HelmChartValuesInsert(ctx, gensql.ChartTypeAirflow, helmChartValues, team.ID); err != nil {
-		log.WithError(err).Info("inserting helm values to database")
-		return err
+		return fmt.Errorf("inserting helm chart values to database: %w", err)
 	}
 
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, teamValueKeyFernetKey, values.FernetKey, team.ID); err != nil {
-		log.WithError(err).Infof("inserting %v team value to database", teamValueKeyFernetKey)
-		return err
+		return fmt.Errorf("inserting %v team value to database", teamValueKeyFernetKey)
 	}
 
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, teamValueKeyWebserverSecret, values.WebserverSecretKey, team.ID); err != nil {
-		log.WithError(err).Infof("inserting %v team value to database", teamValueKeyWebserverSecret)
-		return err
+		return fmt.Errorf("inserting %v team value to database", teamValueKeyWebserverSecret)
 	}
 
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, TeamValueKeyRestrictEgress, strconv.FormatBool(values.RestrictEgress), team.ID); err != nil {
-		log.WithError(err).Infof("inserting %v team value to database", TeamValueKeyRestrictEgress)
-		return err
+		return fmt.Errorf("inserting %v team value to database", TeamValueKeyRestrictEgress)
 	}
 
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeAirflow, TeamValueKeyApiAccess, strconv.FormatBool(values.ApiAccess), team.ID); err != nil {
-		log.WithError(err).Infof("inserting %v team value to database", TeamValueKeyApiAccess)
-		return err
+		return fmt.Errorf("inserting %v team value to database", TeamValueKeyApiAccess)
 	}
 
 	// Apply values to cluster
 	namespace := k8s.TeamIDToNamespace(team.ID)
 
 	if err := c.createHttpRoute(ctx, team.Slug+".airflow.knada.io", namespace, gensql.ChartTypeAirflow); err != nil {
-		log.WithError(err).Info("creating http route")
-		return err
+		return fmt.Errorf("creating http route: %w", err)
 	}
 
 	if err := c.createHealthCheckPolicy(ctx, namespace, gensql.ChartTypeAirflow); err != nil {
-		log.WithError(err).Info("creating health check policy")
-		return err
+		return fmt.Errorf("creating health check policy: %w", err)
 	}
 
 	if err := c.createOrUpdateSecret(ctx, k8sAirflowWebserverSecretName, namespace, map[string]string{
 		"webserver-secret-key": values.WebserverSecretKey,
 	}); err != nil {
-		log.WithError(err).Info("creating or updating airflow webserver secret")
-		return err
+		return fmt.Errorf("creating or updating airflow webserver secret: %w", err)
 	}
 
 	if err := c.createOrUpdateSecret(ctx, k8sAirflowFernetKeySecretName, namespace, map[string]string{
 		"fernet-key": values.FernetKey,
 	}); err != nil {
-		log.WithError(err).Info("creating or updating airflow fernet key secret")
-		return err
+		return fmt.Errorf("creating or updating airflow fernet key secret: %w", err)
 	}
 
 	// Apply values to GCP project
 	if err := c.createAirflowDatabase(ctx, &team); err != nil {
-		log.WithError(err).Info("creating airflow database")
-		return err
+		return fmt.Errorf("creating airflow database: %w", err)
 	}
 
 	if err := c.createLogBucketForAirflow(ctx, team.ID); err != nil {
-		log.WithError(err).Info("creating airflow log bucket")
-		return err
+		return fmt.Errorf("creating log bucket for airflow: %w", err)
 	}
 
 	if err := c.grantTokenCreatorRole(ctx, team.ID); err != nil {
-		log.WithError(err).Info("granting SA token creator role")
-		return err
+		return fmt.Errorf("granting SA token creator role: %w", err)
 	}
 
 	return nil
 }
 
-func (c Client) deleteAirflow(ctx context.Context, teamID string, log logger.Logger) error {
+func (c Client) deleteAirflow(ctx context.Context, teamID string) error {
 	if err := c.repo.ChartDelete(ctx, teamID, gensql.ChartTypeAirflow); err != nil {
-		log.WithError(err).Info("delete chart from database")
-		return err
+		return fmt.Errorf("deleting chart: %w", err)
 	}
 
 	if c.dryRun {
@@ -163,40 +147,34 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string, log logger.Log
 	namespace := k8s.TeamIDToNamespace(teamID)
 
 	if err := c.deleteSecretFromKubernetes(ctx, k8sAirflowFernetKeySecretName, namespace); err != nil {
-		log.WithError(err).Info("deleting fernet key secret")
-		return err
+		return fmt.Errorf("deleting fernet key secret: %w", err)
 	}
 
 	if err := c.deleteSecretFromKubernetes(ctx, k8sAirflowWebserverSecretName, namespace); err != nil {
-		log.WithError(err).Info("deleting webserver secret")
-		return err
+		return fmt.Errorf("deleting webserver secret: %w", err)
 	}
 
 	if err := c.deleteHttpRoute(ctx, namespace, gensql.ChartTypeAirflow); err != nil {
-		log.WithError(err).Info("deleting http route")
-		return err
+		return fmt.Errorf("deleting http route: %w", err)
 	}
 
 	if err := c.deleteHealthCheckPolicy(ctx, namespace, gensql.ChartTypeAirflow); err != nil {
-		log.WithError(err).Info("deleting health check policy")
-		return err
+		return fmt.Errorf("deleting health check policy: %w", err)
 	}
 
 	if err := c.deleteCloudNativePGCluster(ctx, teamID, namespace); err != nil {
-		log.WithError(err).Info("delete postgres cluster")
-		return err
+		return fmt.Errorf("deleting cloud native pg cluster: %w", err)
 	}
 
 	if err := c.deleteTokenCreatorRole(ctx, teamID); err != nil {
-		log.WithError(err).Info("deleting SA token creator role")
-		return err
+		return fmt.Errorf("deleting SA token creator role: %w", err)
 	}
 
 	return nil
 }
 
 // mergeAirflowValues merges the values from the database with the values from the request, generate the missing values and returns the final values.
-func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, configurableValues AirflowConfigurableValues) (AirflowValues, error) {
+func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, configurableValues *AirflowConfigurableValues) (AirflowValues, error) {
 	if configurableValues.DagRepo == "" { // only required value
 		dagRepo, err := c.repo.TeamValueGet(ctx, "dags.gitSync.repo", team.ID)
 		if err != nil {
@@ -457,7 +435,7 @@ func (c Client) getOrGeneratePassword(ctx context.Context, teamID, key string, g
 	return "", fmt.Errorf("a %v exisits for %v, but it's empty or doesn't belong to Airflow", key, teamID)
 }
 
-func (c Client) registerAirflowHelmEvent(ctx context.Context, teamID string, eventType database.EventType, logger logger.Logger) error {
+func (c Client) registerAirflowHelmEvent(ctx context.Context, teamID string, eventType database.EventType) error {
 	helmEventData := helm.EventData{
 		TeamID:       teamID,
 		Namespace:    k8s.TeamIDToNamespace(teamID),
@@ -468,7 +446,7 @@ func (c Client) registerAirflowHelmEvent(ctx context.Context, teamID string, eve
 		ChartVersion: c.chartVersionAirflow,
 	}
 
-	if err := c.registerHelmEvent(ctx, eventType, teamID, helmEventData, logger); err != nil {
+	if err := c.registerHelmEvent(ctx, eventType, teamID, helmEventData); err != nil {
 		return err
 	}
 

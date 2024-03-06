@@ -3,13 +3,13 @@ package chart
 import (
 	"context"
 	"fmt"
+	"github.com/navikt/knorten/pkg/common"
 
 	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/navikt/knorten/pkg/database"
 	"github.com/navikt/knorten/pkg/gcpapi"
 	"github.com/navikt/knorten/pkg/helm"
 	"github.com/navikt/knorten/pkg/k8s"
-	"github.com/navikt/knorten/pkg/logger"
 )
 
 type Client struct {
@@ -48,94 +48,78 @@ func NewClient(
 	}, nil
 }
 
-func (c Client) SyncJupyter(ctx context.Context, values JupyterConfigurableValues, log logger.Logger) bool {
-	log.Info("Syncing Jupyter")
-
-	if err := c.syncJupyter(ctx, values, log); err != nil {
-		log.Info("Failed syncing Jupyter")
-		return true
+func (c Client) SyncJupyter(ctx context.Context, values *JupyterConfigurableValues) error {
+	err := c.syncJupyter(ctx, values)
+	if err != nil {
+		return common.NewErrRetry(err)
 	}
 
-	if err := c.registerJupyterHelmEvent(ctx, values.TeamID, database.EventTypeHelmRolloutJupyter, log); err != nil {
-		log.Info("Failed creating rollout jupyter helm event")
-		return true
+	err = c.registerJupyterHelmEvent(ctx, values.TeamID, database.EventTypeHelmRolloutJupyter)
+	if err != nil {
+		return common.NewErrRetry(err)
 	}
 
-	log.Info("Successfully synced Jupyter")
-	return false
+	return nil
 }
 
-func (c Client) DeleteJupyter(ctx context.Context, teamID string, log logger.Logger) bool {
-	log.Info("Deleting Jupyter")
-
-	if err := c.deleteJupyter(ctx, teamID, log); err != nil {
-		log.Info("Failed deleting Jupyter")
-		return true
+func (c Client) DeleteJupyter(ctx context.Context, teamID string) error {
+	err := c.deleteJupyter(ctx, teamID)
+	if err != nil {
+		return common.NewErrRetry(err)
 	}
 
-	if err := c.registerJupyterHelmEvent(ctx, teamID, database.EventTypeHelmUninstallJupyter, log); err != nil {
-		log.Info("Failed creating uninstall jupyter helm event")
-		return true
+	err = c.registerJupyterHelmEvent(ctx, teamID, database.EventTypeHelmUninstallJupyter)
+	if err != nil {
+		return common.NewErrRetry(err)
 	}
 
-	log.Info("Successfully deleted Jupyter")
-	return false
+	return nil
 }
 
-func (c Client) SyncAirflow(ctx context.Context, values AirflowConfigurableValues, log logger.Logger) bool {
-	log.Info("Syncing Airflow")
-
-	if err := c.syncAirflow(ctx, values, log); err != nil {
-		log.Info("Failed syncing Airflow")
-		return true
+func (c Client) SyncAirflow(ctx context.Context, values *AirflowConfigurableValues) error {
+	err := c.syncAirflow(ctx, values)
+	if err != nil {
+		return common.NewErrRetry(err)
 	}
 
-	if err := c.registerAirflowHelmEvent(ctx, values.TeamID, database.EventTypeHelmRolloutAirflow, log); err != nil {
-		log.Info("Failed creating rollout airflow helm event")
-		return true
+	err = c.registerAirflowHelmEvent(ctx, values.TeamID, database.EventTypeHelmRolloutAirflow)
+	if err != nil {
+		return common.NewErrRetry(err)
 	}
 
-	log.Info("Successfully synced Airflow")
-	return false
+	return nil
 }
 
-func (c Client) DeleteAirflow(ctx context.Context, teamID string, log logger.Logger) bool {
-	log.Info("Deleting Airflow")
-
-	if err := c.deleteAirflow(ctx, teamID, log); err != nil {
-		log.Info("Failed deleting Airflow")
-		return true
+func (c Client) DeleteAirflow(ctx context.Context, teamID string) error {
+	err := c.deleteAirflow(ctx, teamID)
+	if err != nil {
+		return common.NewErrRetry(err)
 	}
 
-	if err := c.registerAirflowHelmEvent(ctx, teamID, database.EventTypeHelmUninstallAirflow, log); err != nil {
-		log.Info("Failed creating uninstall airflow helm event")
-		return true
+	err = c.registerAirflowHelmEvent(ctx, teamID, database.EventTypeHelmUninstallAirflow)
+	if err != nil {
+		return common.NewErrRetry(err)
 	}
 
-	log.Info("Successfully deleted Airflow")
-	return false
+	return nil
 }
 
-func (c Client) registerHelmEvent(ctx context.Context, eventType database.EventType, teamID string, helmEventData helm.EventData, logger logger.Logger) error {
+func (c Client) registerHelmEvent(ctx context.Context, eventType database.EventType, teamID string, helmEventData helm.EventData) error {
 	switch eventType {
 	case database.EventTypeHelmRolloutJupyter:
 		if err := c.repo.RegisterHelmRolloutJupyterEvent(ctx, teamID, helmEventData); err != nil {
-			logger.WithError(err).Error("registering rollout jupyter event failed")
 			return err
 		}
 	case database.EventTypeHelmUninstallJupyter:
 		if err := c.repo.RegisterHelmUninstallJupyterEvent(ctx, teamID, helmEventData); err != nil {
-			logger.WithError(err).Error("registering uninstall jupyter event failed")
 			return err
 		}
 	case database.EventTypeHelmRolloutAirflow:
 		if err := c.repo.RegisterHelmRolloutAirflowEvent(ctx, teamID, helmEventData); err != nil {
-			logger.WithError(err).Error("registering rollout airflow event failed")
 			return err
 		}
 	case database.EventTypeHelmUninstallAirflow:
 		if err := c.repo.RegisterHelmUninstallAirflowEvent(ctx, teamID, helmEventData); err != nil {
-			logger.WithError(err).Error("registering uninstall airflow event failed")
 			return err
 		}
 	default:

@@ -129,7 +129,6 @@ func main() {
 		cfg.Helm.AirflowChartVersion,
 		cfg.Helm.JupyterChartVersion,
 		cfg.DryRun,
-		cfg.InCluster,
 		log.WithField("subsystem", "events"),
 	)
 	if err != nil {

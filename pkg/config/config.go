@@ -129,12 +129,14 @@ func (g GCP) Validate() error {
 }
 
 type Helm struct {
+	RepositoryConfig    string `yaml:"repository_config"`
 	AirflowChartVersion string `yaml:"airflow_chart_version"`
 	JupyterChartVersion string `yaml:"jupyter_chart_version"`
 }
 
 func (h Helm) Validate() error {
 	return validation.ValidateStruct(&h,
+		validation.Field(&h.RepositoryConfig, validation.Required),
 		validation.Field(&h.AirflowChartVersion, validation.Required),
 		validation.Field(&h.JupyterChartVersion, validation.Required),
 	)

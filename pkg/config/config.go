@@ -38,6 +38,7 @@ type Config struct {
 	SessionKey string     `yaml:"session_key"`
 	LoginPage  string     `yaml:"login_page"`
 	DryRun     bool       `yaml:"dry_run"`
+	Debug      bool       `yaml:"debug"`
 	InCluster  bool       `yaml:"in_cluster"`
 }
 

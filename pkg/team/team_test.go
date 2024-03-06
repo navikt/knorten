@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path"
@@ -63,24 +64,24 @@ func TestTeam(t *testing.T) {
 	})
 
 	type args struct {
-		team gensql.Team
+		team *gensql.Team
 	}
 	type want struct {
 		team gensql.TeamBySlugGetRow
 		err  error
 	}
 
-	operation := func(ctx context.Context, eventType database.EventType, team gensql.Team, teamClient *Client) bool {
+	operation := func(ctx context.Context, eventType database.EventType, team *gensql.Team, teamClient *Client) error {
 		switch eventType {
 		case database.EventTypeCreateTeam:
-			return teamClient.Create(ctx, team, logrus.NewEntry(logrus.StandardLogger()))
+			return teamClient.Create(ctx, team)
 		case database.EventTypeUpdateTeam:
-			return teamClient.Update(ctx, team, logrus.NewEntry(logrus.StandardLogger()))
+			return teamClient.Update(ctx, team)
 		case database.EventTypeDeleteTeam:
-			return teamClient.Delete(ctx, team.ID, logrus.NewEntry(logrus.StandardLogger()))
+			return teamClient.Delete(ctx, team.ID)
 		}
 
-		return true
+		return fmt.Errorf("unknown event type %v", eventType)
 	}
 
 	teamTests := []struct {
@@ -93,7 +94,7 @@ func TestTeam(t *testing.T) {
 			name:      "Create team",
 			eventType: database.EventTypeCreateTeam,
 			args: args{
-				team: gensql.Team{
+				team: &gensql.Team{
 					ID:    "test-team-1234",
 					Slug:  "test-team",
 					Users: []string{"dummy@nav.no", "user.one@nav.on", "user.two@nav.on"},
@@ -112,7 +113,7 @@ func TestTeam(t *testing.T) {
 			name:      "Create team slug already exists",
 			eventType: database.EventTypeCreateTeam,
 			args: args{
-				team: gensql.Team{
+				team: &gensql.Team{
 					ID:    "already-exists-1234",
 					Slug:  "test-team",
 					Users: []string{"dummy@nav.no"},
@@ -131,7 +132,7 @@ func TestTeam(t *testing.T) {
 			name:      "Update team",
 			eventType: database.EventTypeUpdateTeam,
 			args: args{
-				team: gensql.Team{
+				team: &gensql.Team{
 					ID:    "test-team-1234",
 					Slug:  "test-team",
 					Users: []string{"dummy@nav.no", "new.user@nav.no"},
@@ -150,7 +151,7 @@ func TestTeam(t *testing.T) {
 			name:      "Delete team",
 			eventType: database.EventTypeDeleteTeam,
 			args: args{
-				team: gensql.Team{
+				team: &gensql.Team{
 					ID: "test-team-1234",
 				},
 			},
@@ -176,17 +177,21 @@ func TestTeam(t *testing.T) {
 				t.Error(err)
 			}
 
-			teamClient, err := NewClient(repo, k8s.NewManager(c), "", "", true, false)
+			teamClient, err := NewClient(repo, k8s.NewManager(&k8s.Client{
+				Client:     c,
+				RESTConfig: nil,
+			}), "", "", true)
 			if err != nil {
 				t.Error(err)
 			}
 
-			if retry := operation(context.Background(), tt.eventType, tt.args.team, teamClient); retry {
-				t.Errorf("%v failed, got retry return for team %v", tt.eventType, tt.args.team.ID)
+			err = operation(context.Background(), tt.eventType, tt.args.team, teamClient)
+			if err != nil {
+				t.Errorf("%v failed, got err return for team %v", tt.eventType, tt.args.team.ID)
 			}
 
 			team, err := repo.TeamBySlugGet(context.Background(), tt.args.team.Slug)
-			if err != tt.want.err {
+			if !errors.Is(err, tt.want.err) {
 				t.Error(err)
 			}
 

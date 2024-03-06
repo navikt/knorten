@@ -20,7 +20,6 @@ import (
 	"github.com/navikt/knorten/pkg/database/gensql"
 	"github.com/navikt/knorten/pkg/helm"
 	"github.com/navikt/knorten/pkg/k8s"
-	"github.com/navikt/knorten/pkg/logger"
 	"github.com/navikt/knorten/pkg/reflect"
 )
 

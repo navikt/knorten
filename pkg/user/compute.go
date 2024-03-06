@@ -5,21 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/navikt/knorten/pkg/common"
-
 	"github.com/navikt/knorten/pkg/database/gensql"
 )
 
 func (c Client) CreateComputeInstance(ctx context.Context, instance *gensql.ComputeInstance) error {
-	err := c.createComputeInstance(ctx, instance)
-	if err != nil {
-		return common.NewErrRetry(err)
-	}
-
-	return nil
-}
-
-func (c Client) createComputeInstance(ctx context.Context, instance *gensql.ComputeInstance) error {
 	existingInstance, err := c.repo.ComputeInstanceGet(ctx, instance.Owner)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("retrieving compute instance: %w", err)
@@ -47,15 +36,6 @@ func (c Client) createComputeInstance(ctx context.Context, instance *gensql.Comp
 }
 
 func (c Client) ResizeComputeInstanceDisk(ctx context.Context, instance *gensql.ComputeInstance) error {
-	err := c.resizeComputeInstanceDisk(ctx, instance)
-	if err != nil {
-		return common.NewErrRetry(err)
-	}
-
-	return nil
-}
-
-func (c Client) resizeComputeInstanceDisk(ctx context.Context, instance *gensql.ComputeInstance) error {
 	err := c.resizeComputeInstanceDiskGCP(ctx, instance.Name, instance.DiskSize)
 	if err != nil {
 		return err
@@ -70,15 +50,6 @@ func (c Client) resizeComputeInstanceDisk(ctx context.Context, instance *gensql.
 }
 
 func (c Client) DeleteComputeInstance(ctx context.Context, email string) error {
-	err := c.deleteComputeInstance(ctx, email)
-	if err != nil {
-		return common.NewErrRetry(err)
-	}
-
-	return nil
-}
-
-func (c Client) deleteComputeInstance(ctx context.Context, email string) error {
 	instance, err := c.repo.ComputeInstanceGet(ctx, email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

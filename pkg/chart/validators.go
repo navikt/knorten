@@ -36,7 +36,9 @@ var ValidateAirflowImage validator.Func = func(fl validator.FieldLevel) bool {
 		return false
 	}
 
-	return strings.HasPrefix(imageParts[0], "ghcr.io/navikt/") || strings.HasPrefix(imageParts[0], "europe-north1-docker.pkg.dev")
+	return strings.HasPrefix(imageParts[0], "ghcr.io/navikt/") ||
+		strings.HasPrefix(imageParts[0], "europe-north1-docker.pkg.dev") ||
+		imageParts[0] == "apache/airflow"
 }
 
 var ValidateCPUSpec validator.Func = func(fl validator.FieldLevel) bool {

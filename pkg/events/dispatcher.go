@@ -139,7 +139,7 @@ func (e EventHandler) processWork(ctx context.Context, event gensql.Event, logge
 			return fmt.Errorf("invalid form type for event type %v", event.Type)
 		}
 
-		logger.Infof("Creating compute instance '%v'", i.Owner)
+		logger.Infof("Creating compute instance '%v'", i)
 		err = e.userClient.CreateComputeInstance(ctx, i)
 	case database.EventTypeResizeCompute:
 		i, ok := form.(*gensql.ComputeInstance)

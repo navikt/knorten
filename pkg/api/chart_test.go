@@ -488,7 +488,7 @@ func prepareChartTests(ctx context.Context, teamName string) (gensql.Team, error
 		Users: []string{testUser.Email, "user.one@nav.no", "user.two@nav.no"},
 	}
 
-	return team, repo.TeamCreate(ctx, team)
+	return team, repo.TeamCreate(ctx, &team)
 }
 
 func getEventForJupyterhub(events []gensql.Event, team string) (chart.JupyterConfigurableValues, error) {

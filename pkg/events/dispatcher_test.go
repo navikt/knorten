@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"github.com/sirupsen/logrus"
 	"testing"
 
 	"github.com/navikt/knorten/pkg/database"
@@ -72,7 +73,7 @@ func TestEventHandler_distributeWork(t *testing.T) {
 				helmClient:  &helmMock,
 			}
 			worker := handler.distributeWork(eventType)
-			if err := worker(context.Background(), gensql.Event{Payload: []byte("{}"), Type: string(eventType)}, nil); err != nil {
+			if err := worker(context.Background(), gensql.Event{Payload: []byte("{}"), Type: string(eventType)}, logrus.New()); err != nil {
 				t.Errorf("worker(): %v", err)
 			}
 

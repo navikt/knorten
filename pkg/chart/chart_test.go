@@ -80,21 +80,21 @@ func TestCharts(t *testing.T) {
 		}
 	})
 
-	operation := func(ctx context.Context, eventType database.EventType, values any, chartClient *Client) bool {
+	operation := func(ctx context.Context, eventType database.EventType, values any, chartClient *Client) error {
 		switch eventType {
 		case database.EventTypeCreateJupyter,
 			database.EventTypeUpdateJupyter:
-			return chartClient.SyncJupyter(ctx, values.(JupyterConfigurableValues), logrus.NewEntry(logrus.StandardLogger()))
+			return chartClient.SyncJupyter(ctx, values.(*JupyterConfigurableValues))
 		case database.EventTypeDeleteJupyter:
-			return chartClient.DeleteJupyter(ctx, values.(JupyterConfigurableValues).TeamID, logrus.NewEntry(logrus.StandardLogger()))
+			return chartClient.DeleteJupyter(ctx, values.(*JupyterConfigurableValues).TeamID)
 		case database.EventTypeCreateAirflow,
 			database.EventTypeUpdateAirflow:
-			return chartClient.SyncAirflow(ctx, values.(AirflowConfigurableValues), logrus.NewEntry(logrus.StandardLogger()))
+			return chartClient.SyncAirflow(ctx, values.(*AirflowConfigurableValues))
 		case database.EventTypeDeleteAirflow:
-			return chartClient.DeleteAirflow(ctx, values.(AirflowConfigurableValues).TeamID, logrus.NewEntry(logrus.StandardLogger()))
+			return chartClient.DeleteAirflow(ctx, values.(*AirflowConfigurableValues).TeamID)
 		}
 
-		return true
+		return nil
 	}
 
 	type args struct {
@@ -113,7 +113,7 @@ func TestCharts(t *testing.T) {
 			args: args{
 				eventType: database.EventTypeCreateJupyter,
 				chartType: gensql.ChartTypeJupyterhub,
-				values: JupyterConfigurableValues{
+				values: &JupyterConfigurableValues{
 					TeamID:        team.ID,
 					UserIdents:    []string{"d123456", "u654321"},
 					CPULimit:      "1.0",
@@ -146,7 +146,7 @@ func TestCharts(t *testing.T) {
 			args: args{
 				eventType: database.EventTypeCreateJupyter,
 				chartType: gensql.ChartTypeJupyterhub,
-				values: JupyterConfigurableValues{
+				values: &JupyterConfigurableValues{
 					TeamID:        team.ID,
 					UserIdents:    []string{"d123456"},
 					CPULimit:      "1.0",
@@ -178,7 +178,7 @@ func TestCharts(t *testing.T) {
 			args: args{
 				eventType: database.EventTypeDeleteJupyter,
 				chartType: gensql.ChartTypeJupyterhub,
-				values: JupyterConfigurableValues{
+				values: &JupyterConfigurableValues{
 					TeamID: team.ID,
 				},
 			},
@@ -189,7 +189,7 @@ func TestCharts(t *testing.T) {
 			args: args{
 				eventType: database.EventTypeCreateAirflow,
 				chartType: gensql.ChartTypeAirflow,
-				values: AirflowConfigurableValues{
+				values: &AirflowConfigurableValues{
 					TeamID:        team.ID,
 					DagRepo:       "navikt/my-dags",
 					DagRepoBranch: "main",
@@ -210,7 +210,7 @@ func TestCharts(t *testing.T) {
 			args: args{
 				eventType: database.EventTypeUpdateAirflow,
 				chartType: gensql.ChartTypeAirflow,
-				values: AirflowConfigurableValues{
+				values: &AirflowConfigurableValues{
 					TeamID:        team.ID,
 					DagRepo:       "navikt/other-dags",
 					DagRepoBranch: "master",
@@ -231,7 +231,7 @@ func TestCharts(t *testing.T) {
 			args: args{
 				eventType: database.EventTypeDeleteAirflow,
 				chartType: gensql.ChartTypeAirflow,
-				values: AirflowConfigurableValues{
+				values: &AirflowConfigurableValues{
 					TeamID: team.ID,
 				},
 			},
@@ -259,7 +259,9 @@ func TestCharts(t *testing.T) {
 			chartClient, err := NewClient(
 				repo,
 				azureClient,
-				k8s.NewManager(c),
+				k8s.NewManager(&k8s.Client{
+					Client: c,
+				}),
 				gcpapi.NewServiceAccountPolicyBinder("project", manager),
 				gcpapi.NewServiceAccountChecker("project", fetcher),
 				true,
@@ -272,8 +274,9 @@ func TestCharts(t *testing.T) {
 				t.Error(err)
 			}
 
-			if retry := operation(ctx, tt.args.eventType, tt.args.values, chartClient); retry {
-				t.Errorf("%v failed: got retry return", tt.args.eventType)
+			err = operation(ctx, tt.args.eventType, tt.args.values, chartClient)
+			if err != nil {
+				t.Errorf("got unexpected error: %v", err)
 			}
 
 			teamValues, err := repo.TeamValuesGet(ctx, tt.args.chartType, team.ID)
@@ -308,5 +311,5 @@ func prepareChartTests(ctx context.Context) (gensql.Team, error) {
 		return gensql.Team{}, err
 	}
 
-	return team, repo.TeamCreate(ctx, team)
+	return team, repo.TeamCreate(ctx, &team)
 }

@@ -74,7 +74,12 @@ func TestTeam(t *testing.T) {
 	operation := func(ctx context.Context, eventType database.EventType, team *gensql.Team, teamClient *Client) error {
 		switch eventType {
 		case database.EventTypeCreateTeam:
-			return teamClient.Create(ctx, team)
+			err := teamClient.Create(ctx, team)
+			if errors.Is(err, ErrTeamExists) {
+				return nil
+			}
+
+			return err
 		case database.EventTypeUpdateTeam:
 			return teamClient.Update(ctx, team)
 		case database.EventTypeDeleteTeam:

@@ -23,19 +23,19 @@ func newHelmMock() helmMock {
 	}
 }
 
-func (hm helmMock) InstallOrUpgrade(ctx context.Context, helmEvent helm.EventData) error {
+func (hm helmMock) InstallOrUpgrade(ctx context.Context, helmEvent *helm.EventData) error {
 	hm.EventCounts[database.EventTypeHelmRolloutJupyter]++
 	hm.EventCounts[database.EventTypeHelmRolloutAirflow]++
 	return nil
 }
 
-func (hm helmMock) Rollback(ctx context.Context, helmEvent helm.EventData) error {
+func (hm helmMock) Rollback(ctx context.Context, helmEvent *helm.EventData) error {
 	hm.EventCounts[database.EventTypeHelmRollbackJupyter]++
 	hm.EventCounts[database.EventTypeHelmRollbackAirflow]++
 	return nil
 }
 
-func (hm helmMock) Uninstall(ctx context.Context, helmEvent helm.EventData) error {
+func (hm helmMock) Uninstall(ctx context.Context, helmEvent *helm.EventData) error {
 	hm.EventCounts[database.EventTypeHelmUninstallJupyter]++
 	hm.EventCounts[database.EventTypeHelmUninstallAirflow]++
 	return nil

@@ -13,6 +13,10 @@ import (
 	"github.com/navikt/knorten/pkg/k8s"
 )
 
+var (
+	ErrTeamExists = errors.New("team with slug already exists")
+)
+
 type Client struct {
 	repo       *database.Repo
 	manager    k8s.Manager
@@ -38,7 +42,7 @@ func (c Client) Create(ctx context.Context, team *gensql.Team) error {
 	}
 
 	if existingTeam.Slug == team.Slug {
-		return fmt.Errorf("team with slug %v already exists", team.Slug)
+		return ErrTeamExists
 	}
 
 	if err := c.createGCPTeamResources(ctx, team); err != nil {

@@ -21,7 +21,7 @@ func TestTeamAPI(t *testing.T) {
 	newTeam := "new-team"
 	existingTeam := "existing-team"
 	existingTeamID := existingTeam + "-1234"
-	err := repo.TeamCreate(ctx, gensql.Team{
+	err := repo.TeamCreate(ctx, &gensql.Team{
 		ID:    existingTeamID,
 		Slug:  existingTeam,
 		Users: []string{testUser.Email},
@@ -124,7 +124,7 @@ func TestTeamAPI(t *testing.T) {
 			ID:    "exists-team-1234",
 			Users: []string{testUser.Email},
 		}
-		if err := repo.TeamCreate(ctx, existing); err != nil {
+		if err := repo.TeamCreate(ctx, &existing); err != nil {
 			t.Error(err)
 		}
 		t.Cleanup(func() {
@@ -409,7 +409,7 @@ func prepareTeamEventsTest(ctx context.Context) (gensql.Team, error) {
 		Users: []string{testUser.Email},
 	}
 
-	if err := repo.TeamCreate(ctx, team); err != nil {
+	if err := repo.TeamCreate(ctx, &team); err != nil {
 		return gensql.Team{}, err
 	}
 

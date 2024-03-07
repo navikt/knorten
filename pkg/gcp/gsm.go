@@ -74,10 +74,8 @@ func DeleteSecret(ctx context.Context, gcpProject, secretID string) error {
 	err = client.DeleteSecret(ctx, req)
 	if err != nil {
 		apiError, ok := apierror.FromError(err)
-		if ok {
-			if apiError.GRPCStatus().Code() == codes.NotFound {
-				return nil
-			}
+		if ok && apiError.GRPCStatus().Code() == codes.NotFound {
+			return nil
 		}
 
 		return err

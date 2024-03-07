@@ -60,7 +60,7 @@ func TestComputeAPI(t *testing.T) {
 			Name:     "compute-" + getNormalizedNameFromEmail(testUser.Email),
 			DiskSize: 10,
 		}
-		if err := repo.ComputeInstanceCreate(ctx, instance); err != nil {
+		if err := repo.ComputeInstanceCreate(ctx, &instance); err != nil {
 			t.Error(err)
 		}
 
@@ -117,7 +117,7 @@ func TestComputeAPI(t *testing.T) {
 			Name:     "compute-" + getNormalizedNameFromEmail(testUser.Email),
 			DiskSize: 100,
 		}
-		if err := repo.ComputeInstanceCreate(ctx, instance); err != nil {
+		if err := repo.ComputeInstanceCreate(ctx, &instance); err != nil {
 			t.Error(err)
 		}
 

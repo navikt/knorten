@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/navikt/knorten/pkg/database"
 	"github.com/navikt/knorten/pkg/database/gensql"
-	"github.com/sirupsen/logrus"
 )
 
 func TestUserGSM(t *testing.T) {
@@ -38,15 +37,15 @@ func TestUserGSM(t *testing.T) {
 		err     error
 	}
 
-	operation := func(ctx context.Context, eventType database.EventType, manager gensql.UserGoogleSecretManager, userClient *Client) bool {
+	operation := func(ctx context.Context, eventType database.EventType, manager gensql.UserGoogleSecretManager, userClient *Client) error {
 		switch eventType {
 		case database.EventTypeCreateUserGSM:
-			return userClient.CreateUserGSM(ctx, manager, logrus.StandardLogger())
+			return userClient.CreateUserGSM(ctx, &manager)
 		case database.EventTypeDeleteUserGSM:
-			return userClient.DeleteUserGSM(ctx, manager.Owner, logrus.StandardLogger())
+			return userClient.DeleteUserGSM(ctx, manager.Owner)
 		}
 
-		return true
+		return nil
 	}
 
 	teamTests := []struct {
@@ -82,8 +81,9 @@ func TestUserGSM(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			client := NewClient(repo, "", "", "", true)
 
-			if retry := operation(context.Background(), tt.eventType, tt.args.manager, client); retry {
-				t.Errorf("%v failed, got retry return for %v", tt.eventType, tt.args.manager.Name)
+			err := operation(context.Background(), tt.eventType, tt.args.manager, client)
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
 			}
 
 			manager, err := repo.UserGSMGet(context.Background(), tt.args.manager.Owner)

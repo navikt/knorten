@@ -23,12 +23,12 @@ func newTeamMock() teamMock {
 	}
 }
 
-func (tm teamMock) Create(ctx context.Context, team gensql.Team) error {
+func (tm teamMock) Create(ctx context.Context, team *gensql.Team) error {
 	tm.EventCounts[database.EventTypeCreateTeam]++
 	return nil
 }
 
-func (tm teamMock) Update(ctx context.Context, team gensql.Team) error {
+func (tm teamMock) Update(ctx context.Context, team *gensql.Team) error {
 	tm.EventCounts[database.EventTypeUpdateTeam]++
 	return nil
 }

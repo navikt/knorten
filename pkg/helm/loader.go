@@ -26,13 +26,14 @@ type ClassicLoader struct {
 	ChartName      string
 	Version        string
 
+	fetcher  ChartFetcher
 	enricher Enricher
 }
 
 var _ ChartLoader = &ClassicLoader{}
 
 func (l *ClassicLoader) Load(ctx context.Context) (*chart.Chart, error) {
-	ch, err := FetchChart(l.RepositoryName, l.ChartName, l.Version)
+	ch, err := l.fetcher.Fetch(ctx, l.RepositoryName, l.ChartName, l.Version)
 	if err != nil {
 		return nil, fmt.Errorf("fetching chart: %w", err)
 	}
@@ -45,11 +46,12 @@ func (l *ClassicLoader) Load(ctx context.Context) (*chart.Chart, error) {
 	return ch, nil
 }
 
-func NewClassicLoader(repositoryName, chartName, version string, enricher Enricher) *ClassicLoader {
+func NewClassicLoader(repositoryName, chartName, version string, fetcher ChartFetcher, enricher Enricher) *ClassicLoader {
 	return &ClassicLoader{
 		RepositoryName: repositoryName,
 		ChartName:      chartName,
 		Version:        version,
+		fetcher:        fetcher,
 		enricher:       enricher,
 	}
 }

@@ -33,14 +33,23 @@ type EventData struct {
 
 type Client struct {
 	ops  Operations
+	cfg  *Config
 	repo *database.Repo
 }
 
-func NewClient(config *Config, repo *database.Repo) *Client {
-	return &Client{
-		ops:  NewHelm(config),
-		repo: repo,
+func NewClient(config *Config, repo *database.Repo) (*Client, error) {
+	h := NewHelm(config)
+
+	err := h.Update(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("updating helm repositories: %w", err)
 	}
+
+	return &Client{
+		ops:  h,
+		cfg:  config,
+		repo: repo,
+	}, nil
 }
 
 func (c *Client) InstallOrUpgrade(ctx context.Context, ev *EventData) error {
@@ -61,6 +70,7 @@ func (c *Client) InstallOrUpgrade(ctx context.Context, ev *EventData) error {
 		ev.ChartRepo,
 		ev.ChartName,
 		ev.ChartVersion,
+		c.ops,
 		NewChainEnricher(enrichers...),
 	)
 

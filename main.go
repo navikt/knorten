@@ -43,28 +43,21 @@ func main() {
 	fileParts, err := config.ProcessConfigPath(*configFilePath)
 	if err != nil {
 		log.WithError(err).Fatal("processing config path")
-
-		return
 	}
 
 	cfg, err := config.NewFileSystemLoader().Load(fileParts.FileName, fileParts.Path, "KNORTEN")
 	if err != nil {
 		log.WithError(err).Fatal("loading config")
-
-		return
 	}
 
 	err = cfg.Validate()
 	if err != nil {
 		log.WithError(err).Fatal("validating config")
-
-		return
 	}
 
 	dbClient, err := database.New(cfg.Postgres.ConnectionString(), cfg.DBEncKey, log.WithField("subsystem", "db"))
 	if err != nil {
 		log.WithError(err).Fatal("setting up database")
-		return
 	}
 
 	azureClient, err := auth.NewAzureClient(
@@ -76,22 +69,16 @@ func main() {
 	)
 	if err != nil {
 		log.WithError(err).Fatal("creating azure client")
-		return
 	}
 
 	if !cfg.DryRun {
 		imageUpdater := imageupdater.NewClient(dbClient, log.WithField("subsystem", "imageupdater"))
 		go imageUpdater.Run(imageUpdaterFrequency)
-
-		if err := helm.UpdateHelmRepositories(); err != nil {
-			log.WithError(err).Fatal("updating helm repositories")
-		}
 	}
 
 	c, err := k8s.NewClient(cfg.Kubernetes.Context, k8s.DefaultSchemeAdder())
 	if err != nil {
 		log.WithError(err).Fatal("creating k8s client")
-		return
 	}
 
 	if cfg.DryRun {
@@ -103,8 +90,6 @@ func main() {
 	iamService, err := iam.NewService(ctx)
 	if err != nil {
 		log.WithError(err).Fatal("creating iam service")
-
-		return
 	}
 
 	policyManager := gcpapi.NewServiceAccountPolicyManager(cfg.GCP.Project, iamService)
@@ -128,14 +113,19 @@ func main() {
 		out = os.Stdout
 	}
 
-	helmClient := helm.NewClient(&helm.Config{
+	helmConfig := &helm.Config{
 		Debug:            cfg.Debug,
 		DryRun:           cfg.DryRun,
 		Err:              errOut,
 		KubeContext:      cfg.Kubernetes.Context,
 		Out:              out,
 		RepositoryConfig: cfg.Helm.RepositoryConfig,
-	}, dbClient)
+	}
+
+	helmClient, err := helm.NewClient(helmConfig, dbClient)
+	if err != nil {
+		log.WithError(err).Fatal("creating helm client")
+	}
 
 	eventHandler, err := events.NewHandler(
 		ctx,

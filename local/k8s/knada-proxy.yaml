@@ -20,6 +20,8 @@ spec:
       labels:
         app: knaudit-proxy
     spec:
+      imagePullSecrets:
+        - name: gcp-auth
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000

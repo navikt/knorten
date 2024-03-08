@@ -123,8 +123,7 @@ gauth:
 KUBERNETES_VERSION ?= v1.28.3
 minikube:
 	@$(MINIKUBE) status >/dev/null 2>&1 && echo "Minikube is already running." || \
-		$(MINIKUBE) start --cpus 2 --memory 4096 --driver=docker --addons=gcp-auth,volumesnapshots --kubernetes-version=$(KUBERNETES_VERSION)
-	@$(MINIKUBE) addons enable gcp-auth --refresh
+		$(MINIKUBE) start --cpus 2 --memory 4096 --driver=docker --addons=volumesnapshots --kubernetes-version=$(KUBERNETES_VERSION)
 .PHONY: minikube
 
 minikube-destroy:
@@ -134,6 +133,7 @@ minikube-destroy:
 deps:
 	./scripts/deps.sh
 	./scripts/copy.sh
+	./scripts/manage_artifact_access.sh
 	docker-compose up -d db
 .PHONY: deps
 
@@ -141,7 +141,7 @@ check: | lint test
 .PHONY: check
 
 run: | minikube deps npm-install css env goose-up init local-online
-	echo "After you create a new team, you need to run:\n\nmake registry\n\nSo minikube can access the container registry using your credentials."
+	echo "You may need to run:\n\nmake registry\n\n. If you arent able to access the registry."
 .PHONY: run
 
 registry:

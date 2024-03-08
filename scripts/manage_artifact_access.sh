@@ -25,15 +25,19 @@ assign_role() {
 }
 
 delete_secret() {
-  kubectl --namespace="${namespace}" delete secret "${secret_name}" --ignore-not-found
+  kubectl --context=${kube_ctx} --namespace=kube-system delete secret "${secret_name}" --ignore-not-found
 }
 
 create_secret() {
-  kubectl --namespace="${namespace}" create secret docker-registry ${secret_name} \
+  kubectl --context=${kube_ctx} --namespace=kube-system create secret docker-registry ${secret_name} \
     --docker-server="${server}" \
     --docker-username="oauth2accesstoken" \
     --docker-password="$(gcloud auth print-access-token)" \
     --docker-email="${email}"
+}
+
+annotate_secret() {
+  kubectl --context=${kube_ctx} --namespace=kube-system annotate secret "${secret_name}" "replicator.v1.mittwald.de/replicate-to=*"
 }
 
 role_present=$(check_role)
@@ -51,3 +55,4 @@ fi
 echo "Ensuring the '${secret_name}' secret is up to date."
 delete_secret
 create_secret
+annotate_secret

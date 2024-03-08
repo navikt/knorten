@@ -2,7 +2,9 @@ GOPATH := $(shell go env GOPATH)
 GOBIN  ?= $(GOPATH)/bin # Default GOBIN if not set
 
 GCP_PROJECT_ID_PROD ?= knada-gcp
-GCP_PROJECT_ID_DEV ?= nada-dev-db2e
+GCP_PROJECT_ID_DEV  ?= nada-dev-db2e
+
+KUBECTL_CTX ?= gke_knada-gcp_europe-north1_knada-gke
 
 # A template function for installing binaries
 define install-binary
@@ -22,6 +24,8 @@ GOTEST               ?= $(shell command -v gotest || echo "$(GOBIN)/gotest")
 GOTEST_VERSION       := v0.0.6
 STATICCHECK          ?= $(shell command -v staticcheck || echo "$(GOBIN)/staticcheck")
 STATICCHECK_VERSION  := v0.4.6
+
+MINIKUBE := minikube
 
 $(GOOSE):
 	$(call install-binary,goose,github.com/pressly/goose/v3/cmd/goose@$(GOOSE_VERSION))
@@ -52,13 +56,13 @@ netpol:
 local-online:
 	@echo "Sourcing environment variables..."
 	set -a && source ./.env && set +a && \
-		HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" go run -race . --config=config-local-online.yaml
+		go run -race . --config=config-local-online.yaml
 .PHONY: local-online
 
 local:
 	@echo "Sourcing environment variables..."
 	set -a && source ./.env && set +a && \
-		HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" go run -race . --config=config-local.yaml
+		go run -race . --config=config-local.yaml
 .PHONY: local
 
 generate-sql: $(SQLC)
@@ -96,7 +100,7 @@ npm-clean:
 .PHONY: npm-clean
 
 test: $(GOTEST)
-	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" $(GOTEST) -v ./... -count=1
+	$(GOTEST) -v ./... -count=1
 .PHONY: test
 
 staticcheck: $(STATICCHECK)
@@ -112,42 +116,38 @@ update-configmap:
 			> k8s/configmap.yaml
 
 gauth:
-	@gcloud auth application-default print-access-token >/dev/null 2>&1 \
-		&& gcloud auth list --filter=status:ACTIVE --format="value(account)" | grep -q "@nav.no" \
-			&& echo "GCP ADC login not required." || gcloud auth login --update-adc
+	@gcloud auth login --update-adc --project $(GCP_PROJECT_ID_DEV)
 	@gcloud config set project $(GCP_PROJECT_ID_DEV)
 .PHONY: gauth
 
 KUBERNETES_VERSION ?= v1.28.3
-minikube: | gauth
-	@minikube status >/dev/null 2>&1 && echo "Minikube is already running." || \
-		minikube start --addons=gcp-auth,volumesnapshots --kubernetes-version=$(KUBERNETES_VERSION)
-	@minikube addons enable gcp-auth --refresh
+minikube:
+	@$(MINIKUBE) status >/dev/null 2>&1 && echo "Minikube is already running." || \
+		$(MINIKUBE) start --cpus 2 --memory 4096 --driver=docker --addons=gcp-auth,volumesnapshots --kubernetes-version=$(KUBERNETES_VERSION)
+	@$(MINIKUBE) addons enable gcp-auth --refresh
 .PHONY: minikube
 
 minikube-destroy:
-	@minikube delete
+	@$(MINIKUBE) delete --all --purge
 .PHONY: minikube-destroy
 
-deps: | minikube
-	kubectl apply --context minikube -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/main/config/crd/standard/gateway.networking.k8s.io_httproutes.yaml
-	kubectl apply --context minikube -f https://raw.githubusercontent.com/GoogleCloudPlatform/gke-networking-recipes/main/gateway-api/config/servicepolicies/crd/standard/healthcheckpolicy.yaml
-	HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" helm upgrade --install \
-		cnpg --namespace cnpg-system --create-namespace cnpg/cloudnative-pg
+deps:
+	./scripts/deps.sh
+	./scripts/copy.sh
 	docker-compose up -d db
 .PHONY: deps
-
-# These are our main targets
 
 check: | lint test
 .PHONY: check
 
-run: | deps npm-install css env goose-up init local-online
+run: | minikube deps npm-install css env goose-up init local-online
+	echo "After you create a new team, you need to run:\n\nmake registry\n\nSo minikube can access the container registry using your credentials."
 .PHONY: run
+
+registry:
+	./scripts/manage_artifact_access.sh
 
 clean: | minikube-destroy npm-clean
 	@rm .env || echo "No .env file found."
 	@docker-compose down --volumes
-	@gcloud auth revoke || echo "No active account found."
-	@gcloud auth application-default revoke --quiet || echo "No active token found."
 .PHONY: clean

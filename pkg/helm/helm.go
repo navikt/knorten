@@ -23,10 +23,6 @@ const (
 	// DefaultHelmDriver is set to secrets, which is the default
 	// for Helm 3: https://helm.sh/docs/topics/advanced/#storage-backends
 	DefaultHelmDriver = "secrets"
-	// DefaultHelmLockExt is the extension used to create a file lock
-	DefaultHelmLockExt = ".lock"
-	// DefaultHelmLockTimeout is the default timeout in seconds
-	DefaultHelmLockTimeout = 120 * time.Second
 )
 
 type ErrRollback struct {
@@ -335,7 +331,7 @@ func (h *Helm) Fetch(_ context.Context, repo, chartName, version string) (*chart
 }
 
 func (h *Helm) Update(_ context.Context) error {
-	restoreFn, err := EstablishEnv(h.config.ToHelmEnvs())
+	restoreFn, err := EstablishEnv(h.config.ToHelmEnvs(), "PATH")
 	if err != nil {
 		return fmt.Errorf("establishing helm env: %w", err)
 	}
@@ -416,7 +412,16 @@ func NewStreamRenderer(out io.Writer) *StreamRender {
 // EstablishEnv provides functionality for setting a safe environment,
 // this is required, because helm for some reason, loves fetching
 // everything from environment variables
-func EstablishEnv(envs map[string]string) (RestoreEnvFn, error) {
+func EstablishEnv(envs map[string]string, keepEnvs ...string) (RestoreEnvFn, error) {
+	for _, env := range keepEnvs {
+		val, ok := os.LookupEnv(env)
+		if ok {
+			if _, hasEnv := envs[env]; !hasEnv {
+				envs[env] = val
+			}
+		}
+	}
+
 	originalEnvVars := os.Environ()
 	os.Clearenv()
 

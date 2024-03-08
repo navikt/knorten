@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"io"
 	"log"
 	"os"
 	"path"
@@ -307,7 +308,13 @@ func prepareChartTests(ctx context.Context) (gensql.Team, error) {
 		Users: []string{"dummy@nav.no", "user.one@nav.no"},
 	}
 
-	if err := helm.UpdateHelmRepositories(); err != nil {
+	h := helm.NewHelm(&helm.Config{
+		RepositoryConfig: ".helm-repositories.yaml",
+		Out:              io.Discard,
+		Err:              io.Discard,
+	})
+
+	if err := h.Update(ctx); err != nil {
 		return gensql.Team{}, err
 	}
 

@@ -64,9 +64,14 @@ func (c *client) updateAirflowImage(ctx context.Context, imageNameKey, imageTagK
 		return false, fmt.Errorf("getting image tag: %w", err)
 	}
 
+	// Skip updating the image if it's the apache/airflow image
+	if imageName.Value == "apache/airflow" {
+		return false, nil
+	}
+
 	garImage, err := getLatestImageInGAR(imageName.Value, "")
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("getting latest image in GAR: %w, image: %s", err, imageName.Value)
 	}
 
 	if imageTag.Value != garImage.Tag {
@@ -86,16 +91,18 @@ func (c *client) updateGlobalEnvs(ctx context.Context) (bool, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, nil
 		}
-		return false, err
+
+		return false, fmt.Errorf("getting global envs: %w", err)
 	}
 
 	type globalEnv struct {
 		Name  string `json:"name"`
 		Value string `json:"value"`
 	}
-	globalEnvs := []*globalEnv{}
+
+	var globalEnvs []*globalEnv
 	if err := json.Unmarshal([]byte(globalEnvsSQL.Value), &globalEnvs); err != nil {
-		return false, err
+		return false, fmt.Errorf("unmarshalling global envs: %w", err)
 	}
 
 	globalEnvsUpdated := false
@@ -108,17 +115,17 @@ func (c *client) updateGlobalEnvs(ctx context.Context) (bool, error) {
 
 			latestImage, err := getLatestImageInGAR(currentImageParts[0], "")
 			if err != nil {
-				return false, err
+				return false, fmt.Errorf("getting latest image in GAR: %w, image: %s", err, currentImageParts[0])
 			}
 
 			if currentImageParts[1] != latestImage.Tag {
 				env.Value = fmt.Sprintf("%v:%v", currentImageParts[0], latestImage.Tag)
 				globalEnvsMarshalled, err := json.Marshal(globalEnvs)
 				if err != nil {
-					return false, err
+					return false, fmt.Errorf("marshalling global envs: %w", err)
 				}
 				if err := c.repo.GlobalChartValueInsert(ctx, airflowEnvKey, string(globalEnvsMarshalled), false, gensql.ChartTypeAirflow); err != nil {
-					return false, err
+					return false, fmt.Errorf("updating global envs: %w", err)
 				}
 				globalEnvsUpdated = true
 			}

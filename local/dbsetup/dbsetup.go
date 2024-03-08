@@ -77,6 +77,7 @@ func SetupDB(ctx context.Context, dbURL, dbname string) error {
 		{"airflow", "registry.secretName", "gcp-auth"},
 		{"airflow", "data.metadataSecretName", "airflow-db"},
 		{"jupyterhub", "singleuser.profileList", "[]"},
+		{"airflow", "images.gitSync.tag", "2024-03-01-9d7687c"},
 	}
 	_, err = db.CopyFrom(ctx,
 		pgx.Identifier{"chart_global_values"},

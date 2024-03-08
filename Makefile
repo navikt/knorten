@@ -1,3 +1,5 @@
+SHELL := bash
+
 GOPATH := $(shell go env GOPATH)
 GOBIN  ?= $(GOPATH)/bin # Default GOBIN if not set
 

@@ -6,7 +6,11 @@ import (
 	"fmt"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/cli"
+	"helm.sh/helm/v3/pkg/getter"
+	"helm.sh/helm/v3/pkg/registry"
+	"helm.sh/helm/v3/pkg/repo"
 	"io"
 	"os"
 	"sigs.k8s.io/yaml"
@@ -100,10 +104,20 @@ type ChartLoader interface {
 	Load(ctx context.Context) (*chart.Chart, error)
 }
 
+type ChartFetcher interface {
+	Fetch(ctx context.Context, repo, chartName, version string) (*chart.Chart, error)
+}
+
+type ChartUpdater interface {
+	Update(ctx context.Context) error
+}
+
 type Operations interface {
 	Applier
 	Deleter
 	Rollbacker
+	ChartFetcher
+	ChartUpdater
 }
 
 type Helm struct {
@@ -271,6 +285,87 @@ func (h *Helm) Rollback(_ context.Context, opts *RollbackOpts) error {
 	rollbackClient.Version = version
 	if err := rollbackClient.Run(opts.ReleaseName); err != nil {
 		return fmt.Errorf("rolling back release: %w", err)
+	}
+
+	return nil
+}
+
+func (h *Helm) Fetch(_ context.Context, repo, chartName, version string) (*chart.Chart, error) {
+	restoreFn, err := EstablishEnv(h.config.ToHelmEnvs())
+	if err != nil {
+		return nil, fmt.Errorf("establishing helm env: %w", err)
+	}
+
+	defer func() {
+		_ = restoreFn()
+	}()
+
+	settings := cli.New()
+	chartRef := fmt.Sprintf("%v/%v", repo, chartName)
+	destDir := "/tmp"
+
+	registryClient, err := registry.NewClient(
+		registry.ClientOptDebug(settings.Debug),
+		registry.ClientOptEnableCache(true),
+		registry.ClientOptWriter(os.Stderr),
+		registry.ClientOptCredentialsFile(settings.RegistryConfig),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("creating registry client: %w", err)
+	}
+
+	actionConfig := new(action.Configuration)
+	actionConfig.RegistryClient = registryClient
+	client := action.NewPullWithOpts(action.WithConfig(actionConfig))
+	client.Settings = settings
+	client.DestDir = destDir
+	client.Version = version
+
+	_, err = client.Run(chartRef)
+	if err != nil {
+		return nil, fmt.Errorf("running helm pull: %w", err)
+	}
+
+	ch, err := loader.Load(fmt.Sprintf("%v/%v-%v.tgz", destDir, chartName, version))
+	if err != nil {
+		return nil, fmt.Errorf("loading chart: %w", err)
+	}
+
+	return ch, nil
+}
+
+func (h *Helm) Update(_ context.Context) error {
+	restoreFn, err := EstablishEnv(h.config.ToHelmEnvs())
+	if err != nil {
+		return fmt.Errorf("establishing helm env: %w", err)
+	}
+
+	defer func() {
+		_ = restoreFn()
+	}()
+
+	settings := cli.New()
+	settings.Debug = h.config.Debug
+	repoFile := settings.RepositoryConfig
+
+	f, err := repo.LoadFile(repoFile)
+	if err != nil {
+		return err
+	}
+
+	var repos []*repo.ChartRepository
+	for _, cfg := range f.Repositories {
+		r, err := repo.NewChartRepository(cfg, getter.All(settings))
+		if err != nil {
+			return err
+		}
+		repos = append(repos, r)
+	}
+
+	for _, re := range repos {
+		if _, err := re.DownloadIndexFile(); err != nil {
+			return err
+		}
 	}
 
 	return nil

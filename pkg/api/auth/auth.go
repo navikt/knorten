@@ -218,7 +218,9 @@ func (a *Azure) ConvertEmailsToIdents(emails []string) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		idents = append(idents, ident)
+		if ident != "" {
+			idents = append(idents, ident)
+		}
 	}
 	return idents, nil
 }
@@ -264,7 +266,7 @@ func (a *Azure) identForEmail(email string) (string, error) {
 	}
 
 	if identRes.Ident == "" {
-		return "", fmt.Errorf("unable to get user ident for email %v", email)
+		a.log.Infof("unable to get user ident for email %v", email)
 	}
 
 	return strings.ToLower(identRes.Ident), nil

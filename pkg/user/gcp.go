@@ -77,6 +77,7 @@ func (c Client) resizeComputeInstanceDiskGCP(ctx context.Context, instanceName s
 
 	cmd := exec.CommandContext(ctx,
 		"gcloud",
+		"--quiet",
 		"compute",
 		"disks",
 		"resize",

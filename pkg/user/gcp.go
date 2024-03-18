@@ -81,6 +81,7 @@ func (c Client) resizeComputeInstanceDiskGCP(ctx context.Context, instanceName s
 		"disks",
 		"resize",
 		instanceName,
+		fmt.Sprintf("--project=%v", c.gcpProject),
 		fmt.Sprintf("--zone=%v", c.gcpZone),
 		fmt.Sprintf("--size=%vGB", diskSize),
 	)

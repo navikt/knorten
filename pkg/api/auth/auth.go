@@ -266,7 +266,7 @@ func (a *Azure) identForEmail(email string) (string, error) {
 	}
 
 	if identRes.Ident == "" {
-		a.log.Infof("unable to get user ident for email %v", email)
+		a.log.Errorf("unable to get user ident for email %v", email)
 	}
 
 	return strings.ToLower(identRes.Ident), nil

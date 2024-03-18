@@ -131,6 +131,7 @@ func (c Client) createOrUpdateCloudSQLProxyDeployment(ctx context.Context, name,
 	allowPrivilegeEscalation := false
 	userID := int64(65532)
 	groupID := int64(65532)
+	numReplicas := int32(2)
 
 	deploySpec := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -138,6 +139,7 @@ func (c Client) createOrUpdateCloudSQLProxyDeployment(ctx context.Context, name,
 			Namespace: namespace,
 		},
 		Spec: appsv1.DeploymentSpec{
+			Replicas: &numReplicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"app": "cloudsql-proxy",
@@ -170,11 +172,11 @@ func (c Client) createOrUpdateCloudSQLProxyDeployment(ctx context.Context, name,
 							},
 							Resources: v1.ResourceRequirements{
 								Requests: v1.ResourceList{
-									v1.ResourceCPU:    resource.MustParse("20m"),
-									v1.ResourceMemory: resource.MustParse("32Mi"),
+									v1.ResourceCPU:              resource.MustParse("20m"),
+									v1.ResourceMemory:           resource.MustParse("32Mi"),
+									v1.ResourceEphemeralStorage: resource.MustParse("32Mi"),
 								},
 								Limits: v1.ResourceList{
-									v1.ResourceCPU:    resource.MustParse("100m"),
 									v1.ResourceMemory: resource.MustParse("128Mi"),
 								},
 							},

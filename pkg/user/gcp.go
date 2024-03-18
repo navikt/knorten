@@ -16,6 +16,8 @@ var gcpIAMPolicyBindingsRoles = []string{
 	"roles/monitoring.viewer",
 }
 
+const opsServiceAccountEmail = "knada-vm-ops-agent@knada-gcp.iam.gserviceaccount.com"
+
 func (c Client) createComputeInstanceInGCP(ctx context.Context, instanceName, email string) error {
 	if c.dryRun {
 		return nil
@@ -44,7 +46,7 @@ func (c Client) createComputeInstanceInGCP(ctx context.Context, instanceName, em
 		fmt.Sprintf("--labels=goog-ops-agent-policy=v2-x86-template-1-2-0,created-by=knorten,user=%v", normalizeEmailToName(email)),
 		"--tags=knadavm",
 		"--metadata=block-project-ssh-keys=TRUE,enable-osconfig=TRUE",
-		"--service-account=knada-vm-ops-agent@knada-gcp.iam.gserviceaccount.com",
+		"--service-account", opsServiceAccountEmail,
 		"--no-scopes",
 	)
 
@@ -162,6 +164,10 @@ func (c Client) createIAMPolicyBindingsInGCP(ctx context.Context, instanceName, 
 		return err
 	}
 
+	if err := c.addOpsServiceAccountUserBinding(ctx, email); err != nil {
+		return err
+	}
+
 	for _, role := range gcpIAMPolicyBindingsRoles {
 		if err := c.addProjectIAMPolicyBindingInGCP(ctx, instanceName, email, role); err != nil {
 			return err
@@ -174,6 +180,10 @@ func (c Client) createIAMPolicyBindingsInGCP(ctx context.Context, instanceName, 
 func (c Client) deleteIAMPolicyBindingsFromGCP(ctx context.Context, instanceName, email string) error {
 	if c.dryRun {
 		return nil
+	}
+
+	if err := c.removeOpsServiceAccountUserBinding(ctx, email); err != nil {
+		return err
 	}
 
 	for _, role := range gcpIAMPolicyBindingsRoles {
@@ -197,6 +207,54 @@ func (c Client) addComputeInstanceOwnerBindingInGCP(ctx context.Context, instanc
 		"--project", c.gcpProject,
 		"--role", "roles/owner",
 		fmt.Sprintf("--member=user:%v", user),
+	)
+
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	}
+
+	return nil
+}
+
+func (c Client) addOpsServiceAccountUserBinding(ctx context.Context, email string) error {
+	cmd := exec.CommandContext(ctx,
+		"gcloud",
+		"--quiet",
+		"iam",
+		"service-accounts",
+		"add-iam-policy-binding",
+		opsServiceAccountEmail,
+		"--project", c.gcpProject,
+		"--role", "roles/iam.serviceAccountUser",
+		fmt.Sprintf("--member=user:%v", email),
+	)
+
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	}
+
+	return nil
+}
+
+func (c Client) removeOpsServiceAccountUserBinding(ctx context.Context, email string) error {
+	cmd := exec.CommandContext(ctx,
+		"gcloud",
+		"--quiet",
+		"iam",
+		"service-accounts",
+		"remove-iam-policy-binding",
+		opsServiceAccountEmail,
+		"--project", c.gcpProject,
+		"--role", "roles/iam.serviceAccountUser",
+		fmt.Sprintf("--member=user:%v", email),
 	)
 
 	stdOut := &bytes.Buffer{}

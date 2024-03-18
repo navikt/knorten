@@ -48,9 +48,9 @@ spec:
               subPath: config.yaml
           resources:
             limits:
-              memory: 1Gi
+              memory: 1.5Gi
             requests:
-              cpu: 100m
+              cpu: 200m
               memory: 128Mi
           securityContext:
             runAsUser: 1001

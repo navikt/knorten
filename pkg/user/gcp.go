@@ -71,7 +71,7 @@ func (c Client) resizeComputeInstanceDiskGCP(ctx context.Context, instanceName s
 		return err
 	}
 
-	if exists {
+	if !exists {
 		return nil
 	}
 

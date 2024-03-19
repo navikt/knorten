@@ -22,13 +22,18 @@
             apiKey = "f9fef418c20574ded7e0ed89687b0b28";
         }
 
-        amplitude.init(apiKey, "", {
-            apiEndpoint: "amplitude.nav.no/collect",
+        amplitude.init(apiKey, {
+            serverUrl: "https://amplitude.nav.no/collect",
             serverZone: "EU",
-            saveEvents: false,
-            includeUtm: true,
             batchEvents: false,
             includeReferrer: true,
+            defaultTracking: {
+                attribution: false,
+                pageViews: true,
+                sessions: true,
+                formInteractions: true,
+                fileDownloads: true,
+                },
             });
     </script>
     <link rel="stylesheet" href="/assets/css/main.css"/>

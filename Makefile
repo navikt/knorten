@@ -26,6 +26,8 @@ GOTEST               ?= $(shell command -v gotest || echo "$(GOBIN)/gotest")
 GOTEST_VERSION       := v0.0.6
 STATICCHECK          ?= $(shell command -v staticcheck || echo "$(GOBIN)/staticcheck")
 STATICCHECK_VERSION  := v0.4.6
+GOVULNCHECK		  ?= $(shell command -v govulncheck || echo "$(GOBIN)/govulncheck")
+GOVULNCHECK_VERSION := v1.0.4
 
 MINIKUBE            ?= minikube
 MINIKUBE_START_ARGS ?=
@@ -44,6 +46,9 @@ $(GOTEST):
 
 $(STATICCHECK):
 	$(call install-binary,staticcheck,honnef.co/go/tools/cmd/staticcheck@$(STATICCHECK_VERSION))
+
+$(GOVULNCHECK):
+	$(call install-binary,govulncheck,golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION))
 
 env:
 	# We need to fetch the secrets from GCP Secret Manager in PROD environment
@@ -109,6 +114,9 @@ test: $(GOTEST)
 staticcheck: $(STATICCHECK)
 	$(STATICCHECK) ./...
 
+vulncheck: $(GOVULNCHECK)
+	$(GOVULNCHECK) ./...
+
 lint: $(GOLANGCILINT)
 	$(GOLANGCILINT) run
 .PHONY: lint
@@ -142,6 +150,9 @@ deps:
 
 check: | lint test
 .PHONY: check
+
+full-check: | check staticcheck vulncheck
+.PHONY: full-check
 
 run: | minikube deps npm-install css env goose-up init local-online
 	echo "You may need to run:\n\nmake registry\n\n. If you arent able to access the registry."

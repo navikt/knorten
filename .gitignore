@@ -28,6 +28,8 @@ charts/*
 
 hack
 
+/Library
+
 # npm
 node_modules
 !package-lock.json

@@ -13,7 +13,7 @@ repository="knada-north"
 location="europe-north1"
 secret_name="gcp-auth"
 kube_ctx="minikube"
-prod_ctx="gke_knada-gcp_europe-north1_knada-gke"
+prod_ctx=${KUBECTL_PROD_CTX:-"gke_knada-gcp_europe-north1_knada-gke"}
 
 find_namespace() {
   local namespaces

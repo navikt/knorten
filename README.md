@@ -29,6 +29,9 @@ make run
 
 # Velg en annen k8s context for å kopiere ut secrets og configmaps
 KUBECTL_PROD_CTX=my-prod-name make run
+
+# Sleng på ekstra argumenter til minikube start
+MINIKUBE_START_ARGS="--cache-images=false" make run
 ```
 
 For å fjerne **alt** igjen:

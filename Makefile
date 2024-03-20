@@ -27,7 +27,8 @@ GOTEST_VERSION       := v0.0.6
 STATICCHECK          ?= $(shell command -v staticcheck || echo "$(GOBIN)/staticcheck")
 STATICCHECK_VERSION  := v0.4.6
 
-MINIKUBE := minikube
+MINIKUBE            ?= minikube
+MINIKUBE_START_ARGS ?=
 
 $(GOOSE):
 	$(call install-binary,goose,github.com/pressly/goose/v3/cmd/goose@$(GOOSE_VERSION))
@@ -125,7 +126,7 @@ gauth:
 KUBERNETES_VERSION ?= v1.28.3
 minikube:
 	@$(MINIKUBE) status >/dev/null 2>&1 && echo "Minikube is already running." || \
-		$(MINIKUBE) start --cpus 2 --memory 4096 --driver=docker --addons=volumesnapshots --kubernetes-version=$(KUBERNETES_VERSION)
+		$(MINIKUBE) start --cpus 2 --memory 4096 --driver=docker --addons=volumesnapshots --kubernetes-version=$(KUBERNETES_VERSION) $(MINIKUBE_START_ARGS)
 .PHONY: minikube
 
 minikube-destroy:

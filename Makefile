@@ -6,7 +6,7 @@ GOBIN  ?= $(GOPATH)/bin # Default GOBIN if not set
 GCP_PROJECT_ID_PROD ?= knada-gcp
 GCP_PROJECT_ID_DEV  ?= nada-dev-db2e
 
-KUBECTL_CTX ?= gke_knada-gcp_europe-north1_knada-gke
+KUBECTL_PROD_CTX ?= gke_knada-gcp_europe-north1_knada-gke
 
 # A template function for installing binaries
 define install-binary
@@ -133,8 +133,8 @@ minikube-destroy:
 .PHONY: minikube-destroy
 
 deps:
-	./scripts/deps.sh
-	./scripts/copy.sh
+	./scripts/configure_minikube.sh
+	./scripts/copy_from_prod_k8s.sh
 	./scripts/manage_artifact_access.sh
 	docker-compose up -d db
 .PHONY: deps

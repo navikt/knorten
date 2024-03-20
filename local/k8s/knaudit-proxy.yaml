@@ -29,7 +29,7 @@ spec:
         fsGroup: 2000
       containers:
         - name: knaudit-proxy
-          image: europe-north1-docker.pkg.dev/knada-gcp/knada-north/knaudit-proxy:f540604
+          image: europe-north1-docker.pkg.dev/knada-gcp/knada-north/knaudit-proxy:5d26af0
           command:
             - "/app/knaudit-proxy"
           args: ["-backend-type", "stdout"]

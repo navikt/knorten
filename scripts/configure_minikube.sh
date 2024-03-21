@@ -20,4 +20,4 @@ for resource in "${resources[@]}"; do
 done
 
 HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" helm repo update
-HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" helm --kube-context "${kube_ctx}" upgrade --install cnpg --namespace cnpg-system --create-namespace cnpg/cloudnative-pg
+HELM_REPOSITORY_CONFIG="./.helm-repositories.yaml" helm --kube-context "${kube_ctx}" upgrade --install cnpg --namespace cnpg-system --set config.data.INHERITED_LABELS=app --create-namespace cnpg/cloudnative-pg

@@ -69,6 +69,17 @@ func TestNew(t *testing.T) {
 				cnpg.WithRequests("1000m", "1Gi"),
 			),
 		},
+		{
+			name: "cluster-with-app-label",
+			desc: "Create a new cluster with app label",
+			cluster: cnpg.NewCluster(
+				"test-cluster",
+				"test-namespace",
+				"test-database",
+				"test-owner",
+				cnpg.WithAppLabel("test-app"),
+			),
+		},
 	}
 
 	for _, tc := range testCases {

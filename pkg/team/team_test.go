@@ -4,11 +4,18 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path"
 	"runtime"
 	"testing"
+
+	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
+	"github.com/navikt/knorten/pkg/k8s"
+
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	gwapiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/navikt/knorten/local/dbsetup"
@@ -57,24 +64,29 @@ func TestTeam(t *testing.T) {
 	})
 
 	type args struct {
-		team gensql.Team
+		team *gensql.Team
 	}
 	type want struct {
 		team gensql.TeamBySlugGetRow
 		err  error
 	}
 
-	operation := func(ctx context.Context, eventType database.EventType, team gensql.Team, teamClient *Client) bool {
+	operation := func(ctx context.Context, eventType database.EventType, team *gensql.Team, teamClient *Client) error {
 		switch eventType {
 		case database.EventTypeCreateTeam:
-			return teamClient.Create(ctx, team, logrus.NewEntry(logrus.StandardLogger()))
+			err := teamClient.Create(ctx, team)
+			if errors.Is(err, ErrTeamExists) {
+				return nil
+			}
+
+			return err
 		case database.EventTypeUpdateTeam:
-			return teamClient.Update(ctx, team, logrus.NewEntry(logrus.StandardLogger()))
+			return teamClient.Update(ctx, team)
 		case database.EventTypeDeleteTeam:
-			return teamClient.Delete(ctx, team.ID, logrus.NewEntry(logrus.StandardLogger()))
+			return teamClient.Delete(ctx, team.ID)
 		}
 
-		return true
+		return fmt.Errorf("unknown event type %v", eventType)
 	}
 
 	teamTests := []struct {
@@ -87,7 +99,7 @@ func TestTeam(t *testing.T) {
 			name:      "Create team",
 			eventType: database.EventTypeCreateTeam,
 			args: args{
-				team: gensql.Team{
+				team: &gensql.Team{
 					ID:    "test-team-1234",
 					Slug:  "test-team",
 					Users: []string{"dummy@nav.no", "user.one@nav.on", "user.two@nav.on"},
@@ -106,7 +118,7 @@ func TestTeam(t *testing.T) {
 			name:      "Create team slug already exists",
 			eventType: database.EventTypeCreateTeam,
 			args: args{
-				team: gensql.Team{
+				team: &gensql.Team{
 					ID:    "already-exists-1234",
 					Slug:  "test-team",
 					Users: []string{"dummy@nav.no"},
@@ -125,7 +137,7 @@ func TestTeam(t *testing.T) {
 			name:      "Update team",
 			eventType: database.EventTypeUpdateTeam,
 			args: args{
-				team: gensql.Team{
+				team: &gensql.Team{
 					ID:    "test-team-1234",
 					Slug:  "test-team",
 					Users: []string{"dummy@nav.no", "new.user@nav.no"},
@@ -144,7 +156,7 @@ func TestTeam(t *testing.T) {
 			name:      "Delete team",
 			eventType: database.EventTypeDeleteTeam,
 			args: args{
-				team: gensql.Team{
+				team: &gensql.Team{
 					ID: "test-team-1234",
 				},
 			},
@@ -157,17 +169,34 @@ func TestTeam(t *testing.T) {
 
 	for _, tt := range teamTests {
 		t.Run(tt.name, func(t *testing.T) {
-			teamClient, err := NewClient(repo, "", "", true, false)
+			// FIXME: Can add some logging of requests to this fake client thingy
+			c := fake.NewFakeClient()
+			scheme := c.Scheme()
+
+			// Probably don't need these here as we are using core/v1 schemas
+			if err := cnpgv1.AddToScheme(scheme); err != nil {
+				t.Error(err)
+			}
+
+			if err := gwapiv1.AddToScheme(scheme); err != nil {
+				t.Error(err)
+			}
+
+			teamClient, err := NewClient(repo, k8s.NewManager(&k8s.Client{
+				Client:     c,
+				RESTConfig: nil,
+			}), "", "", true)
 			if err != nil {
 				t.Error(err)
 			}
 
-			if retry := operation(context.Background(), tt.eventType, tt.args.team, teamClient); retry {
-				t.Errorf("%v failed, got retry return for team %v", tt.eventType, tt.args.team.ID)
+			err = operation(context.Background(), tt.eventType, tt.args.team, teamClient)
+			if err != nil {
+				t.Errorf("%v failed, got err return for team %v", tt.eventType, tt.args.team.ID)
 			}
 
 			team, err := repo.TeamBySlugGet(context.Background(), tt.args.team.Slug)
-			if err != tt.want.err {
+			if !errors.Is(err, tt.want.err) {
 				t.Error(err)
 			}
 

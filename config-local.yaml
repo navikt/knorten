@@ -32,6 +32,7 @@ cookies:
         secure: true
         http_only: true
 helm:
+    repository_config: ./.helm-repositories.yaml
     airflow_chart_version: 1.11.0
     jupyter_chart_version: 3.2.1
 server:
@@ -44,9 +45,12 @@ postgres:
     password: postgres
     database_name: knorten
     ssl_mode: disable
+kubernetes:
+    context: minikube
 db_enc_key: jegersekstentegn
 admin_group: nada@nav.no
 session_key: online-session
 login_page: http://localhost:8080/
 dry_run: true
+debug: false
 in_cluster: false

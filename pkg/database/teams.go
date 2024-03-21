@@ -10,7 +10,7 @@ import (
 	"github.com/navikt/knorten/pkg/reflect"
 )
 
-func (r *Repo) TeamCreate(ctx context.Context, team gensql.Team) error {
+func (r *Repo) TeamCreate(ctx context.Context, team *gensql.Team) error {
 	return r.querier.TeamCreate(ctx, gensql.TeamCreateParams{
 		ID:    team.ID,
 		Users: stringSliceToLower(team.Users),
@@ -18,7 +18,7 @@ func (r *Repo) TeamCreate(ctx context.Context, team gensql.Team) error {
 	})
 }
 
-func (r *Repo) TeamUpdate(ctx context.Context, team gensql.Team) error {
+func (r *Repo) TeamUpdate(ctx context.Context, team *gensql.Team) error {
 	return r.querier.TeamUpdate(ctx, gensql.TeamUpdateParams{
 		ID:    team.ID,
 		Users: stringSliceToLower(team.Users),

@@ -4,12 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/navikt/knorten/pkg/database"
 	"github.com/navikt/knorten/pkg/database/gensql"
-	"github.com/sirupsen/logrus"
 )
 
 func TestCompute(t *testing.T) {
@@ -35,15 +35,15 @@ func TestCompute(t *testing.T) {
 		err      error
 	}
 
-	operation := func(ctx context.Context, eventType database.EventType, instance gensql.ComputeInstance, client *Client) bool {
+	operation := func(ctx context.Context, eventType database.EventType, instance gensql.ComputeInstance, client *Client) error {
 		switch eventType {
 		case database.EventTypeCreateCompute:
-			return client.CreateComputeInstance(ctx, instance, logrus.NewEntry(logrus.StandardLogger()))
+			return client.CreateComputeInstance(ctx, &instance)
 		case database.EventTypeDeleteCompute:
-			return client.DeleteComputeInstance(ctx, instance.Owner, logrus.NewEntry(logrus.StandardLogger()))
+			return client.DeleteComputeInstance(ctx, instance.Owner)
 		}
 
-		return true
+		return nil
 	}
 
 	teamTests := []struct {
@@ -79,8 +79,9 @@ func TestCompute(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			client := NewClient(repo, "", "", "", true)
 
-			if retry := operation(context.Background(), tt.eventType, tt.args.instance, client); retry {
-				t.Errorf("%v failed, got retry return for instance %v", tt.eventType, tt.args.instance.Name)
+			err := operation(context.Background(), tt.eventType, tt.args.instance, client)
+			if err != nil {
+				t.Error(fmt.Errorf("got unexpected error: %w", err))
 			}
 
 			instance, err := repo.ComputeInstanceGet(context.Background(), tt.args.instance.Owner)

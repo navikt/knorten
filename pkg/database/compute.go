@@ -6,8 +6,12 @@ import (
 	"github.com/navikt/knorten/pkg/database/gensql"
 )
 
-func (r *Repo) ComputeInstanceCreate(ctx context.Context, instance gensql.ComputeInstance) error {
-	return r.querier.ComputeInstanceCreate(ctx, gensql.ComputeInstanceCreateParams(instance))
+func (r *Repo) ComputeInstanceCreate(ctx context.Context, instance *gensql.ComputeInstance) error {
+	return r.querier.ComputeInstanceCreate(ctx, gensql.ComputeInstanceCreateParams{
+		Owner:    instance.Owner,
+		Name:     instance.Name,
+		DiskSize: instance.DiskSize,
+	})
 }
 
 func (r *Repo) ComputeInstanceUpdate(ctx context.Context, owner string, diskSize int32) error {

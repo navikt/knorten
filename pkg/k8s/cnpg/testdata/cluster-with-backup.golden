@@ -1,0 +1,36 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  creationTimestamp: null
+  labels:
+    managed-by: knorten.knada.io
+  name: test-cluster
+  namespace: test-namespace
+spec:
+  affinity: {}
+  backup:
+    retentionPolicy: 7d
+    volumeSnapshot:
+      className: cnpg-vps
+      onlineConfiguration: {}
+  bootstrap:
+    initdb:
+      database: test-database
+      owner: test-owner
+  instances: 2
+  postgresql:
+    syncReplicaElectionConstraint:
+      enabled: false
+  primaryUpdateStrategy: unsupervised
+  resources:
+    requests:
+      cpu: 300m
+      memory: 512Mi
+  storage:
+    size: 1Gi
+status:
+  certificates: {}
+  configMapResourceVersion: {}
+  managedRolesStatus: {}
+  secretsResourceVersion: {}
+  topology: {}

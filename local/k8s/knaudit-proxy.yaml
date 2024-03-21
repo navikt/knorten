@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: knada-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: knaudit-proxy
+  namespace: knada-system
+  labels:
+    app: knaudit-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: knaudit-proxy
+  template:
+    metadata:
+      labels:
+        app: knaudit-proxy
+    spec:
+      imagePullSecrets:
+        - name: gcp-auth
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
+      containers:
+        - name: knaudit-proxy
+          image: europe-north1-docker.pkg.dev/knada-gcp/knada-north/knaudit-proxy:5d26af0
+          command:
+            - "/app/knaudit-proxy"
+          args: ["-backend-type", "stdout"]
+          ports:
+            - containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+          resources:
+            limits:
+              memory: 32Mi
+            requests:
+              cpu: 10m
+              memory: 16Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: knaudit-proxy
+  namespace: knada-system
+spec:
+  type: ClusterIP
+  ports:
+    - name: knaudit-proxy
+      port: 80
+      targetPort: 8080
+  selector:
+    app: knaudit-proxy

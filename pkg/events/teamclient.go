@@ -5,13 +5,12 @@ import (
 
 	"github.com/navikt/knorten/pkg/database"
 	"github.com/navikt/knorten/pkg/database/gensql"
-	"github.com/navikt/knorten/pkg/logger"
 )
 
 type teamClient interface {
-	Create(ctx context.Context, team gensql.Team, log logger.Logger) bool
-	Update(ctx context.Context, team gensql.Team, log logger.Logger) bool
-	Delete(ctx context.Context, teamID string, log logger.Logger) bool
+	Create(ctx context.Context, team *gensql.Team) error
+	Update(ctx context.Context, team *gensql.Team) error
+	Delete(ctx context.Context, teamID string) error
 }
 
 type teamMock struct {
@@ -24,17 +23,17 @@ func newTeamMock() teamMock {
 	}
 }
 
-func (tm teamMock) Create(ctx context.Context, team gensql.Team, log logger.Logger) bool {
+func (tm teamMock) Create(ctx context.Context, team *gensql.Team) error {
 	tm.EventCounts[database.EventTypeCreateTeam]++
-	return false
+	return nil
 }
 
-func (tm teamMock) Update(ctx context.Context, team gensql.Team, log logger.Logger) bool {
+func (tm teamMock) Update(ctx context.Context, team *gensql.Team) error {
 	tm.EventCounts[database.EventTypeUpdateTeam]++
-	return false
+	return nil
 }
 
-func (tm teamMock) Delete(ctx context.Context, teamID string, log logger.Logger) bool {
+func (tm teamMock) Delete(ctx context.Context, teamID string) error {
 	tm.EventCounts[database.EventTypeDeleteTeam]++
-	return false
+	return nil
 }

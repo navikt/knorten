@@ -4,8 +4,15 @@ import (
 	"context"
 	"flag"
 	"html/template"
+	"io"
 	"net"
+	"os"
 	"time"
+
+	"github.com/navikt/knorten/pkg/gcpapi"
+	"github.com/navikt/knorten/pkg/gcpapi/mock"
+	"github.com/navikt/knorten/pkg/k8s"
+	"google.golang.org/api/iam/v1"
 
 	"github.com/gin-gonic/gin"
 	"github.com/navikt/knorten/pkg/api"
@@ -36,28 +43,21 @@ func main() {
 	fileParts, err := config.ProcessConfigPath(*configFilePath)
 	if err != nil {
 		log.WithError(err).Fatal("processing config path")
-
-		return
 	}
 
 	cfg, err := config.NewFileSystemLoader().Load(fileParts.FileName, fileParts.Path, "KNORTEN")
 	if err != nil {
 		log.WithError(err).Fatal("loading config")
-
-		return
 	}
 
 	err = cfg.Validate()
 	if err != nil {
 		log.WithError(err).Fatal("validating config")
-
-		return
 	}
 
 	dbClient, err := database.New(cfg.Postgres.ConnectionString(), cfg.DBEncKey, log.WithField("subsystem", "db"))
 	if err != nil {
 		log.WithError(err).Fatal("setting up database")
-		return
 	}
 
 	azureClient, err := auth.NewAzureClient(
@@ -69,29 +69,78 @@ func main() {
 	)
 	if err != nil {
 		log.WithError(err).Fatal("creating azure client")
-		return
 	}
 
 	if !cfg.DryRun {
 		imageUpdater := imageupdater.NewClient(dbClient, log.WithField("subsystem", "imageupdater"))
 		go imageUpdater.Run(imageUpdaterFrequency)
+	}
 
-		if err := helm.UpdateHelmRepositories(); err != nil {
-			log.WithError(err).Fatal("updating helm repositories")
-		}
+	c, err := k8s.NewClient(cfg.Kubernetes.Context, k8s.DefaultSchemeAdder())
+	if err != nil {
+		log.WithError(err).Fatal("creating k8s client")
+	}
+
+	if cfg.DryRun {
+		c.Client = k8s.NewDryRunClient(c.Client)
+	}
+
+	ctx := context.Background()
+
+	iamService, err := iam.NewService(ctx)
+	if err != nil {
+		log.WithError(err).Fatal("creating iam service")
+	}
+
+	policyManager := gcpapi.NewServiceAccountPolicyManager(cfg.GCP.Project, iamService)
+	fetcher := gcpapi.NewServiceAccountFetcher(cfg.GCP.Project, iamService)
+
+	if cfg.DryRun {
+		policyManager = mock.NewServiceAccountPolicyManager(&iam.Policy{}, nil)
+		fetcher = mock.NewServiceAccountFetcher(&iam.ServiceAccount{}, nil)
+	}
+
+	binder := gcpapi.NewServiceAccountPolicyBinder(cfg.GCP.Project, policyManager)
+	checker := gcpapi.NewServiceAccountChecker(cfg.GCP.Project, fetcher)
+
+	errOut := io.Discard
+	if cfg.Debug {
+		errOut = os.Stderr
+	}
+
+	out := io.Discard
+	if cfg.Debug {
+		out = os.Stdout
+	}
+
+	helmConfig := &helm.Config{
+		Debug:            cfg.Debug,
+		DryRun:           cfg.DryRun,
+		Err:              errOut,
+		KubeContext:      cfg.Kubernetes.Context,
+		Out:              out,
+		RepositoryConfig: cfg.Helm.RepositoryConfig,
+	}
+
+	helmClient, err := helm.NewClient(helmConfig, dbClient)
+	if err != nil {
+		log.WithError(err).Fatal("creating helm client")
 	}
 
 	eventHandler, err := events.NewHandler(
-		context.Background(),
+		ctx,
 		dbClient,
 		azureClient,
+		k8s.NewManager(c),
+		binder,
+		checker,
+		helmClient,
 		cfg.GCP.Project,
 		cfg.GCP.Region,
 		cfg.GCP.Zone,
 		cfg.Helm.AirflowChartVersion,
 		cfg.Helm.JupyterChartVersion,
 		cfg.DryRun,
-		cfg.InCluster,
 		log.WithField("subsystem", "events"),
 	)
 	if err != nil {

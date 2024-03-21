@@ -5,15 +5,14 @@ import (
 
 	"github.com/navikt/knorten/pkg/database"
 	"github.com/navikt/knorten/pkg/database/gensql"
-	"github.com/navikt/knorten/pkg/logger"
 )
 
 type userClient interface {
-	CreateComputeInstance(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) bool
-	ResizeComputeInstanceDisk(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) bool
-	DeleteComputeInstance(ctx context.Context, email string, log logger.Logger) bool
-	CreateUserGSM(ctx context.Context, manager gensql.UserGoogleSecretManager, log logger.Logger) bool
-	DeleteUserGSM(ctx context.Context, email string, log logger.Logger) bool
+	CreateComputeInstance(ctx context.Context, instance *gensql.ComputeInstance) error
+	ResizeComputeInstanceDisk(ctx context.Context, instance *gensql.ComputeInstance) error
+	DeleteComputeInstance(ctx context.Context, email string) error
+	CreateUserGSM(ctx context.Context, manager *gensql.UserGoogleSecretManager) error
+	DeleteUserGSM(ctx context.Context, email string) error
 }
 
 type userMock struct {
@@ -26,27 +25,27 @@ func newUserMock() userMock {
 	}
 }
 
-func (cm userMock) CreateComputeInstance(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) bool {
+func (cm userMock) CreateComputeInstance(ctx context.Context, instance *gensql.ComputeInstance) error {
 	cm.EventCounts[database.EventTypeCreateCompute]++
-	return false
+	return nil
 }
 
-func (cm userMock) ResizeComputeInstanceDisk(ctx context.Context, instance gensql.ComputeInstance, log logger.Logger) bool {
+func (cm userMock) ResizeComputeInstanceDisk(ctx context.Context, instance *gensql.ComputeInstance) error {
 	cm.EventCounts[database.EventTypeResizeCompute]++
-	return false
+	return nil
 }
 
-func (cm userMock) DeleteComputeInstance(ctx context.Context, owner string, log logger.Logger) bool {
+func (cm userMock) DeleteComputeInstance(ctx context.Context, owner string) error {
 	cm.EventCounts[database.EventTypeDeleteCompute]++
-	return false
+	return nil
 }
 
-func (cm userMock) CreateUserGSM(ctx context.Context, manager gensql.UserGoogleSecretManager, log logger.Logger) bool {
+func (cm userMock) CreateUserGSM(ctx context.Context, manager *gensql.UserGoogleSecretManager) error {
 	cm.EventCounts[database.EventTypeCreateUserGSM]++
-	return false
+	return nil
 }
 
-func (cm userMock) DeleteUserGSM(ctx context.Context, owner string, log logger.Logger) bool {
+func (cm userMock) DeleteUserGSM(ctx context.Context, owner string) error {
 	cm.EventCounts[database.EventTypeDeleteUserGSM]++
-	return false
+	return nil
 }

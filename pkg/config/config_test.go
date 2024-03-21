@@ -57,6 +57,7 @@ func newFakeConfig() config.Config {
 			},
 		},
 		Helm: config.Helm{
+			RepositoryConfig:    "some/path/repositories.yaml",
 			AirflowChartVersion: "1.10.0",
 			JupyterChartVersion: "2.0.0",
 		},
@@ -72,11 +73,15 @@ func newFakeConfig() config.Config {
 			SSLMode:      "disable",
 			DatabaseName: "knorten",
 		},
+		Kubernetes: config.Kubernetes{
+			Context: "minikube",
+		},
 		DBEncKey:   "jegersekstentegn",
 		AdminGroup: "nada@nav.no",
 		SessionKey: "test-session",
 		LoginPage:  "http://localhost:8080/",
 		DryRun:     false,
+		Debug:      false,
 		InCluster:  false,
 	}
 }

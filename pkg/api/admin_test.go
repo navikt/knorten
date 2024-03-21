@@ -585,7 +585,7 @@ func TestAdminAPI(t *testing.T) {
 			Slug:  "delete-me",
 			Users: []string{testUser.Email},
 		}
-		if err := repo.TeamCreate(ctx, team); err != nil {
+		if err := repo.TeamCreate(ctx, &team); err != nil {
 			t.Error(err)
 		}
 		t.Cleanup(func() {
@@ -730,7 +730,7 @@ func prepareAdminTests(ctx context.Context) ([]gensql.Team, error) {
 		Slug:  "team-a",
 		Users: []string{testUser.Email, "user.one@nav.no"},
 	}
-	err := repo.TeamCreate(ctx, teamA)
+	err := repo.TeamCreate(ctx, &teamA)
 	if err != nil {
 		return nil, err
 	}
@@ -743,7 +743,7 @@ func prepareAdminTests(ctx context.Context) ([]gensql.Team, error) {
 		Slug:  "team-b",
 		Users: []string{testUser.Email, "user.one@nav.no", "user.two@nav.no"},
 	}
-	err = repo.TeamCreate(ctx, teamB)
+	err = repo.TeamCreate(ctx, &teamB)
 	if err != nil {
 		return nil, err
 	}

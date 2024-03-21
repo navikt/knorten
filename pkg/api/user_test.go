@@ -101,7 +101,7 @@ func prepareUserTests(ctx context.Context) (*gensql.Team, error) {
 		Slug:  "team",
 		Users: []string{testUser.Email},
 	}
-	err := repo.TeamCreate(ctx, team)
+	err := repo.TeamCreate(ctx, &team)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func prepareUserTests(ctx context.Context) (*gensql.Team, error) {
 		return nil, err
 	}
 
-	err = repo.ComputeInstanceCreate(ctx, gensql.ComputeInstance{
+	err = repo.ComputeInstanceCreate(ctx, &gensql.ComputeInstance{
 		Owner: testUser.Email,
 		Name:  "compute-" + getNormalizedNameFromEmail(testUser.Email),
 	})

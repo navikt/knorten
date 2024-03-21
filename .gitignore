@@ -29,6 +29,7 @@ charts/*
 hack
 
 /Library
+/.kube
 
 # npm
 node_modules

@@ -51,6 +51,16 @@ func WithRequests(cpu, mem string) ClusterOption {
 	}
 }
 
+func WithAppLabel(app string) ClusterOption {
+	return func(c *cnpgv1.Cluster) {
+		if c.Labels == nil {
+			c.Labels = make(map[string]string)
+		}
+
+		c.Labels[meta.AppLabel] = app
+	}
+}
+
 func NewCluster(name, namespace, database, owner string, options ...ClusterOption) *cnpgv1.Cluster {
 	c := &cnpgv1.Cluster{
 		TypeMeta: metav1.TypeMeta{

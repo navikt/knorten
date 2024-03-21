@@ -338,7 +338,13 @@ func (c Client) createAirflowDatabase(ctx context.Context, team *gensql.TeamGetR
 	dbInstance := getAirflowDatabaseName(teamID)
 	namespace := k8s.TeamIDToNamespace(teamID)
 
-	err := c.manager.ApplyPostgresCluster(ctx, cnpg.NewCluster(teamID, namespace, dbInstance, teamID))
+	err := c.manager.ApplyPostgresCluster(ctx, cnpg.NewCluster(
+		teamID,
+		namespace,
+		dbInstance,
+		teamID,
+		cnpg.WithAppLabel("airflow-postgres"),
+	))
 	if err != nil {
 		return err
 	}

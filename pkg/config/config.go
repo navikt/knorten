@@ -39,7 +39,6 @@ type Config struct {
 	LoginPage  string     `yaml:"login_page"`
 	DryRun     bool       `yaml:"dry_run"`
 	Debug      bool       `yaml:"debug"`
-	InCluster  bool       `yaml:"in_cluster"`
 }
 
 func (c Config) Validate() error {

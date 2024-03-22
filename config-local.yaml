@@ -54,4 +54,3 @@ session_key: online-session
 login_page: http://localhost:8080/
 dry_run: true
 debug: false
-in_cluster: false

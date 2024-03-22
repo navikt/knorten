@@ -134,7 +134,7 @@ gauth:
 KUBERNETES_VERSION ?= v1.28.3
 minikube:
 	@$(MINIKUBE) status >/dev/null 2>&1 && echo "Minikube is already running." || \
-		$(MINIKUBE) start --cpus 2 --memory 4096 --driver=docker --addons=volumesnapshots --kubernetes-version=$(KUBERNETES_VERSION) $(MINIKUBE_START_ARGS)
+		$(MINIKUBE) start --cpus 4 --memory 6144 --driver=docker --addons=volumesnapshots --kubernetes-version=$(KUBERNETES_VERSION) $(MINIKUBE_START_ARGS)
 .PHONY: minikube
 
 minikube-destroy:

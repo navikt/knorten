@@ -78,8 +78,9 @@ func TestJupyterAPI(t *testing.T) {
 		memoryLimit := "2G"
 		memoryRequest := "1G"
 		culltimeout := "3600"
+		pypiAccess := "off"
 
-		data := url.Values{"cpulimit": {cpuLimit}, "cpurequest": {cpuRequest}, "memorylimit": {memoryLimit}, "memoryrequest": {memoryRequest}, "imagename": {""}, "imagetag": {""}, "culltimeout": {culltimeout}}
+		data := url.Values{"cpulimit": {cpuLimit}, "cpurequest": {cpuRequest}, "memorylimit": {memoryLimit}, "memoryrequest": {memoryRequest}, "imagename": {""}, "imagetag": {""}, "culltimeout": {culltimeout}, "pypiaccess": {pypiAccess}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/%v/jupyterhub/new", server.URL, team.Slug), data)
 		if err != nil {
 			t.Error(err)
@@ -116,6 +117,10 @@ func TestJupyterAPI(t *testing.T) {
 
 		if eventPayload.CullTimeout != culltimeout {
 			t.Errorf("create jupyterhub: culltimeout value - expected %v, got %v", culltimeout, eventPayload.CullTimeout)
+		}
+
+		if eventPayload.PYPIAccess {
+			t.Errorf("create jupyterhub: pypiAccess value - expected %v, got %v", false, eventPayload.PYPIAccess)
 		}
 
 		if len(eventPayload.UserIdents) != 3 {
@@ -168,6 +173,7 @@ func TestJupyterAPI(t *testing.T) {
 				MemoryLimit:   expectedValues.MemoryLimit,
 				MemoryRequest: expectedValues.MemoryRequest,
 				CullTimeout:   expectedValues.CullTimeout,
+				PYPIAccess:    "off",
 			},
 		})
 		if err != nil {
@@ -191,7 +197,9 @@ func TestJupyterAPI(t *testing.T) {
 		imageName := "ghcr.io/org/repo/image"
 		imageTag := "v1"
 		newCullTimeout := "7200"
-		data := url.Values{"cpulimit": {newCPULimit}, "cpurequest": {newCPURequest}, "memorylimit": {newMemoryLimit}, "memoryrequest": {newMemoryRequest}, "imagename": {imageName}, "imagetag": {imageTag}, "culltimeout": {newCullTimeout}}
+		pypiAccess := "on"
+
+		data := url.Values{"cpulimit": {newCPULimit}, "cpurequest": {newCPURequest}, "memorylimit": {newMemoryLimit}, "memoryrequest": {newMemoryRequest}, "imagename": {imageName}, "imagetag": {imageTag}, "culltimeout": {newCullTimeout}, "pypiaccess": {pypiAccess}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/%v/jupyterhub/edit", server.URL, team.Slug), data)
 		if err != nil {
 			t.Error(err)
@@ -209,39 +217,43 @@ func TestJupyterAPI(t *testing.T) {
 		}
 
 		if eventPayload.TeamID == "" {
-			t.Errorf("create jupyterhub: no event registered for team %v", team.ID)
+			t.Errorf("edit jupyterhub: no event registered for team %v", team.ID)
 		}
 
 		if eventPayload.CPULimit != newCPULimit {
-			t.Errorf("create jupyterhub: cpu value - expected %v, got %v", newCPULimit, eventPayload.CPULimit)
+			t.Errorf("edit jupyterhub: cpu value - expected %v, got %v", newCPULimit, eventPayload.CPULimit)
 		}
 
 		if eventPayload.CPURequest != newCPURequest {
-			t.Errorf("create jupyterhub: cpuRequest value - expected %v, got %v", newCPURequest, eventPayload.CPURequest)
+			t.Errorf("edit jupyterhub: cpuRequest value - expected %v, got %v", newCPURequest, eventPayload.CPURequest)
 		}
 
 		if eventPayload.MemoryLimit != newMemoryLimit {
-			t.Errorf("create jupyterhub: memory value - expected %v, got %v", newMemoryLimit, eventPayload.MemoryLimit)
+			t.Errorf("edit jupyterhub: memory value - expected %v, got %v", newMemoryLimit, eventPayload.MemoryLimit)
 		}
 
 		if eventPayload.MemoryRequest != newMemoryRequest {
-			t.Errorf("create jupyterhub: memoryRequest value - expected %v, got %v", newMemoryRequest, eventPayload.MemoryRequest)
+			t.Errorf("edit jupyterhub: memoryRequest value - expected %v, got %v", newMemoryRequest, eventPayload.MemoryRequest)
 		}
 
 		if eventPayload.CullTimeout != newCullTimeout {
-			t.Errorf("create jupyterhub: culltimeout value - expected %v, got %v", newCullTimeout, eventPayload.CullTimeout)
+			t.Errorf("edit jupyterhub: culltimeout value - expected %v, got %v", newCullTimeout, eventPayload.CullTimeout)
 		}
 
 		if eventPayload.ImageName != imageName {
-			t.Errorf("create jupyterhub: image name value - expected %v, got %v", imageName, eventPayload.ImageName)
+			t.Errorf("edit jupyterhub: image name value - expected %v, got %v", imageName, eventPayload.ImageName)
 		}
 
 		if eventPayload.ImageTag != imageTag {
-			t.Errorf("create jupyterhub: image tag value - expected %v, got %v", imageTag, eventPayload.ImageTag)
+			t.Errorf("edit jupyterhub: image tag value - expected %v, got %v", imageTag, eventPayload.ImageTag)
+		}
+
+		if !eventPayload.PYPIAccess {
+			t.Errorf("edit jupyterhub: pypi access value - expected %v, got %v", true, eventPayload.PYPIAccess)
 		}
 
 		if len(eventPayload.UserIdents) != 3 {
-			t.Errorf("create jupyterhub: expected 3 users, got %v", len(eventPayload.UserIdents))
+			t.Errorf("edit jupyterhub: expected 3 users, got %v", len(eventPayload.UserIdents))
 		}
 	})
 

@@ -67,6 +67,15 @@
                            placeholder="3600"
                            class="navds-text-field__input navds-body-short navds-body-medium"/>
                 </div>
+                <div class="navds-checkbox">
+                    <div class="navds-checkbox navds-checkbox--medium">
+                        <input id="pypiaccess" name="pypiaccess" type="checkbox" class="navds-checkbox__input"
+                                {{ if or (not .values.PYPIAccess) (eq .values.PYPIAccess "on") }}checked{{ end }}/>
+                        <label for="pypiaccess" class="navds-checkbox__label">
+                            <span class="navds-checkbox__content">PYPI-tilgang fra notebook</span>
+                        </label>
+                    </div>
+                </div>
                 <div class="navds-form-field navds-form-field--medium">
                     <fieldset id="allowlist">
                         <legend class="navds-form-field__label navds-label">Allowlist</legend>

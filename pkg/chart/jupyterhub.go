@@ -3,6 +3,7 @@ package chart
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/navikt/knorten/pkg/database"
@@ -25,6 +26,7 @@ type JupyterConfigurableValues struct {
 	ImageName     string `helm:"singleuser.image.name"`
 	ImageTag      string `helm:"singleuser.image.tag"`
 	CullTimeout   string `helm:"cull.timeout"`
+	PYPIAccess    bool
 	AllowList     []string
 }
 
@@ -46,6 +48,8 @@ type jupyterValues struct {
 	SingleUserExtraLabels string   `helm:"singleuser.extraLabels"`
 }
 
+const TeamValueKeyPYPIAccess = "pypiAccess,omit"
+
 func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfigurableValues, log logger.Logger) error {
 	team, err := c.repo.TeamGet(ctx, configurableValues.TeamID)
 	if err != nil {
@@ -59,6 +63,11 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfi
 		return err
 	}
 
+	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeJupyterhub, TeamValueKeyPYPIAccess, strconv.FormatBool(values.PYPIAccess), team.ID); err != nil {
+		log.WithError(err).Infof("inserting %v team value to database", TeamValueKeyPYPIAccess)
+		return err
+	}
+
 	namespace := k8s.TeamIDToNamespace(team.ID)
 
 	if err := c.createHttpRoute(ctx, team.Slug+".jupyter.knada.io", namespace, gensql.ChartTypeJupyterhub); err != nil {
@@ -68,6 +77,11 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues JupyterConfi
 
 	if err := c.createHealtCheckPolicy(ctx, namespace, gensql.ChartTypeJupyterhub); err != nil {
 		log.WithError(err).Info("creating health check policy")
+		return err
+	}
+
+	if err := c.alterJupyterDefaultFQDNNetpol(ctx, namespace, configurableValues.PYPIAccess); err != nil {
+		log.WithError(err).Info("creating jupyter default FQDN netpol")
 		return err
 	}
 

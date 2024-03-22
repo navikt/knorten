@@ -1,0 +1,41 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: airflow-webserver-cm
+  namespace: kube-system
+  annotations:
+    replicator.v1.mittwald.de/replicate-to: team-.*
+data:
+  webserver_config.py: |
+    import os
+    from flask_appbuilder.security.manager import AUTH_OAUTH
+    from auth import NadaSecurityManager
+    AUTH_TYPE = AUTH_OAUTH
+    AUTH_ROLES_SYNC_AT_LOGIN = True
+    PERMANENT_SESSION_LIFETIME = 3600
+    AUTH_USER_REGISTRATION = True
+    AUTH_USER_REGISTRATION_ROLE = "Admin"
+    ALLOWED_USERS = os.environ["AIRFLOW_USERS"]
+    OAUTH_PROVIDERS = [
+      {
+        "name": "azure",
+        "icon": "fa-windows",
+        "token_key": "access_token",
+        "remote_app": {
+          "client_id": os.environ.get("KNORTEN_OAUTH_CLIENT_ID"),
+          "client_secret": os.environ.get("KNORTEN_OAUTH_CLIENT_SECRET"),
+          "redirect_uri" : f"http://localhost:8888/oauth-authorized/azure",
+          "base_url": "https://graph.microsoft.com/v1.0/",
+          "jwks_uri": "https://login.microsoftonline.com/common/discovery/v2.0/keys",
+          "client_kwargs": {
+            "scope": f"openid {os.environ.get('KNORTEN_OAUTH_CLIENT_ID')}/.default",
+            "resource": os.environ.get("KNORTEN_OAUTH_CLIENT_ID"),
+          },
+          "request_token_url": None,
+          "access_token_url": f"https://login.microsoftonline.com/{os.environ.get('KNORTEN_OAUTH_TENANT_ID')}/oauth2/token",
+          "authorize_url": f"https://login.microsoftonline.com/{os.environ.get('KNORTEN_OAUTH_TENANT_ID')}/oauth2/authorize",
+        },
+        "whitelist": [user for user in ALLOWED_USERS.split(",")]
+      }
+    ]
+    SECURITY_MANAGER_CLASS = NadaSecurityManager

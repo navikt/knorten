@@ -2,6 +2,7 @@ oauth:
     client_id: # Populated by env var
     client_secret: # Populated by env var
     tenant_id: # Populated by env var
+    redirect_url: http://localhost:8080/oauth2/callback
 gcp:
     project: nada-dev-db2e
     region: europe-north1

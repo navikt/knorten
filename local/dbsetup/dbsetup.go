@@ -79,6 +79,7 @@ func SetupDB(ctx context.Context, dbURL, dbname string) error {
 		{"jupyterhub", "singleuser.profileList", "[]"},
 		{"airflow", "images.gitSync.tag", "2024-03-01-9d7687c"},
 		{"airflow", "knauditImage,omit", "europe-north1-docker.pkg.dev/knada-gcp/knada-north/knaudit:2024-03-15-ef2f8de"},
+		{"airflow", "extraEnvFrom", `"[{"secretRef": {"name": "azuread-secret"}}]"`},
 	}
 	_, err = db.CopyFrom(ctx,
 		pgx.Identifier{"chart_global_values"},

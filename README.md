@@ -34,6 +34,10 @@ KUBECTL_PROD_CTX=my-prod-name make run
 MINIKUBE_START_ARGS="--cache-images=false" make run
 ```
 
+Etter at applikaskonen er oppe og kjører kan du opprette en Airflow instans, etc. Azure AD er satt opp slik at du kan logge inn med NAV-ident. Men du må sette opp port-forward fra `airflow-webserver` til `localhost:8888` for å kunne logge inn.
+
+```bash
+
 For å fjerne **alt** igjen:
 
 ```bash

@@ -2,6 +2,7 @@ oauth:
     client_id: fake-id
     client_secret: fake-secret
     tenant_id: fake-tenant
+    redirect_url: http://localhost:8080/oauth2/callback
 gcp:
     project: nada-dev-db2e
     region: europe-north1

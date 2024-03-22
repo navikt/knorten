@@ -21,7 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	gwapiv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwapiv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
@@ -46,7 +46,7 @@ func DefaultSchemeAdder() SchemeAdderFn {
 			return fmt.Errorf("adding cloudnative-pg scheme: %w", err)
 		}
 
-		if err := gwapiv1.AddToScheme(scheme); err != nil {
+		if err := gwapiv1b1.AddToScheme(scheme); err != nil {
 			return fmt.Errorf("adding gateway-api scheme: %w", err)
 		}
 
@@ -92,7 +92,7 @@ type Manager interface {
 	ApplySecret(ctx context.Context, secret *v1.Secret) error
 	DeleteSecret(ctx context.Context, name, namespace string) error
 	WaitForSecret(ctx context.Context, name, namespace string) (*v1.Secret, error)
-	ApplyHTTPRoute(ctx context.Context, route *gwapiv1.HTTPRoute) error
+	ApplyHTTPRoute(ctx context.Context, route *gwapiv1b1.HTTPRoute) error
 	DeleteHTTPRoute(ctx context.Context, name, namespace string) error
 	ApplyHealthCheckPolicy(ctx context.Context, policy *unstructured.Unstructured) error
 	DeleteHealthCheckPolicy(ctx context.Context, name, namespace string) error
@@ -246,7 +246,7 @@ func (m *manager) WaitForSecret(ctx context.Context, name, namespace string) (*v
 	return into, nil
 }
 
-func (m *manager) ApplyHTTPRoute(ctx context.Context, route *gwapiv1.HTTPRoute) error {
+func (m *manager) ApplyHTTPRoute(ctx context.Context, route *gwapiv1b1.HTTPRoute) error {
 	err := m.apply(ctx, route)
 	if err != nil {
 		return fmt.Errorf("applying httproute: %w", err)
@@ -256,7 +256,7 @@ func (m *manager) ApplyHTTPRoute(ctx context.Context, route *gwapiv1.HTTPRoute) 
 }
 
 func (m *manager) DeleteHTTPRoute(ctx context.Context, name, namespace string) error {
-	err := m.delete(ctx, &gwapiv1.HTTPRoute{
+	err := m.delete(ctx, &gwapiv1b1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,

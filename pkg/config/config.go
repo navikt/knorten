@@ -103,6 +103,7 @@ type Oauth struct {
 	ClientID     string `yaml:"client_id"`
 	ClientSecret string `yaml:"client_secret"`
 	TenantID     string `yaml:"tenant_id"`
+	RedirectURL  string `yaml:"redirect_url"`
 }
 
 func (o Oauth) Validate() error {
@@ -110,6 +111,7 @@ func (o Oauth) Validate() error {
 		validation.Field(&o.ClientID, validation.Required),
 		validation.Field(&o.ClientSecret, validation.Required),
 		validation.Field(&o.TenantID, validation.Required),
+		validation.Field(&o.RedirectURL, validation.Required, is.URL),
 	)
 }
 

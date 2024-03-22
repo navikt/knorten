@@ -154,7 +154,7 @@ check: | lint test
 full-check: | check staticcheck vulncheck
 .PHONY: full-check
 
-run: | minikube deps npm-install css env goose-up init local-online
+run: | minikube env deps npm-install css goose-up init local-online
 	echo "You may need to run:\n\nmake registry\n\n. If you arent able to access the registry."
 .PHONY: run
 

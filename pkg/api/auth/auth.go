@@ -10,7 +10,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -21,12 +20,6 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/endpoints"
 )
-
-type OauthConfig struct {
-	ClientID     string
-	ClientSecret string
-	TenantID     string
-}
 
 type Session struct {
 	Email       string `json:"preferred_username"`
@@ -43,6 +36,7 @@ type Azure struct {
 	clientID     string
 	clientSecret string
 	tenantID     string
+	redirectURL  string
 	dryRun       bool
 	provider     *oidc.Provider
 	log          *logrus.Entry
@@ -75,7 +69,7 @@ const (
 	AzureGroupsEndpoint = "https://graph.microsoft.com/v1.0/groups"
 )
 
-func NewAzureClient(dryRun bool, clientID, clientSecret, tenantID string, log *logrus.Entry) (*Azure, error) {
+func NewAzureClient(dryRun bool, clientID, clientSecret, tenantID, redirectURL string, log *logrus.Entry) (*Azure, error) {
 	if dryRun {
 		log.Infof("NOOP: Running in dry run mode")
 		return &Azure{
@@ -93,6 +87,7 @@ func NewAzureClient(dryRun bool, clientID, clientSecret, tenantID string, log *l
 		clientID:     clientID,
 		clientSecret: clientSecret,
 		tenantID:     tenantID,
+		redirectURL:  redirectURL,
 		provider:     provider,
 		dryRun:       dryRun,
 		log:          log,
@@ -103,16 +98,11 @@ func NewAzureClient(dryRun bool, clientID, clientSecret, tenantID string, log *l
 }
 
 func (a *Azure) setupOAuth2() {
-	redirectURL := "https://knorten.knada.io/oauth2/callback"
-	if os.Getenv("GIN_MODE") != "release" {
-		redirectURL = "http://localhost:8080/oauth2/callback"
-	}
-
 	a.Config = oauth2.Config{
 		ClientID:     a.clientID,
 		ClientSecret: a.clientSecret,
 		Endpoint:     a.provider.Endpoint(),
-		RedirectURL:  redirectURL,
+		RedirectURL:  a.redirectURL,
 		Scopes:       []string{"openid", fmt.Sprintf("%s/.default", a.clientID)},
 	}
 }

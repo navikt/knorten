@@ -54,7 +54,7 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	azureClient, err = auth.NewAzureClient(true, "", "", "", logrus.NewEntry(logrus.StandardLogger()))
+	azureClient, err = auth.NewAzureClient(true, "", "", "", "", logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatalf("creating azure client: %v", err)
 	}

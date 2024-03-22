@@ -34,6 +34,5 @@ copy_k8s_configmap_with_replicate() {
 }
 
 copy_k8s_secret_with_replicate github-app-secret github-secret "${prod_ctx}" knada-system "${kube_ctx}" kube-system "team-.*"
-copy_k8s_configmap_with_replicate airflow-webserver-cm "${prod_ctx}" team-nada-oqs1 "${kube_ctx}" kube-system "team-.*"
 copy_k8s_configmap_with_replicate airflow-auth-cm "${prod_ctx}" team-nada-oqs1 "${kube_ctx}" kube-system "team-.*"
 copy_k8s_configmap_with_replicate ca-bundle-pem "${prod_ctx}" team-nada-oqs1 "${kube_ctx}" kube-system "team-.*"

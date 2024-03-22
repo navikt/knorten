@@ -9,6 +9,7 @@ data:
         client_id: # Set through env var KNORTEN_OAUTH_CLIENT_ID
         client_secret: # Set through env var KNORTEN_OAUTH_CLIENT_SECRET
         tenant_id: # Set through env var KNORTEN_OAUTH_TENANT_ID
+        redirect_url: https://knorten.knada.io/oauth2/callback
     gcp:
         project: knada-gcp
         region: europe-north1

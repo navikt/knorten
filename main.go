@@ -65,6 +65,7 @@ func main() {
 		cfg.Oauth.ClientID,
 		cfg.Oauth.ClientSecret,
 		cfg.Oauth.TenantID,
+		cfg.Oauth.RedirectURL,
 		log.WithField("subsystem", "auth"),
 	)
 	if err != nil {

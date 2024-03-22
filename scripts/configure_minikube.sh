@@ -4,7 +4,7 @@ set -e
 source scripts/params.sh
 
 kubernetes_replicator_version="v2.9.2"
-gateway_api_httproutes_version="v1.0.0"
+gateway_api_httproutes_version="v0.8.1"
 healthcheckpolicy_version="0e34ee15ce9ac6f6b96292a5291d2cd2097669da"
 
 resources=(

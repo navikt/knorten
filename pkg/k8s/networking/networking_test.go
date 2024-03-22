@@ -6,7 +6,7 @@ import (
 	"github.com/navikt/knorten/pkg/k8s/networking"
 	"github.com/sebdah/goldie/v2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	v1 "sigs.k8s.io/gateway-api/apis/v1"
+	v1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	"sigs.k8s.io/yaml"
 )
 
@@ -14,7 +14,7 @@ func TestHTTPRoute(t *testing.T) {
 	testCases := []struct {
 		name  string
 		desc  string
-		route *v1.HTTPRoute
+		route *v1b1.HTTPRoute
 	}{
 		{
 			name: "plain-route",

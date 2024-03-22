@@ -19,7 +19,7 @@ import (
 	"google.golang.org/api/iam/v1"
 
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	gwapiv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwapiv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/navikt/knorten/local/dbsetup"
@@ -250,7 +250,7 @@ func TestCharts(t *testing.T) {
 				t.Error(err)
 			}
 
-			if err := gwapiv1.AddToScheme(scheme); err != nil {
+			if err := gwapiv1b1.AddToScheme(scheme); err != nil {
 				t.Error(err)
 			}
 

@@ -7,7 +7,7 @@ import (
 	"github.com/navikt/knorten/pkg/database/gensql"
 	"github.com/navikt/knorten/pkg/k8s/core"
 	"github.com/navikt/knorten/pkg/k8s/networking"
-	v1 "sigs.k8s.io/gateway-api/apis/v1"
+	v1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 const (
@@ -72,7 +72,7 @@ func (c Client) deleteCloudNativePGCluster(ctx context.Context, name, namespace 
 }
 
 func (c Client) createHttpRoute(ctx context.Context, url, namespace string, chartType gensql.ChartType) error {
-	var route *v1.HTTPRoute
+	var route *v1b1.HTTPRoute
 
 	switch chartType {
 	case gensql.ChartTypeAirflow:

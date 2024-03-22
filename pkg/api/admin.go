@@ -394,8 +394,13 @@ func (c *client) syncChartForAllTeams(ctx context.Context, chartType gensql.Char
 func (c *client) syncChart(ctx context.Context, teamID string, chartType gensql.ChartType) error {
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
+		pypiAccessValue, err := c.repo.TeamValueGet(ctx, chart.TeamValueKeyPYPIAccess, teamID)
+		if err != nil {
+			return err
+		}
 		values := chart.JupyterConfigurableValues{
-			TeamID: teamID,
+			TeamID:     teamID,
+			PYPIAccess: pypiAccessValue.Value == "true",
 		}
 		return c.repo.RegisterUpdateJupyterEvent(ctx, teamID, values)
 	case gensql.ChartTypeAirflow:

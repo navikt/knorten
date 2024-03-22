@@ -2,7 +2,9 @@ package api
 
 import (
 	"context"
+	"database/sql"
 	"encoding/gob"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -395,7 +397,7 @@ func (c *client) syncChart(ctx context.Context, teamID string, chartType gensql.
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
 		pypiAccessValue, err := c.repo.TeamValueGet(ctx, chart.TeamValueKeyPYPIAccess, teamID)
-		if err != nil {
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return err
 		}
 		values := chart.JupyterConfigurableValues{

@@ -28,6 +28,7 @@ type jupyterForm struct {
 	ImageName     string   `form:"imagename"`
 	ImageTag      string   `form:"imagetag"`
 	CullTimeout   string   `form:"culltimeout"`
+	PYPIAccess    string   `form:"pypiaccess"`
 	Allowlist     []string `form:"allowlist[]"`
 }
 
@@ -366,6 +367,7 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 			ImageTag:      form.ImageTag,
 			CullTimeout:   strconv.FormatUint(cullTimeout, 10),
 			AllowList:     removeEmptySliceElements(form.Allowlist),
+			PYPIAccess:    form.PYPIAccess == "on",
 		}
 
 		return c.repo.RegisterCreateJupyterEvent(ctx, team.ID, values)
@@ -434,6 +436,16 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 			return nil, err
 		}
 
+		pypiAccessTeamValue, err := c.repo.TeamValueGet(ctx, chart.TeamValueKeyPYPIAccess, team.ID)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+
+		pypiAccess := "off"
+		if pypiAccessTeamValue.Value == "true" {
+			pypiAccess = "on"
+		}
+
 		form = jupyterForm{
 			CPULimit:      jupyterhubValues.CPULimit,
 			CPURequest:    jupyterhubValues.CPURequest,
@@ -442,6 +454,7 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 			ImageName:     jupyterhubValues.ImageName,
 			ImageTag:      jupyterhubValues.ImageTag,
 			CullTimeout:   jupyterhubValues.CullTimeout,
+			PYPIAccess:    pypiAccess,
 			Allowlist:     allowlist,
 		}
 	case gensql.ChartTypeAirflow:
@@ -521,6 +534,7 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 			ImageName:     form.ImageName,
 			ImageTag:      form.ImageTag,
 			CullTimeout:   form.CullTimeout,
+			PYPIAccess:    form.PYPIAccess == "on",
 			AllowList:     removeEmptySliceElements(form.Allowlist),
 		}
 

@@ -7,6 +7,7 @@ import (
 	"github.com/navikt/knorten/pkg/database/gensql"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,6 +28,12 @@ var healthCheckPoliciesSchema = schema.GroupVersionResource{
 	Group:    "networking.gke.io",
 	Version:  "v1",
 	Resource: "healthcheckpolicies",
+}
+
+var fqdnNetpolSchema = schema.GroupVersionResource{
+	Group:    "networking.gke.io",
+	Version:  "v1alpha3",
+	Resource: "fqdnnetworkpolicies",
 }
 
 func (c Client) deleteCloudSQLProxyFromKubernetes(ctx context.Context, namespace string) error {
@@ -399,4 +406,94 @@ func (c Client) deleteHealtCheckPolicy(ctx context.Context, namespace string, ch
 	}
 
 	return nil
+}
+
+func (c Client) alterJupyterDefaultFQDNNetpol(ctx context.Context, namespace string, enabled bool) error {
+	if c.dryRun {
+		return nil
+	}
+
+	if enabled {
+		return c.createJupyterDefaultFQDNNetpol(ctx, namespace)
+	}
+
+	return c.deleteJupyterDefaultFQDNNetpol(ctx, namespace)
+}
+
+func (c Client) createJupyterDefaultFQDNNetpol(ctx context.Context, namespace string) error {
+	fqdnNetpol := createFQDNNetpol(namespace)
+
+	existing, err := c.k8sDynamicClient.Resource(fqdnNetpolSchema).Namespace(namespace).Get(ctx, fqdnNetpol.GetName(), metav1.GetOptions{})
+	if err == nil {
+		existing.Object["spec"] = fqdnNetpol.Object["spec"]
+		_, err := c.k8sDynamicClient.Resource(fqdnNetpolSchema).Namespace(namespace).Update(ctx, existing, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+	} else if apierrors.IsNotFound(err) {
+		_, err = c.k8sDynamicClient.Resource(fqdnNetpolSchema).Namespace(namespace).Create(ctx, fqdnNetpol, metav1.CreateOptions{})
+		if err != nil {
+			return err
+		}
+	} else {
+		return err
+	}
+
+	return nil
+}
+
+func (c Client) deleteJupyterDefaultFQDNNetpol(ctx context.Context, namespace string) error {
+	err := c.k8sDynamicClient.Resource(fqdnNetpolSchema).Namespace(namespace).Delete(ctx, "jupyter-notebook-allow-fqdn", metav1.DeleteOptions{})
+	if err != nil && !apierrors.IsNotFound(err) {
+		return err
+	}
+
+	return nil
+}
+
+func createFQDNNetpol(namespace string) *unstructured.Unstructured {
+	fqdnNetpol := &unstructured.Unstructured{}
+	fqdnNetpol.SetUnstructuredContent(map[string]interface{}{
+		"apiVersion": "networking.gke.io/v1alpha3",
+		"kind":       "FQDNNetworkPolicy",
+		"metadata": map[string]any{
+			"name":      "jupyter-notebook-allow-fqdn",
+			"namespace": namespace,
+			"labels": map[string]string{
+				"app.kubernetes.io/managed-by": "knorten",
+			},
+		},
+		"spec": map[string]any{
+			"podSelector": map[string]any{
+				"matchLabels": map[string]string{
+					"app":       "jupyterhub",
+					"component": "singleuser-server",
+				},
+			},
+			"egress": []map[string]any{
+				{
+					"ports": []map[string]any{
+						{
+							"port":     443,
+							"protocol": "TCP",
+						},
+					},
+					"to": []map[string]any{
+						{
+							"fqdns": []string{
+								"pypi.org",
+								"files.pythonhosted.org",
+								"pypi.python.org",
+							},
+						},
+					},
+				},
+			},
+			"policyTypes": []string{
+				"Egress",
+			},
+		},
+	})
+
+	return fqdnNetpol
 }

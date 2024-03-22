@@ -61,4 +61,3 @@ data:
     login_page: https://knorten.knada.io/
     dry_run: false
     debug: false
-    in_cluster: true

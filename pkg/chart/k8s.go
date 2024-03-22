@@ -7,7 +7,6 @@ import (
 	"github.com/navikt/knorten/pkg/database/gensql"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -430,7 +429,7 @@ func (c Client) createJupyterDefaultFQDNNetpol(ctx context.Context, namespace st
 		if err != nil {
 			return err
 		}
-	} else if apierrors.IsNotFound(err) {
+	} else if k8sErrors.IsNotFound(err) {
 		_, err = c.k8sDynamicClient.Resource(fqdnNetpolSchema).Namespace(namespace).Create(ctx, fqdnNetpol, metav1.CreateOptions{})
 		if err != nil {
 			return err
@@ -444,7 +443,7 @@ func (c Client) createJupyterDefaultFQDNNetpol(ctx context.Context, namespace st
 
 func (c Client) deleteJupyterDefaultFQDNNetpol(ctx context.Context, namespace string) error {
 	err := c.k8sDynamicClient.Resource(fqdnNetpolSchema).Namespace(namespace).Delete(ctx, "jupyter-notebook-allow-fqdn", metav1.DeleteOptions{})
-	if err != nil && !apierrors.IsNotFound(err) {
+	if err != nil && !k8sErrors.IsNotFound(err) {
 		return err
 	}
 

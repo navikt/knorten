@@ -20,6 +20,14 @@ func TestNamespace(t *testing.T) {
 			desc:      "Create a plain namespace",
 			namespace: core.NewNamespace("test"),
 		},
+		{
+			name: "namespace-with-team-namespace-label",
+			desc: "Create a namespace with team namespace label",
+			namespace: core.NewNamespace(
+				"test",
+				core.WithTeamNamespaceLabel(),
+			),
+		},
 	}
 
 	for _, tc := range testCases {

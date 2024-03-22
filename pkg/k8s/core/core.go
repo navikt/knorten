@@ -30,8 +30,16 @@ func NewSecret(name, namespace string, data map[string]string) *v1.Secret {
 	}
 }
 
-func NewNamespace(name string) *v1.Namespace {
-	return &v1.Namespace{
+type NamespaceOption func(*v1.Namespace)
+
+func WithTeamNamespaceLabel() NamespaceOption {
+	return func(ns *v1.Namespace) {
+		ns.Labels[meta.TeamNamespaceLabel] = "true"
+	}
+}
+
+func NewNamespace(name string, options ...NamespaceOption) *v1.Namespace {
+	ns := &v1.Namespace{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       namespaceKind,
 			APIVersion: apiVersion,
@@ -41,6 +49,12 @@ func NewNamespace(name string) *v1.Namespace {
 			Labels: meta.DefaultLabels(),
 		},
 	}
+
+	for _, option := range options {
+		option(ns)
+	}
+
+	return ns
 }
 
 type ServiceAccountOption func(*v1.ServiceAccount)

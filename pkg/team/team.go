@@ -50,7 +50,7 @@ func (c Client) Create(ctx context.Context, team *gensql.Team) error {
 	}
 
 	namespace := k8s.TeamIDToNamespace(team.ID)
-	err = c.manager.ApplyNamespace(ctx, core.NewNamespace(namespace))
+	err = c.manager.ApplyNamespace(ctx, core.NewNamespace(namespace, core.WithTeamNamespaceLabel()))
 	if err != nil {
 		return fmt.Errorf("creating k8s namespace: %w", err)
 	}
@@ -73,7 +73,7 @@ func (c Client) Update(ctx context.Context, team *gensql.Team) error {
 	}
 
 	namespace := k8s.TeamIDToNamespace(team.ID)
-	err = c.manager.ApplyNamespace(ctx, core.NewNamespace(namespace))
+	err = c.manager.ApplyNamespace(ctx, core.NewNamespace(namespace, core.WithTeamNamespaceLabel()))
 	if err != nil {
 		return fmt.Errorf("updating k8s namespace: %w", err)
 	}

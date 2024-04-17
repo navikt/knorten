@@ -5,7 +5,6 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -46,10 +45,6 @@ type User struct {
 	Name    string
 	Email   string
 	Expires time.Time
-}
-
-type AzureGroupsWithIDResponse struct {
-	Groups []AzureGroupWithID `json:"value"`
 }
 
 type AzureGroupWithID struct {
@@ -289,50 +284,6 @@ func (a *Azure) getBearerTokenForApplication() (string, error) {
 	}
 
 	return tokenResponse.AccessToken, nil
-}
-
-func (a *Azure) GetGroupID(groupMail string) (string, error) {
-	if a.dryRun {
-		a.log.Infof("NOOP: Running in dry run mode")
-		return "dummyID", nil
-	}
-
-	token, err := a.getBearerTokenForApplication()
-	if err != nil {
-		return "", err
-	}
-
-	params := url.Values{}
-	params.Add("$select", "id,displayName,mail")
-	params.Add("$filter", fmt.Sprintf("mail eq '%v'", groupMail))
-
-	req, err := http.NewRequest(http.MethodGet,
-		AzureGroupsEndpoint+"?"+params.Encode(),
-		nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", token))
-
-	httpClient := &http.Client{
-		Timeout: time.Second * 10,
-	}
-
-	response, err := httpClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-
-	var groupsResponse AzureGroupsWithIDResponse
-	if err := json.NewDecoder(response.Body).Decode(&groupsResponse); err != nil {
-		return "", err
-	}
-
-	if len(groupsResponse.Groups) > 0 {
-		return groupsResponse.Groups[0].ID, nil
-	} else {
-		return "", errors.New("group not found by the mail")
-	}
 }
 
 type CertificateList []*x509.Certificate

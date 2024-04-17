@@ -5,6 +5,9 @@ patchesStrategicMerge:
   - cloudsql-proxy-patch.yaml
   - hostname-patch.yaml
 
+generatorOptions:
+  disableNameSuffixHash: true
+
 configMapGenerator:
   - name: knorten-config
     namespace: knada-system

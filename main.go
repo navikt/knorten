@@ -141,6 +141,7 @@ func main() {
 		cfg.GCP.Zone,
 		cfg.Helm.AirflowChartVersion,
 		cfg.Helm.JupyterChartVersion,
+		cfg.TopLevelDomain,
 		cfg.DryRun,
 		log.WithField("subsystem", "events"),
 	)
@@ -159,16 +160,9 @@ func main() {
 		return
 	}
 
-	adminGroupID, err := azureClient.GetGroupID(cfg.AdminGroup)
-	if err != nil {
-		log.WithError(err).Fatal("getting admin group id")
-
-		return
-	}
-
 	authService := service.NewAuthService(
 		dbClient,
-		adminGroupID,
+		cfg.AdminGroupID,
 		1*time.Hour,
 		32,
 		azureClient,

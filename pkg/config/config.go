@@ -26,19 +26,20 @@ type Loader interface {
 }
 
 type Config struct {
-	Oauth      Oauth      `yaml:"oauth"`
-	GCP        GCP        `yaml:"gcp"`
-	Cookies    Cookies    `yaml:"cookies"`
-	Helm       Helm       `yaml:"helm"`
-	Server     Server     `yaml:"server"`
-	Postgres   Postgres   `yaml:"postgres"`
-	Kubernetes Kubernetes `yaml:"kubernetes"`
-	DBEncKey   string     `yaml:"db_enc_key"`
-	AdminGroup string     `yaml:"admin_group"`
-	SessionKey string     `yaml:"session_key"`
-	LoginPage  string     `yaml:"login_page"`
-	DryRun     bool       `yaml:"dry_run"`
-	Debug      bool       `yaml:"debug"`
+	Oauth          Oauth      `yaml:"oauth"`
+	GCP            GCP        `yaml:"gcp"`
+	Cookies        Cookies    `yaml:"cookies"`
+	Helm           Helm       `yaml:"helm"`
+	Server         Server     `yaml:"server"`
+	Postgres       Postgres   `yaml:"postgres"`
+	Kubernetes     Kubernetes `yaml:"kubernetes"`
+	DBEncKey       string     `yaml:"db_enc_key"`
+	AdminGroupID   string     `yaml:"admin_group_id"`
+	SessionKey     string     `yaml:"session_key"`
+	LoginPage      string     `yaml:"login_page"`
+	TopLevelDomain string     `yaml:"top_level_domain"`
+	DryRun         bool       `yaml:"dry_run"`
+	Debug          bool       `yaml:"debug"`
 }
 
 func (c Config) Validate() error {
@@ -51,7 +52,7 @@ func (c Config) Validate() error {
 		validation.Field(&c.Postgres, validation.Required),
 		validation.Field(&c.DBEncKey, validation.Required),
 		validation.Field(&c.LoginPage, validation.Required),
-		validation.Field(&c.AdminGroup, validation.Required),
+		validation.Field(&c.AdminGroupID, validation.Required, is.UUID),
 		validation.Field(&c.SessionKey, validation.Required),
 	)
 }

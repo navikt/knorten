@@ -2,6 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: knorten
+  namespace: knada-system
+  labels:
+    app: knorten
 spec:
   template:
     spec:

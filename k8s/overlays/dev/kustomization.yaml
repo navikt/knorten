@@ -5,6 +5,9 @@ patches:
   - path: cloudsql-proxy-patch.yaml
   - path: hostname-patch.yaml
 
+generatorOptions:
+  disableNameSuffixHash: true
+
 configMapGenerator:
   - name: knorten-config
     namespace: knada-system

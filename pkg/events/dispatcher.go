@@ -213,7 +213,7 @@ func NewHandler(
 	saBinder gcpapi.ServiceAccountPolicyBinder,
 	saChecker gcpapi.ServiceAccountChecker,
 	client *helm.Client,
-	gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion string,
+	gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion, topLevelDomain string,
 	dryRun bool,
 	log *logrus.Entry,
 ) (EventHandler, error) {
@@ -233,6 +233,7 @@ func NewHandler(
 		jupyterChartVersion,
 		gcpProject,
 		gcpRegion,
+		topLevelDomain,
 	)
 	if err != nil {
 		return EventHandler{}, err

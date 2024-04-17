@@ -1,1 +1,21 @@
-../../../.helm-repositories.yaml
+apiVersion: ""
+generated: "0001-01-01T00:00:00Z"
+repositories:
+- caFile: ""
+  certFile: ""
+  insecure_skip_tls_verify: false
+  keyFile: ""
+  name: jupyterhub
+  pass_credentials_all: false
+  password: ""
+  url: https://jupyterhub.github.io/helm-chart
+  username: ""
+- caFile: ""
+  certFile: ""
+  insecure_skip_tls_verify: false
+  keyFile: ""
+  name: apache-airflow
+  pass_credentials_all: false
+  password: ""
+  url: https://airflow.apache.org
+  username: ""

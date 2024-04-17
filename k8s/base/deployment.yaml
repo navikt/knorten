@@ -57,12 +57,8 @@ spec:
             runAsGroup: 1001
             allowPrivilegeEscalation: false
         - name: cloudsql-proxy
-          command:
-            - /cloud-sql-proxy
-            - --max-sigterm-delay=30s
-            - --address=0.0.0.0
-            - --port=5432
-            - knada-gcp:europe-north1:knorten-north
+          command: 
+          - <placeholder>
           image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.6.0-alpine
           resources:
             limits:

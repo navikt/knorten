@@ -3,6 +3,7 @@ package chart
 import (
 	"context"
 	"fmt"
+
 	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/navikt/knorten/pkg/database"
 	"github.com/navikt/knorten/pkg/gcpapi"
@@ -21,6 +22,7 @@ type Client struct {
 	chartVersionJupyter string
 	gcpProject          string
 	gcpRegion           string
+	topLevelDomain      string
 }
 
 func NewClient(
@@ -30,7 +32,7 @@ func NewClient(
 	saBinder gcpapi.ServiceAccountPolicyBinder,
 	saChecker gcpapi.ServiceAccountChecker,
 	dryRun bool,
-	airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion string,
+	airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion, topLevelDomain string,
 ) (*Client, error) {
 	return &Client{
 		repo:                repo,
@@ -43,6 +45,7 @@ func NewClient(
 		chartVersionJupyter: jupyterChartVersion,
 		gcpProject:          gcpProject,
 		gcpRegion:           gcpRegion,
+		topLevelDomain:      topLevelDomain,
 	}, nil
 }
 

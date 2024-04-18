@@ -67,7 +67,7 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues *JupyterConf
 
 	namespace := k8s.TeamIDToNamespace(team.ID)
 
-	if err := c.createHttpRoute(ctx, team.Slug+".jupyter.knada.io", namespace, gensql.ChartTypeJupyterhub); err != nil {
+	if err := c.createHttpRoute(ctx, team.Slug+".jupyter."+c.topLevelDomain, namespace, gensql.ChartTypeJupyterhub); err != nil {
 		return fmt.Errorf("creating http route: %w", err)
 	}
 

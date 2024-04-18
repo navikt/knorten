@@ -98,7 +98,7 @@ func (c Client) syncAirflow(ctx context.Context, configurableValues *AirflowConf
 	// Apply values to cluster
 	namespace := k8s.TeamIDToNamespace(team.ID)
 
-	if err := c.createHttpRoute(ctx, team.Slug+".airflow.knada.io", namespace, gensql.ChartTypeAirflow); err != nil {
+	if err := c.createHttpRoute(ctx, team.Slug+".airflow."+c.topLevelDomain, namespace, gensql.ChartTypeAirflow); err != nil {
 		return fmt.Errorf("creating http route: %w", err)
 	}
 

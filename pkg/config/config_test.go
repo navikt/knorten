@@ -76,12 +76,13 @@ func newFakeConfig() config.Config {
 		Kubernetes: config.Kubernetes{
 			Context: "minikube",
 		},
-		DBEncKey:     "jegersekstentegn",
-		AdminGroupID: "f2816319-7db0-4061-8d0c-5ddbe232d60c",
-		SessionKey:   "test-session",
-		LoginPage:    "http://localhost:8080/",
-		DryRun:       false,
-		Debug:        false,
+		DBEncKey:       "jegersekstentegn",
+		AdminGroupID:   "f2816319-7db0-4061-8d0c-5ddbe232d60c",
+		SessionKey:     "test-session",
+		LoginPage:      "http://localhost:8080/",
+		TopLevelDomain: "knada.io",
+		DryRun:         false,
+		Debug:          false,
 	}
 }
 
@@ -155,12 +156,14 @@ func TestLoad(t *testing.T) {
 				cfg := newFakeConfig()
 				cfg.AdminGroupID = "something_super_random"
 				cfg.GCP.Project = "project_x"
+				cfg.TopLevelDomain = "something.different.io"
 
 				return cfg
 			}(),
 			envs: map[string]string{
-				"KNORTEN_ADMIN_GROUP_ID": "something_super_random",
-				"KNORTEN_GCP_PROJECT":    "project_x",
+				"KNORTEN_ADMIN_GROUP_ID":   "something_super_random",
+				"KNORTEN_TOP_LEVEL_DOMAIN": "something.different.io",
+				"KNORTEN_GCP_PROJECT":      "project_x",
 			},
 		},
 	}

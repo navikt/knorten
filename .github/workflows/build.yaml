@@ -1,7 +1,6 @@
 name: Build and push knorten image to GAR
 
 on:
-  workflow_dispatch:
   push:
 
 env:
@@ -52,8 +51,17 @@ jobs:
         context: .
         push: true
         tags: ${{ env.IMAGE }}
-    - name: Update imagetag in k8s manifest
+    - name: Update imagetag in dev k8s manifest
       working-directory: k8s/overlays/dev
       run: |
         kustomize edit set image ${{ env.IMAGE }}
-        cat kustomization.yaml
+    - name: Update imagetag in prod k8s manifest
+      if: github.ref == 'refs/heads/main'
+      working-directory: k8s/overlays/prod
+      run: |
+        kustomize edit set image ${{ env.IMAGE }}
+    - name: Commit tag changes
+      run: |
+        git add k8s/overlays
+        git commit -m "Updated image tag"
+        git push

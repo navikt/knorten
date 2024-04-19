@@ -5,7 +5,7 @@ on:
   push:
 
 env:
-  IMAGE: europe-north1-docker.pkg.dev/knada-gcp/knada-north/knorten
+  IMAGE_NAME: europe-north1-docker.pkg.dev/knada-gcp/knada-north/knorten
 
 jobs:
   test:
@@ -31,14 +31,20 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Google auth
+      id: auth
       uses: google-github-actions/auth@v2
       with:
         project_id: knada-gcp
         workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+    - name: Login to Google Artifact Registry
+      uses: docker/login-action@v3
+      with:
+        registry: europe-north1-docker.pkg.dev
+        username: oauth2accesstoken
+        password: ${{ steps.auth.outputs.access_token }}
     - name: Create image tag
       run: |
-        imagename=europe-north1-docker.pkg.dev/knada-gcp/knada-north/knorten
-        echo "IMAGE=$imagename:$(date '+%Y-%m-%d')-$(git --no-pager log -1 --pretty=%h)" >> $GITHUB_ENV
+        echo "IMAGE=$IMAGE_NAME:$(date '+%Y-%m-%d')-$(git --no-pager log -1 --pretty=%h)" >> $GITHUB_ENV
     - name: Build and push Dockerimage
       uses: docker/build-push-action@v4
       with:

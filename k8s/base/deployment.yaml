@@ -44,7 +44,7 @@ spec:
               mountPath: /home/knorten/.config/helm/repositories.yaml
               subPath: repositories.yaml
             - name: knorten-config
-              mountPath: /app/config.yaml
+              mountPath: /home/knorten/config.yaml
               subPath: config.yaml
           resources:
             limits:

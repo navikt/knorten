@@ -33,7 +33,7 @@ cookies:
         secure: true
         http_only: false
 helm:
-    repository_config: /root/.config/helm/repositories.yaml
+    repository_config: /home/knorten/.config/helm/repositories.yaml
     airflow_chart_version: 1.11.0
     jupyter_chart_version: 3.2.1
 server:

@@ -15,9 +15,9 @@ RUN adduser -u 1001 knorten -D && \
 
 RUN gcloud components install beta
 
-WORKDIR /app
-COPY --from=builder /src/knorten /app/knorten
-COPY --from=builder /src/assets /app/assets
-COPY --from=builder /src/templates /app/templates
+WORKDIR /home/knorten
+COPY --from=builder /src/knorten /home/knorten/knorten
+COPY --from=builder /src/assets /home/knorten/assets
+COPY --from=builder /src/templates /home/knorten/templates
 
-CMD ["/app/knorten", "--config", "/app/config.yaml"]
+CMD ["/home/knorten/knorten", "--config", "/home/knorten/config.yaml"]

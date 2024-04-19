@@ -34,8 +34,9 @@ jobs:
       id: auth
       uses: google-github-actions/auth@v2
       with:
-        project_id: knada-gcp
+        token_format: access_token
         workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ci-knada-images@knada-gcp.iam.gserviceaccount.com
     - name: Login to Google Artifact Registry
       uses: docker/login-action@v3
       with:

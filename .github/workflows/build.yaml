@@ -44,7 +44,7 @@ jobs:
         password: ${{ steps.auth.outputs.access_token }}
     - name: Create image tag
       run: |
-        echo "IMAGE=$IMAGE_NAME:$(date '+%Y-%m-%d')-$(git --no-pager log -1 --pretty=%h)" >> $GITHUB_ENV
+        echo "IMAGE=$IMAGE_NAME:$(git --no-pager log -1 --pretty=format:%H)" >> $GITHUB_ENV
     - name: Build and push Dockerimage
       uses: docker/build-push-action@v4
       with:

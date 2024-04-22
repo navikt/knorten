@@ -61,8 +61,7 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues *JupyterConf
 	}
 
 	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeJupyterhub, TeamValueKeyPYPIAccess, strconv.FormatBool(values.PYPIAccess), team.ID); err != nil {
-		log.WithError(err).Infof("inserting %v team value to database", TeamValueKeyPYPIAccess)
-		return err
+		return fmt.Errorf("inserting %v team value to database: %w", TeamValueKeyPYPIAccess, err)
 	}
 
 	namespace := k8s.TeamIDToNamespace(team.ID)
@@ -76,8 +75,7 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues *JupyterConf
 	}
 
 	if err := c.alterJupyterDefaultFQDNNetpol(ctx, namespace, configurableValues.PYPIAccess); err != nil {
-		log.WithError(err).Info("creating jupyter default FQDN netpol")
-		return err
+		return fmt.Errorf("creating jupyter default FQDN netpol: %w", err)
 	}
 
 	chartValues, err := reflect.CreateChartValues(values)

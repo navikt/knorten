@@ -8,6 +8,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	v1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	"sigs.k8s.io/yaml"
+
+	netv1 "k8s.io/api/networking/v1"
 )
 
 func TestHTTPRoute(t *testing.T) {
@@ -124,6 +126,44 @@ func TestHealthCheckPolicy(t *testing.T) {
 			}
 
 			output, err := yaml.Marshal(got)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			goldenFile.Assert(t, tc.name, output)
+		})
+	}
+}
+
+func TestNewNetworkPolicy(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name   string
+		desc   string
+		policy *netv1.NetworkPolicy
+	}{
+		{
+			name:   "plain-networkpolicy",
+			desc:   "Create a new network policy",
+			policy: networking.NewNetworkPolicy("test-policy", "test-namespace", map[string]string{"app": "test-app"}),
+		},
+		{
+			name:   "jupyter-pypi-networkpolicy",
+			desc:   "Create a new network policy for jupyterhub that allows access to PyPi",
+			policy: networking.NewNetworkPolicyJupyterPyPi("jupyter-policy", "test-namespace"),
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			goldenFile := goldie.New(t)
+
+			output, err := yaml.Marshal(tc.policy)
 			if err != nil {
 				t.Fatal(err)
 			}

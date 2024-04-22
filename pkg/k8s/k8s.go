@@ -10,6 +10,7 @@ import (
 	"github.com/navikt/knorten/pkg/k8s/core"
 	"github.com/navikt/knorten/pkg/k8s/networking"
 	v1 "k8s.io/api/core/v1"
+	netv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -100,10 +101,35 @@ type Manager interface {
 	DeleteNamespace(ctx context.Context, name string) error
 	ApplyServiceAccount(ctx context.Context, serviceAccount *v1.ServiceAccount) error
 	DeleteServiceAccount(ctx context.Context, name, namespace string) error
+	ApplyNetworkPolicy(ctx context.Context, policy *netv1.NetworkPolicy) error
+	DeleteNetworkPolicy(ctx context.Context, name, namespace string) error
 }
 
 type manager struct {
 	client *Client
+}
+
+func (m *manager) ApplyNetworkPolicy(ctx context.Context, policy *netv1.NetworkPolicy) error {
+	err := m.apply(ctx, policy)
+	if err != nil {
+		return fmt.Errorf("applying networkpolicy: %w", err)
+	}
+
+	return nil
+}
+
+func (m *manager) DeleteNetworkPolicy(ctx context.Context, name, namespace string) error {
+	err := m.delete(ctx, &netv1.NetworkPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("deleting networkpolicy: %w", err)
+	}
+
+	return nil
 }
 
 func (m *manager) GetSecret(ctx context.Context, name, namespace string) (*v1.Secret, error) {

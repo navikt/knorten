@@ -16,8 +16,6 @@ var gcpIAMPolicyBindingsRoles = []string{
 	"roles/monitoring.viewer",
 }
 
-const opsServiceAccountEmail = "knada-vm-ops-agent@knada-gcp.iam.gserviceaccount.com"
-
 func (c Client) createComputeInstanceInGCP(ctx context.Context, instanceName, email string) error {
 	if c.dryRun {
 		return nil
@@ -46,7 +44,7 @@ func (c Client) createComputeInstanceInGCP(ctx context.Context, instanceName, em
 		fmt.Sprintf("--labels=goog-ops-agent-policy=v2-x86-template-1-2-0,created-by=knorten,user=%v", normalizeEmailToName(email)),
 		"--tags=knadavm",
 		"--metadata=block-project-ssh-keys=TRUE,enable-osconfig=TRUE",
-		"--service-account", opsServiceAccountEmail,
+		"--service-account", fmt.Sprintf("knada-vm-ops-agent@%v.iam.gserviceaccount.com", c.gcpProject),
 		"--no-scopes",
 	)
 
@@ -229,7 +227,7 @@ func (c Client) addOpsServiceAccountUserBinding(ctx context.Context, email strin
 		"iam",
 		"service-accounts",
 		"add-iam-policy-binding",
-		opsServiceAccountEmail,
+		fmt.Sprintf("knada-vm-ops-agent@%v.iam.gserviceaccount.com", c.gcpProject),
 		"--project", c.gcpProject,
 		"--role", "roles/iam.serviceAccountUser",
 		fmt.Sprintf("--member=user:%v", email),
@@ -253,7 +251,7 @@ func (c Client) removeOpsServiceAccountUserBinding(ctx context.Context, email st
 		"iam",
 		"service-accounts",
 		"remove-iam-policy-binding",
-		opsServiceAccountEmail,
+		fmt.Sprintf("knada-vm-ops-agent@%v.iam.gserviceaccount.com", c.gcpProject),
 		"--project", c.gcpProject,
 		"--role", "roles/iam.serviceAccountUser",
 		fmt.Sprintf("--member=user:%v", email),

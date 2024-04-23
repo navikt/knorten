@@ -73,6 +73,10 @@ func (c Client) resizeComputeInstanceDiskGCP(ctx context.Context, instanceName s
 		return nil
 	}
 
+	if err := c.stopComputeInstance(ctx, instanceName); err != nil {
+		return err
+	}
+
 	cmd := exec.CommandContext(ctx,
 		"gcloud",
 		"--quiet",
@@ -83,6 +87,78 @@ func (c Client) resizeComputeInstanceDiskGCP(ctx context.Context, instanceName s
 		fmt.Sprintf("--project=%v", c.gcpProject),
 		fmt.Sprintf("--zone=%v", c.gcpZone),
 		fmt.Sprintf("--size=%vGB", diskSize),
+	)
+
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	}
+
+	return c.startComputeInstance(ctx, instanceName)
+}
+
+func (c Client) stopComputeInstance(ctx context.Context, instanceName string) error {
+	if c.dryRun {
+		return nil
+	}
+
+	exists, err := c.computeInstanceExistsInGCP(ctx, instanceName)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return nil
+	}
+
+	cmd := exec.CommandContext(ctx,
+		"gcloud",
+		"--quiet",
+		"compute",
+		"instances",
+		"stop",
+		instanceName,
+		"--zone", c.gcpZone,
+		"--project", c.gcpProject,
+	)
+
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	}
+
+	return nil
+}
+
+func (c Client) startComputeInstance(ctx context.Context, instanceName string) error {
+	if c.dryRun {
+		return nil
+	}
+
+	exists, err := c.computeInstanceExistsInGCP(ctx, instanceName)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return nil
+	}
+
+	cmd := exec.CommandContext(ctx,
+		"gcloud",
+		"--quiet",
+		"compute",
+		"instances",
+		"start",
+		instanceName,
+		"--zone", c.gcpZone,
+		"--project", c.gcpProject,
 	)
 
 	stdOut := &bytes.Buffer{}

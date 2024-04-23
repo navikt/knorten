@@ -31,7 +31,12 @@
                            class="navds-text-field__input navds-body-short navds-body-medium"/>
                 </div>
                 <div class="mt-5 gap-2 items-center">
-                    <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action">
+                    <button 
+                        id="submit" 
+                        type="submit" 
+                        onclick="return confirm('Er du sikker? Å endre diskstørrelsen innebærer at compute instancen må restartes, så husk å lagre hvis du har ulagret arbeid')" 
+                        class="navds-button navds-button--primary bg-surface-action"
+                    >
                             <span class="navds-label">
                                 Lagre
                             </span>

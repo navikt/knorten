@@ -270,7 +270,7 @@ func TestCharts(t *testing.T) {
 				"2.0.0",
 				"project",
 				"",
-				"",
+				"knada.io",
 			)
 			if err != nil {
 				t.Error(err)

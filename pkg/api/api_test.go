@@ -116,7 +116,7 @@ func TestMain(m *testing.M) {
 		true,
 	))
 
-	err = New(router, repo, azureClient, logger, true, "", "")
+	err = New(router, repo, azureClient, logger, true, "", "", "test.io")
 	if err != nil {
 		log.Fatalf("setting up api: %v", err)
 	}

@@ -282,6 +282,7 @@ func (c Client) addComputeInstanceOwnerBindingInGCP(ctx context.Context, instanc
 		"--zone", c.gcpZone,
 		"--project", c.gcpProject,
 		"--role", "roles/owner",
+		"--condition=None",
 		fmt.Sprintf("--member=user:%v", user),
 	)
 
@@ -306,6 +307,7 @@ func (c Client) addOpsServiceAccountUserBinding(ctx context.Context, email strin
 		fmt.Sprintf("knada-vm-ops-agent@%v.iam.gserviceaccount.com", c.gcpProject),
 		"--project", c.gcpProject,
 		"--role", "roles/iam.serviceAccountUser",
+		"--condition=None",
 		fmt.Sprintf("--member=user:%v", email),
 	)
 
@@ -356,6 +358,7 @@ func (c Client) addProjectIAMPolicyBindingInGCP(ctx context.Context, instanceNam
 		"add-iam-policy-binding",
 		c.gcpProject,
 		"--role", role,
+		"--condition=None",
 		fmt.Sprintf("--member=user:%v", user),
 	)
 

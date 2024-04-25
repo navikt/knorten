@@ -13,6 +13,6 @@ spec:
         requestPath: /health
       type: HTTP
   targetRef:
-    group: core
+    group: ""
     kind: Service
     name: airflow-webserver

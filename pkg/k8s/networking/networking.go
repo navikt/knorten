@@ -49,7 +49,7 @@ func WithServiceBackend(serviceName string, port int) HTTPRouteOption {
 					{
 						BackendRef: gwapiv1b1.BackendRef{
 							BackendObjectReference: gwapiv1b1.BackendObjectReference{
-								Group: groupPtr(groupNameCore),
+								Group: groupPtr(""),
 								Kind:  kindPtr(serviceKind),
 								Name:  gwapiv1b1.ObjectName(serviceName),
 								Port:  portPtr(port),
@@ -151,7 +151,7 @@ type HealthCheckPolicyOption func(*HealthCheckPolicy)
 func WithServiceTargetRef(name string) HealthCheckPolicyOption {
 	return func(policy *HealthCheckPolicy) {
 		policy.Spec.TargetRef = &HealthCheckPolicySpecTargetRef{
-			Group: groupNameCore,
+			Group: "",
 			Kind:  serviceKind,
 			Name:  name,
 		}

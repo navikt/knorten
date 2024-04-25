@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
 	"github.com/navikt/knorten/pkg/database/gensql"
 )
 

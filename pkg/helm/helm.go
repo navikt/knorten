@@ -4,6 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -11,12 +17,8 @@ import (
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/repo"
-	"io"
-	"os"
+
 	"sigs.k8s.io/yaml"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const (
@@ -373,6 +375,7 @@ type RestoreEnvFn func() error
 
 type Config struct {
 	KubeContext      string
+	KubeConfig       string
 	Debug            bool
 	RepositoryConfig string
 
@@ -384,6 +387,7 @@ type Config struct {
 
 func (c *Config) ToHelmEnvs() map[string]string {
 	return map[string]string{
+		"KUBECONFIG":             c.KubeConfig,
 		"HELM_KUBECONTEXT":       c.KubeContext,
 		"HELM_DEBUG":             strconv.FormatBool(c.Debug),
 		"HELM_REPOSITORY_CONFIG": c.RepositoryConfig,

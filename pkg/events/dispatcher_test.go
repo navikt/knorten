@@ -2,8 +2,9 @@ package events
 
 import (
 	"context"
-	"github.com/sirupsen/logrus"
 	"testing"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/navikt/knorten/pkg/database"
 	"github.com/navikt/knorten/pkg/database/gensql"

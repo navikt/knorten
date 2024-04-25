@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
 	"github.com/navikt/knorten/pkg/k8s/core"
 
 	"github.com/navikt/knorten/pkg/chart"
@@ -13,9 +14,7 @@ import (
 	"github.com/navikt/knorten/pkg/k8s"
 )
 
-var (
-	ErrTeamExists = errors.New("team with slug already exists")
-)
+var ErrTeamExists = errors.New("team with slug already exists")
 
 type Client struct {
 	repo       *database.Repo

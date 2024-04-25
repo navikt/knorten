@@ -1,11 +1,12 @@
 package helm_test
 
 import (
-	"github.com/google/go-cmp/cmp"
-	"github.com/navikt/knorten/pkg/helm"
 	"os"
 	"slices"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/navikt/knorten/pkg/helm"
 )
 
 func TestEstablishEnv(t *testing.T) {

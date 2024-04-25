@@ -34,6 +34,7 @@ const (
 type Client struct {
 	client.Client
 	RESTConfig *rest.Config
+	KubeConfig *KubeConfig
 }
 
 type (
@@ -73,11 +74,19 @@ func NewClient(context string, fn SchemeAdderFn) (*Client, error) {
 		}
 	}
 
+	kubeConfig := NewKubeConfig("knorten")
+
+	err = kubeConfig.FromREST(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("creating kubeconfig: %w", err)
+	}
+
 	log.SetLogger(klog.NewKlogr())
 
 	return &Client{
 		Client:     c,
 		RESTConfig: cfg,
+		KubeConfig: kubeConfig,
 	}, nil
 }
 

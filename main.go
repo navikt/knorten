@@ -114,11 +114,26 @@ func main() {
 		out = os.Stdout
 	}
 
+	kubeConfTemp, err := os.CreateTemp("", "knorten-kubeconfig")
+	if err != nil {
+		log.WithError(err).Fatal("creating temporary kubeconfig file")
+	}
+
+	defer func(name string) {
+		_ = os.Remove(name)
+	}(kubeConfTemp.Name())
+
+	_, err = kubeConfTemp.Write(c.KubeConfig.Contents())
+	if err != nil {
+		log.WithError(err).Fatal("writing kubeconfig to temporary file")
+	}
+
 	helmConfig := &helm.Config{
 		Debug:            cfg.Debug,
 		DryRun:           cfg.DryRun,
 		Err:              errOut,
-		KubeContext:      cfg.Kubernetes.Context,
+		KubeConfig:       kubeConfTemp.Name(),
+		KubeContext:      c.KubeConfig.Name(),
 		Out:              out,
 		RepositoryConfig: cfg.Helm.RepositoryConfig,
 	}

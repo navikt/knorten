@@ -4,12 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
+	"testing"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/navikt/knorten/pkg/database/gensql"
 	"github.com/navikt/knorten/pkg/helm"
 	"github.com/navikt/knorten/pkg/helm/mock"
-	"strings"
-	"testing"
 )
 
 func TestEnricher(t *testing.T) {

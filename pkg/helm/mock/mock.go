@@ -2,6 +2,7 @@ package mock
 
 import (
 	"context"
+
 	"github.com/navikt/knorten/pkg/database/gensql"
 	"github.com/navikt/knorten/pkg/helm"
 )
@@ -19,10 +20,12 @@ type EnricherStore struct {
 
 // We should probably have a mock for each of the interfaces in the helm package, but
 // for now we will make it a little simpler, and just create one store mock for all enrichers
-var _ helm.GlobalEnricherStore = &EnricherStore{}
-var _ helm.TeamEnricherStore = &EnricherStore{}
-var _ helm.AirflowEnricherStore = &EnricherStore{}
-var _ helm.JupyterhubEnricherStore = &EnricherStore{}
+var (
+	_ helm.GlobalEnricherStore     = &EnricherStore{}
+	_ helm.TeamEnricherStore       = &EnricherStore{}
+	_ helm.AirflowEnricherStore    = &EnricherStore{}
+	_ helm.JupyterhubEnricherStore = &EnricherStore{}
+)
 
 func (s *EnricherStore) GlobalValuesGet(ctx context.Context, chartType gensql.ChartType) ([]gensql.ChartGlobalValue, error) {
 	return s.GlobalValuesGetFn(ctx, chartType)

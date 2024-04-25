@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/navikt/knorten/pkg/database/gensql"
 	"helm.sh/helm/v3/pkg/chart"
 	"k8s.io/utils/strings/slices"

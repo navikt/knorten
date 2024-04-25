@@ -30,6 +30,19 @@ func TestKubeConfigFromREST(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:   "Should return kubeconfig using inclusterconfig",
+			golden: "test-config-incluster",
+			cfg: &rest.Config{
+				Host:    "https://localhost:8080",
+				APIPath: "/api",
+				TLSClientConfig: rest.TLSClientConfig{
+					CAFile: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+				},
+				BearerToken:     "token",
+				BearerTokenFile: "/var/run/secrets/kubernetes.io/serviceaccount/token",
+			},
+		},
 	}
 
 	for _, tc := range testCases {

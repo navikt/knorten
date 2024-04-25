@@ -1,0 +1,19 @@
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    server: https://localhost:8080/api
+  name: test-config-incluster
+contexts:
+- context:
+    cluster: test-config-incluster
+    user: test-config-incluster
+  name: test-config-incluster
+current-context: test-config-incluster
+kind: Config
+preferences: {}
+users:
+- name: test-config-incluster
+  user:
+    token: token
+    tokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token

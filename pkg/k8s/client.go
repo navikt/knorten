@@ -32,6 +32,7 @@ func (k *KubeConfig) FromREST(cfg *rest.Config) error {
 
 	kubeConfig.Clusters[k.name] = &kcapi.Cluster{
 		Server:                   (&url.URL{Scheme: protocol, Host: baseURL.Host, Path: cfg.APIPath}).String(),
+		CertificateAuthority:     cfg.CAFile,
 		CertificateAuthorityData: cfg.CAData,
 	}
 	kubeConfig.AuthInfos[k.name] = &kcapi.AuthInfo{
@@ -39,6 +40,7 @@ func (k *KubeConfig) FromREST(cfg *rest.Config) error {
 		ClientCertificateData: cfg.CertData,
 		ClientKeyData:         cfg.KeyData,
 		Token:                 cfg.BearerToken,
+		TokenFile:             cfg.BearerTokenFile,
 		Username:              cfg.Username,
 		Password:              cfg.Password,
 	}

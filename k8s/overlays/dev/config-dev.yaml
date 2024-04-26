@@ -54,4 +54,4 @@ session_key: # Set through env var KNORTEN_SESSION_KEY
 login_page: https://knorten.dev.knada.io/
 top_level_domain: dev.knada.io
 dry_run: false
-debug: false
+debug: true

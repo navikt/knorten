@@ -1,0 +1,31 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: ${TEAM_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  instances: 2
+
+  bootstrap:
+    initdb:
+      database: ${DATABASE}
+      owner: ${USERNAME}
+      import:
+        type: microservice
+        databases:
+          - ${DATABASE}
+        source:
+          externalCluster: cloudsql
+
+  storage:
+    size: 1Gi
+
+  externalClusters:
+    - name: cloudsql
+      connectionParameters:
+        host: ${HOST}
+        user: ${USERNAME}
+        dbname: ${DATABASE}
+      password:
+        name: cloudsql-airflow-pw
+        key: password

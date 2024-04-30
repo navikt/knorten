@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
 set -e
 
 dir="migration-backup"
@@ -40,20 +45,22 @@ for cluster in "$dir"/*; do
 
       env_file="$namespace/env"
 
-      echo "PROTOCOL=$protocol" > $env_file
-      echo "USERNAME=$username" >> $env_file
-      echo "PASSWORD=$password" >> $env_file
-      echo "HOST=$host" >> $env_file
-      echo "PORT=$port" >> $env_file
-      echo "DATABASE=$database" >> $env_file
-      echo "SSLMODE=$sslmode" >> $env_file
-      echo "NAMESPACE=$namespace_name" >> $env_file
-      echo "TEAM_NAME=$team_name" >> $env_file
+      encoded_password=$(echo -n "$password" | base64)
+
+      echo "PROTOCOL=\"$protocol\"" > "$env_file"
+      echo "USERNAME=\"$username\"" >> "$env_file"
+      echo "PASSWORD=\"$encoded_password\"" >> "$env_file"
+      echo "HOST=\"$host\"" >> "$env_file"
+      echo "PORT=\"$port\"" >> "$env_file"
+      echo "DATABASE=\"$database\"" >> "$env_file"
+      echo "SSLMODE=\"$sslmode\"" >> "$env_file"
+      echo "NAMESPACE=\"$namespace_name\"" >> "$env_file"
+      echo "TEAM_NAME=\"$team_name\"" >> "$env_file"
 
       echo "Environment file created for namespace '$namespace'"
 
     else
-      echo "Secret file $secret_file does not exist"
+      echo "${YELLOW}Secret file $secret_file does not exist${NC}"
     fi
   done
 done

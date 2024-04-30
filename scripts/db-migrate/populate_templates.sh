@@ -6,6 +6,10 @@ dir="migration-backup"
 
 for cluster in "$dir"/*; do
   for namespace in "$cluster"/*; do
+    if [[ ! -d $namespace ]]; then
+      continue
+    fi
+
     mkdir -p "$namespace/rendered"
 
     env_file="$namespace/env"

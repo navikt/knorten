@@ -2,6 +2,11 @@
 
 set -e
 
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
 kubectx=$1
 namespace=$2
 
@@ -11,52 +16,38 @@ if [[ -z $kubectx ]] || [[ -z $namespace ]]; then
 fi
 
 # Confirmation prompt
-read -p "You are about to switch Airflow database in Kubernetes cluster '$kubectx', and namespace '$namespace'. Do you want to continue? (yes/no): " confirm
-confirm=$(echo $confirm | tr '[:upper:]' '[:lower:]')
+echo -e "You are about to switch Airflow database in Kubernetes cluster ${GREEN}'$kubectx'${NC}, and namespace ${GREEN}'$namespace'${NC}."
+read -r -p "Do you want to continue? (yes/no): " confirm
+confirm=$(echo "$confirm" | tr '[:upper:]' '[:lower:]')
 if [[ $confirm =~ ^(yes|y)$ ]]; then
-    echo "Proceeding with operations..."
+    echo -e "${GREEN}Proceeding with operations...${NV}"
 else
-    echo "Operation cancelled."
+    echo -e "${RED}Operation cancelled.${NC}"
     exit 1
 fi
 
-env_file="migration-backup/$kubectx/$namespace/env"
+team_name=${namespace#team-}
 
-if [[ -f $env_file ]]; then
-  set -a
-  source $env_file
-  set +a
-
-  envsubst < "templates/secret-template.yaml" > "$secret_template_output"
-  envsubst < "templates/cluster-template.yaml" > "$cluster_template_output"
-
-  echo "Templates rendered for namespace '$namespace'"
-else
-  echo "Env file $env_file does not exist"
-fi
-
-namespace_name=$(basename "$namespace")
-team_name=${namespace_name#team-}
-
-new_uri=$(kubectl --context $kubectx get secret "${team_name}-app" --namespace "$namespace" -o json | jq -r '.data.uri | @base64d')
+new_uri=$(kubectl --context "$kubectx" get secret "${team_name}-app" --namespace "$namespace" -o json | jq -r '.data.uri')
 
 rendered_dir="migration-backup/$kubectx/$namespace/rendered"
 airflow_secret_template_output="$rendered_dir/airflow-secret.yaml"
 
 set -a
 export URI=$new_uri
+export NAMESPACE=$namespace
 set +a
 
-envsubst < "templates/airflow-secret-template.yaml" > "$airflow_secret_template_output"
+envsubst < "templates/airflow-db-template.yaml" > "$airflow_secret_template_output"
 
 if [[ -f $airflow_secret_template_output ]]; then
-  echo "Updating airlow secret new resources for namespace '$namespace'..."
-  kubectl --context $kubectx apply -f "$airflow_secret_template_output"
+  echo -e "${GREEN}Updating airlow secret new resources for namespace '$namespace'...${NC}"
+  kubectl --context "$kubectx" apply -f "$airflow_secret_template_output"
 
-  kubectl --context $kubectx scale deployment airflow-webserver --namespace $namespace --replicas=2
-  kubectl --context $kubectx scale deployment airflow-scheduler --namespace $namespace --replicas=2
+  kubectl --context "$kubectx" scale deployment airflow-webserver --namespace "$namespace" --replicas=2
+  kubectl --context "$kubectx" scale deployment airflow-scheduler --namespace "$namespace" --replicas=2
 
-  echo "Resources applied for namespace '$namespace'"
+  echo -e "${GREEN}Resources applied for namespace '$namespace'${NC}"
 else
-  echo "Templates for namespace '$namespace' do not exist"
+  echo -e "${YELLOW}Templates for namespace '$namespace' do not exist${NC}"
 fi

@@ -1,22 +1,27 @@
 resources:
-  - ../../base
+- ../../base
 
 patchesStrategicMerge:
-  - cloudsql-proxy-patch.yaml
-  - hostname-patch.yaml
+- cloudsql-proxy-patch.yaml
+- hostname-patch.yaml
 
 generatorOptions:
   disableNameSuffixHash: true
 
 configMapGenerator:
-  - name: knorten-config
-    namespace: knada-system
-    files:
-      - config.yaml=config-prod.yaml
-  - name: helm-repos
-    namespace: knada-system
-    files:
-      - repositories.yaml=helm-repositories.yaml
-    literals:
-      - airflow_chart_version="1.12.0"
-      - jupyter_chart_version="3.2.1"
+- files:
+  - config.yaml=config-prod.yaml
+  name: knorten-config
+  namespace: knada-system
+- files:
+  - repositories.yaml=helm-repositories.yaml
+  literals:
+  - airflow_chart_version="1.12.0"
+  - jupyter_chart_version="3.2.1"
+  name: helm-repos
+  namespace: knada-system
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+images:
+- name: europe-north1-docker.pkg.dev/knada-gcp/knada-north/knorten
+  newTag: b79f425f8032eb92658572507d11a358ea6d9512

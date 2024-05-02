@@ -69,7 +69,6 @@ Her vil du se hvilke klasser som ligger på komponenten du ønsker å lage.
 Siden vi importerer `@navikt/ds-css` kan disse klassene brukes verbatim i koden vår.
 
 ### Postgres
-
 Bruk Docker Compose:
 
     docker-compose up -d
@@ -84,7 +83,6 @@ Hvis du allerede har en Postgres-instans kjørende kan du bare lage en ny databa
     psql -h localhost -U postgres -c 'CREATE DATABASE knorten;'
 
 ## Tilgang til Postgres i prod
-
 Trenger man tilgang til prod-databasen kan man gjøre dette med `gcloud` og `cloud_sql_proxy`.
 
 ```

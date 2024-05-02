@@ -5,12 +5,10 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -21,12 +19,6 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/endpoints"
 )
-
-type OauthConfig struct {
-	ClientID     string
-	ClientSecret string
-	TenantID     string
-}
 
 type Session struct {
 	Email       string `json:"preferred_username"`
@@ -43,6 +35,7 @@ type Azure struct {
 	clientID     string
 	clientSecret string
 	tenantID     string
+	redirectURL  string
 	dryRun       bool
 	provider     *oidc.Provider
 	log          *logrus.Entry
@@ -52,10 +45,6 @@ type User struct {
 	Name    string
 	Email   string
 	Expires time.Time
-}
-
-type AzureGroupsWithIDResponse struct {
-	Groups []AzureGroupWithID `json:"value"`
 }
 
 type AzureGroupWithID struct {
@@ -75,7 +64,7 @@ const (
 	AzureGroupsEndpoint = "https://graph.microsoft.com/v1.0/groups"
 )
 
-func NewAzureClient(dryRun bool, clientID, clientSecret, tenantID string, log *logrus.Entry) (*Azure, error) {
+func NewAzureClient(dryRun bool, clientID, clientSecret, tenantID, redirectURL string, log *logrus.Entry) (*Azure, error) {
 	if dryRun {
 		log.Infof("NOOP: Running in dry run mode")
 		return &Azure{
@@ -93,6 +82,7 @@ func NewAzureClient(dryRun bool, clientID, clientSecret, tenantID string, log *l
 		clientID:     clientID,
 		clientSecret: clientSecret,
 		tenantID:     tenantID,
+		redirectURL:  redirectURL,
 		provider:     provider,
 		dryRun:       dryRun,
 		log:          log,
@@ -103,16 +93,11 @@ func NewAzureClient(dryRun bool, clientID, clientSecret, tenantID string, log *l
 }
 
 func (a *Azure) setupOAuth2() {
-	redirectURL := "https://knorten.knada.io/oauth2/callback"
-	if os.Getenv("GIN_MODE") != "release" {
-		redirectURL = "http://localhost:8080/oauth2/callback"
-	}
-
 	a.Config = oauth2.Config{
 		ClientID:     a.clientID,
 		ClientSecret: a.clientSecret,
 		Endpoint:     a.provider.Endpoint(),
-		RedirectURL:  redirectURL,
+		RedirectURL:  a.redirectURL,
 		Scopes:       []string{"openid", fmt.Sprintf("%s/.default", a.clientID)},
 	}
 }
@@ -299,50 +284,6 @@ func (a *Azure) getBearerTokenForApplication() (string, error) {
 	}
 
 	return tokenResponse.AccessToken, nil
-}
-
-func (a *Azure) GetGroupID(groupMail string) (string, error) {
-	if a.dryRun {
-		a.log.Infof("NOOP: Running in dry run mode")
-		return "dummyID", nil
-	}
-
-	token, err := a.getBearerTokenForApplication()
-	if err != nil {
-		return "", err
-	}
-
-	params := url.Values{}
-	params.Add("$select", "id,displayName,mail")
-	params.Add("$filter", fmt.Sprintf("mail eq '%v'", groupMail))
-
-	req, err := http.NewRequest(http.MethodGet,
-		AzureGroupsEndpoint+"?"+params.Encode(),
-		nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", token))
-
-	httpClient := &http.Client{
-		Timeout: time.Second * 10,
-	}
-
-	response, err := httpClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-
-	var groupsResponse AzureGroupsWithIDResponse
-	if err := json.NewDecoder(response.Body).Decode(&groupsResponse); err != nil {
-		return "", err
-	}
-
-	if len(groupsResponse.Groups) > 0 {
-		return groupsResponse.Groups[0].ID, nil
-	} else {
-		return "", errors.New("group not found by the mail")
-	}
 }
 
 type CertificateList []*x509.Certificate

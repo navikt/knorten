@@ -26,18 +26,20 @@ type Loader interface {
 }
 
 type Config struct {
-	Oauth      Oauth    `yaml:"oauth"`
-	GCP        GCP      `yaml:"gcp"`
-	Cookies    Cookies  `yaml:"cookies"`
-	Helm       Helm     `yaml:"helm"`
-	Server     Server   `yaml:"server"`
-	Postgres   Postgres `yaml:"postgres"`
-	DBEncKey   string   `yaml:"db_enc_key"`
-	AdminGroup string   `yaml:"admin_group"`
-	SessionKey string   `yaml:"session_key"`
-	LoginPage  string   `yaml:"login_page"`
-	DryRun     bool     `yaml:"dry_run"`
-	InCluster  bool     `yaml:"in_cluster"`
+	Oauth          Oauth      `yaml:"oauth"`
+	GCP            GCP        `yaml:"gcp"`
+	Cookies        Cookies    `yaml:"cookies"`
+	Helm           Helm       `yaml:"helm"`
+	Server         Server     `yaml:"server"`
+	Postgres       Postgres   `yaml:"postgres"`
+	Kubernetes     Kubernetes `yaml:"kubernetes"`
+	DBEncKey       string     `yaml:"db_enc_key"`
+	AdminGroupID   string     `yaml:"admin_group_id"`
+	SessionKey     string     `yaml:"session_key"`
+	LoginPage      string     `yaml:"login_page"`
+	TopLevelDomain string     `yaml:"top_level_domain"`
+	DryRun         bool       `yaml:"dry_run"`
+	Debug          bool       `yaml:"debug"`
 }
 
 func (c Config) Validate() error {
@@ -50,7 +52,7 @@ func (c Config) Validate() error {
 		validation.Field(&c.Postgres, validation.Required),
 		validation.Field(&c.DBEncKey, validation.Required),
 		validation.Field(&c.LoginPage, validation.Required),
-		validation.Field(&c.AdminGroup, validation.Required),
+		validation.Field(&c.AdminGroupID, validation.Required, is.UUID),
 		validation.Field(&c.SessionKey, validation.Required),
 	)
 }
@@ -101,6 +103,7 @@ type Oauth struct {
 	ClientID     string `yaml:"client_id"`
 	ClientSecret string `yaml:"client_secret"`
 	TenantID     string `yaml:"tenant_id"`
+	RedirectURL  string `yaml:"redirect_url"`
 }
 
 func (o Oauth) Validate() error {
@@ -108,6 +111,7 @@ func (o Oauth) Validate() error {
 		validation.Field(&o.ClientID, validation.Required),
 		validation.Field(&o.ClientSecret, validation.Required),
 		validation.Field(&o.TenantID, validation.Required),
+		validation.Field(&o.RedirectURL, validation.Required, is.URL),
 	)
 }
 
@@ -128,12 +132,14 @@ func (g GCP) Validate() error {
 }
 
 type Helm struct {
+	RepositoryConfig    string `yaml:"repository_config"`
 	AirflowChartVersion string `yaml:"airflow_chart_version"`
 	JupyterChartVersion string `yaml:"jupyter_chart_version"`
 }
 
 func (h Helm) Validate() error {
 	return validation.ValidateStruct(&h,
+		validation.Field(&h.RepositoryConfig, validation.Required),
 		validation.Field(&h.AirflowChartVersion, validation.Required),
 		validation.Field(&h.JupyterChartVersion, validation.Required),
 	)
@@ -185,6 +191,16 @@ func (c CookieSettings) Validate() error {
 		// Valid SameSite values:
 		// - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value
 		validation.Field(&c.SameSite, validation.Required, validation.In("Strict", "Lax", "None")),
+	)
+}
+
+type Kubernetes struct {
+	Context string `yaml:"context"`
+}
+
+func (k Kubernetes) Validate() error {
+	return validation.ValidateStruct(&k,
+		validation.Field(&k.Context),
 	)
 }
 

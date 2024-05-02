@@ -1,0 +1,22 @@
+resources:
+  - ../../base
+
+patchesStrategicMerge:
+  - cloudsql-proxy-patch.yaml
+  - hostname-patch.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+  - name: knorten-config
+    namespace: knada-system
+    files:
+      - config.yaml=config-prod.yaml
+  - name: helm-repos
+    namespace: knada-system
+    files:
+      - repositories.yaml=helm-repositories.yaml
+    literals:
+      - airflow_chart_version="1.12.0"
+      - jupyter_chart_version="3.2.1"

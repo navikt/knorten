@@ -62,13 +62,13 @@ func TestUserAPI(t *testing.T) {
 						Slug:   team.Slug,
 						Jupyterhub: &database.AppService{
 							App:       string(gensql.ChartTypeJupyterhub),
-							Ingress:   fmt.Sprintf("https://%v.jupyter.knada.io", team.Slug),
+							Ingress:   fmt.Sprintf("https://%v.jupyter.test.io", team.Slug),
 							Slug:      team.Slug,
 							Namespace: k8s.TeamIDToNamespace(team.ID),
 						},
 						Airflow: &database.AppService{
 							App:       string(gensql.ChartTypeAirflow),
-							Ingress:   fmt.Sprintf("https://%v.airflow.knada.io", team.Slug),
+							Ingress:   fmt.Sprintf("https://%v.airflow.test.io", team.Slug),
 							Slug:      team.Slug,
 							Namespace: k8s.TeamIDToNamespace(team.ID),
 						},
@@ -101,7 +101,7 @@ func prepareUserTests(ctx context.Context) (*gensql.Team, error) {
 		Slug:  "team",
 		Users: []string{testUser.Email},
 	}
-	err := repo.TeamCreate(ctx, team)
+	err := repo.TeamCreate(ctx, &team)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func prepareUserTests(ctx context.Context) (*gensql.Team, error) {
 		return nil, err
 	}
 
-	err = repo.ComputeInstanceCreate(ctx, gensql.ComputeInstance{
+	err = repo.ComputeInstanceCreate(ctx, &gensql.ComputeInstance{
 		Owner: testUser.Email,
 		Name:  "compute-" + getNormalizedNameFromEmail(testUser.Email),
 	})

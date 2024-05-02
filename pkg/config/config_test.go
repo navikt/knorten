@@ -57,6 +57,7 @@ func newFakeConfig() config.Config {
 			},
 		},
 		Helm: config.Helm{
+			RepositoryConfig:    "some/path/repositories.yaml",
 			AirflowChartVersion: "1.10.0",
 			JupyterChartVersion: "2.0.0",
 		},
@@ -72,12 +73,16 @@ func newFakeConfig() config.Config {
 			SSLMode:      "disable",
 			DatabaseName: "knorten",
 		},
-		DBEncKey:   "jegersekstentegn",
-		AdminGroup: "nada@nav.no",
-		SessionKey: "test-session",
-		LoginPage:  "http://localhost:8080/",
-		DryRun:     false,
-		InCluster:  false,
+		Kubernetes: config.Kubernetes{
+			Context: "minikube",
+		},
+		DBEncKey:       "jegersekstentegn",
+		AdminGroupID:   "f2816319-7db0-4061-8d0c-5ddbe232d60c",
+		SessionKey:     "test-session",
+		LoginPage:      "http://localhost:8080/",
+		TopLevelDomain: "knada.io",
+		DryRun:         false,
+		Debug:          false,
 	}
 }
 
@@ -131,14 +136,14 @@ func TestLoad(t *testing.T) {
 			loader: config.NewFileSystemLoader(),
 			expect: func() config.Config {
 				cfg := newFakeConfig()
-				cfg.AdminGroup = "something_super_random"
+				cfg.AdminGroupID = "something_super_random"
 				cfg.GCP.Project = "project_x"
 
 				return cfg
 			}(),
 			envs: map[string]string{
-				"ADMIN_GROUP": "something_super_random",
-				"GCP_PROJECT": "project_x",
+				"ADMIN_GROUP_ID": "something_super_random",
+				"GCP_PROJECT":    "project_x",
 			},
 		},
 		{
@@ -149,14 +154,16 @@ func TestLoad(t *testing.T) {
 			loader:    config.NewFileSystemLoader(),
 			expect: func() config.Config {
 				cfg := newFakeConfig()
-				cfg.AdminGroup = "something_super_random"
+				cfg.AdminGroupID = "something_super_random"
 				cfg.GCP.Project = "project_x"
+				cfg.TopLevelDomain = "something.different.io"
 
 				return cfg
 			}(),
 			envs: map[string]string{
-				"KNORTEN_ADMIN_GROUP": "something_super_random",
-				"KNORTEN_GCP_PROJECT": "project_x",
+				"KNORTEN_ADMIN_GROUP_ID":   "something_super_random",
+				"KNORTEN_TOP_LEVEL_DOMAIN": "something.different.io",
+				"KNORTEN_GCP_PROJECT":      "project_x",
 			},
 		},
 	}

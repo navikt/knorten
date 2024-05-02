@@ -34,7 +34,7 @@ func (c *client) setupUserRoutes() {
 			return
 		}
 
-		services, err := c.repo.ServicesForUser(ctx, user.Email)
+		services, err := c.repo.ServicesForUser(ctx, user.Email, c.topLevelDomain)
 		ctx.HTML(http.StatusOK, "oversikt/index", gin.H{
 			"errors":     err,
 			"flashes":    flashes,

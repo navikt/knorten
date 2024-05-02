@@ -70,7 +70,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("open sql connection: %v", err)
 	}
 
-	azureClient, err := auth.NewAzureClient(true, "", "", "", logger)
+	azureClient, err := auth.NewAzureClient(true, "", "", "", "", logger)
 	if err != nil {
 		log.Fatalf("creating azure client: %v", err)
 	}
@@ -116,7 +116,7 @@ func TestMain(m *testing.M) {
 		true,
 	))
 
-	err = New(router, repo, azureClient, logger, true, "", "")
+	err = New(router, repo, azureClient, logger, true, "", "", "test.io")
 	if err != nil {
 		log.Fatalf("setting up api: %v", err)
 	}

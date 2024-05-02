@@ -28,6 +28,9 @@ charts/*
 
 hack
 
+/Library
+/.kube
+
 # npm
 node_modules
 !package-lock.json

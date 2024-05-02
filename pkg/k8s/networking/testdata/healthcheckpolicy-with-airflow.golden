@@ -1,0 +1,18 @@
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  creationTimestamp: null
+  labels:
+    managed-by: knorten.knada.io
+  name: airflow-test-policy
+  namespace: test-namespace
+spec:
+  default:
+    config:
+      httpHealthCheck:
+        requestPath: /health
+      type: HTTP
+  targetRef:
+    group: ""
+    kind: Service
+    name: airflow-webserver

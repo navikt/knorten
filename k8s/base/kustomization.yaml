@@ -1,0 +1,5 @@
+resources:
+  - deployment.yaml
+  - healthcheckpolicy.yaml
+  - httproute.yaml
+  - service.yaml

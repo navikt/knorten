@@ -32,6 +32,7 @@ cookies:
         secure: true
         http_only: true
 helm:
+    repository_config: some/path/repositories.yaml
     airflow_chart_version: 1.10.0
     jupyter_chart_version: 2.0.0
 server:
@@ -44,9 +45,13 @@ postgres:
     password: postgres
     database_name: knorten
     ssl_mode: disable
+kubernetes:
+    context: minikube
 db_enc_key: jegersekstentegn
-admin_group: nada@nav.no
+admin_group_id: f2816319-7db0-4061-8d0c-5ddbe232d60c
+top_level_domain: knada.io
 session_key: test-session
 login_page: http://localhost:8080/
 dry_run: false
+debug: false
 in_cluster: false

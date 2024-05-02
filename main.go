@@ -4,8 +4,15 @@ import (
 	"context"
 	"flag"
 	"html/template"
+	"io"
 	"net"
+	"os"
 	"time"
+
+	"github.com/navikt/knorten/pkg/gcpapi"
+	"github.com/navikt/knorten/pkg/gcpapi/mock"
+	"github.com/navikt/knorten/pkg/k8s"
+	"google.golang.org/api/iam/v1"
 
 	"github.com/gin-gonic/gin"
 	"github.com/navikt/knorten/pkg/api"
@@ -36,28 +43,21 @@ func main() {
 	fileParts, err := config.ProcessConfigPath(*configFilePath)
 	if err != nil {
 		log.WithError(err).Fatal("processing config path")
-
-		return
 	}
 
 	cfg, err := config.NewFileSystemLoader().Load(fileParts.FileName, fileParts.Path, "KNORTEN")
 	if err != nil {
 		log.WithError(err).Fatal("loading config")
-
-		return
 	}
 
 	err = cfg.Validate()
 	if err != nil {
 		log.WithError(err).Fatal("validating config")
-
-		return
 	}
 
 	dbClient, err := database.New(cfg.Postgres.ConnectionString(), cfg.DBEncKey, log.WithField("subsystem", "db"))
 	if err != nil {
 		log.WithError(err).Fatal("setting up database")
-		return
 	}
 
 	azureClient, err := auth.NewAzureClient(
@@ -65,33 +65,99 @@ func main() {
 		cfg.Oauth.ClientID,
 		cfg.Oauth.ClientSecret,
 		cfg.Oauth.TenantID,
+		cfg.Oauth.RedirectURL,
 		log.WithField("subsystem", "auth"),
 	)
 	if err != nil {
 		log.WithError(err).Fatal("creating azure client")
-		return
 	}
 
 	if !cfg.DryRun {
 		imageUpdater := imageupdater.NewClient(dbClient, log.WithField("subsystem", "imageupdater"))
 		go imageUpdater.Run(imageUpdaterFrequency)
+	}
 
-		if err := helm.UpdateHelmRepositories(); err != nil {
-			log.WithError(err).Fatal("updating helm repositories")
-		}
+	c, err := k8s.NewClient(cfg.Kubernetes.Context, k8s.DefaultSchemeAdder())
+	if err != nil {
+		log.WithError(err).Fatal("creating k8s client")
+	}
+
+	if cfg.DryRun {
+		c.Client = k8s.NewDryRunClient(c.Client)
+	}
+
+	ctx := context.Background()
+
+	iamService, err := iam.NewService(ctx)
+	if err != nil {
+		log.WithError(err).Fatal("creating iam service")
+	}
+
+	policyManager := gcpapi.NewServiceAccountPolicyManager(cfg.GCP.Project, iamService)
+	fetcher := gcpapi.NewServiceAccountFetcher(cfg.GCP.Project, iamService)
+
+	if cfg.DryRun {
+		policyManager = mock.NewServiceAccountPolicyManager(&iam.Policy{}, nil)
+		fetcher = mock.NewServiceAccountFetcher(&iam.ServiceAccount{}, nil)
+	}
+
+	binder := gcpapi.NewServiceAccountPolicyBinder(cfg.GCP.Project, policyManager)
+	checker := gcpapi.NewServiceAccountChecker(cfg.GCP.Project, fetcher)
+
+	errOut := io.Discard
+	if cfg.Debug {
+		errOut = os.Stderr
+	}
+
+	out := io.Discard
+	if cfg.Debug {
+		out = os.Stdout
+	}
+
+	kubeConfTemp, err := os.CreateTemp("", "knorten-kubeconfig")
+	if err != nil {
+		log.WithError(err).Fatal("creating temporary kubeconfig file")
+	}
+
+	defer func(name string) {
+		_ = os.Remove(name)
+	}(kubeConfTemp.Name())
+
+	_, err = kubeConfTemp.Write(c.KubeConfig.Contents())
+	if err != nil {
+		log.WithError(err).Fatal("writing kubeconfig to temporary file")
+	}
+
+	helmConfig := &helm.Config{
+		Debug:            cfg.Debug,
+		DryRun:           cfg.DryRun,
+		Err:              errOut,
+		KubeConfig:       kubeConfTemp.Name(),
+		KubeContext:      c.KubeConfig.Name(),
+		Out:              out,
+		RepositoryConfig: cfg.Helm.RepositoryConfig,
+	}
+
+	helmClient, err := helm.NewClient(helmConfig, dbClient)
+	if err != nil {
+		log.WithError(err).Fatal("creating helm client")
 	}
 
 	eventHandler, err := events.NewHandler(
-		context.Background(),
+		ctx,
 		dbClient,
 		azureClient,
+		k8s.NewManager(c),
+		binder,
+		checker,
+		helmClient,
 		cfg.GCP.Project,
 		cfg.GCP.Region,
 		cfg.GCP.Zone,
 		cfg.Helm.AirflowChartVersion,
 		cfg.Helm.JupyterChartVersion,
+		cfg.TopLevelDomain,
 		cfg.DryRun,
-		cfg.InCluster,
 		log.WithField("subsystem", "events"),
 	)
 	if err != nil {
@@ -109,16 +175,9 @@ func main() {
 		return
 	}
 
-	adminGroupID, err := azureClient.GetGroupID(cfg.AdminGroup)
-	if err != nil {
-		log.WithError(err).Fatal("getting admin group id")
-
-		return
-	}
-
 	authService := service.NewAuthService(
 		dbClient,
-		adminGroupID,
+		cfg.AdminGroupID,
 		1*time.Hour,
 		32,
 		azureClient,
@@ -150,7 +209,7 @@ func main() {
 		cfg.DryRun,
 	))
 
-	err = api.New(router, dbClient, azureClient, log.WithField("subsystem", "api"), cfg.DryRun, cfg.GCP.Project, cfg.GCP.Zone)
+	err = api.New(router, dbClient, azureClient, log.WithField("subsystem", "api"), cfg.DryRun, cfg.GCP.Project, cfg.GCP.Zone, cfg.TopLevelDomain)
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return

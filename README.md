@@ -12,30 +12,37 @@ Ellers blir Knorten satt opp gjennom [nais/knada-gcp](https://github.com/nais/kn
 For å jobbe med Knorten lokalt trenger man å ha Postgres kjørende, og basen må prepouleres med litt data.
 I tillegg benytter vi et oppsett med Tailwind og Designsystemet.
 
-- `docker-compose up -d db` for å starte Postgres.
-- Kjør `make init` etter du har kjørt opp Postgres for å populere databasen.
-- Kjør `npm install` for å sette opp nødvendig rammeverk for Tailwind.
 
-### Lokalt uten tredjeparter
+### Lokalt uten Kubernetes og Helm
 
-Kjør `make local` for å kjøre Knorten uten kobling til noe annet enn Postgres.
+1. `docker-compose up -d db` for å starte Postgres.
+2. `make init` etter du har kjørt opp Postgres for å populere databasen.
+3. `npm install` for å sette opp nødvendig rammeverk for Tailwind.
+4. `make local` for å starte Knorten uten kobling til noe annet enn Postgres.
 
-### Lokalt med tredjeparter i eget cluster
+### Lokalt med Kubernetes og Helm
+NB: vi kopierer noen Secrets og ConfigMaps fra prod til minikube. Vi bruker `gke_knada-gcp_europe-north1_knada-gke` som default context, men du kan overkjøre denne ved å sette `PROD_KUBE_CONTEXT`-miljøvariabelen.
 
-Har man behov for å teste mot et cluster så kan man bruke `make local-online`, dette kobler deg opp til `nada-dev-db2e`, og et lokalt [Minikube](https://minikube.sigs.k8s.io/) cluster.
+```bash
+# Kjør opp alt
+make run
 
-Sett opp minikube clusteret med: `minikube start --driver=qemu2 --kubernetes-version=v1.27.4`
+# Velg en annen k8s context for å kopiere ut secrets og configmaps
+KUBECTL_PROD_CTX=my-prod-name make run
 
-Husk å skru på [gcp-auth](https://minikube.sigs.k8s.io/docs/handbook/addons/gcp-auth/) i Minikube.
+# Sleng på ekstra argumenter til minikube start
+MINIKUBE_START_ARGS="--cache-images=false" make run
+```
 
-PS: Hver gang du logger inn med `gcloud auth login --update-adc` må kjøre `minikube addons enable gcp-auth --refresh` for å oppdatere tokenet.
+Etter at applikaskonen er oppe og kjører kan du opprette en Airflow instans, etc. Azure AD er satt opp slik at du kan logge inn med NAV-ident. Men du må sette opp port-forward fra `airflow-webserver` til `localhost:8888` for å kunne logge inn.
 
-#### CRDer for Minikube
+```bash
 
-Man må legge til følgende CRDer når man kjører lokalt.
+For å fjerne **alt** igjen:
 
-    kubectl apply --context minikube -f https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/main/config/crd/standard/gateway.networking.k8s.io_httproutes.yaml
-    kubectl apply --context minikube -f https://raw.githubusercontent.com/GoogleCloudPlatform/gke-networking-recipes/main/gateway-api/config/servicepolicies/crd/standard/healthcheckpolicy.yaml
+```bash
+make clean
+```
 
 ### Generering av CSS
 

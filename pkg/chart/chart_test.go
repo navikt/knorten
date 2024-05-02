@@ -4,12 +4,22 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"io"
 	"log"
 	"os"
 	"path"
 	"runtime"
 	"strings"
 	"testing"
+
+	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
+	"github.com/navikt/knorten/pkg/gcpapi"
+	"github.com/navikt/knorten/pkg/gcpapi/mock"
+	"github.com/navikt/knorten/pkg/k8s"
+	"google.golang.org/api/iam/v1"
+
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	gwapiv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/navikt/knorten/local/dbsetup"
@@ -44,7 +54,7 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	azureClient, err = auth.NewAzureClient(true, "", "", "", logrus.NewEntry(logrus.StandardLogger()))
+	azureClient, err = auth.NewAzureClient(true, "", "", "", "", logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
 		log.Fatalf("creating azure client: %v", err)
 	}
@@ -71,21 +81,21 @@ func TestCharts(t *testing.T) {
 		}
 	})
 
-	operation := func(ctx context.Context, eventType database.EventType, values any, chartClient *Client) bool {
+	operation := func(ctx context.Context, eventType database.EventType, values any, chartClient *Client) error {
 		switch eventType {
 		case database.EventTypeCreateJupyter,
 			database.EventTypeUpdateJupyter:
-			return chartClient.SyncJupyter(ctx, values.(JupyterConfigurableValues), logrus.NewEntry(logrus.StandardLogger()))
+			return chartClient.SyncJupyter(ctx, values.(*JupyterConfigurableValues))
 		case database.EventTypeDeleteJupyter:
-			return chartClient.DeleteJupyter(ctx, values.(JupyterConfigurableValues).TeamID, logrus.NewEntry(logrus.StandardLogger()))
+			return chartClient.DeleteJupyter(ctx, values.(*JupyterConfigurableValues).TeamID)
 		case database.EventTypeCreateAirflow,
 			database.EventTypeUpdateAirflow:
-			return chartClient.SyncAirflow(ctx, values.(AirflowConfigurableValues), logrus.NewEntry(logrus.StandardLogger()))
+			return chartClient.SyncAirflow(ctx, values.(*AirflowConfigurableValues))
 		case database.EventTypeDeleteAirflow:
-			return chartClient.DeleteAirflow(ctx, values.(AirflowConfigurableValues).TeamID, logrus.NewEntry(logrus.StandardLogger()))
+			return chartClient.DeleteAirflow(ctx, values.(*AirflowConfigurableValues).TeamID)
 		}
 
-		return true
+		return nil
 	}
 
 	type args struct {
@@ -104,7 +114,7 @@ func TestCharts(t *testing.T) {
 			args: args{
 				eventType: database.EventTypeCreateJupyter,
 				chartType: gensql.ChartTypeJupyterhub,
-				values: JupyterConfigurableValues{
+				values: &JupyterConfigurableValues{
 					TeamID:        team.ID,
 					UserIdents:    []string{"d123456", "u654321"},
 					CPULimit:      "1.0",
@@ -137,7 +147,7 @@ func TestCharts(t *testing.T) {
 			args: args{
 				eventType: database.EventTypeCreateJupyter,
 				chartType: gensql.ChartTypeJupyterhub,
-				values: JupyterConfigurableValues{
+				values: &JupyterConfigurableValues{
 					TeamID:        team.ID,
 					UserIdents:    []string{"d123456"},
 					CPULimit:      "1.0",
@@ -169,7 +179,7 @@ func TestCharts(t *testing.T) {
 			args: args{
 				eventType: database.EventTypeDeleteJupyter,
 				chartType: gensql.ChartTypeJupyterhub,
-				values: JupyterConfigurableValues{
+				values: &JupyterConfigurableValues{
 					TeamID: team.ID,
 				},
 			},
@@ -180,7 +190,7 @@ func TestCharts(t *testing.T) {
 			args: args{
 				eventType: database.EventTypeCreateAirflow,
 				chartType: gensql.ChartTypeAirflow,
-				values: AirflowConfigurableValues{
+				values: &AirflowConfigurableValues{
 					TeamID:        team.ID,
 					DagRepo:       "navikt/my-dags",
 					DagRepoBranch: "main",
@@ -201,7 +211,7 @@ func TestCharts(t *testing.T) {
 			args: args{
 				eventType: database.EventTypeUpdateAirflow,
 				chartType: gensql.ChartTypeAirflow,
-				values: AirflowConfigurableValues{
+				values: &AirflowConfigurableValues{
 					TeamID:        team.ID,
 					DagRepo:       "navikt/other-dags",
 					DagRepoBranch: "master",
@@ -222,7 +232,7 @@ func TestCharts(t *testing.T) {
 			args: args{
 				eventType: database.EventTypeDeleteAirflow,
 				chartType: gensql.ChartTypeAirflow,
-				values: AirflowConfigurableValues{
+				values: &AirflowConfigurableValues{
 					TeamID: team.ID,
 				},
 			},
@@ -232,13 +242,43 @@ func TestCharts(t *testing.T) {
 
 	for _, tt := range teamTests {
 		t.Run(tt.name, func(t *testing.T) {
-			chartClient, err := NewClient(repo, azureClient, true, false, "1.10.0", "2.0.0", "project", "")
+			// FIXME: Can add some logging of requests to this fake client thingy
+			c := fake.NewFakeClient()
+			scheme := c.Scheme()
+
+			if err := cnpgv1.AddToScheme(scheme); err != nil {
+				t.Error(err)
+			}
+
+			if err := gwapiv1b1.AddToScheme(scheme); err != nil {
+				t.Error(err)
+			}
+
+			fetcher := mock.NewServiceAccountFetcher(&iam.ServiceAccount{}, nil)
+			manager := mock.NewServiceAccountPolicyManager(&iam.Policy{}, nil)
+
+			chartClient, err := NewClient(
+				repo,
+				azureClient,
+				k8s.NewManager(&k8s.Client{
+					Client: c,
+				}),
+				gcpapi.NewServiceAccountPolicyBinder("project", manager),
+				gcpapi.NewServiceAccountChecker("project", fetcher),
+				true,
+				"1.10.0",
+				"2.0.0",
+				"project",
+				"",
+				"knada.io",
+			)
 			if err != nil {
 				t.Error(err)
 			}
 
-			if retry := operation(ctx, tt.args.eventType, tt.args.values, chartClient); retry {
-				t.Errorf("%v failed: got retry return", tt.args.eventType)
+			err = operation(ctx, tt.args.eventType, tt.args.values, chartClient)
+			if err != nil {
+				t.Errorf("got unexpected error: %v", err)
 			}
 
 			teamValues, err := repo.TeamValuesGet(ctx, tt.args.chartType, team.ID)
@@ -269,9 +309,15 @@ func prepareChartTests(ctx context.Context) (gensql.Team, error) {
 		Users: []string{"dummy@nav.no", "user.one@nav.no"},
 	}
 
-	if err := helm.UpdateHelmRepositories(); err != nil {
+	h := helm.NewHelm(&helm.Config{
+		RepositoryConfig: ".helm-repositories.yaml",
+		Out:              io.Discard,
+		Err:              io.Discard,
+	})
+
+	if err := h.Update(ctx); err != nil {
 		return gensql.Team{}, err
 	}
 
-	return team, repo.TeamCreate(ctx, team)
+	return team, repo.TeamCreate(ctx, &team)
 }

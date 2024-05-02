@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: knorten
+  namespace: knada-system
+  labels:
+    app: knorten
+spec:
+  template:
+    spec:
+      containers:
+        - name: cloudsql-proxy
+          command:
+            - /cloud-sql-proxy
+            - --max-sigterm-delay=30s
+            - --address=0.0.0.0
+            - --port=5432
+            - knada-dev:europe-north1:knorten-north

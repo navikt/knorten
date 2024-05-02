@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/navikt/knorten/pkg/gcpapi"
+	"github.com/navikt/knorten/pkg/k8s"
+
 	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/navikt/knorten/pkg/chart"
 	"github.com/navikt/knorten/pkg/database"
@@ -79,7 +82,7 @@ func (e EventHandler) distributeWork(eventType database.EventType) workerFunc {
 		database.EventTypeHelmRolloutAirflow,
 		database.EventTypeHelmRollbackAirflow,
 		database.EventTypeHelmUninstallAirflow:
-		var values helm.HelmEventData
+		var values helm.EventData
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			return e.processWork(ctx, event, logger, &values)
 		}
@@ -100,64 +103,138 @@ func (e EventHandler) processWork(ctx context.Context, event gensql.Event, logge
 		return err
 	}
 
-	var retry bool
 	var err error
 	switch database.EventType(event.Type) {
 	case database.EventTypeCreateTeam:
-		retry = e.teamClient.Create(ctx, *form.(*gensql.Team), logger)
+		t, ok := form.(*gensql.Team)
+		if !ok {
+			return fmt.Errorf("invalid form type for event type %v", event.Type)
+		}
+
+		logger.Infof("Creating team '%v'", t.ID)
+		err = e.teamClient.Create(ctx, t)
 	case database.EventTypeUpdateTeam:
-		retry = e.teamClient.Update(ctx, *form.(*gensql.Team), logger)
+		t, ok := form.(*gensql.Team)
+		if !ok {
+			return fmt.Errorf("invalid form type for event type %v", event.Type)
+		}
+
+		logger.Infof("Updating team '%v'", t.ID)
+		err = e.teamClient.Update(ctx, t)
 	case database.EventTypeDeleteTeam:
-		retry = e.teamClient.Delete(ctx, event.Owner, logger)
+		err = e.teamClient.Delete(ctx, event.Owner)
 	case database.EventTypeCreateUserGSM:
-		retry = e.userClient.CreateUserGSM(ctx, *form.(*gensql.UserGoogleSecretManager), logger)
+		m, ok := form.(*gensql.UserGoogleSecretManager)
+		if !ok {
+			return fmt.Errorf("invalid form type for event type %v", event.Type)
+		}
+
+		logger.Infof("Creating Google Secret Manager for user '%v'", m.Owner)
+		err = e.userClient.CreateUserGSM(ctx, m)
 	case database.EventTypeDeleteUserGSM:
-		retry = e.userClient.DeleteUserGSM(ctx, event.Owner, logger)
+		err = e.userClient.DeleteUserGSM(ctx, event.Owner)
 	case database.EventTypeCreateCompute:
-		retry = e.userClient.CreateComputeInstance(ctx, *form.(*gensql.ComputeInstance), logger)
+		i, ok := form.(*gensql.ComputeInstance)
+		if !ok {
+			return fmt.Errorf("invalid form type for event type %v", event.Type)
+		}
+
+		logger.Infof("Creating compute instance '%v'", i)
+		err = e.userClient.CreateComputeInstance(ctx, i)
 	case database.EventTypeResizeCompute:
-		retry = e.userClient.ResizeComputeInstanceDisk(ctx, *form.(*gensql.ComputeInstance), logger)
+		i, ok := form.(*gensql.ComputeInstance)
+		if !ok {
+			return fmt.Errorf("invalid form type for event type %v", event.Type)
+		}
+
+		logger.Infof("Resizing disk for compute instance '%v'", i.Owner)
+		err = e.userClient.ResizeComputeInstanceDisk(ctx, i)
 	case database.EventTypeDeleteCompute:
-		retry = e.userClient.DeleteComputeInstance(ctx, event.Owner, logger)
-	case database.EventTypeCreateAirflow,
-		database.EventTypeUpdateAirflow:
-		retry = e.chartClient.SyncAirflow(ctx, *form.(*chart.AirflowConfigurableValues), logger)
+		err = e.userClient.DeleteComputeInstance(ctx, event.Owner)
+	case database.EventTypeCreateAirflow, database.EventTypeUpdateAirflow:
+		v, ok := form.(*chart.AirflowConfigurableValues)
+		if !ok {
+			return fmt.Errorf("invalid form type for event type %v", event.Type)
+		}
+
+		logger.Infof("Syncing Airflow for team '%v'", v.TeamID)
+		err = e.chartClient.SyncAirflow(ctx, v)
 	case database.EventTypeDeleteAirflow:
-		retry = e.chartClient.DeleteAirflow(ctx, event.Owner, logger)
-	case database.EventTypeCreateJupyter,
-		database.EventTypeUpdateJupyter:
-		retry = e.chartClient.SyncJupyter(ctx, *form.(*chart.JupyterConfigurableValues), logger)
+		err = e.chartClient.DeleteAirflow(ctx, event.Owner)
+	case database.EventTypeCreateJupyter, database.EventTypeUpdateJupyter:
+		v, ok := form.(*chart.JupyterConfigurableValues)
+		if !ok {
+			return fmt.Errorf("invalid form type for event type %v", event.Type)
+		}
+
+		logger.Infof("Syncing Jupyter for team '%v'", v.TeamID)
+		err = e.chartClient.SyncJupyter(ctx, v)
 	case database.EventTypeDeleteJupyter:
-		retry = e.chartClient.DeleteJupyter(ctx, event.Owner, logger)
-	case database.EventTypeHelmRolloutJupyter,
-		database.EventTypeHelmRolloutAirflow:
-		err = e.helmClient.InstallOrUpgrade(ctx, *form.(*helm.HelmEventData), logger)
-	case database.EventTypeHelmRollbackJupyter,
-		database.EventTypeHelmRollbackAirflow:
-		retry, err = e.helmClient.Rollback(ctx, *form.(*helm.HelmEventData), logger)
-	case database.EventTypeHelmUninstallJupyter,
-		database.EventTypeHelmUninstallAirflow:
-		retry = e.helmClient.Uninstall(ctx, *form.(*helm.HelmEventData), logger)
+		err = e.chartClient.DeleteJupyter(ctx, event.Owner)
+	case database.EventTypeHelmRolloutJupyter, database.EventTypeHelmRolloutAirflow:
+		d, ok := form.(*helm.EventData)
+		if !ok {
+			return fmt.Errorf("invalid form type for event type %v", event.Type)
+		}
+
+		logger.Infof("Rolling out helm chart for team '%v'", d.TeamID)
+		err = e.helmClient.InstallOrUpgrade(ctx, d)
+	case database.EventTypeHelmRollbackJupyter, database.EventTypeHelmRollbackAirflow:
+		d, ok := form.(*helm.EventData)
+		if !ok {
+			return fmt.Errorf("invalid form type for event type %v", event.Type)
+		}
+
+		logger.Infof("Rolling back helm chart for team '%v'", d.TeamID)
+		err = e.helmClient.Rollback(ctx, d)
+	case database.EventTypeHelmUninstallJupyter, database.EventTypeHelmUninstallAirflow:
+		d, ok := form.(*helm.EventData)
+		if !ok {
+			return fmt.Errorf("invalid form type for event type %v", event.Type)
+		}
+
+		logger.Infof("Uninstalling helm chart for team '%v'", d.TeamID)
+		err = e.helmClient.Uninstall(ctx, d)
 	}
 
 	if err != nil {
-		return e.repo.EventSetStatus(e.context, event.ID, database.EventStatusFailed)
-	}
-
-	if retry {
-		return fmt.Errorf("event %v failed", event.ID)
+		logger.WithError(err).Error("failed processing event")
+		return fmt.Errorf("failed processing event: %w", err)
 	}
 
 	return e.repo.EventSetStatus(e.context, event.ID, database.EventStatusCompleted)
 }
 
-func NewHandler(ctx context.Context, repo *database.Repo, azureClient *auth.Azure, gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion string, dryRun, inCluster bool, log *logrus.Entry) (EventHandler, error) {
-	teamClient, err := team.NewClient(repo, gcpProject, gcpRegion, dryRun, inCluster)
+func NewHandler(
+	ctx context.Context,
+	repo *database.Repo,
+	azureClient *auth.Azure,
+	mngr k8s.Manager,
+	saBinder gcpapi.ServiceAccountPolicyBinder,
+	saChecker gcpapi.ServiceAccountChecker,
+	client *helm.Client,
+	gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion, topLevelDomain string,
+	dryRun bool,
+	log *logrus.Entry,
+) (EventHandler, error) {
+	teamClient, err := team.NewClient(repo, mngr, gcpProject, gcpRegion, dryRun)
 	if err != nil {
 		return EventHandler{}, err
 	}
 
-	chartClient, err := chart.NewClient(repo, azureClient, dryRun, inCluster, airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion)
+	chartClient, err := chart.NewClient(
+		repo,
+		azureClient,
+		mngr,
+		saBinder,
+		saChecker,
+		dryRun,
+		airflowChartVersion,
+		jupyterChartVersion,
+		gcpProject,
+		gcpRegion,
+		topLevelDomain,
+	)
 	if err != nil {
 		return EventHandler{}, err
 	}
@@ -169,7 +246,7 @@ func NewHandler(ctx context.Context, repo *database.Repo, azureClient *auth.Azur
 		teamClient:  teamClient,
 		userClient:  user.NewClient(repo, gcpProject, gcpRegion, gcpZone, dryRun),
 		chartClient: chartClient,
-		helmClient:  helm.NewClient(dryRun, repo),
+		helmClient:  client,
 	}, nil
 }
 

@@ -2,6 +2,7 @@ oauth:
     client_id: # Populated by env var
     client_secret: # Populated by env var
     tenant_id: # Populated by env var
+    redirect_url: http://localhost:8080/oauth2/callback
 gcp:
     project: nada-dev-db2e
     region: europe-north1
@@ -32,6 +33,7 @@ cookies:
         secure: false
         http_only: true
 helm:
+    repository_config: ./.helm-repositories.yaml
     airflow_chart_version: 1.11.0
     jupyter_chart_version: 3.2.1
 server:
@@ -44,9 +46,11 @@ postgres:
     password: postgres
     database_name: knorten
     ssl_mode: disable
+kubernetes:
+    context: minikube
 db_enc_key: jegersekstentegn
 admin_group: nada@nav.no
 session_key: offline-session
 login_page: http://localhost:8080/
 dry_run: false
-in_cluster: false
+debug: false

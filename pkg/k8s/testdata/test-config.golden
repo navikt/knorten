@@ -1,0 +1,17 @@
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: Y2EtZGF0YQ==
+    server: https://localhost:8080/api
+  name: test-config
+contexts:
+- context:
+    cluster: test-config
+    user: test-config
+  name: test-config
+current-context: test-config
+kind: Config
+preferences: {}
+users:
+- name: test-config
+  user: {}

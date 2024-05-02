@@ -33,21 +33,21 @@ type UserServices struct {
 	UserEvents []EventWithLogs
 }
 
-func createIngress(team string, chartType gensql.ChartType) string {
+func createIngress(team string, chartType gensql.ChartType, topLevelDomain string) string {
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
-		return fmt.Sprintf("https://%v.jupyter.knada.io", team)
+		return fmt.Sprintf("https://%v.jupyter.%s", team, topLevelDomain)
 	case gensql.ChartTypeAirflow:
-		return fmt.Sprintf("https://%v.airflow.knada.io", team)
+		return fmt.Sprintf("https://%v.airflow.%s", team, topLevelDomain)
 	}
 
 	return ""
 }
 
-func createAppService(team gensql.TeamsForUserGetRow, chartType gensql.ChartType) *AppService {
+func createAppService(team gensql.TeamsForUserGetRow, chartType gensql.ChartType, topLevelDomain string) *AppService {
 	return &AppService{
 		App:       string(chartType),
-		Ingress:   createIngress(team.Slug, chartType),
+		Ingress:   createIngress(team.Slug, chartType, topLevelDomain),
 		Slug:      team.Slug,
 		Namespace: k8s.TeamIDToNamespace(team.ID),
 	}
@@ -64,7 +64,7 @@ func (r *Repo) ChartDelete(ctx context.Context, teamID string, chartType gensql.
 	})
 }
 
-func (r *Repo) ServicesForUser(ctx context.Context, email string) (UserServices, error) {
+func (r *Repo) ServicesForUser(ctx context.Context, email, topLevelDomain string) (UserServices, error) {
 	teamsForUser, err := r.querier.TeamsForUserGet(ctx, email)
 	if err != nil {
 		return UserServices{}, err
@@ -101,9 +101,9 @@ func (r *Repo) ServicesForUser(ctx context.Context, email string) (UserServices,
 		for _, app := range apps {
 			switch app {
 			case gensql.ChartTypeJupyterhub:
-				teamServices.Jupyterhub = createAppService(team, app)
+				teamServices.Jupyterhub = createAppService(team, app, topLevelDomain)
 			case gensql.ChartTypeAirflow:
-				teamServices.Airflow = createAppService(team, app)
+				teamServices.Airflow = createAppService(team, app, topLevelDomain)
 			}
 		}
 

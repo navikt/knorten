@@ -300,6 +300,11 @@ func (e *AirflowEnricher) Enrich(ctx context.Context, values map[string]any) (ma
 							"subPath":   "ca-bundle.pem",
 						},
 					},
+					"securityContext": map[string]any{
+						"allowPrivilegeEscalation": false,
+						"runAsGroup":               0,
+						"runAsUser":                50000,
+					},
 				},
 			},
 		},

@@ -99,6 +99,8 @@ func NewDryRunClient(c client.Client) client.Client {
 type Manager interface {
 	ApplyPostgresCluster(ctx context.Context, cluster *cnpgv1.Cluster) error
 	DeletePostgresCluster(ctx context.Context, name, namespace string) error
+	ApplyScheduledBackup(ctx context.Context, backup *cnpgv1.ScheduledBackup) error
+	DeleteScheduledBackup(ctx context.Context, name, namespace string) error
 	ApplySecret(ctx context.Context, secret *v1.Secret) error
 	DeleteSecret(ctx context.Context, name, namespace string) error
 	WaitForSecret(ctx context.Context, name, namespace string) (*v1.Secret, error)
@@ -116,6 +118,29 @@ type Manager interface {
 
 type manager struct {
 	client *Client
+}
+
+func (m *manager) ApplyScheduledBackup(ctx context.Context, backup *cnpgv1.ScheduledBackup) error {
+	err := m.apply(ctx, backup)
+	if err != nil {
+		return fmt.Errorf("applying scheduled backup: %w", err)
+	}
+
+	return nil
+}
+
+func (m *manager) DeleteScheduledBackup(ctx context.Context, name, namespace string) error {
+	err := m.delete(ctx, &cnpgv1.ScheduledBackup{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("deleting scheduled backup: %w", err)
+	}
+
+	return nil
 }
 
 func (m *manager) ApplyNetworkPolicy(ctx context.Context, policy *netv1.NetworkPolicy) error {

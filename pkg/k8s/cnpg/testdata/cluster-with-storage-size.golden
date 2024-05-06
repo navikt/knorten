@@ -11,7 +11,7 @@ spec:
   backup:
     retentionPolicy: 30d
     volumeSnapshot:
-      className: cnpg-vps
+      className: cnpg-vsp
       onlineConfiguration: {}
   bootstrap:
     initdb:

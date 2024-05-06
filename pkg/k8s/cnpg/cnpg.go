@@ -10,7 +10,7 @@ import (
 
 const (
 	defaultInstanceCount           = 2
-	defaultVolumeSnapshotClassName = "cnpg-vps"
+	defaultVolumeSnapshotClassName = "cnpg-vsp"
 	defaultStorageSize             = "10Gi"
 	defaultRequestMemory           = "512Mi"
 	defaultRequestCPU              = "300m"

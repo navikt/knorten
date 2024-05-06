@@ -1,0 +1,16 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  creationTimestamp: null
+  labels:
+    managed-by: knorten.knada.io
+  name: test-scheduled-backup
+  namespace: test-namespace
+spec:
+  backupOwnerReference: self
+  cluster:
+    name: test-cluster
+  immediate: true
+  method: volumeSnapshot
+  schedule: 0 0 0 5 0 0
+status: {}

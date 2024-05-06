@@ -161,6 +161,10 @@ func (c Client) deleteAirflow(ctx context.Context, teamID string) error {
 		return fmt.Errorf("deleting health check policy: %w", err)
 	}
 
+	if err := c.manager.DeleteScheduledBackup(ctx, teamID, namespace); err != nil {
+		return fmt.Errorf("deleting scheduled backup: %w", err)
+	}
+
 	if err := c.deleteCloudNativePGCluster(ctx, teamID, namespace); err != nil {
 		return fmt.Errorf("deleting cloud native pg cluster: %w", err)
 	}
@@ -338,13 +342,20 @@ func (c Client) createAirflowDatabase(ctx context.Context, team *gensql.TeamGetR
 	dbInstance := getAirflowDatabaseName(teamID)
 	namespace := k8s.TeamIDToNamespace(teamID)
 
-	err := c.manager.ApplyPostgresCluster(ctx, cnpg.NewCluster(
+	cluster := cnpg.NewCluster(
 		teamID,
 		namespace,
 		dbInstance,
 		teamID,
 		cnpg.WithAppLabel("airflow-postgres"),
-	))
+	)
+
+	err := c.manager.ApplyPostgresCluster(ctx, cluster)
+	if err != nil {
+		return err
+	}
+
+	err = c.manager.ApplyScheduledBackup(ctx, cnpg.NewScheduledBackup(teamID, namespace, cluster.Name))
 	if err != nil {
 		return err
 	}

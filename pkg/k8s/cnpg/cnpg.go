@@ -11,7 +11,7 @@ import (
 const (
 	defaultInstanceCount           = 2
 	defaultVolumeSnapshotClassName = "cnpg-vps"
-	defaultStorageSize             = "1Gi"
+	defaultStorageSize             = "10Gi"
 	defaultRequestMemory           = "512Mi"
 	defaultRequestCPU              = "300m"
 	DefaultBackupRetentionPolicy   = "30d"
@@ -104,4 +104,52 @@ func NewCluster(name, namespace, database, owner string, options ...ClusterOptio
 	}
 
 	return c
+}
+
+const (
+	defaultScheduleEverydayAtMidnight   = "0 0 0 * * *"
+	scheduledBackupOwnerReferenceSelf   = "self"
+	scheduledBackupMethodVolumeSnapshot = "volumeSnapshot"
+	scheduledBackupKind                 = "ScheduledBackup"
+)
+
+type ScheduledBackupOption func(*cnpgv1.ScheduledBackup)
+
+func WithSchedule(schedule string) ScheduledBackupOption {
+	return func(sb *cnpgv1.ScheduledBackup) {
+		sb.Spec.Schedule = schedule
+	}
+}
+
+func NewScheduledBackup(name, namespace, clusterName string, options ...ScheduledBackupOption) *cnpgv1.ScheduledBackup {
+	sb := &cnpgv1.ScheduledBackup{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       scheduledBackupKind,
+			APIVersion: cnpgv1.GroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Labels:    meta.DefaultLabels(),
+		},
+		Spec: cnpgv1.ScheduledBackupSpec{
+			Immediate: boolPtr(true),
+			Cluster: cnpgv1.LocalObjectReference{
+				Name: clusterName,
+			},
+			BackupOwnerReference: scheduledBackupOwnerReferenceSelf,
+			Method:               scheduledBackupMethodVolumeSnapshot,
+			Schedule:             defaultScheduleEverydayAtMidnight,
+		},
+	}
+
+	for _, option := range options {
+		option(sb)
+	}
+
+	return sb
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }

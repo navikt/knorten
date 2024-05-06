@@ -88,14 +88,59 @@ func TestNew(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			goldenFile := goldie.New(t)
+			g := goldie.New(t)
 
 			output, err := yaml.Marshal(tc.cluster)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			goldenFile.Assert(t, tc.name, output)
+			g.Assert(t, tc.name, output)
+		})
+	}
+}
+
+func TestNewScheduledBackup(t *testing.T) {
+	testCases := []struct {
+		name   string
+		desc   string
+		backup *cnpgv1.ScheduledBackup
+	}{
+		{
+			name: "default-scheduled-backup",
+			desc: "Create a new default scheduled backup",
+			backup: cnpg.NewScheduledBackup(
+				"test-scheduled-backup",
+				"test-namespace",
+				"test-cluster",
+			),
+		},
+		{
+			name: "scheduled-backup-with-schedule",
+			desc: "Create a new scheduled backup with a different schedule",
+			backup: cnpg.NewScheduledBackup(
+				"test-scheduled-backup",
+				"test-namespace",
+				"test-cluster",
+				cnpg.WithSchedule("0 0 0 5 0 0"),
+			),
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			g := goldie.New(t)
+
+			output, err := yaml.Marshal(tc.backup)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			g.Assert(t, tc.name, output)
 		})
 	}
 }

@@ -33,4 +33,5 @@ status:
   configMapResourceVersion: {}
   managedRolesStatus: {}
   secretsResourceVersion: {}
+  switchReplicaClusterStatus: {}
   topology: {}

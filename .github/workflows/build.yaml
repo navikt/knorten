@@ -46,7 +46,7 @@ jobs:
       run: |
         echo "IMAGE=$IMAGE_NAME:$(git --no-pager log -1 --pretty=format:%H)" >> $GITHUB_ENV
     - name: Build and push Dockerimage
-      uses: docker/build-push-action@v4
+      uses: docker/build-push-action@v5
       with:
         context: .
         push: true

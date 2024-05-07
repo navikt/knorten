@@ -100,7 +100,7 @@ func jupyterReleaseName(namespace string) string {
 
 func (c Client) jupyterMergeValues(ctx context.Context, team gensql.TeamGetRow, configurableValues *JupyterConfigurableValues) (jupyterValues, error) {
 	if len(configurableValues.UserIdents) == 0 {
-		err := c.repo.TeamConfigurableValuesGet(ctx, gensql.ChartTypeJupyterhub, team.ID, &configurableValues)
+		err := c.repo.TeamConfigurableValuesGet(ctx, gensql.ChartTypeJupyterhub, team.ID, configurableValues)
 		if err != nil {
 			return jupyterValues{}, err
 		}

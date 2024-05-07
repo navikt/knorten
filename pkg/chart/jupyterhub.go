@@ -122,7 +122,7 @@ func (c Client) jupyterMergeValues(ctx context.Context, team gensql.TeamGetRow, 
 		allowList = fmt.Sprintf(`{"allowlist": "%v"}`, strings.Join(configurableValues.AllowList, ","))
 	}
 
-	singleuserExtraLabels := fmt.Sprintf(`{"team": "%v"}`, team.ID)
+	singleuserExtraLabels := fmt.Sprintf(`{"team": "%v", "hub.jupyter.org/network-access-hub": "true"}`, team.ID)
 
 	return jupyterValues{
 		JupyterConfigurableValues: configurableValues,

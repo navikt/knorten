@@ -333,6 +333,16 @@ func (c Client) createWorkerLabels(teamID string) (string, error) {
 	return string(labelBytes), nil
 }
 
+func teamIDToDb(name string) string {
+	if strings.HasPrefix(name, "team-") {
+		return strings.Replace(name, "team-", "", 1)
+	} else if strings.HasPrefix(name, "team") {
+		return strings.Replace(name, "team", "", 1)
+	} else {
+		return name
+	}
+}
+
 func (c Client) createAirflowDatabase(ctx context.Context, team *gensql.TeamGetRow) error {
 	if c.dryRun {
 		return nil
@@ -343,7 +353,7 @@ func (c Client) createAirflowDatabase(ctx context.Context, team *gensql.TeamGetR
 	namespace := k8s.TeamIDToNamespace(teamID)
 
 	cluster := cnpg.NewCluster(
-		teamID,
+		teamIDToDb(teamID),
 		namespace,
 		dbInstance,
 		teamID,

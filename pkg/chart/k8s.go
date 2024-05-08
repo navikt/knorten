@@ -102,6 +102,8 @@ func (c Client) alterJupyterDefaultFQDNNetpol(ctx context.Context, namespace str
 		if err != nil {
 			return fmt.Errorf("applying network policy: %w", err)
 		}
+
+		return nil
 	}
 
 	err := c.manager.DeleteNetworkPolicy(ctx, k8sJupyterhubNetworPolicy, namespace)

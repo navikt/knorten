@@ -371,7 +371,7 @@ func (c Client) createAirflowDatabase(ctx context.Context, team *gensql.TeamGetR
 	}
 
 	// FIXME: Should we introduce a maintenance loop that updates the airflow-db secret
-	dbSecret, err := c.manager.WaitForSecret(ctx, fmt.Sprintf("%s-app", teamID), namespace)
+	dbSecret, err := c.manager.WaitForSecret(ctx, fmt.Sprintf("%s-app", teamIDToDb(teamID)), namespace)
 	if err != nil {
 		return err
 	}

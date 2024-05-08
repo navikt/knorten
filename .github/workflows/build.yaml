@@ -51,6 +51,11 @@ jobs:
         context: .
         push: true
         tags: ${{ env.IMAGE }}
+    - name: Update imagetag in dev k8s manifest
+      if: github.ref == 'refs/heads/main'
+      working-directory: k8s/overlays/dev
+      run: |
+        kustomize edit set image ${{ env.IMAGE }}
     - name: Update imagetag in prod k8s manifest
       if: github.ref == 'refs/heads/main'
       working-directory: k8s/overlays/prod

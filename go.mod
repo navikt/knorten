@@ -40,8 +40,8 @@ require (
 	k8s.io/client-go v0.30.0
 	k8s.io/klog/v2 v2.120.1
 	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0
-	sigs.k8s.io/controller-runtime v0.18.1
-	sigs.k8s.io/gateway-api v1.0.0
+	sigs.k8s.io/controller-runtime v0.18.2
+	sigs.k8s.io/gateway-api v1.1.0
 	sigs.k8s.io/yaml v1.4.0
 )
 
@@ -137,7 +137,6 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
-	github.com/kubernetes-csi/external-snapshotter/client/v6 v6.3.0 // indirect
 	github.com/kubernetes-csi/external-snapshotter/client/v7 v7.0.0 // indirect
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
@@ -149,7 +148,6 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
-	github.com/miekg/dns v1.1.54 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect

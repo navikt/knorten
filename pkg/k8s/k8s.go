@@ -48,7 +48,7 @@ func DefaultSchemeAdder() SchemeAdderFn {
 			return fmt.Errorf("adding cloudnative-pg scheme: %w", err)
 		}
 
-		if err := gwapiv1b1.AddToScheme(scheme); err != nil {
+		if err := gwapiv1b1.Install(scheme); err != nil {
 			return fmt.Errorf("adding gateway-api scheme: %w", err)
 		}
 

@@ -250,7 +250,7 @@ func TestCharts(t *testing.T) {
 				t.Error(err)
 			}
 
-			if err := gwapiv1b1.AddToScheme(scheme); err != nil {
+			if err := gwapiv1b1.Install(scheme); err != nil {
 				t.Error(err)
 			}
 

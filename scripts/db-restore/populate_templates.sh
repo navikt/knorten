@@ -16,6 +16,7 @@ mkdir -p "$dir/rendered"
 
 env_file="$dir/env"
 cluster_template_output="$dir/rendered/cluster.yaml"
+cluster_clean_template_output="$dir/rendered/cluster-clean.yaml"
 
 if [[ -f $env_file ]]; then
   set -a
@@ -23,8 +24,10 @@ if [[ -f $env_file ]]; then
   set +a
 
   envsubst < "templates/cluster-template.yaml" > "$cluster_template_output"
-
   echo -e "Templates rendered for ${GREEN}'$cluster_template_output'${NC}"
+
+  envsubst < "templates/cluster-clean-template.yaml" > "$cluster_clean_template_output"
+  echo -e "Templates rendered for ${GREEN}'$cluster_clean_template_output'${NC}"
 else
   echo -e "${RED}Env file $env_file does not exist${NC}"
 fi

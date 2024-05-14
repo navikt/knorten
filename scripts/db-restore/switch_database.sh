@@ -47,6 +47,12 @@ if [[ -f $airflow_secret_template_output ]]; then
   kubectl --context "$kubectx" scale deployment airflow-webserver --namespace "$namespace" --replicas=2
   kubectl --context "$kubectx" scale deployment airflow-scheduler --namespace "$namespace" --replicas=2
 
+  echo -e "${GREEN}Applying clean cluster for namespace '$namespace'...${NC}"
+
+  dir="restore-staging/$kubectx/$namespace"
+  cluster_clean_rendered="$dir/rendered/cluster-clean.yaml"
+  kubectl --context "$kubectx" apply -f "$cluster_clean_rendered" --force
+
   echo -e "${GREEN}Resources applied for namespace '$namespace'${NC}"
 else
   echo -e "${YELLOW}Templates for namespace '$namespace' do not exist${NC}"

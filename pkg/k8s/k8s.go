@@ -457,6 +457,8 @@ func (m *manager) apply(ctx context.Context, obj client.Object) error {
 			if err != nil {
 				return fmt.Errorf("creating resource: %w", err)
 			}
+
+			return nil
 		}
 
 		return fmt.Errorf("checking resource: %w", err)

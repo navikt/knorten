@@ -24,4 +24,4 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: europe-north1-docker.pkg.dev/knada-gcp/knada-north/knorten
-  newTag: c55a35d54dd99835539d257370aae46aa25215ea
+  newTag: dfd48aaa46d13358e3803fe48cd1f0992e6b3064

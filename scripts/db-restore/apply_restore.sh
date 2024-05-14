@@ -34,7 +34,7 @@ if [[ -f $cluster_template_output ]]; then
   kubectl --context "$kubectx" scale deployment airflow-scheduler --namespace "$namespace" --replicas=0
 
   echo -e "${GREEN}Applying cluster restore for namespace '$namespace'...${NC}"
-  kubectl --context "$kubectx" apply -f "$cluster_template_output"
+  kubectl --context "$kubectx" apply -f "$cluster_template_output" --force
 
   echo -e "${GREEN}Cluster restore applied to namespace '$namespace'${NC}"
 else

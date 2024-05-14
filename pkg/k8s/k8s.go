@@ -451,17 +451,27 @@ func (m *manager) apply(ctx context.Context, obj client.Object) error {
 	if err != nil {
 		// If the resource does not exist, we create it
 		if errors.IsNotFound(err) {
-			return m.client.Create(ctx, obj)
+			err = m.client.Create(ctx, obj, &client.CreateOptions{
+				FieldManager: fieldManager,
+			})
+			if err != nil {
+				return fmt.Errorf("creating resource: %w", err)
+			}
 		}
 
 		return fmt.Errorf("checking resource: %w", err)
 	}
 
 	// Otherwise, we update it
-	return m.client.Patch(ctx, obj, client.Apply, &client.PatchOptions{
+	err = m.client.Patch(ctx, obj, client.Apply, &client.PatchOptions{
 		Force:        ptr.To(true), // Need to force the update to take ownership of the resource
 		FieldManager: fieldManager,
 	})
+	if err != nil {
+		return fmt.Errorf("patching resource: %w", err)
+	}
+
+	return nil
 }
 
 func NewManager(c *Client) Manager {

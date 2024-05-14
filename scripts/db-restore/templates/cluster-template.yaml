@@ -1,0 +1,24 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+  labels:
+    app: airflow-postgres
+spec:
+  instances: 2
+
+  primaryUpdateStrategy: unsupervised
+
+  backup:
+    retentionPolicy: 30d
+    volumeSnapshot:
+      className: cnpg-vsp
+
+  bootstrap:
+    recovery:
+      backup:
+        name: ${BACKUP_NAME}
+
+  storage:
+    size: 10Gi

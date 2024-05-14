@@ -3,6 +3,7 @@ package user
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -14,6 +15,16 @@ var gcpIAMPolicyBindingsRoles = []string{
 	"roles/compute.viewer",
 	"roles/iap.tunnelResourceAccessor",
 	"roles/monitoring.viewer",
+}
+
+type computeInstance struct {
+	Name  string `json:"name"`
+	Disks []disk `json:"disks"`
+}
+
+type disk struct {
+	Source string `json:"source"`
+	Boot   bool   `json:"boot"`
 }
 
 func (c Client) createComputeInstanceInGCP(ctx context.Context, instanceName, email string) error {
@@ -73,6 +84,11 @@ func (c Client) resizeComputeInstanceDiskGCP(ctx context.Context, instanceName s
 		return nil
 	}
 
+	bootDiskName, err := c.getComputeInstanceBootDiskNameGCP(ctx, instanceName)
+	if err != nil {
+		return err
+	}
+
 	if err := c.stopComputeInstance(ctx, instanceName); err != nil {
 		return err
 	}
@@ -83,7 +99,7 @@ func (c Client) resizeComputeInstanceDiskGCP(ctx context.Context, instanceName s
 		"compute",
 		"disks",
 		"resize",
-		instanceName,
+		bootDiskName,
 		fmt.Sprintf("--project=%v", c.gcpProject),
 		fmt.Sprintf("--zone=%v", c.gcpZone),
 		fmt.Sprintf("--size=%vGB", diskSize),
@@ -229,6 +245,34 @@ func (c Client) computeInstanceExistsInGCP(ctx context.Context, instanceName str
 	}
 
 	return stdOut.String() != "", nil
+}
+
+func (c Client) getComputeInstanceBootDiskNameGCP(ctx context.Context, instanceName string) (string, error) {
+	cmd := exec.CommandContext(ctx,
+		"gcloud",
+		"--quiet",
+		"compute",
+		"instances",
+		"describe",
+		instanceName,
+		"--zone", c.gcpZone,
+		"--project", c.gcpProject,
+		"--format=json")
+
+	stdOut := &bytes.Buffer{}
+	stdErr := &bytes.Buffer{}
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	}
+
+	instance := computeInstance{}
+	if err := json.Unmarshal(stdOut.Bytes(), &instance); err != nil {
+		return "", err
+	}
+
+	return getBootDiskName(instance)
 }
 
 func (c Client) createIAMPolicyBindingsInGCP(ctx context.Context, instanceName, email string) error {
@@ -435,4 +479,18 @@ func (c Client) deleteUserGSMFromGCP(ctx context.Context, name string) error {
 	}
 
 	return nil
+}
+
+func getBootDiskName(instance computeInstance) (string, error) {
+	for _, d := range instance.Disks {
+		if d.Boot {
+			return diskNameFromDiskSource(d), nil
+		}
+	}
+	return "", fmt.Errorf("getting boot disk name: compute instance %v does not have a boot disk", instance.Name)
+}
+
+func diskNameFromDiskSource(disk disk) string {
+	sourceParts := strings.Split(disk.Source, "/")
+	return sourceParts[len(sourceParts)-1]
 }

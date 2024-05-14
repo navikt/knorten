@@ -34,16 +34,16 @@ fi
 
 kubectl --context "$kubectx" get clusters.postgresql.cnpg.io "$crd_instance" --namespace "$namespace" -o yaml > "$backup_dir/cluster_definition.yaml"
 
-echo -e "${GREEN}Available backups for cluster (${crd_instance}):${NC}"
+echo -e "${GREEN}Available backups for cluster (${crd_instance}), including failed:${NC}"
 kubectl --context "$kubectx" get backups.postgresql.cnpg.io --namespace "$namespace" --selector=cnpg.io/cluster=$crd_instance
 
-backup_definition=$(kubectl --context $kubectx get backups.postgresql.cnpg.io --namespace "$namespace" -o=jsonpath='{range .items[*]}{"\n"}{.metadata.name}{": creationTimestamp="}{.metadata.creationTimestamp}{end}' | sort -r -k3 | head -n 1 | cut -d ':' -f 1)
+backup_definition=$(kubectl --context $kubectx get backups.postgresql.cnpg.io --namespace "$namespace" -o=jsonpath='{range .items[?(@.status.phase=="completed")]}{"\n"}{.metadata.name}{": creationTimestamp="}{.metadata.creationTimestamp}{end}' | sort -r -k3 | head -n 1 | cut -d ':' -f 1)
 
 if [ -z "$backup_definition" ]; then
   echo -e "${RED}Could not find a Backup definition of type backups.postgresql.cnpg.io with label cnpg.io/cluster=$crd_instance.${NC}"
 fi
 
-echo -e "${GREEN}Selected backup${NC}: $backup_definition (should be latest)"
+echo -e "${GREEN}Selected backup${NC}: $backup_definition (should be latest completed)"
 
 kubectl --context "$kubectx" get backups.postgresql.cnpg.io "$backup_definition" --namespace "$namespace" -o yaml > "$backup_dir/backup_definition.yaml"
 
@@ -52,5 +52,7 @@ echo -e "${GREEN}Staging of resources completed.${NC}"
 echo "NAMESPACE=$namespace" > "$backup_dir/env"
 echo "CLUSTER_NAME=$crd_instance" >> "$backup_dir/env"
 echo "BACKUP_NAME=$backup_definition" >> "$backup_dir/env"
+echo "OWNER=$crd_instance" >> "$backup_dir/env"
+echo "DATABASE=airflow-$crd_instance" >> "$backup_dir/env"
 
 echo -e "${GREEN}Environment variables written to: ${NC}$backup_dir/env"

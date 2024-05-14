@@ -17,6 +17,8 @@ spec:
 
   bootstrap:
     recovery:
+      database: ${DATABASE}
+      owner: ${OWNER}
       backup:
         name: ${BACKUP_NAME}
 

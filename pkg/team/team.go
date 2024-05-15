@@ -54,7 +54,7 @@ func (c Client) Create(ctx context.Context, team *gensql.Team) error {
 		return fmt.Errorf("creating k8s namespace: %w", err)
 	}
 
-	if err := c.manager.ApplyServiceAccount(ctx, core.NewServiceAccount(team.ID, namespace)); err != nil {
+	if err := c.manager.ApplyServiceAccount(ctx, core.NewServiceAccount(team.ID, namespace, core.WithGKEIAMAccountAnnotation(team.ID, c.gcpProject))); err != nil {
 		return fmt.Errorf("creating k8s service account: %w", err)
 	}
 
@@ -77,7 +77,7 @@ func (c Client) Update(ctx context.Context, team *gensql.Team) error {
 		return fmt.Errorf("updating k8s namespace: %w", err)
 	}
 
-	err = c.manager.ApplyServiceAccount(ctx, core.NewServiceAccount(team.ID, namespace))
+	err = c.manager.ApplyServiceAccount(ctx, core.NewServiceAccount(team.ID, namespace, core.WithGKEIAMAccountAnnotation(team.ID, c.gcpProject)))
 	if err != nil {
 		return fmt.Errorf("updating k8s service account: %w", err)
 	}

@@ -126,6 +126,9 @@ update-configmap:
 		--from-file=config.yaml=config-prod.yaml --dry-run=client -o yaml \
 			> k8s/configmap.yaml
 
+keypair-testing:
+	openssl genrsa -out private_key.pem 2048 && openssl rsa -in private_key.pem -pubout -out public_key.pem
+
 gauth:
 	@gcloud auth login --update-adc --project $(GCP_PROJECT_ID_DEV)
 	@gcloud config set project $(GCP_PROJECT_ID_DEV)

@@ -35,3 +35,6 @@ hack
 node_modules
 !package-lock.json
 !package.json
+
+/private_key.pem
+/public_key.pem

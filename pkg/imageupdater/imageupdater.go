@@ -92,11 +92,6 @@ func (c *client) syncChart(ctx context.Context, teamID string, chartType gensql.
 	return nil
 }
 
-type garImage struct {
-	Name string `json:"package"`
-	Tag  string `json:"tags"`
-}
-
 func (c *client) getLatestImageTagInGAR(ctx context.Context, image, tagsFilter string) (string, error) {
 	imagePath, err := imageToGCPPath(image)
 	if err != nil {

@@ -35,6 +35,7 @@ const (
 var configFilePath = flag.String("config", "config.yaml", "path to config file")
 
 func main() {
+	ctx := context.Background()
 	log := logrus.New()
 	log.SetFormatter(&logrus.JSONFormatter{})
 
@@ -73,7 +74,10 @@ func main() {
 	}
 
 	if !cfg.DryRun {
-		imageUpdater := imageupdater.NewClient(dbClient, log.WithField("subsystem", "imageupdater"))
+		imageUpdater, err := imageupdater.NewClient(ctx, dbClient, log.WithField("subsystem", "imageupdater"))
+		if err != nil {
+			log.WithError(err).Fatal("creating imageupdater")
+		}
 		go imageUpdater.Run(imageUpdaterFrequency)
 	}
 
@@ -85,8 +89,6 @@ func main() {
 	if cfg.DryRun {
 		c.Client = k8s.NewDryRunClient(c.Client)
 	}
-
-	ctx := context.Background()
 
 	iamService, err := iam.NewService(ctx)
 	if err != nil {

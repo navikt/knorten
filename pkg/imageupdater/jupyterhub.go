@@ -36,7 +36,7 @@ func (c *client) updateJupyterhubImages(ctx context.Context) error {
 
 	var profilesStatus []bool
 	for _, p := range profiles {
-		updated, err := updateIfNeeded(p)
+		updated, err := c.updateIfNeeded(ctx, p)
 		if err != nil {
 			c.log.WithError(err).Error("checking image up to date with GAR")
 		}
@@ -63,7 +63,7 @@ func (c *client) updateJupyterhubImages(ctx context.Context) error {
 	return nil
 }
 
-func updateIfNeeded(p *profile) (bool, error) {
+func (c *client) updateIfNeeded(ctx context.Context, p *profile) (bool, error) {
 	parts := strings.Split(p.KubespawnerOverride.Image, ":")
 	if len(parts) != 2 {
 		return false, fmt.Errorf("image format invalid, should be image:tag, got %v", p.KubespawnerOverride.Image)
@@ -77,13 +77,13 @@ func updateIfNeeded(p *profile) (bool, error) {
 	}
 	pythonVersion := tagParts[4]
 
-	garImage, err := getLatestImageInGAR(image, pythonVersion)
+	garImageTag, err := c.getLatestImageTagInGAR(ctx, image, pythonVersion)
 	if err != nil {
 		return false, err
 	}
 
-	if tag != garImage.Tag {
-		p.KubespawnerOverride.Image = fmt.Sprintf("%v:%v", garImage.Name, garImage.Tag)
+	if tag != garImageTag {
+		p.KubespawnerOverride.Image = fmt.Sprintf("%v:%v", image, garImageTag)
 		return true, nil
 	}
 

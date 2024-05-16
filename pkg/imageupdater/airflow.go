@@ -69,13 +69,13 @@ func (c *client) updateAirflowImage(ctx context.Context, imageNameKey, imageTagK
 		return false, nil
 	}
 
-	garImage, err := getLatestImageInGAR(imageName.Value, "")
+	garImageTag, err := c.getLatestImageTagInGAR(ctx, imageName.Value, "")
 	if err != nil {
 		return false, fmt.Errorf("getting latest image in GAR: %w, image: %s", err, imageName.Value)
 	}
 
-	if imageTag.Value != garImage.Tag {
-		if err := c.repo.GlobalChartValueInsert(ctx, imageTagKey, garImage.Tag, false, gensql.ChartTypeAirflow); err != nil {
+	if imageTag.Value != garImageTag {
+		if err := c.repo.GlobalChartValueInsert(ctx, imageTagKey, garImageTag, false, gensql.ChartTypeAirflow); err != nil {
 			return false, err
 		}
 
@@ -113,13 +113,13 @@ func (c *client) updateGlobalEnvs(ctx context.Context) (bool, error) {
 				return false, fmt.Errorf("invalid image format for image %v, should be <image>:<tag>", env.Value)
 			}
 
-			latestImage, err := getLatestImageInGAR(currentImageParts[0], "")
+			latestGARImageTag, err := c.getLatestImageTagInGAR(ctx, currentImageParts[0], "")
 			if err != nil {
 				return false, fmt.Errorf("getting latest image in GAR: %w, image: %s", err, currentImageParts[0])
 			}
 
-			if currentImageParts[1] != latestImage.Tag {
-				env.Value = fmt.Sprintf("%v:%v", currentImageParts[0], latestImage.Tag)
+			if currentImageParts[1] != latestGARImageTag {
+				env.Value = fmt.Sprintf("%v:%v", currentImageParts[0], latestGARImageTag)
 				globalEnvsMarshalled, err := json.Marshal(globalEnvs)
 				if err != nil {
 					return false, fmt.Errorf("marshalling global envs: %w", err)

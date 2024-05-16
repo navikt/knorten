@@ -233,7 +233,7 @@ func (c Client) computeInstanceExistsInGCP(ctx context.Context, instanceName str
 	if err != nil {
 		return false, err
 	}
-	defer computeClient.close()
+	defer computeClient.Close()
 
 	instances := computeClient.List(ctx, &computepb.ListInstancesRequest{
 		Project: "knada-dev",

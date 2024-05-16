@@ -73,6 +73,10 @@ func newFakeConfig() config.Config {
 			SSLMode:      "disable",
 			DatabaseName: "knorten",
 		},
+		Github: config.Github{
+			ApplicationID:  "9123",
+			PrivateKeyPath: "testdata/private-key.pem",
+		},
 		Kubernetes: config.Kubernetes{
 			Context: "minikube",
 		},

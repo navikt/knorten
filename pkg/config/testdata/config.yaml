@@ -45,6 +45,9 @@ postgres:
     password: postgres
     database_name: knorten
     ssl_mode: disable
+github:
+    application_id: "9123"
+    private_key_path: "testdata/private-key.pem"
 kubernetes:
     context: minikube
 db_enc_key: jegersekstentegn

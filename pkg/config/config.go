@@ -33,6 +33,7 @@ type Config struct {
 	Server         Server     `yaml:"server"`
 	Postgres       Postgres   `yaml:"postgres"`
 	Kubernetes     Kubernetes `yaml:"kubernetes"`
+	Github         Github     `yaml:"github"`
 	DBEncKey       string     `yaml:"db_enc_key"`
 	AdminGroupID   string     `yaml:"admin_group_id"`
 	SessionKey     string     `yaml:"session_key"`
@@ -54,6 +55,18 @@ func (c Config) Validate() error {
 		validation.Field(&c.LoginPage, validation.Required),
 		validation.Field(&c.AdminGroupID, validation.Required, is.UUID),
 		validation.Field(&c.SessionKey, validation.Required),
+	)
+}
+
+type Github struct {
+	ApplicationID  string `yaml:"application_id"`
+	PrivateKeyPath string `yaml:"private_key_path"`
+}
+
+func (g Github) Validate() error {
+	return validation.ValidateStruct(&g,
+		validation.Field(&g.ApplicationID, validation.Required),
+		validation.Field(&g.PrivateKeyPath, validation.Required),
 	)
 }
 

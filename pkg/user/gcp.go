@@ -8,7 +8,10 @@ import (
 	"os/exec"
 	"strings"
 
+	compute "cloud.google.com/go/compute/apiv1"
+	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/navikt/knorten/pkg/gcp"
+	"google.golang.org/api/iterator"
 )
 
 var gcpIAMPolicyBindingsRoles = []string{
@@ -226,25 +229,31 @@ func (c Client) deleteComputeInstanceFromGCP(ctx context.Context, instanceName s
 }
 
 func (c Client) computeInstanceExistsInGCP(ctx context.Context, instanceName string) (bool, error) {
-	cmd := exec.CommandContext(ctx,
-		"gcloud",
-		"--quiet",
-		"compute",
-		"instances",
-		"list",
-		"--format=get(name)",
-		"--project", c.gcpProject,
-		fmt.Sprintf("--filter=name:%v", instanceName))
+	computeClient, err := compute.NewInstancesRESTClient(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer computeClient.close()
 
-	stdOut := &bytes.Buffer{}
-	stdErr := &bytes.Buffer{}
-	cmd.Stdout = stdOut
-	cmd.Stderr = stdErr
-	if err := cmd.Run(); err != nil {
-		return false, fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	instances := computeClient.List(ctx, &computepb.ListInstancesRequest{
+		Project: "knada-dev",
+		Zone:    "europe-north1-b",
+	})
+	for {
+		instance, err := instances.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return false, err
+		}
+
+		if instance.Name != nil && *instance.Name == instanceName {
+			return true, nil
+		}
 	}
 
-	return stdOut.String() != "", nil
+	return false, nil
 }
 
 func (c Client) getComputeInstanceBootDiskNameGCP(ctx context.Context, instanceName string) (string, error) {

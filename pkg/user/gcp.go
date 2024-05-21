@@ -20,16 +20,6 @@ var gcpIAMPolicyBindingsRoles = []string{
 	"roles/monitoring.viewer",
 }
 
-type computeInstance struct {
-	Name  string `json:"name"`
-	Disks []disk `json:"disks"`
-}
-
-type disk struct {
-	Source string `json:"source"`
-	Boot   bool   `json:"boot"`
-}
-
 func (c Client) createComputeInstanceInGCP(ctx context.Context, instanceName, email string) error {
 	if c.dryRun {
 		return nil

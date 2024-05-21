@@ -3,7 +3,7 @@ package user
 import (
 	"bytes"
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -44,36 +44,74 @@ func (c Client) createComputeInstanceInGCP(ctx context.Context, instanceName, em
 		return nil
 	}
 
-	cmd := exec.CommandContext(ctx,
-		"gcloud",
-		"--quiet",
-		"compute",
-		"instances",
-		"create",
-		instanceName,
-		"--project", c.gcpProject,
-		"--zone", c.gcpZone,
-		"--machine-type", "n2-standard-2",
-		"--network-interface", "network=knada-vpc,subnet=knada,no-address",
-		fmt.Sprintf("--labels=goog-ops-agent-policy=v2-x86-template-1-2-0,created-by=knorten,user=%v", normalizeEmailToName(email)),
-		"--tags=knadavm",
-		"--metadata=block-project-ssh-keys=TRUE,enable-osconfig=TRUE",
-		"--service-account", fmt.Sprintf("knada-vm-ops-agent@%v.iam.gserviceaccount.com", c.gcpProject),
-		"--no-scopes",
-	)
+	computeClient, err := compute.NewInstancesRESTClient(ctx)
+	if err != nil {
+		return err
+	}
+	defer computeClient.Close()
 
-	stdOut := &bytes.Buffer{}
-	stdErr := &bytes.Buffer{}
-	cmd.Stdout = stdOut
-	cmd.Stderr = stdErr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	computeMetadataItems := []*computepb.Items{}
+	for k, v := range c.computeDefaultConfig.metadata {
+		tempKey := k
+		tempValue := v
+		computeMetadataItems = append(computeMetadataItems, &computepb.Items{
+			Key:   &tempKey,
+			Value: &tempValue,
+		})
 	}
 
-	return nil
+	req := &computepb.InsertInstanceRequest{
+		Project: c.gcpProject,
+		Zone:    c.gcpZone,
+		InstanceResource: &computepb.Instance{
+			Name:        &instanceName,
+			MachineType: &c.computeDefaultConfig.machineType,
+			Metadata: &computepb.Metadata{
+				Items: computeMetadataItems,
+			},
+			NetworkInterfaces: []*computepb.NetworkInterface{
+				{
+					Network:    &c.computeDefaultConfig.vpcName,
+					Subnetwork: &c.computeDefaultConfig.subnet,
+				},
+			},
+			Labels: map[string]string{
+				"goog-ops-agent-policy": "v2-x86-template-1-2-0",
+				"created-by":            "knorten",
+				"user":                  normalizeEmailToName(email),
+			},
+			Tags: &computepb.Tags{
+				Items: []string{"knadavm"},
+			},
+			ServiceAccounts: []*computepb.ServiceAccount{
+				{
+					Email: &c.computeDefaultConfig.serviceAccount,
+				},
+			},
+			Disks: []*computepb.AttachedDisk{
+				{
+					Boot:       &c.computeDefaultConfig.isBootDisk,
+					DiskSizeGb: &c.computeDefaultConfig.diskSize,
+					AutoDelete: &c.computeDefaultConfig.autoDeleteDisk,
+					Type:       &c.computeDefaultConfig.diskType,
+					InitializeParams: &computepb.AttachedDiskInitializeParams{
+						DiskName:    &instanceName,
+						SourceImage: &c.computeDefaultConfig.sourceImage,
+					},
+				},
+			},
+		},
+	}
+
+	op, err := computeClient.Insert(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	return op.Wait(ctx)
 }
 
-func (c Client) resizeComputeInstanceDiskGCP(ctx context.Context, instanceName string, diskSize int32) error {
+func (c Client) resizeComputeInstanceDiskGCP(ctx context.Context, instanceName string, diskSize int64) error {
 	if c.dryRun {
 		return nil
 	}
@@ -87,33 +125,37 @@ func (c Client) resizeComputeInstanceDiskGCP(ctx context.Context, instanceName s
 		return nil
 	}
 
+	if err := c.stopComputeInstance(ctx, instanceName); err != nil {
+		return err
+	}
+
 	bootDiskName, err := c.getComputeInstanceBootDiskNameGCP(ctx, instanceName)
 	if err != nil {
 		return err
 	}
 
-	if err := c.stopComputeInstance(ctx, instanceName); err != nil {
+	computeClient, err := compute.NewDisksRESTClient(ctx)
+	if err != nil {
+		return err
+	}
+	defer computeClient.Close()
+
+	req := &computepb.ResizeDiskRequest{
+		Project: c.gcpProject,
+		Zone:    c.gcpZone,
+		Disk:    bootDiskName,
+		DisksResizeRequestResource: &computepb.DisksResizeRequest{
+			SizeGb: &diskSize,
+		},
+	}
+	op, err := computeClient.Resize(ctx, req)
+	if err != nil {
 		return err
 	}
 
-	cmd := exec.CommandContext(ctx,
-		"gcloud",
-		"--quiet",
-		"compute",
-		"disks",
-		"resize",
-		bootDiskName,
-		fmt.Sprintf("--project=%v", c.gcpProject),
-		fmt.Sprintf("--zone=%v", c.gcpZone),
-		fmt.Sprintf("--size=%vGB", diskSize),
-	)
-
-	stdOut := &bytes.Buffer{}
-	stdErr := &bytes.Buffer{}
-	cmd.Stdout = stdOut
-	cmd.Stderr = stdErr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	err = op.Wait(ctx)
+	if err != nil {
+		return err
 	}
 
 	return c.startComputeInstance(ctx, instanceName)
@@ -133,23 +175,25 @@ func (c Client) stopComputeInstance(ctx context.Context, instanceName string) er
 		return nil
 	}
 
-	cmd := exec.CommandContext(ctx,
-		"gcloud",
-		"--quiet",
-		"compute",
-		"instances",
-		"stop",
-		instanceName,
-		"--zone", c.gcpZone,
-		"--project", c.gcpProject,
-	)
+	computeClient, err := compute.NewInstancesRESTClient(ctx)
+	if err != nil {
+		return err
+	}
+	defer computeClient.Close()
 
-	stdOut := &bytes.Buffer{}
-	stdErr := &bytes.Buffer{}
-	cmd.Stdout = stdOut
-	cmd.Stderr = stdErr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	req := &computepb.StopInstanceRequest{
+		Project:  c.gcpProject,
+		Zone:     c.gcpZone,
+		Instance: instanceName,
+	}
+	op, err := computeClient.Stop(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	err = op.Wait(ctx)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -169,26 +213,23 @@ func (c Client) startComputeInstance(ctx context.Context, instanceName string) e
 		return nil
 	}
 
-	cmd := exec.CommandContext(ctx,
-		"gcloud",
-		"--quiet",
-		"compute",
-		"instances",
-		"start",
-		instanceName,
-		"--zone", c.gcpZone,
-		"--project", c.gcpProject,
-	)
+	computeClient, err := compute.NewInstancesRESTClient(ctx)
+	if err != nil {
+		return err
+	}
+	defer computeClient.Close()
 
-	stdOut := &bytes.Buffer{}
-	stdErr := &bytes.Buffer{}
-	cmd.Stdout = stdOut
-	cmd.Stderr = stdErr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	req := &computepb.StartInstanceRequest{
+		Project:  c.gcpProject,
+		Zone:     c.gcpZone,
+		Instance: instanceName,
+	}
+	op, err := computeClient.Start(ctx, req)
+	if err != nil {
+		return err
 	}
 
-	return nil
+	return op.Wait(ctx)
 }
 
 func (c Client) deleteComputeInstanceFromGCP(ctx context.Context, instanceName string) error {
@@ -205,27 +246,22 @@ func (c Client) deleteComputeInstanceFromGCP(ctx context.Context, instanceName s
 		return nil
 	}
 
-	cmd := exec.CommandContext(ctx,
-		"gcloud",
-		"--quiet",
-		"compute",
-		"instances",
-		"delete",
-		"--delete-disks=all",
-		instanceName,
-		"--zone", c.gcpZone,
-		"--project", c.gcpProject,
-	)
+	computeClient, err := compute.NewInstancesRESTClient(ctx)
+	if err != nil {
+		return err
+	}
+	defer computeClient.Close()
 
-	stdOut := &bytes.Buffer{}
-	stdErr := &bytes.Buffer{}
-	cmd.Stdout = stdOut
-	cmd.Stderr = stdErr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	op, err := computeClient.Delete(ctx, &computepb.DeleteInstanceRequest{
+		Project:  c.gcpProject,
+		Zone:     c.gcpZone,
+		Instance: instanceName,
+	})
+	if err != nil {
+		return err
 	}
 
-	return nil
+	return op.Wait(ctx)
 }
 
 func (c Client) computeInstanceExistsInGCP(ctx context.Context, instanceName string) (bool, error) {
@@ -236,8 +272,8 @@ func (c Client) computeInstanceExistsInGCP(ctx context.Context, instanceName str
 	defer computeClient.Close()
 
 	instances := computeClient.List(ctx, &computepb.ListInstancesRequest{
-		Project: "knada-dev",
-		Zone:    "europe-north1-b",
+		Project: c.gcpProject,
+		Zone:    c.gcpZone,
 	})
 	for {
 		instance, err := instances.Next()
@@ -257,31 +293,23 @@ func (c Client) computeInstanceExistsInGCP(ctx context.Context, instanceName str
 }
 
 func (c Client) getComputeInstanceBootDiskNameGCP(ctx context.Context, instanceName string) (string, error) {
-	cmd := exec.CommandContext(ctx,
-		"gcloud",
-		"--quiet",
-		"compute",
-		"instances",
-		"describe",
-		instanceName,
-		"--zone", c.gcpZone,
-		"--project", c.gcpProject,
-		"--format=json")
+	computeClient, err := compute.NewInstancesRESTClient(ctx)
+	if err != nil {
+		return "", nil
+	}
+	defer computeClient.Close()
 
-	stdOut := &bytes.Buffer{}
-	stdErr := &bytes.Buffer{}
-	cmd.Stdout = stdOut
-	cmd.Stderr = stdErr
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	req := &computepb.GetInstanceRequest{
+		Project:  c.gcpProject,
+		Zone:     c.gcpZone,
+		Instance: instanceName,
+	}
+	resp, err := computeClient.Get(ctx, req)
+	if err != nil {
+		return "", nil
 	}
 
-	instance := computeInstance{}
-	if err := json.Unmarshal(stdOut.Bytes(), &instance); err != nil {
-		return "", err
-	}
-
-	return getBootDiskName(instance)
+	return getBootDiskName(resp.Disks)
 }
 
 func (c Client) createIAMPolicyBindingsInGCP(ctx context.Context, instanceName, email string) error {
@@ -325,26 +353,36 @@ func (c Client) deleteIAMPolicyBindingsFromGCP(ctx context.Context, instanceName
 }
 
 func (c Client) addComputeInstanceOwnerBindingInGCP(ctx context.Context, instanceName, user string) error {
-	cmd := exec.CommandContext(ctx,
-		"gcloud",
-		"--quiet",
-		"compute",
-		"instances",
-		"add-iam-policy-binding",
-		instanceName,
-		"--zone", c.gcpZone,
-		"--project", c.gcpProject,
-		"--role", "roles/owner",
-		"--condition=None",
-		fmt.Sprintf("--member=user:%v", user),
-	)
+	role := "roles/owner"
+	computeClient, err := compute.NewInstancesRESTClient(ctx)
+	if err != nil {
+		return err
+	}
+	defer computeClient.Close()
 
-	stdOut := &bytes.Buffer{}
-	stdErr := &bytes.Buffer{}
-	cmd.Stdout = stdOut
-	cmd.Stderr = stdErr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
+	req := &computepb.GetIamPolicyInstanceRequest{
+		Project:  c.gcpProject,
+		Zone:     c.gcpZone,
+		Resource: instanceName,
+	}
+	policy, err := computeClient.GetIamPolicy(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	policy = addPolicyBindingMember(policy, role, user)
+	setReq := &computepb.SetIamPolicyInstanceRequest{
+		Project:  c.gcpProject,
+		Zone:     c.gcpZone,
+		Resource: instanceName,
+		ZoneSetPolicyRequestResource: &computepb.ZoneSetPolicyRequest{
+			Policy: policy,
+		},
+	}
+
+	_, err = computeClient.SetIamPolicy(ctx, setReq)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -490,16 +528,36 @@ func (c Client) deleteUserGSMFromGCP(ctx context.Context, name string) error {
 	return nil
 }
 
-func getBootDiskName(instance computeInstance) (string, error) {
-	for _, d := range instance.Disks {
-		if d.Boot {
-			return diskNameFromDiskSource(d), nil
+func getBootDiskName(instanceDisks []*computepb.AttachedDisk) (string, error) {
+	for _, d := range instanceDisks {
+		if d.Boot != nil && *d.Boot {
+			return diskNameFromDiskSource(d.Source)
 		}
 	}
-	return "", fmt.Errorf("getting boot disk name: compute instance %v does not have a boot disk", instance.Name)
+	return "", errors.New("getting boot disk name: compute instance has no boot disk")
 }
 
-func diskNameFromDiskSource(disk disk) string {
-	sourceParts := strings.Split(disk.Source, "/")
-	return sourceParts[len(sourceParts)-1]
+func diskNameFromDiskSource(diskSource *string) (string, error) {
+	if diskSource == nil {
+		return "", errors.New("diskSource for compute instance is nil")
+	}
+
+	sourceParts := strings.Split(*diskSource, "/")
+	return sourceParts[len(sourceParts)-1], nil
+}
+
+func addPolicyBindingMember(policy *computepb.Policy, role, email string) *computepb.Policy {
+	for _, binding := range policy.Bindings {
+		if binding.Role != nil && *binding.Role == role {
+			binding.Members = append(binding.Members, fmt.Sprintf("user:%v", email))
+			return policy
+		}
+	}
+
+	policy.Bindings = append(policy.Bindings, &computepb.Binding{
+		Members: []string{fmt.Sprintf("user:%v", email)},
+		Role:    &role,
+	})
+
+	return policy
 }

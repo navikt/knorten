@@ -37,7 +37,7 @@ func (c Client) CreateComputeInstance(ctx context.Context, instance *gensql.Comp
 }
 
 func (c Client) ResizeComputeInstanceDisk(ctx context.Context, instance *gensql.ComputeInstance) error {
-	err := c.resizeComputeInstanceDiskGCP(ctx, instance.Name, instance.DiskSize)
+	err := c.resizeComputeInstanceDiskGCP(ctx, instance.Name, int64(instance.DiskSize))
 	if err != nil {
 		return err
 	}

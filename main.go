@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/navikt/knorten/pkg/github"
 	"html/template"
 	"io"
 	"net"
 	"os"
 	"time"
+
+	"github.com/navikt/knorten/pkg/github"
 
 	"github.com/navikt/knorten/pkg/gcpapi"
 	"github.com/navikt/knorten/pkg/gcpapi/mock"

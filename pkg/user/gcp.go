@@ -413,6 +413,7 @@ func (c Client) removeOpsServiceAccountUserBinding(ctx context.Context, email st
 		fmt.Sprintf("knada-vm-ops-agent@%v.iam.gserviceaccount.com", c.gcpProject),
 		"--project", c.gcpProject,
 		"--role", "roles/iam.serviceAccountUser",
+		"--condition=None",
 		fmt.Sprintf("--member=user:%v", email),
 	)
 

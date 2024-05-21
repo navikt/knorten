@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/navikt/knorten/pkg/github"
 	"html/template"
 	"io"
 	"net"
@@ -209,7 +210,18 @@ func main() {
 		cfg.DryRun,
 	))
 
-	err = api.New(router, dbClient, azureClient, log.WithField("subsystem", "api"), cfg.DryRun, cfg.GCP.Project, cfg.GCP.Zone, cfg.TopLevelDomain)
+	ghHttpClient, err := github.NewHTTPClientFromGithubAppCredentials(cfg.Github.ApplicationID, cfg.Github.InstallationID, cfg.Github.PrivateKeyPath)
+	if err != nil {
+		log.WithError(err).Fatal("creating github http client")
+	}
+
+	ghClient := github.NewFromHTTPClient(cfg.Github.Organization, ghHttpClient)
+
+	ghService := github.NewService(ghClient, log.WithField("subsystem", "github"))
+
+	go ghService.StartRefreshLoop(ctx, time.Duration(cfg.Github.RefreshIntervalMins)*time.Minute)
+
+	err = api.New(router, dbClient, azureClient, log.WithField("subsystem", "api"), cfg.DryRun, cfg.GCP.Project, cfg.GCP.Zone, cfg.TopLevelDomain, ghService)
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return

@@ -5,12 +5,14 @@ import (
 	"fmt"
 	ghapi "github.com/google/go-github/v62/github"
 	"github.com/navikt/knorten/pkg/github"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"testing"
+	"time"
 )
 
 const (
@@ -125,7 +127,7 @@ func TestBranchesForRepository(t *testing.T) {
 				fmt.Fprint(w, tc.response)
 			})
 
-			repos, err := c.BranchesForRepository(context.Background(), github.Repository{Name: tc.repo})
+			repos, err := c.Branches(context.Background(), github.Repository{Name: tc.repo})
 			if tc.expectErr {
 				assert.Error(t, err)
 				assert.Nil(t, repos)
@@ -135,6 +137,78 @@ func TestBranchesForRepository(t *testing.T) {
 				assert.NotNil(t, repos)
 				assert.Equal(t, tc.expect, repos)
 			}
+		})
+	}
+}
+
+func TestGithubServiceRepositories(t *testing.T) {
+	testCases := []struct {
+		name   string
+		lister github.Lister
+		expect map[string]github.Repository
+	}{
+		{
+			name: "Should return a list of repositories",
+			lister: github.NewStaticLister(
+				[]github.Repository{{Name: "repo1"}, {Name: "repo2"}},
+				nil,
+			),
+			expect: map[string]github.Repository{
+				"repo1": {Name: "repo1"},
+				"repo2": {Name: "repo2"},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			s := github.NewService(tc.lister, logrus.New().WithField("subsystem", "github"))
+
+			go s.StartRefreshLoop(context.Background(), 10*time.Second)
+
+			time.Sleep(1 * time.Second)
+
+			got := s.Repositories()
+
+			assert.Equal(t, tc.expect, got)
+		})
+	}
+}
+
+func TestGithubServiceBranches(t *testing.T) {
+	testCases := []struct {
+		name   string
+		lister github.Lister
+		repo   github.Repository
+		expect github.Repository
+	}{
+		{
+			name: "Should return a repository with branches",
+			lister: github.NewStaticLister(
+				[]github.Repository{{Name: "repo1"}, {Name: "repo2"}},
+				map[string][]github.Branch{
+					"repo1": {{Name: "branch1"}, {Name: "branch2"}},
+				},
+			),
+			repo: github.Repository{Name: "repo1"},
+			expect: github.Repository{
+				Name:     "repo1",
+				Branches: []github.Branch{{Name: "branch1"}, {Name: "branch2"}},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			s := github.NewService(tc.lister, logrus.New().WithField("subsystem", "github"))
+
+			go s.StartRefreshLoop(context.Background(), 10*time.Second)
+
+			time.Sleep(1 * time.Second)
+
+			got, _ := s.Branches(context.Background(), tc.repo)
+
+			assert.Equal(t, tc.expect, got)
 		})
 	}
 }

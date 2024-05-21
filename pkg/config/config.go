@@ -51,6 +51,8 @@ func (c Config) Validate() error {
 		validation.Field(&c.Helm, validation.Required),
 		validation.Field(&c.Server, validation.Required),
 		validation.Field(&c.Postgres, validation.Required),
+		validation.Field(&c.Kubernetes, validation.Required),
+		validation.Field(&c.Github, validation.Required),
 		validation.Field(&c.DBEncKey, validation.Required),
 		validation.Field(&c.LoginPage, validation.Required),
 		validation.Field(&c.AdminGroupID, validation.Required, is.UUID),
@@ -59,14 +61,20 @@ func (c Config) Validate() error {
 }
 
 type Github struct {
-	ApplicationID  string `yaml:"application_id"`
-	PrivateKeyPath string `yaml:"private_key_path"`
+	Organization        string `yaml:"organization"`
+	ApplicationID       int64  `yaml:"application_id"`
+	InstallationID      int64  `yaml:"installation_id"`
+	PrivateKeyPath      string `yaml:"private_key_path"`
+	RefreshIntervalMins int    `yaml:"refresh_interval_mins"`
 }
 
 func (g Github) Validate() error {
 	return validation.ValidateStruct(&g,
+		validation.Field(&g.Organization, validation.Required),
 		validation.Field(&g.ApplicationID, validation.Required),
+		validation.Field(&g.InstallationID, validation.Required),
 		validation.Field(&g.PrivateKeyPath, validation.Required),
+		validation.Field(&g.RefreshIntervalMins, validation.Required),
 	)
 }
 

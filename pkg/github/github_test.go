@@ -3,16 +3,17 @@ package github_test
 import (
 	"context"
 	"fmt"
-	ghapi "github.com/google/go-github/v62/github"
-	"github.com/navikt/knorten/pkg/github"
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"testing"
 	"time"
+
+	ghapi "github.com/google/go-github/v62/github"
+	"github.com/navikt/knorten/pkg/github"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 )
 
 const (

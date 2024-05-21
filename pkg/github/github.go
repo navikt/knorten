@@ -3,13 +3,14 @@ package github
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"sync"
+	"time"
+
 	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v62/github"
 	"github.com/gregjones/httpcache"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"sync"
-	"time"
 )
 
 const (
@@ -101,7 +102,6 @@ func (c *Client) Branches(ctx context.Context, r Repository) ([]Branch, error) {
 	}
 
 	return allBranches, nil
-
 }
 
 func New(org string, ghc *github.Client) *Client {

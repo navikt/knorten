@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/navikt/knorten/pkg/github"
+
 	"github.com/navikt/knorten/pkg/api/service"
 	"github.com/navikt/knorten/pkg/config"
 
@@ -116,7 +118,7 @@ func TestMain(m *testing.M) {
 		true,
 	))
 
-	err = New(router, repo, azureClient, logger, true, "", "", "test.io")
+	err = New(router, repo, azureClient, logger, true, "", "", "test.io", github.NewService(github.NewStaticLister(nil, nil), nil))
 	if err != nil {
 		log.Fatalf("setting up api: %v", err)
 	}

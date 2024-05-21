@@ -74,8 +74,11 @@ func newFakeConfig() config.Config {
 			DatabaseName: "knorten",
 		},
 		Github: config.Github{
-			ApplicationID:  "9123",
-			PrivateKeyPath: "testdata/private-key.pem",
+			Organization:        "navikt",
+			ApplicationID:       9123,
+			InstallationID:      1234,
+			PrivateKeyPath:      "testdata/private-key.pem",
+			RefreshIntervalMins: 60,
 		},
 		Kubernetes: config.Kubernetes{
 			Context: "minikube",

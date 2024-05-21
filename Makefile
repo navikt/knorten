@@ -55,6 +55,13 @@ env:
 	echo "KNORTEN_OAUTH_CLIENT_ID=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID_PROD) --secret=knorten-oauth-client-id)" > .env
 	echo "KNORTEN_OAUTH_CLIENT_SECRET=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID_PROD) --secret=knorten-oauth-client-secret)" >> .env
 	echo "KNORTEN_OAUTH_TENANT_ID=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID_PROD) --secret=knorten-azure-tenant-id)" >> .env
+
+	# We need to fetch the gh app id from the k8s secret in the PROD environment
+	echo "KNORTEN_GITHUB_APPLICATION_ID=$$(kubectl get secrets/github-app-secret --context=gke_knada-gcp_europe-north1_knada-gke --namespace knada-system --template={{.data.APP_ID}} | base64 -d)" >> .env
+	echo "KNORTEN_GITHUB_APP_INSTALLATION_ID=$$(kubectl get secrets/github-app-secret --context=gke_knada-gcp_europe-north1_knada-gke --namespace knada-system --template={{.data.INSTALLATION_ID}} | base64 -d)" >> .env
+
+	# We need to fetch the gh app priv key from the k8s secret in the PROD environment
+	@kubectl get secrets/github-app-secret --context=gke_knada-gcp_europe-north1_knada-gke --namespace knada-system --template={{.data.PRIVATE_KEY}} | base64 -d > github-app-private-key.pem
 .PHONY: env
 
 netpol:

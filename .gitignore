@@ -38,3 +38,4 @@ node_modules
 
 /private_key.pem
 /public_key.pem
+/github-app-private-key.pem

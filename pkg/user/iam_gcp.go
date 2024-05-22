@@ -217,20 +217,20 @@ func addServiceAccountUserBinding(bindings []*iam.Binding, role, user string) []
 	})
 }
 
-func removeServiceAccountUserBinding(bindings []*iam.Binding, role, user string) []*iam.Binding {
+func addProjectRoleBindingForUser(bindings []*cloudresourcemanager.Binding, role, user string) []*cloudresourcemanager.Binding {
 	for _, b := range bindings {
 		if b.Role == role {
-			b.Members = removeMember(b.Members, user)
+			b.Members = append(b.Members, user)
 		}
 	}
 
 	return bindings
 }
 
-func addProjectRoleBindingForUser(bindings []*cloudresourcemanager.Binding, role, user string) []*cloudresourcemanager.Binding {
+func removeServiceAccountUserBinding(bindings []*iam.Binding, role, user string) []*iam.Binding {
 	for _, b := range bindings {
 		if b.Role == role {
-			b.Members = append(b.Members, user)
+			b.Members = removeMember(b.Members, user)
 		}
 	}
 

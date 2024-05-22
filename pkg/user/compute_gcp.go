@@ -1,23 +1,46 @@
 package user
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"os/exec"
 	"strings"
 
 	compute "cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/apiv1/computepb"
-	"github.com/navikt/knorten/pkg/gcp"
 	"google.golang.org/api/iterator"
 )
 
-var gcpIAMPolicyBindingsRoles = []string{
-	"roles/compute.viewer",
-	"roles/iap.tunnelResourceAccessor",
-	"roles/monitoring.viewer",
+type computeInstanceConfig struct {
+	vpcName        string
+	subnet         string
+	serviceAccount string
+	machineType    string
+	isBootDisk     bool
+	autoDeleteDisk bool
+	diskType       string
+	diskSize       int64
+	sourceImage    string
+	metadata       map[string]string
+}
+
+func newComputeDefaultConfig(gcpProject, gcpRegion, gcpZone string) computeInstanceConfig {
+	return computeInstanceConfig{
+		vpcName:        "projects/knada-dev/global/networks/knada-vpc",
+		subnet:         fmt.Sprintf("projects/knada-dev/regions/%v/subnetworks/knada", gcpRegion),
+		serviceAccount: fmt.Sprintf("knada-vm-ops-agent@%v.iam.gserviceaccount.com", gcpProject),
+		machineType:    fmt.Sprintf("zones/%v/machineTypes/n2-standard-2", gcpZone),
+		isBootDisk:     true,
+		autoDeleteDisk: true,
+		diskType:       "PERSISTENT",
+		diskSize:       int64(20),
+		sourceImage:    "projects/debian-cloud/global/images/family/debian-11",
+
+		metadata: map[string]string{
+			"block-project-ssh-keys": "TRUE",
+			"enable-osconfig":        "TRUE",
+		},
+	}
 }
 
 func (c Client) createComputeInstanceInGCP(ctx context.Context, instanceName, email string) error {
@@ -29,7 +52,6 @@ func (c Client) createComputeInstanceInGCP(ctx context.Context, instanceName, em
 	if err != nil {
 		return err
 	}
-
 	if exists {
 		return nil
 	}
@@ -42,11 +64,11 @@ func (c Client) createComputeInstanceInGCP(ctx context.Context, instanceName, em
 
 	computeMetadataItems := []*computepb.Items{}
 	for k, v := range c.computeDefaultConfig.metadata {
-		tempKey := k
-		tempValue := v
+		keyCopy := k
+		valueCopy := v
 		computeMetadataItems = append(computeMetadataItems, &computepb.Items{
-			Key:   &tempKey,
-			Value: &tempValue,
+			Key:   &keyCopy,
+			Value: &valueCopy,
 		})
 	}
 
@@ -110,7 +132,6 @@ func (c Client) resizeComputeInstanceDiskGCP(ctx context.Context, instanceName s
 	if err != nil {
 		return err
 	}
-
 	if !exists {
 		return nil
 	}
@@ -160,7 +181,6 @@ func (c Client) stopComputeInstance(ctx context.Context, instanceName string) er
 	if err != nil {
 		return err
 	}
-
 	if !exists {
 		return nil
 	}
@@ -198,7 +218,6 @@ func (c Client) startComputeInstance(ctx context.Context, instanceName string) e
 	if err != nil {
 		return err
 	}
-
 	if !exists {
 		return nil
 	}
@@ -231,7 +250,6 @@ func (c Client) deleteComputeInstanceFromGCP(ctx context.Context, instanceName s
 	if err != nil {
 		return err
 	}
-
 	if !exists {
 		return nil
 	}
@@ -302,221 +320,9 @@ func (c Client) getComputeInstanceBootDiskNameGCP(ctx context.Context, instanceN
 	return getBootDiskName(resp.Disks)
 }
 
-func (c Client) createIAMPolicyBindingsInGCP(ctx context.Context, instanceName, email string) error {
-	if c.dryRun {
-		return nil
-	}
-
-	if err := c.addComputeInstanceOwnerBindingInGCP(ctx, instanceName, email); err != nil {
-		return err
-	}
-
-	if err := c.addOpsServiceAccountUserBinding(ctx, email); err != nil {
-		return err
-	}
-
-	for _, role := range gcpIAMPolicyBindingsRoles {
-		if err := c.addProjectIAMPolicyBindingInGCP(ctx, instanceName, email, role); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (c Client) deleteIAMPolicyBindingsFromGCP(ctx context.Context, instanceName, email string) error {
-	if c.dryRun {
-		return nil
-	}
-
-	if err := c.removeOpsServiceAccountUserBinding(ctx, email); err != nil {
-		return err
-	}
-
-	for _, role := range gcpIAMPolicyBindingsRoles {
-		if err := c.removeProjectIAMPolicyBindingFromGCP(ctx, instanceName, email, role); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (c Client) addComputeInstanceOwnerBindingInGCP(ctx context.Context, instanceName, user string) error {
-	role := "roles/owner"
-	computeClient, err := compute.NewInstancesRESTClient(ctx)
-	if err != nil {
-		return err
-	}
-	defer computeClient.Close()
-
-	req := &computepb.GetIamPolicyInstanceRequest{
-		Project:  c.gcpProject,
-		Zone:     c.gcpZone,
-		Resource: instanceName,
-	}
-	policy, err := computeClient.GetIamPolicy(ctx, req)
-	if err != nil {
-		return err
-	}
-
-	policy = addPolicyBindingMember(policy, role, user)
-	setReq := &computepb.SetIamPolicyInstanceRequest{
-		Project:  c.gcpProject,
-		Zone:     c.gcpZone,
-		Resource: instanceName,
-		ZoneSetPolicyRequestResource: &computepb.ZoneSetPolicyRequest{
-			Policy: policy,
-		},
-	}
-
-	_, err = computeClient.SetIamPolicy(ctx, setReq)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c Client) addOpsServiceAccountUserBinding(ctx context.Context, email string) error {
-	cmd := exec.CommandContext(ctx,
-		"gcloud",
-		"--quiet",
-		"iam",
-		"service-accounts",
-		"add-iam-policy-binding",
-		fmt.Sprintf("knada-vm-ops-agent@%v.iam.gserviceaccount.com", c.gcpProject),
-		"--project", c.gcpProject,
-		"--role", "roles/iam.serviceAccountUser",
-		"--condition=None",
-		fmt.Sprintf("--member=user:%v", email),
-	)
-
-	stdOut := &bytes.Buffer{}
-	stdErr := &bytes.Buffer{}
-	cmd.Stdout = stdOut
-	cmd.Stderr = stdErr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
-	}
-
-	return nil
-}
-
-func (c Client) removeOpsServiceAccountUserBinding(ctx context.Context, email string) error {
-	cmd := exec.CommandContext(ctx,
-		"gcloud",
-		"--quiet",
-		"iam",
-		"service-accounts",
-		"remove-iam-policy-binding",
-		fmt.Sprintf("knada-vm-ops-agent@%v.iam.gserviceaccount.com", c.gcpProject),
-		"--project", c.gcpProject,
-		"--role", "roles/iam.serviceAccountUser",
-		"--condition=None",
-		fmt.Sprintf("--member=user:%v", email),
-	)
-
-	stdOut := &bytes.Buffer{}
-	stdErr := &bytes.Buffer{}
-	cmd.Stdout = stdOut
-	cmd.Stderr = stdErr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
-	}
-
-	return nil
-}
-
-func (c Client) addProjectIAMPolicyBindingInGCP(ctx context.Context, instanceName, user, role string) error {
-	if c.dryRun {
-		return nil
-	}
-
-	cmd := exec.CommandContext(ctx,
-		"gcloud",
-		"--quiet",
-		"projects",
-		"add-iam-policy-binding",
-		c.gcpProject,
-		"--role", role,
-		"--condition=None",
-		fmt.Sprintf("--member=user:%v", user),
-	)
-
-	stdOut := &bytes.Buffer{}
-	stdErr := &bytes.Buffer{}
-	cmd.Stdout = stdOut
-	cmd.Stderr = stdErr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
-	}
-
-	return nil
-}
-
-func (c Client) removeProjectIAMPolicyBindingFromGCP(ctx context.Context, instanceName, user, role string) error {
-	if c.dryRun {
-		return nil
-	}
-
-	cmd := exec.CommandContext(ctx,
-		"gcloud",
-		"--quiet",
-		"projects",
-		"remove-iam-policy-binding",
-		c.gcpProject,
-		"--role", role,
-		fmt.Sprintf("--member=user:%v", user),
-	)
-
-	stdOut := &bytes.Buffer{}
-	stdErr := &bytes.Buffer{}
-	cmd.Stdout = stdOut
-	cmd.Stderr = stdErr
-	if err := cmd.Run(); err != nil {
-		if strings.Contains(stdErr.String(), "not found") {
-			return nil
-		}
-
-		return fmt.Errorf("%v\nstderr: %v", err, stdErr.String())
-	}
-
-	return nil
-}
-
 func normalizeEmailToName(email string) string {
 	name, _ := strings.CutSuffix(email, "@nav.no")
 	return strings.ReplaceAll(name, ".", "_")
-}
-
-func (c Client) createUserGSMInGCP(ctx context.Context, name, owner string) error {
-	if c.dryRun {
-		return nil
-	}
-
-	secret, err := gcp.CreateSecret(ctx, c.gcpProject, c.gcpRegion, name, map[string]string{"owner": name})
-	if err != nil {
-		return err
-	}
-
-	if err := gcp.SetUsersSecretOwnerBinding(ctx, []string{owner}, secret.Name); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c Client) deleteUserGSMFromGCP(ctx context.Context, name string) error {
-	if c.dryRun {
-		return nil
-	}
-
-	if err := gcp.DeleteSecret(ctx, c.gcpProject, name); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func getBootDiskName(instanceDisks []*computepb.AttachedDisk) (string, error) {
@@ -535,20 +341,4 @@ func diskNameFromDiskSource(diskSource *string) (string, error) {
 
 	sourceParts := strings.Split(*diskSource, "/")
 	return sourceParts[len(sourceParts)-1], nil
-}
-
-func addPolicyBindingMember(policy *computepb.Policy, role, email string) *computepb.Policy {
-	for _, binding := range policy.Bindings {
-		if binding.Role != nil && *binding.Role == role {
-			binding.Members = append(binding.Members, fmt.Sprintf("user:%v", email))
-			return policy
-		}
-	}
-
-	policy.Bindings = append(policy.Bindings, &computepb.Binding{
-		Members: []string{fmt.Sprintf("user:%v", email)},
-		Role:    &role,
-	})
-
-	return policy
 }

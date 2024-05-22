@@ -65,7 +65,7 @@ func (c Client) DeleteComputeInstance(ctx context.Context, email string) error {
 		return fmt.Errorf("deleting compute instance: %w", err)
 	}
 
-	err = c.deleteIAMPolicyBindingsFromGCP(ctx, instance.Name, email)
+	err = c.deleteIAMPolicyBindingsFromGCP(ctx, email)
 	if err != nil {
 		return fmt.Errorf("deleting IAM policy bindings: %w", err)
 	}

@@ -38,7 +38,7 @@ func (c Client) createIAMPolicyBindingsInGCP(ctx context.Context, instanceName, 
 	return nil
 }
 
-func (c Client) deleteIAMPolicyBindingsFromGCP(ctx context.Context, instanceName, email string) error {
+func (c Client) deleteIAMPolicyBindingsFromGCP(ctx context.Context, email string) error {
 	if c.dryRun {
 		return nil
 	}

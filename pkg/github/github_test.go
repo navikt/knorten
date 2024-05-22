@@ -163,7 +163,7 @@ func TestGithubServiceRepositories(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			s := github.NewService(tc.lister, logrus.New().WithField("subsystem", "github"))
+			s := github.NewFetcher(tc.lister, logrus.New().WithField("subsystem", "github"))
 
 			go s.StartRefreshLoop(context.Background(), 10*time.Second)
 
@@ -201,7 +201,7 @@ func TestGithubServiceBranches(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			s := github.NewService(tc.lister, logrus.New().WithField("subsystem", "github"))
+			s := github.NewFetcher(tc.lister, logrus.New().WithField("subsystem", "github"))
 
 			go s.StartRefreshLoop(context.Background(), 10*time.Second)
 

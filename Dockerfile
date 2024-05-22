@@ -7,13 +7,11 @@ RUN go mod download
 COPY . .
 RUN go build -o knorten .
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine
+FROM alpine:3
 
 RUN adduser -u 1001 knorten -D && \
     mkdir /home/knorten/.config && \
     chown -R knorten:knorten /home/knorten
-
-RUN gcloud components install beta
 
 WORKDIR /home/knorten
 COPY --from=builder /src/knorten /home/knorten/knorten

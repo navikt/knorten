@@ -63,7 +63,7 @@ env:
 
 	# We need to fetch the gh app id from the k8s secret in the PROD environment
 	echo "KNORTEN_GITHUB_APPLICATION_ID=$$(kubectl get secrets/github-app-secret --context=gke_knada-gcp_europe-north1_knada-gke --namespace knada-system --template={{.data.APP_ID}} | base64 -d)" >> .env
-	echo "KNORTEN_GITHUB_APP_INSTALLATION_ID=$$(kubectl get secrets/github-app-secret --context=gke_knada-gcp_europe-north1_knada-gke --namespace knada-system --template={{.data.INSTALLATION_ID}} | base64 -d)" >> .env
+	echo "KNORTEN_GITHUB_INSTALLATION_ID=$$(kubectl get secrets/github-app-secret --context=gke_knada-gcp_europe-north1_knada-gke --namespace knada-system --template={{.data.INSTALLATION_ID}} | base64 -d)" >> .env
 
 	# We need to fetch the gh app priv key from the k8s secret in the PROD environment
 	@kubectl get secrets/github-app-secret --context=gke_knada-gcp_europe-north1_knada-gke --namespace knada-system --template={{.data.PRIVATE_KEY}} | base64 -d > github-app-private-key.pem

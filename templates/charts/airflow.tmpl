@@ -22,21 +22,52 @@
             {{ . }}
         {{ end }}
 
-        <form class="w-80" action="" method="POST">
+        <form class="w-fit" action="" method="POST">
             <fieldset class="flex flex-col gap-4">
                 <div class="navds-form-field navds-form-field--medium">
-                    <label for="dagrepo" class="navds-form-field__label navds-label">DAG's repo</label>
-                    <input type="text" name="dagrepo" id="dagrepo" value="{{ or .values.DagRepo "" }}"
-                           placeholder="navikt/dags" required
-                           class="navds-text-field__input navds-body-short navds-body-medium"
-                    />
+                    <label for="dagrepo" class="navds-form-field__label navds-label">
+                        Hvilket repository skal brukes med Airflow?
+                    </label>
+                    <div class="navds-form-field__description navds-body-short navds-body-short--medium">
+                        Repositoriet du velger skal inneholde
+                        <a href="https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/dags.html#dags"
+                           class="navds-link navds-link--action">DAGs</a>
+                        som Airflow skal kunne kjøre.
+                    </div>
+                    <div class="navds-select__container">
+                        <select required name="dagrepo" id="dagrepo"
+                                class="navds-select__input navds-body-short navds-body-short--medium">
+                        </select>
+                    </div>
                 </div>
                 <div class="navds-form-field navds-form-field--medium">
-                    <label for="dagrepobranch" class="navds-form-field__label navds-label">DAG's repo branch</label>
-                    <input type="text" name="dagrepobranch" id="dagrepobranch" value="{{ or .values.DagRepoBranch "" }}"
-                           placeholder="main"
-                           class="navds-text-field__input navds-body-short navds-body-medium"
-                    />
+                    <label for="dagrepobranch" class="navds-form-field__label navds-label">
+                        Hvilken branch skal brukes?
+                    </label>
+                    <div class="navds-form-field__description navds-body-short navds-body-short--medium">
+                        Branchen du velger vil brukes som kilde for Airflow.
+                    </div>
+                    <div class="navds-select__container">
+                        <select required name="dagrepobranch" id="dagrepobranch"
+                                class="navds-select__input navds-body-short navds-body-short--medium">
+                            <option value="" disabled="disabled">Velg et repository først</option>
+                        </select>
+                    </div>
+                    <div class="">
+                        <div class="navds-alert navds-alert--info navds-alert--medium">
+                            <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none"
+                                 xmlns="http://www.w3.org/2000/svg" focusable="false" role="img"
+                                 aria-labelledby="title-Rd6" class="navds-alert__icon"><title id="title-Rd6">
+                                    Informasjon</title>
+                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                      d="M3.25 4A.75.75 0 0 1 4 3.25h16a.75.75 0 0 1 .75.75v16a.75.75 0 0 1-.75.75H4a.75.75 0 0 1-.75-.75V4ZM11 7.75a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm-1.25 3a.75.75 0 0 1 .75-.75H12a.75.75 0 0 1 .75.75v4.75h.75a.75.75 0 0 1 0 1.5h-3a.75.75 0 0 1 0-1.5h.75v-4h-.75a.75.75 0 0 1-.75-.75Z"
+                                      fill="currentColor"></path>
+                            </svg>
+                            <div class="navds-alert__wrapper navds-body-long navds-body-long--medium">
+                                Airflow vil slutte å kjøre jobbene dine hvis du fjerner repositoriet eller branchen du har konfigurert her.
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <fieldset
                         class="navds-checkbox-group navds-checkbox-group--medium navds-fieldset navds-fieldset--medium">
@@ -50,16 +81,18 @@
                         </div>
                     </div>
                 </fieldset>
-                 <div>
+                <div>
                     <h2>Eget Airflow image</h2>
                     <p>
-                        Dersom du ønsker å kjøre Airflow med et annet image enn det plattformen tilbyr spesifiserer du Docker image og tag i feltet under.
+                        Dersom du ønsker å kjøre Airflow med et annet image enn det plattformen tilbyr spesifiserer du
+                        Docker image og tag i feltet under.
                     </p>
                     <div class="navds-form-field navds-form-field--medium">
                         <label for="airflowimage" class="navds-form-field__label navds-label"></label>
-                        <input type="text" name="airflowimage" id="airflowimage" value="{{ or .values.AirflowImage "" }}"
-                            class="navds-text-field__input navds-body-short navds-body-medium"
-                            placeholder="ghcr.io/navikt/mitt-airflow-image:tag"
+                        <input type="text" name="airflowimage" id="airflowimage"
+                               value="{{ or .values.AirflowImage "" }}"
+                               class="navds-text-field__input navds-body-short navds-body-medium"
+                               placeholder="ghcr.io/navikt/mitt-airflow-image:tag"
                         />
                     </div>
                 </div>
@@ -73,5 +106,89 @@
             </fieldset>
         </form>
     </article>
+
+
+    <script>
+        $(document).ready(function () {
+            const $dagrepo = $('#dagrepo');
+            const $dagrepobranch = $('#dagrepobranch');
+
+            function fetchRepositories() {
+                $.ajax({
+                    url: '/github/repositories',
+                    type: 'GET',
+                    beforeSend: function () {
+                        // Show loading state
+                        $dagrepo.prop('disabled', true)
+                            .html('&lt;option>Loading...&lt;/option>');
+                    },
+                    success: function (data) {
+                        // Populate dropdown list
+                        $dagrepo.prop('disabled', false)
+                            .html('');
+                        let repositories = data.repositories;
+                        for (let i = 0; i < repositories.length; i++) {
+                            let option = new Option(repositories[i], repositories[i]);
+                            if (i === 0) {
+                                option.selected = true;
+                            }
+                            $dagrepo.append($(option));
+                        }
+                        $dagrepo.select2({
+                            placeholder: 'Velg et repository',
+                            allowClear: true
+                        });
+                    },
+                    error: function () {
+                        // Show error message and retry button
+                        $dagrepo.prop('disabled', true);
+                        $dagrepo.html('&lt;option>Error loading repositories&lt;/option>');
+                        console.error('Failed to fetch repositories after multiple attempts');
+                    }
+                });
+            }
+
+            fetchRepositories();
+
+            // Event listener for when a repository is selected
+            $dagrepo.on('change', function () {
+                let selectedRepository = $(this).val();
+                console.log(selectedRepository)
+                fetchBranches(selectedRepository);
+            });
+
+            function fetchBranches(repository) {
+                $.ajax({
+                    url: '/github/repository/' + encodeURI(repository) + '/branches',
+                    type: 'GET',
+                    beforeSend: function () {
+                        // Show loading state
+                        $dagrepobranch.prop('disabled', true);
+                        $dagrepobranch.html('&lt;option>Loading...&lt;/option>');
+                    },
+                    success: function (data) {
+                        // Populate dropdown list
+                        $dagrepobranch.prop('disabled', false);
+                        $dagrepobranch.html('');
+                        let branches = data.branches;
+                        for (let i = 0; i < branches.length; i++) {
+                            let option = new Option(branches[i], branches[i]);
+                            $dagrepobranch.append($(option));
+                        }
+                        $dagrepobranch.select2({
+                            placeholder: 'Velg en branch',
+                            allowClear: true
+                        });
+                    },
+                    error: function () {
+                        // Show error message and retry button
+                        $dagrepobranch.prop('disabled', true);
+                        $dagrepobranch.html('&lt;option>Error loading branches&lt;/option>');
+                    }
+                });
+            }
+        });
+    </script>
+
     {{ template "footer" }}
 {{ end }}

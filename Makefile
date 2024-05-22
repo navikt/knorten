@@ -26,8 +26,10 @@ GOTEST               ?= $(shell command -v gotest || echo "$(GOBIN)/gotest")
 GOTEST_VERSION       := v0.0.6
 STATICCHECK          ?= $(shell command -v staticcheck || echo "$(GOBIN)/staticcheck")
 STATICCHECK_VERSION  := v0.4.6
-GOVULNCHECK		  ?= $(shell command -v govulncheck || echo "$(GOBIN)/govulncheck")
-GOVULNCHECK_VERSION := v1.0.4
+GOVULNCHECK		     ?= $(shell command -v govulncheck || echo "$(GOBIN)/govulncheck")
+GOVULNCHECK_VERSION  := v1.0.4
+GOFUMPT			     ?= $(shell command -v gofumpt || echo "$(GOBIN)/gofumpt")
+GOFUMPT_VERSION	     := v0.6.0
 
 MINIKUBE            ?= minikube
 MINIKUBE_START_ARGS ?=
@@ -49,6 +51,9 @@ $(STATICCHECK):
 
 $(GOVULNCHECK):
 	$(call install-binary,govulncheck,golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION))
+
+$(GOFUMPT):
+	$(call install-binary,gofumpt,mvdan.cc/gofumpt@$(GOFUMPT_VERSION))
 
 env:
 	# We need to fetch the secrets from GCP Secret Manager in PROD environment
@@ -157,6 +162,9 @@ deps:
 	./scripts/manage_artifact_access.sh
 	docker-compose up -d db
 .PHONY: deps
+
+fumpt: $(GOFUMPT)
+	$(GOFUMPT) -w .
 
 check: | lint test
 .PHONY: check

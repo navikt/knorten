@@ -122,7 +122,7 @@ func (c Client) removeOpsServiceAccountUserBinding(ctx context.Context, email st
 	if err != nil {
 		return err
 	}
-	resource := "projects/knada-dev/serviceAccounts/knada-vm-ops-agent@knada-dev.iam.gserviceaccount.com"
+	resource := fmt.Sprintf("projects/%v/serviceAccounts/knada-vm-ops-agent@%v.iam.gserviceaccount.com", c.gcpProject, c.gcpProject)
 	userWithType := fmt.Sprintf("user:%v", email)
 
 	resp, err := iamService.Projects.ServiceAccounts.GetIamPolicy(resource).Context(ctx).Do()

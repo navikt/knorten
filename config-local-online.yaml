@@ -49,7 +49,7 @@ postgres:
 kubernetes:
     context: minikube
 db_enc_key: jegersekstentegn
-admin_group: nada@nav.no
+admin_group_id: f2816319-7db0-4061-8d0c-5ddbe232d60c
 session_key: offline-session
 login_page: http://localhost:8080/
 dry_run: false

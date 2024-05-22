@@ -74,7 +74,7 @@ func (c Client) addComputeInstanceOwnerBindingInGCP(ctx context.Context, instanc
 		return err
 	}
 
-	policy = addPolicyBindingMember(policy, role, user)
+	policy = addComputePolicyBindingMember(policy, role, user)
 	setReq := &computepb.SetIamPolicyInstanceRequest{
 		Project:  c.gcpProject,
 		Zone:     c.gcpZone,
@@ -97,16 +97,16 @@ func (c Client) addOpsServiceAccountUserBinding(ctx context.Context, email strin
 	if err != nil {
 		return err
 	}
-	resource := fmt.Sprintf("projects/%v/serviceAccounts/knada-vm-ops-agent@%v.iam.gserviceaccount.com", c.gcpProject, c.gcpProject)
+
 	userWithType := fmt.Sprintf("user:%v", email)
 
-	resp, err := iamService.Projects.ServiceAccounts.GetIamPolicy(resource).Context(ctx).Do()
+	resp, err := iamService.Projects.ServiceAccounts.GetIamPolicy(c.opsAgentSAResource).Context(ctx).Do()
 	if err != nil {
 		return err
 	}
 
 	bindings := addServiceAccountUserBinding(resp.Bindings, "roles/iam.serviceAccountUser", userWithType)
-	_, err = iamService.Projects.ServiceAccounts.SetIamPolicy(resource, &iam.SetIamPolicyRequest{
+	_, err = iamService.Projects.ServiceAccounts.SetIamPolicy(c.opsAgentSAResource, &iam.SetIamPolicyRequest{
 		Policy: &iam.Policy{
 			Bindings: bindings,
 		},
@@ -122,16 +122,15 @@ func (c Client) removeOpsServiceAccountUserBinding(ctx context.Context, email st
 	if err != nil {
 		return err
 	}
-	resource := fmt.Sprintf("projects/%v/serviceAccounts/knada-vm-ops-agent@%v.iam.gserviceaccount.com", c.gcpProject, c.gcpProject)
 	userWithType := fmt.Sprintf("user:%v", email)
 
-	resp, err := iamService.Projects.ServiceAccounts.GetIamPolicy(resource).Context(ctx).Do()
+	resp, err := iamService.Projects.ServiceAccounts.GetIamPolicy(c.opsAgentSAResource).Context(ctx).Do()
 	if err != nil {
 		return err
 	}
 
 	bindings := removeServiceAccountUserBinding(resp.Bindings, "roles/iam.serviceAccountUser", userWithType)
-	_, err = iamService.Projects.ServiceAccounts.SetIamPolicy(resource, &iam.SetIamPolicyRequest{
+	_, err = iamService.Projects.ServiceAccounts.SetIamPolicy(c.opsAgentSAResource, &iam.SetIamPolicyRequest{
 		Policy: &iam.Policy{
 			Bindings: bindings,
 		},
@@ -187,7 +186,7 @@ func (c Client) removeProjectIAMPolicyBindingFromGCP(ctx context.Context, user, 
 	return nil
 }
 
-func addPolicyBindingMember(policy *computepb.Policy, role, email string) *computepb.Policy {
+func addComputePolicyBindingMember(policy *computepb.Policy, role, email string) *computepb.Policy {
 	for _, binding := range policy.Bindings {
 		if binding.Role != nil && *binding.Role == role {
 			binding.Members = append(binding.Members, fmt.Sprintf("user:%v", email))

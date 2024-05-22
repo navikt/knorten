@@ -7,15 +7,18 @@ RUN go mod download
 COPY . .
 RUN go build -o knorten .
 
-FROM alpine:3
-
 RUN adduser -u 1001 knorten -D && \
-    mkdir /home/knorten/.config && \
+    mkdir -p /home/knorten/.config && \
     chown -R knorten:knorten /home/knorten
 
-WORKDIR /home/knorten
-COPY --from=builder /src/knorten /home/knorten/knorten
-COPY --from=builder /src/assets /home/knorten/assets
-COPY --from=builder /src/templates /home/knorten/templates
+FROM gcr.io/distroless/static-debian11
 
+COPY --chown=knorten:knorten --from=builder /etc/passwd /etc/passwd
+COPY --chown=knorten:knorten --from=builder /home/knorten /home/knorten
+COPY --chown=knorten:knorten --from=builder /home/knorten/.config /home/knorten/.config
+COPY --chown=knorten:knorten --from=builder /src/knorten /home/knorten/knorten
+COPY --chown=knorten:knorten --from=builder /src/assets /home/knorten/assets
+COPY --chown=knorten:knorten --from=builder /src/templates /home/knorten/templates
+
+WORKDIR /home/knorten
 CMD ["/home/knorten/knorten", "--config", "/home/knorten/config.yaml"]

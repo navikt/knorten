@@ -190,7 +190,7 @@ func (s *Fetcher) StartRefreshLoop(ctx context.Context, interval time.Duration) 
 			s.log.WithError(err).Error("refreshing repositories")
 		}
 
-		s.log.WithField("num_repos", n).WithField("refresh_duration", time.Now().Sub(t0).String()).Info("done refreshing github repositories")
+		s.log.WithField("num_repos", n).WithField("refresh_duration", time.Since(t0).String()).Info("done refreshing github repositories")
 	}
 
 	refresh()

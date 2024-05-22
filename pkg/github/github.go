@@ -148,22 +148,22 @@ func (s *StaticLister) Branches(_ context.Context, r Repository) ([]Branch, erro
 	return s.branches[r.Name], nil
 }
 
-type Service struct {
+type Fetcher struct {
 	log          *logrus.Entry
 	lister       Lister
 	repositories map[string]Repository
 	mu           sync.RWMutex
 }
 
-func NewService(l Lister, log *logrus.Entry) *Service {
-	return &Service{
+func NewFetcher(l Lister, log *logrus.Entry) *Fetcher {
+	return &Fetcher{
 		log:          log,
 		lister:       l,
 		repositories: make(map[string]Repository),
 	}
 }
 
-func (s *Service) Refresh(ctx context.Context) (int, error) {
+func (s *Fetcher) Refresh(ctx context.Context) (int, error) {
 	repos, err := s.lister.Repositories(ctx)
 	if err != nil {
 		return 0, err
@@ -179,7 +179,7 @@ func (s *Service) Refresh(ctx context.Context) (int, error) {
 	return len(s.repositories), nil
 }
 
-func (s *Service) StartRefreshLoop(ctx context.Context, interval time.Duration) {
+func (s *Fetcher) StartRefreshLoop(ctx context.Context, interval time.Duration) {
 	s.log.WithField("interval", interval.String()).Info("starting refresh loop")
 
 	refresh := func() {
@@ -209,7 +209,7 @@ func (s *Service) StartRefreshLoop(ctx context.Context, interval time.Duration) 
 	}
 }
 
-func (s *Service) Repositories() map[string]Repository {
+func (s *Fetcher) Repositories() map[string]Repository {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -221,7 +221,7 @@ func (s *Service) Repositories() map[string]Repository {
 	return repos
 }
 
-func (s *Service) Branches(ctx context.Context, repo Repository) (Repository, error) {
+func (s *Fetcher) Branches(ctx context.Context, repo Repository) (Repository, error) {
 	branches, err := s.lister.Branches(ctx, repo)
 	if err != nil {
 		return Repository{}, err

@@ -163,10 +163,10 @@ deps:
 	docker-compose up -d db
 .PHONY: deps
 
-fumpt: $(GOFUMPT)
+gofumpt: $(GOFUMPT)
 	$(GOFUMPT) -w .
 
-check: | lint test
+check: | gofumpt lint test staticcheck
 .PHONY: check
 
 full-check: | check staticcheck vulncheck

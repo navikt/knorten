@@ -34,8 +34,8 @@ cookies:
         http_only: false
 helm:
     repository_config: /home/knorten/.config/helm/repositories.yaml
-    airflow_chart_version: 1.11.0
-    jupyter_chart_version: 3.2.1
+    airflow_chart_version: # Set through env var KNORTEN_HELM_AIRFLOW_CHART_VERSION
+    jupyter_chart_version: # Set through env var KNORTEN_HELM_JUPYTER_CHART_VERSION
 server:
     hostname: 0.0.0.0
     port: 8080

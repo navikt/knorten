@@ -37,6 +37,11 @@
                     <div class="navds-select__container">
                         <select required name="dagrepo" id="dagrepo"
                                 class="navds-select__input navds-body-short navds-body-short--medium">
+                            {{ if .values.DagRepo }}
+                                <option value="{{ .values.DagRepo }}" selected>{{ .values.DagRepo }}</option>
+                            {{ else }}
+                                <option value="" disabled="disabled" selected>Velg et repository</option>
+                            {{ end }}
                         </select>
                     </div>
                 </div>
@@ -50,7 +55,11 @@
                     <div class="navds-select__container">
                         <select required name="dagrepobranch" id="dagrepobranch"
                                 class="navds-select__input navds-body-short navds-body-short--medium">
-                            <option value="" disabled="disabled">Velg et repository først</option>
+                            {{ if .values.DagRepoBranch }}
+                                <option value="{{ .values.DagRepoBranch }}" selected>{{ .values.DagRepoBranch }}</option>
+                            {{ else }}
+                                <option value="" disabled="disabled">Velg branch</option>
+                            {{ end }}
                         </select>
                     </div>
                     <div class="">
@@ -64,7 +73,7 @@
                                       fill="currentColor"></path>
                             </svg>
                             <div class="navds-alert__wrapper navds-body-long navds-body-long--medium">
-                                Airflow vil slutte å kjøre jobbene dine hvis du fjerner repositoriet eller branchen du har konfigurert her.
+                                Airflow vil ikke kunne synce jobbene dine hvis du fjerner repositoriet eller branchen du har konfigurert for bruk her.
                             </div>
                         </div>
                     </div>
@@ -113,37 +122,35 @@
             const $dagrepo = $('#dagrepo');
             const $dagrepobranch = $('#dagrepobranch');
 
+            $dagrepo.select2({
+                allowClear: true,
+            });
+
+            $dagrepobranch.select2({
+                allowClear: true,
+            });
+
             function fetchRepositories() {
                 $.ajax({
                     url: '/github/repositories',
                     type: 'GET',
-                    beforeSend: function () {
-                        // Show loading state
-                        $dagrepo.prop('disabled', true)
-                            .html('&lt;option>Loading...&lt;/option>');
-                    },
                     success: function (data) {
-                        // Populate dropdown list
-                        $dagrepo.prop('disabled', false)
-                            .html('');
+                        let selectedRepository = $dagrepo.val();
+
                         let repositories = data;
                         for (let i = 0; i < repositories.length; i++) {
-                            let option = new Option(repositories[i], repositories[i]);
-                            if (i === 0) {
-                                option.selected = true;
+                            if (selectedRepository === repositories[i]) {
+                                continue;
                             }
+
+                            let option = new Option(repositories[i], repositories[i]);
                             $dagrepo.append($(option));
                         }
-                        $dagrepo.select2({
-                            placeholder: 'Velg et repository',
-                            allowClear: true
-                        });
                     },
                     error: function () {
                         // Show error message and retry button
                         $dagrepo.prop('disabled', true);
                         $dagrepo.html('&lt;option>Error loading repositories&lt;/option>');
-                        console.error('Failed to fetch repositories after multiple attempts');
                     }
                 });
             }
@@ -157,28 +164,26 @@
                 fetchBranches(selectedRepository);
             });
 
+            if ($dagrepo.val()) {
+                fetchBranches($dagrepo.val());
+            }
+
             function fetchBranches(repository) {
                 $.ajax({
                     url: '/github/repository/' + encodeURI(repository) + '/branches',
                     type: 'GET',
-                    beforeSend: function () {
-                        // Show loading state
-                        $dagrepobranch.prop('disabled', true);
-                        $dagrepobranch.html('&lt;option>Loading...&lt;/option>');
-                    },
                     success: function (data) {
-                        // Populate dropdown list
-                        $dagrepobranch.prop('disabled', false);
-                        $dagrepobranch.html('');
+                        let selectedBranch = $dagrepobranch.val();
+
                         let branches = data.branches;
                         for (let i = 0; i < branches.length; i++) {
+                            if (selectedBranch === branches[i]) {
+                                continue;
+                            }
+
                             let option = new Option(branches[i], branches[i]);
                             $dagrepobranch.append($(option));
                         }
-                        $dagrepobranch.select2({
-                            placeholder: 'Velg en branch',
-                            allowClear: true
-                        });
                     },
                     error: function () {
                         // Show error message and retry button

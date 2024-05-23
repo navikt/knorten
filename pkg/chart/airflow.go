@@ -12,9 +12,12 @@ import (
 	"strconv"
 	"strings"
 
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/navikt/knorten/pkg/gcpapi"
 	"github.com/navikt/knorten/pkg/k8s/cnpg"
 	"github.com/navikt/knorten/pkg/k8s/core"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/navikt/knorten/pkg/database"
 	"github.com/navikt/knorten/pkg/database/gensql"
@@ -370,10 +373,18 @@ func (c Client) createAirflowDatabase(ctx context.Context, team *gensql.TeamGetR
 		return err
 	}
 
-	// FIXME: Should we introduce a maintenance loop that updates the airflow-db secret
-	dbSecret, err := c.manager.WaitForSecret(ctx, fmt.Sprintf("%s-app", teamIDToDb(teamID)), namespace)
-	if err != nil {
+	var dbSecret *v1.Secret
+
+	dbSecret, err = c.manager.GetSecret(ctx, fmt.Sprintf("%s-app", teamIDToDb(teamID)), namespace)
+	if err != nil && !apierrors.IsNotFound(err) {
 		return err
+	}
+
+	if dbSecret == nil {
+		dbSecret, err = c.manager.WaitForSecret(ctx, fmt.Sprintf("%s-app", teamIDToDb(teamID)), namespace)
+		if err != nil {
+			return err
+		}
 	}
 
 	connectionURI, hasKey := dbSecret.Data["uri"]

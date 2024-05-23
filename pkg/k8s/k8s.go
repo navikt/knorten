@@ -62,6 +62,8 @@ func NewClient(context string, fn SchemeAdderFn) (*Client, error) {
 		return nil, fmt.Errorf("getting kubeconfig: %w", err)
 	}
 
+	cfg.Timeout = 5 * time.Second
+
 	c, err := client.New(cfg, client.Options{})
 	if err != nil {
 		return nil, fmt.Errorf("creating k8s client: %w", err)
@@ -103,6 +105,7 @@ type Manager interface {
 	DeleteScheduledBackup(ctx context.Context, name, namespace string) error
 	ApplySecret(ctx context.Context, secret *v1.Secret) error
 	DeleteSecret(ctx context.Context, name, namespace string) error
+	GetSecret(ctx context.Context, name, namespace string) (*v1.Secret, error)
 	WaitForSecret(ctx context.Context, name, namespace string) (*v1.Secret, error)
 	ApplyHTTPRoute(ctx context.Context, route *gwapiv1b1.HTTPRoute) error
 	DeleteHTTPRoute(ctx context.Context, name, namespace string) error

@@ -103,6 +103,7 @@ type Manager interface {
 	DeleteScheduledBackup(ctx context.Context, name, namespace string) error
 	ApplySecret(ctx context.Context, secret *v1.Secret) error
 	DeleteSecret(ctx context.Context, name, namespace string) error
+	GetSecret(ctx context.Context, name, namespace string) (*v1.Secret, error)
 	WaitForSecret(ctx context.Context, name, namespace string) (*v1.Secret, error)
 	ApplyHTTPRoute(ctx context.Context, route *gwapiv1b1.HTTPRoute) error
 	DeleteHTTPRoute(ctx context.Context, name, namespace string) error

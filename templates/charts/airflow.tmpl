@@ -126,7 +126,7 @@
                         // Populate dropdown list
                         $dagrepo.prop('disabled', false)
                             .html('');
-                        let repositories = data.repositories;
+                        let repositories = data;
                         for (let i = 0; i < repositories.length; i++) {
                             let option = new Option(repositories[i], repositories[i]);
                             if (i === 0) {

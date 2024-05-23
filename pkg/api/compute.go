@@ -166,15 +166,15 @@ func (c *client) deleteComputeInstance(ctx *gin.Context) error {
 }
 
 func (c *client) createComputeInstance(ctx *gin.Context) error {
-	user, err := getUser(ctx)
+	u, err := getUser(ctx)
 	if err != nil {
 		return err
 	}
 
 	instance := gensql.ComputeInstance{
-		Owner:    user.Email,
-		Name:     "compute-" + getNormalizedNameFromEmail(user.Email),
-		DiskSize: 10,
+		Owner:    u.Email,
+		Name:     "compute-" + getNormalizedNameFromEmail(u.Email),
+		DiskSize: user.DefaultComputeDiskSize,
 	}
 
 	return c.repo.RegisterCreateComputeEvent(ctx, instance.Owner, instance)

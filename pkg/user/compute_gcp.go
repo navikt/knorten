@@ -11,6 +11,8 @@ import (
 	"google.golang.org/api/iterator"
 )
 
+const DefaultComputeDiskSize = 20
+
 type computeInstanceConfig struct {
 	vpcName        string
 	subnet         string
@@ -33,7 +35,7 @@ func newComputeDefaultConfig(gcpProject, gcpRegion, gcpZone string) computeInsta
 		isBootDisk:     true,
 		autoDeleteDisk: true,
 		diskType:       "PERSISTENT",
-		diskSize:       int64(20),
+		diskSize:       int64(DefaultComputeDiskSize),
 		sourceImage:    "projects/debian-cloud/global/images/family/debian-11",
 
 		metadata: map[string]string{

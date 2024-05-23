@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/iam v1.1.8
 	cloud.google.com/go/secretmanager v1.13.0
 	cloud.google.com/go/storage v1.41.0
+	github.com/bradleyfalzon/ghinstallation/v2 v2.10.0
 	github.com/cloudnative-pg/cloudnative-pg v1.23.1
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/gin-contrib/sessions v1.0.1
@@ -14,8 +15,10 @@ require (
 	github.com/go-playground/validator/v10 v10.20.0
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-cmp v0.6.0
+	github.com/google/go-github/v62 v62.0.0
 	github.com/google/uuid v1.6.0
 	github.com/googleapis/gax-go/v2 v2.12.4
+	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 	github.com/hashicorp/errwrap v1.1.0
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/jarcoal/httpmock v1.3.1
@@ -47,9 +50,12 @@ require (
 
 require (
 	cloud.google.com/go v0.113.0 // indirect
+	cloud.google.com/go/artifactregistry v1.14.9 // indirect
 	cloud.google.com/go/auth v0.4.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
+	cloud.google.com/go/compute v1.26.0 // indirect
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
+	cloud.google.com/go/longrunning v0.5.7 // indirect
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
@@ -113,6 +119,8 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
+	github.com/google/go-github/v60 v60.0.0 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
@@ -123,7 +131,6 @@ require (
 	github.com/gorilla/sessions v1.2.2 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/gosuri/uitable v0.0.4 // indirect
-	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect

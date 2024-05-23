@@ -45,6 +45,12 @@ postgres:
     password: postgres
     database_name: knorten
     ssl_mode: disable
+github:
+    Organization: "navikt"
+    application_id: 9123
+    installation_id: 1234
+    private_key_path: "testdata/private-key.pem"
+    refresh_interval_mins: 60
 kubernetes:
     context: minikube
 db_enc_key: jegersekstentegn

@@ -37,7 +37,7 @@ func (c Client) CreateComputeInstance(ctx context.Context, instance *gensql.Comp
 }
 
 func (c Client) ResizeComputeInstanceDisk(ctx context.Context, instance *gensql.ComputeInstance) error {
-	err := c.resizeComputeInstanceDiskGCP(ctx, instance.Name, instance.DiskSize)
+	err := c.resizeComputeInstanceDiskGCP(ctx, instance.Name, int64(instance.DiskSize))
 	if err != nil {
 		return err
 	}
@@ -65,7 +65,7 @@ func (c Client) DeleteComputeInstance(ctx context.Context, email string) error {
 		return fmt.Errorf("deleting compute instance: %w", err)
 	}
 
-	err = c.deleteIAMPolicyBindingsFromGCP(ctx, instance.Name, email)
+	err = c.deleteIAMPolicyBindingsFromGCP(ctx, email)
 	if err != nil {
 		return fmt.Errorf("deleting IAM policy bindings: %w", err)
 	}

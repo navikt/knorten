@@ -33,6 +33,7 @@ type Config struct {
 	Server         Server     `yaml:"server"`
 	Postgres       Postgres   `yaml:"postgres"`
 	Kubernetes     Kubernetes `yaml:"kubernetes"`
+	Github         Github     `yaml:"github"`
 	DBEncKey       string     `yaml:"db_enc_key"`
 	AdminGroupID   string     `yaml:"admin_group_id"`
 	SessionKey     string     `yaml:"session_key"`
@@ -50,10 +51,30 @@ func (c Config) Validate() error {
 		validation.Field(&c.Helm, validation.Required),
 		validation.Field(&c.Server, validation.Required),
 		validation.Field(&c.Postgres, validation.Required),
+		validation.Field(&c.Kubernetes, validation.Required),
+		validation.Field(&c.Github, validation.Required),
 		validation.Field(&c.DBEncKey, validation.Required),
 		validation.Field(&c.LoginPage, validation.Required),
 		validation.Field(&c.AdminGroupID, validation.Required, is.UUID),
 		validation.Field(&c.SessionKey, validation.Required),
+	)
+}
+
+type Github struct {
+	Organization        string `yaml:"organization"`
+	ApplicationID       int64  `yaml:"application_id"`
+	InstallationID      int64  `yaml:"installation_id"`
+	PrivateKeyPath      string `yaml:"private_key_path"`
+	RefreshIntervalMins int    `yaml:"refresh_interval_mins"`
+}
+
+func (g Github) Validate() error {
+	return validation.ValidateStruct(&g,
+		validation.Field(&g.Organization, validation.Required),
+		validation.Field(&g.ApplicationID, validation.Required),
+		validation.Field(&g.InstallationID, validation.Required),
+		validation.Field(&g.PrivateKeyPath, validation.Required),
+		validation.Field(&g.RefreshIntervalMins, validation.Required),
 	)
 }
 

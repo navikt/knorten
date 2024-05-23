@@ -73,6 +73,13 @@ func newFakeConfig() config.Config {
 			SSLMode:      "disable",
 			DatabaseName: "knorten",
 		},
+		Github: config.Github{
+			Organization:        "navikt",
+			ApplicationID:       9123,
+			InstallationID:      1234,
+			PrivateKeyPath:      "testdata/private-key.pem",
+			RefreshIntervalMins: 60,
+		},
 		Kubernetes: config.Kubernetes{
 			Context: "minikube",
 		},

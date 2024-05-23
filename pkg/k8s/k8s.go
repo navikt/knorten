@@ -62,6 +62,8 @@ func NewClient(context string, fn SchemeAdderFn) (*Client, error) {
 		return nil, fmt.Errorf("getting kubeconfig: %w", err)
 	}
 
+	cfg.Timeout = 5 * time.Second
+
 	c, err := client.New(cfg, client.Options{})
 	if err != nil {
 		return nil, fmt.Errorf("creating k8s client: %w", err)

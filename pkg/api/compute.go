@@ -82,10 +82,12 @@ func (c *client) setupComputeRoutes() {
 		}
 
 		ctx.HTML(http.StatusOK, "compute/edit", gin.H{
-			"name":     "compute-" + getNormalizedNameFromEmail(user.Email),
-			"diskSize": computeInstance.DiskSize,
-			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
+			"name":       "compute-" + getNormalizedNameFromEmail(user.Email),
+			"gcpZone":    c.gcpZone,
+			"gcpProject": c.gcpProject,
+			"diskSize":   computeInstance.DiskSize,
+			"loggedIn":   ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":    ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 

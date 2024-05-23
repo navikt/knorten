@@ -26,7 +26,7 @@ func (g *githubService) Repositories(_ context.Context) []string {
 
 	var names []string
 	for _, r := range repos {
-		names = append(names, r.Name)
+		names = append(names, r.FullName)
 	}
 
 	return names
@@ -41,7 +41,7 @@ func (g *githubService) Branches(ctx context.Context, r github.Repository) ([]st
 		return nil, err
 	}
 
-	names := make([]string, 0, len(repository.Branches))
+	names := make([]string, len(repository.Branches))
 	for i, r := range repository.Branches {
 		names[i] = r.Name
 	}

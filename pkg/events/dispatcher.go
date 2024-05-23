@@ -138,18 +138,17 @@ func (e EventHandler) processWork(ctx context.Context, event gensql.Event, logge
 		if !ok {
 			return fmt.Errorf("invalid form type for event type %v", event.Type)
 		}
-
-		logger.Infof("Creating compute instance '%v'", i)
+		logger.Infof("Creating compute instance for user '%v'", i.Owner)
 		err = e.userClient.CreateComputeInstance(ctx, i)
 	case database.EventTypeResizeCompute:
 		i, ok := form.(*gensql.ComputeInstance)
 		if !ok {
 			return fmt.Errorf("invalid form type for event type %v", event.Type)
 		}
-
-		logger.Infof("Resizing disk for compute instance '%v'", i.Owner)
+		logger.Infof("Resizing compute instance disk for user '%v'", i.Owner)
 		err = e.userClient.ResizeComputeInstanceDisk(ctx, i)
 	case database.EventTypeDeleteCompute:
+		logger.Infof("Deleting compute instance for user '%v'", event.Owner)
 		err = e.userClient.DeleteComputeInstance(ctx, event.Owner)
 	case database.EventTypeCreateAirflow, database.EventTypeUpdateAirflow:
 		v, ok := form.(*chart.AirflowConfigurableValues)

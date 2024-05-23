@@ -82,10 +82,12 @@ func (c *client) setupComputeRoutes() {
 		}
 
 		ctx.HTML(http.StatusOK, "compute/edit", gin.H{
-			"name":     "compute-" + getNormalizedNameFromEmail(user.Email),
-			"diskSize": computeInstance.DiskSize,
-			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
+			"name":       "compute-" + getNormalizedNameFromEmail(user.Email),
+			"gcpZone":    c.gcpZone,
+			"gcpProject": c.gcpProject,
+			"diskSize":   computeInstance.DiskSize,
+			"loggedIn":   ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":    ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -164,15 +166,15 @@ func (c *client) deleteComputeInstance(ctx *gin.Context) error {
 }
 
 func (c *client) createComputeInstance(ctx *gin.Context) error {
-	user, err := getUser(ctx)
+	u, err := getUser(ctx)
 	if err != nil {
 		return err
 	}
 
 	instance := gensql.ComputeInstance{
-		Owner:    user.Email,
-		Name:     "compute-" + getNormalizedNameFromEmail(user.Email),
-		DiskSize: 10,
+		Owner:    u.Email,
+		Name:     "compute-" + getNormalizedNameFromEmail(u.Email),
+		DiskSize: user.DefaultComputeDiskSize,
 	}
 
 	return c.repo.RegisterCreateComputeEvent(ctx, instance.Owner, instance)

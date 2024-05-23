@@ -36,6 +36,16 @@ spec:
                   key: jupyter_chart_version
             - name: ELECTOR_PATH
               value: localhost:4040
+            - name: KNORTEN_GITHUB_APPLICATION_ID
+              valueFrom:
+                secretKeyRef:
+                  key: APP_ID
+                  name: github-app-secret
+            - name: KNORTEN_GITHUB_INSTALLATION_ID
+              valueFrom:
+                secretKeyRef:
+                  key: INSTALLATION_ID
+                  name: github-app-secret
           envFrom:
             - secretRef:
                 name: knorten
@@ -46,6 +56,9 @@ spec:
             - name: knorten-config
               mountPath: /home/knorten/config.yaml
               subPath: config.yaml
+            - name: github-private-key
+              mountPath: /home/knorten/github-app-private-key.pem
+              subPath: PRIVATE_KEY
           resources:
             limits:
               memory: 1.5Gi
@@ -109,5 +122,8 @@ spec:
         - name: knorten-config
           configMap:
               name: knorten-config
+        - name: github-private-key
+          secret:
+            secretName: github-app-secret
       securityContext:
         runAsNonRoot: true

@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/navikt/knorten/pkg/github"
+
 	"github.com/navikt/knorten/pkg/gcpapi"
 	"github.com/navikt/knorten/pkg/gcpapi/mock"
 	"github.com/navikt/knorten/pkg/k8s"
@@ -193,8 +195,25 @@ func main() {
 		dbClient,
 	)
 
+	ghHttpClient, err := github.NewHTTPClientFromGithubAppCredentials(
+		cfg.Github.ApplicationID,
+		cfg.Github.InstallationID,
+		cfg.Github.PrivateKeyPath,
+	)
+	if err != nil {
+		log.WithError(err).Fatal("creating github http client")
+	}
+
+	ghc := github.NewFromHTTPClient(cfg.Github.Organization, ghHttpClient)
+	ghf := github.NewFetcher(ghc, log.WithField("subsystem", "github"))
+
+	go ghf.StartRefreshLoop(ctx, time.Duration(cfg.Github.RefreshIntervalMins)*time.Minute)
+
+	githubHandler := handlers.NewGithubHandler(service.NewGithubService(ghf), log.WithField("subsystem", "github"))
+
 	router.Use(session)
 	router.Static("/assets", "./assets")
+	router.StaticFile("favicon.ico", "./assets/favicon.ico")
 	router.FuncMap = template.FuncMap{
 		"toArray": toArray,
 	}
@@ -204,6 +223,8 @@ func main() {
 	router.GET("/oauth2/login", authHandler.LoginHandler(cfg.DryRun))
 	router.GET("/oauth2/callback", authHandler.CallbackHandler())
 	router.GET("/oauth2/logout", authHandler.LogoutHandler())
+	router.GET("/github/repositories", githubHandler.RepositoriesHandler())
+	router.GET("/github/repository/:owner/:repo/branches", githubHandler.BranchesHandler())
 	router.Use(middlewares.Authenticate(
 		log.WithField("subsystem", "authentication"),
 		dbClient,

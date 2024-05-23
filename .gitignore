@@ -35,3 +35,7 @@ hack
 node_modules
 !package-lock.json
 !package.json
+
+/private_key.pem
+/public_key.pem
+/github-app-private-key.pem

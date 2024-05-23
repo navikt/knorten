@@ -26,8 +26,10 @@ GOTEST               ?= $(shell command -v gotest || echo "$(GOBIN)/gotest")
 GOTEST_VERSION       := v0.0.6
 STATICCHECK          ?= $(shell command -v staticcheck || echo "$(GOBIN)/staticcheck")
 STATICCHECK_VERSION  := v0.4.6
-GOVULNCHECK		  ?= $(shell command -v govulncheck || echo "$(GOBIN)/govulncheck")
-GOVULNCHECK_VERSION := v1.0.4
+GOVULNCHECK		     ?= $(shell command -v govulncheck || echo "$(GOBIN)/govulncheck")
+GOVULNCHECK_VERSION  := v1.0.4
+GOFUMPT			     ?= $(shell command -v gofumpt || echo "$(GOBIN)/gofumpt")
+GOFUMPT_VERSION	     := v0.6.0
 
 MINIKUBE            ?= minikube
 MINIKUBE_START_ARGS ?=
@@ -50,11 +52,21 @@ $(STATICCHECK):
 $(GOVULNCHECK):
 	$(call install-binary,govulncheck,golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION))
 
+$(GOFUMPT):
+	$(call install-binary,gofumpt,mvdan.cc/gofumpt@$(GOFUMPT_VERSION))
+
 env:
 	# We need to fetch the secrets from GCP Secret Manager in PROD environment
 	echo "KNORTEN_OAUTH_CLIENT_ID=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID_PROD) --secret=knorten-oauth-client-id)" > .env
 	echo "KNORTEN_OAUTH_CLIENT_SECRET=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID_PROD) --secret=knorten-oauth-client-secret)" >> .env
 	echo "KNORTEN_OAUTH_TENANT_ID=$$(gcloud secrets versions access latest --project=$(GCP_PROJECT_ID_PROD) --secret=knorten-azure-tenant-id)" >> .env
+
+	# We need to fetch the gh app id from the k8s secret in the PROD environment
+	echo "KNORTEN_GITHUB_APPLICATION_ID=$$(kubectl get secrets/github-app-secret --context=gke_knada-gcp_europe-north1_knada-gke --namespace knada-system --template={{.data.APP_ID}} | base64 -d)" >> .env
+	echo "KNORTEN_GITHUB_INSTALLATION_ID=$$(kubectl get secrets/github-app-secret --context=gke_knada-gcp_europe-north1_knada-gke --namespace knada-system --template={{.data.INSTALLATION_ID}} | base64 -d)" >> .env
+
+	# We need to fetch the gh app priv key from the k8s secret in the PROD environment
+	@kubectl get secrets/github-app-secret --context=gke_knada-gcp_europe-north1_knada-gke --namespace knada-system --template={{.data.PRIVATE_KEY}} | base64 -d > github-app-private-key.pem
 .PHONY: env
 
 netpol:
@@ -126,6 +138,9 @@ update-configmap:
 		--from-file=config.yaml=config-prod.yaml --dry-run=client -o yaml \
 			> k8s/configmap.yaml
 
+keypair-testing:
+	openssl genrsa -out private_key.pem 2048 && openssl rsa -in private_key.pem -pubout -out public_key.pem
+
 gauth:
 	@gcloud auth login --update-adc --project $(GCP_PROJECT_ID_DEV)
 	@gcloud config set project $(GCP_PROJECT_ID_DEV)
@@ -148,7 +163,10 @@ deps:
 	docker-compose up -d db
 .PHONY: deps
 
-check: | lint test
+gofumpt: $(GOFUMPT)
+	$(GOFUMPT) -w .
+
+check: | gofumpt lint test staticcheck
 .PHONY: check
 
 full-check: | check staticcheck vulncheck

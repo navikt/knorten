@@ -361,6 +361,7 @@ func (c Client) createAirflowDatabase(ctx context.Context, team *gensql.TeamGetR
 		dbInstance,
 		teamID,
 		cnpg.WithAppLabel("airflow-postgres"),
+		cnpg.WithMonitoring(true),
 	)
 
 	err := c.manager.ApplyPostgresCluster(ctx, cluster)

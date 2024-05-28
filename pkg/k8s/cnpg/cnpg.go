@@ -61,6 +61,14 @@ func WithAppLabel(app string) ClusterOption {
 	}
 }
 
+func WithMonitoring(monitoring bool) ClusterOption {
+	return func(c *cnpgv1.Cluster) {
+		c.Spec.Monitoring = &cnpgv1.MonitoringConfiguration{
+			EnablePodMonitor: monitoring,
+		}
+	}
+}
+
 func NewCluster(name, namespace, database, owner string, options ...ClusterOption) *cnpgv1.Cluster {
 	c := &cnpgv1.Cluster{
 		TypeMeta: metav1.TypeMeta{

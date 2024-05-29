@@ -403,6 +403,7 @@ func createExternalSecret(secrets []secrets.TeamSecret, teamID, secretGroup stri
 				Name: secretGroup,
 			},
 			SecretStoreRef: v1alpha1.SecretStoreRef{
+				Kind: v1alpha1.ClusterSecretStoreKind,
 				Name: "default-gsm-store",
 			},
 		},

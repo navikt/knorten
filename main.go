@@ -158,6 +158,7 @@ func main() {
 		binder,
 		checker,
 		helmClient,
+		secretsClient,
 		cfg.GCP.Project,
 		cfg.GCP.Region,
 		cfg.GCP.Zone,

@@ -8,6 +8,7 @@ import (
 
 	"github.com/navikt/knorten/pkg/gcpapi"
 	"github.com/navikt/knorten/pkg/k8s"
+	"github.com/navikt/knorten/pkg/secrets"
 
 	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/navikt/knorten/pkg/chart"
@@ -22,13 +23,14 @@ import (
 )
 
 type EventHandler struct {
-	repo        database.Repository
-	log         *logrus.Entry
-	context     context.Context
-	teamClient  teamClient
-	userClient  userClient
-	chartClient chartClient
-	helmClient  helmClient
+	repo          database.Repository
+	log           *logrus.Entry
+	context       context.Context
+	teamClient    teamClient
+	userClient    userClient
+	chartClient   chartClient
+	helmClient    helmClient
+	secretsClient *secrets.ExternalSecretClient
 }
 
 const (
@@ -194,6 +196,18 @@ func (e EventHandler) processWork(ctx context.Context, event gensql.Event, logge
 
 		logger.Infof("Uninstalling helm chart for team '%v'", d.TeamID)
 		err = e.helmClient.Uninstall(ctx, d)
+	case database.EventTypeApplyExternalSecret:
+		d, ok := form.(*secrets.EventData)
+		if !ok {
+			return fmt.Errorf("inavlid form type for type '%v'", event.Type)
+		}
+
+		logger.Infof("applying changes to external secret %v", d.SecretGroup)
+		_, err := e.secretsClient.GetTeamSecretGroup(ctx, nil, d.TeamID, d.SecretGroup)
+		if err != nil {
+			return err
+		}
+
 	}
 
 	if err != nil {
@@ -212,6 +226,7 @@ func NewHandler(
 	saBinder gcpapi.ServiceAccountPolicyBinder,
 	saChecker gcpapi.ServiceAccountChecker,
 	client *helm.Client,
+	secretsClient *secrets.ExternalSecretClient,
 	gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion, topLevelDomain string,
 	dryRun bool,
 	log *logrus.Entry,
@@ -239,13 +254,14 @@ func NewHandler(
 	}
 
 	return EventHandler{
-		repo:        repo,
-		log:         log,
-		context:     ctx,
-		teamClient:  teamClient,
-		userClient:  user.NewClient(repo, gcpProject, gcpRegion, gcpZone, dryRun),
-		chartClient: chartClient,
-		helmClient:  client,
+		repo:          repo,
+		log:           log,
+		context:       ctx,
+		teamClient:    teamClient,
+		userClient:    user.NewClient(repo, gcpProject, gcpRegion, gcpZone, dryRun),
+		chartClient:   chartClient,
+		helmClient:    client,
+		secretsClient: secretsClient,
 	}, nil
 }
 

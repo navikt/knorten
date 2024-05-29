@@ -34,6 +34,8 @@ const (
 	EventTypeHelmRolloutAirflow   EventType = "rolloutAirflow:helm"
 	EventTypeHelmRollbackAirflow  EventType = "rollbackAirflow:helm"
 	EventTypeHelmUninstallAirflow EventType = "uninstallAirflow:helm"
+	EventTypeApplyExternalSecret  EventType = "applyExternalSecret:team"
+	EventTypeDeleteExternalSecret EventType = "deleteExternalSecret:team"
 )
 
 type EventStatus string

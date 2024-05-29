@@ -4,8 +4,10 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/mail"
 	"regexp"
@@ -18,6 +20,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/navikt/knorten/pkg/api/middlewares"
 	"github.com/navikt/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/secrets"
 )
 
 type teamForm struct {
@@ -238,6 +241,34 @@ func (c *client) setupTeamRoutes() {
 		}
 		ctx.JSON(http.StatusOK, secretGroups)
 	})
+
+	c.router.POST("/team/:slug/secrets/:group", func(ctx *gin.Context) {
+		teamSlug := ctx.Param("slug")
+		secretGroup := ctx.Param("group")
+
+		requestBody, err := io.ReadAll(ctx.Request.Body)
+		if err != nil {
+			c.log.Errorf("problem reading secret group request body for team %v: %v", teamSlug, err)
+			return
+		}
+
+		secrets := []secrets.TeamSecret{}
+		if err := json.Unmarshal(requestBody, &secrets); err != nil {
+			c.log.Errorf("problem unmarshalling secret group request body for team %v: %v", teamSlug, err)
+			return
+		}
+
+		team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
+		if err != nil {
+			c.log.Errorf("problem getting team from slug %v: %v", teamSlug, err)
+			return
+		}
+
+		if err := c.secretsClient.CreateOrUpdateTeamSecretGroup(ctx, nil, team.ID, secretGroup, secrets); err != nil {
+			c.log.Errorf("problem updating secret group %v for team %v: %v", secretGroup, teamSlug, err)
+			return
+		}
+	})
 }
 
 func descriptiveMessageForTeamError(fieldError validator.FieldError) string {
@@ -348,6 +379,10 @@ func (c *client) editTeam(ctx *gin.Context) error {
 	team.Users = removeEmptySliceElements(team.Users)
 	return c.repo.RegisterUpdateTeamEvent(ctx, team)
 }
+
+// func (c *client) newSecretGroup(ctx *gin.Context) error {
+
+// }
 
 func (c *client) ensureUsersExists(users []string) error {
 	for _, u := range users {

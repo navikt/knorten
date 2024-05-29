@@ -21,7 +21,7 @@ type client struct {
 	topLevelDomain string
 }
 
-func New(router *gin.Engine, db *database.Repo, azureClient *auth.Azure, secretsClient *secrets.ExternalSecretClient, log *logrus.Entry, dryRun bool, project, region, zone, topLevelDomain string) error {
+func New(router *gin.Engine, db *database.Repo, azureClient *auth.Azure, secretsClient *secrets.ExternalSecretClient, log *logrus.Entry, dryRun bool, project, zone, topLevelDomain string) error {
 	router.Use(gin.Recovery())
 	router.Use(func(ctx *gin.Context) {
 		log.WithField("subsystem", "gin").Infof("%v %v %v", ctx.Request.Method, ctx.Request.URL.Path, ctx.Writer.Status())

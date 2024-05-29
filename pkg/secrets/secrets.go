@@ -144,8 +144,3 @@ func (e *ExternalSecretClient) DeleteTeamSecretGroups(ctx context.Context, gcpPr
 func createSecretID(teamID, secretName string) string {
 	return fmt.Sprintf("%v-%v-%v", knadaSecretPrefix, strings.ToLower(teamID), strings.ToLower(secretName))
 }
-
-func createDefaultEnvKey(secretName string) string {
-	parts := strings.Split(secretName, "/")
-	return strings.ToUpper(fmt.Sprintf("%v_%v", knadaSecretPrefix, parts[len(parts)-1]))
-}

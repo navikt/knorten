@@ -7,7 +7,7 @@ import (
 	"time"
 
 	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
-	externalSecretsv1alpha "github.com/external-secrets/external-secrets/apis/externalsecrets/v1alpha1"
+	externalSecretsv1beta "github.com/external-secrets/external-secrets/apis/externalsecrets/v1beta1"
 	"github.com/navikt/knorten/pkg/k8s/core"
 	"github.com/navikt/knorten/pkg/k8s/networking"
 	v1 "k8s.io/api/core/v1"
@@ -53,7 +53,7 @@ func DefaultSchemeAdder() SchemeAdderFn {
 			return fmt.Errorf("adding gateway-api scheme: %w", err)
 		}
 
-		if err := externalSecretsv1alpha.AddToScheme(scheme); err != nil {
+		if err := externalSecretsv1beta.AddToScheme(scheme); err != nil {
 			return fmt.Errorf("adding external secrets scheme: %w", err)
 		}
 
@@ -122,9 +122,9 @@ type Manager interface {
 	DeleteServiceAccount(ctx context.Context, name, namespace string) error
 	ApplyNetworkPolicy(ctx context.Context, policy *netv1.NetworkPolicy) error
 	DeleteNetworkPolicy(ctx context.Context, name, namespace string) error
-	ApplyExternalSecret(ctx context.Context, externalSecret *externalSecretsv1alpha.ExternalSecret) error
+	ApplyExternalSecret(ctx context.Context, externalSecret *externalSecretsv1beta.ExternalSecret) error
 	DeleteExternalSecret(ctx context.Context, name, namespace string) error
-	GetExternalSecret(ctx context.Context, name, namespace string) (*externalSecretsv1alpha.ExternalSecret, error)
+	GetExternalSecret(ctx context.Context, name, namespace string) (*externalSecretsv1beta.ExternalSecret, error)
 }
 
 type manager struct {
@@ -287,7 +287,7 @@ func (m *manager) DeleteSecret(ctx context.Context, name, namespace string) erro
 	return nil
 }
 
-func (m *manager) ApplyExternalSecret(ctx context.Context, externalSecret *externalSecretsv1alpha.ExternalSecret) error {
+func (m *manager) ApplyExternalSecret(ctx context.Context, externalSecret *externalSecretsv1beta.ExternalSecret) error {
 	err := m.apply(ctx, externalSecret)
 	if err != nil {
 		return fmt.Errorf("applying external secret: %w", err)
@@ -297,7 +297,7 @@ func (m *manager) ApplyExternalSecret(ctx context.Context, externalSecret *exter
 }
 
 func (m *manager) DeleteExternalSecret(ctx context.Context, name, namespace string) error {
-	err := m.delete(ctx, &externalSecretsv1alpha.ExternalSecret{
+	err := m.delete(ctx, &externalSecretsv1beta.ExternalSecret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -310,8 +310,8 @@ func (m *manager) DeleteExternalSecret(ctx context.Context, name, namespace stri
 	return nil
 }
 
-func (m *manager) GetExternalSecret(ctx context.Context, name, namespace string) (*externalSecretsv1alpha.ExternalSecret, error) {
-	obj, err := m.get(ctx, &externalSecretsv1alpha.ExternalSecret{
+func (m *manager) GetExternalSecret(ctx context.Context, name, namespace string) (*externalSecretsv1beta.ExternalSecret, error) {
+	obj, err := m.get(ctx, &externalSecretsv1beta.ExternalSecret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -321,7 +321,7 @@ func (m *manager) GetExternalSecret(ctx context.Context, name, namespace string)
 		return nil, fmt.Errorf("getting external secret: %w", err)
 	}
 
-	externalSecret, ok := obj.(*externalSecretsv1alpha.ExternalSecret)
+	externalSecret, ok := obj.(*externalSecretsv1beta.ExternalSecret)
 	if !ok {
 		return nil, fmt.Errorf("unable to cast object to external secret")
 	}

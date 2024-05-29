@@ -7,7 +7,7 @@ env:
   IMAGE_NAME: europe-north1-docker.pkg.dev/knada-gcp/knada-north/knorten
 
 jobs:
-  test:
+  gofumpt:
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -17,14 +17,51 @@ jobs:
       with:
         go-version: '^1.21' # The Go version to download (if necessary) and use.
         check-latest: true
-    - run: make check
+    - run: make gofumpt
+
+  lint:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version: '^1.21' # The Go version to download (if necessary) and use.
+        check-latest: true
+    - run: make lint
+
+  staticchecks:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version: '^1.21' # The Go version to download (if necessary) and use.
+        check-latest: true
+    - run: make staticcheck
+
+  tests:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version: '^1.21' # The Go version to download (if necessary) and use.
+        check-latest: true
+    - run: make test
+
 
   build-and-push:
     permissions:
       contents: write
       id-token: write
     runs-on: ubuntu-latest
-    needs: [test]
+    needs: [gofumpt,lint,test,staticchecks]
     steps:
     - uses: actions/checkout@v4
     - name: Google auth

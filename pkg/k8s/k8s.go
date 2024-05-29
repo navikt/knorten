@@ -53,6 +53,10 @@ func DefaultSchemeAdder() SchemeAdderFn {
 			return fmt.Errorf("adding gateway-api scheme: %w", err)
 		}
 
+		if err := externalSecretsv1alpha.AddToScheme(scheme); err != nil {
+			return fmt.Errorf("adding external secrets scheme: %w", err)
+		}
+
 		return nil
 	}
 }

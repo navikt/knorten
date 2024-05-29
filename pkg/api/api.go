@@ -16,7 +16,6 @@ type client struct {
 	log            *logrus.Entry
 	dryRun         bool
 	gcpProject     string
-	gcpRegion      string
 	gcpZone        string
 	topLevelDomain string
 }

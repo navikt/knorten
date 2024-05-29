@@ -242,7 +242,7 @@ func (c *client) setupTeamRoutes() {
 		ctx.JSON(http.StatusOK, secretGroups)
 	})
 
-	c.router.POST("/team/:slug/secrets/:group", func(ctx *gin.Context) {
+	c.router.GET("/team/:slug/secrets/:group", func(ctx *gin.Context) {
 		teamSlug := ctx.Param("slug")
 		secretGroup := ctx.Param("group")
 
@@ -252,8 +252,8 @@ func (c *client) setupTeamRoutes() {
 			return
 		}
 
-		secrets := []secrets.TeamSecret{}
-		if err := json.Unmarshal(requestBody, &secrets); err != nil {
+		groupSecrets := []secrets.TeamSecret{}
+		if err := json.Unmarshal(requestBody, &groupSecrets); err != nil {
 			c.log.Errorf("problem unmarshalling secret group request body for team %v: %v", teamSlug, err)
 			return
 		}
@@ -264,8 +264,17 @@ func (c *client) setupTeamRoutes() {
 			return
 		}
 
-		if err := c.secretsClient.CreateOrUpdateTeamSecretGroup(ctx, nil, team.ID, secretGroup, secrets); err != nil {
+		if err := c.secretsClient.CreateOrUpdateTeamSecretGroup(ctx, nil, team.ID, secretGroup, groupSecrets); err != nil {
 			c.log.Errorf("problem updating secret group %v for team %v: %v", secretGroup, teamSlug, err)
+			return
+		}
+
+		err = c.repo.RegisterApplyExternalSecret(ctx, team.ID, secrets.EventData{
+			TeamID:      team.ID,
+			SecretGroup: secretGroup,
+		})
+		if err != nil {
+			c.log.Errorf("problem registering apply external secret event for team %v: %v", teamSlug, err)
 			return
 		}
 	})

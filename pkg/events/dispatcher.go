@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/external-secrets/external-secrets/apis/externalsecrets/v1alpha1"
 	"github.com/navikt/knorten/pkg/gcpapi"
 	"github.com/navikt/knorten/pkg/k8s"
 	"github.com/navikt/knorten/pkg/secrets"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/navikt/knorten/pkg/chart"
@@ -30,6 +33,7 @@ type EventHandler struct {
 	userClient    userClient
 	chartClient   chartClient
 	helmClient    helmClient
+	mngr          k8s.Manager
 	secretsClient *secrets.ExternalSecretClient
 }
 
@@ -85,6 +89,12 @@ func (e EventHandler) distributeWork(eventType database.EventType) workerFunc {
 		database.EventTypeHelmRollbackAirflow,
 		database.EventTypeHelmUninstallAirflow:
 		var values helm.EventData
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
+			return e.processWork(ctx, event, logger, &values)
+		}
+	case database.EventTypeApplyExternalSecret,
+		database.EventTypeDeleteExternalSecret:
+		var values secrets.EventData
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			return e.processWork(ctx, event, logger, &values)
 		}
@@ -199,15 +209,16 @@ func (e EventHandler) processWork(ctx context.Context, event gensql.Event, logge
 	case database.EventTypeApplyExternalSecret:
 		d, ok := form.(*secrets.EventData)
 		if !ok {
-			return fmt.Errorf("inavlid form type for type '%v'", event.Type)
+			return fmt.Errorf("invalid form type for type '%v'", event.Type)
 		}
 
 		logger.Infof("applying changes to external secret %v", d.SecretGroup)
-		_, err := e.secretsClient.GetTeamSecretGroup(ctx, nil, d.TeamID, d.SecretGroup)
-		if err != nil {
-			return err
+		secrets, serr := e.secretsClient.GetTeamSecretGroup(ctx, nil, d.TeamID, d.SecretGroup)
+		if serr != nil {
+			return serr
 		}
 
+		err = e.mngr.ApplyExternalSecret(ctx, createExternalSecret(secrets, d.TeamID, d.SecretGroup))
 	}
 
 	if err != nil {
@@ -261,6 +272,7 @@ func NewHandler(
 		userClient:    user.NewClient(repo, gcpProject, gcpRegion, gcpZone, dryRun),
 		chartClient:   chartClient,
 		helmClient:    client,
+		mngr:          mngr,
 		secretsClient: secretsClient,
 	}, nil
 }
@@ -365,4 +377,39 @@ func (e EventHandler) isNewLeader(currentLeaderStatus bool) (bool, error) {
 	}
 
 	return isLeader, nil
+}
+
+func createExternalSecret(secrets []secrets.TeamSecret, teamID, secretGroup string) *v1alpha1.ExternalSecret {
+	secretData := []v1alpha1.ExternalSecretData{}
+	for _, secret := range secrets {
+		secretName := getSecretNameFromPath(secret.Key)
+		secretData = append(secretData, v1alpha1.ExternalSecretData{
+			SecretKey: secretName,
+			RemoteRef: v1alpha1.ExternalSecretDataRemoteRef{
+				Key: secretName,
+			},
+		})
+	}
+
+	return &v1alpha1.ExternalSecret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretGroup,
+			Namespace: k8s.TeamIDToNamespace(teamID),
+		},
+		Spec: v1alpha1.ExternalSecretSpec{
+			Data:            secretData,
+			RefreshInterval: &metav1.Duration{Duration: 10 * time.Minute},
+			Target: v1alpha1.ExternalSecretTarget{
+				Name: secretGroup,
+			},
+			SecretStoreRef: v1alpha1.SecretStoreRef{
+				Name: "default-gsm-store",
+			},
+		},
+	}
+}
+
+func getSecretNameFromPath(secretPath string) string {
+	pathParts := strings.Split(secretPath, "/")
+	return pathParts[len(pathParts)-1]
 }

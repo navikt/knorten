@@ -163,6 +163,14 @@ func (r *Repo) RegisterHelmUninstallAirflowEvent(ctx context.Context, teamID str
 	return r.registerEvent(ctx, EventTypeHelmUninstallAirflow, teamID, 10*time.Minute, values)
 }
 
+func (r *Repo) RegisterApplyExternalSecret(ctx context.Context, teamID string, values any) error {
+	return r.registerEvent(ctx, EventTypeApplyExternalSecret, teamID, 5*time.Minute, values)
+}
+
+func (r *Repo) RegisterDeleteExternalSecret(ctx context.Context, teamID string, values any) error {
+	return r.registerEvent(ctx, EventTypeDeleteExternalSecret, teamID, 5*time.Minute, values)
+}
+
 func (r *Repo) EventSetStatus(ctx context.Context, id uuid.UUID, status EventStatus) error {
 	return r.querier.EventSetStatus(ctx, gensql.EventSetStatusParams{
 		Status: string(status),

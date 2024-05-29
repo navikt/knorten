@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -246,17 +245,17 @@ func (c *client) setupTeamRoutes() {
 		teamSlug := ctx.Param("slug")
 		secretGroup := ctx.Param("group")
 
-		requestBody, err := io.ReadAll(ctx.Request.Body)
+		_, err := io.ReadAll(ctx.Request.Body)
 		if err != nil {
 			c.log.Errorf("problem reading secret group request body for team %v: %v", teamSlug, err)
 			return
 		}
 
 		groupSecrets := []secrets.TeamSecret{}
-		if err := json.Unmarshal(requestBody, &groupSecrets); err != nil {
-			c.log.Errorf("problem unmarshalling secret group request body for team %v: %v", teamSlug, err)
-			return
-		}
+		// if err := json.Unmarshal(requestBody, &groupSecrets); err != nil {
+		// 	c.log.Errorf("problem unmarshalling secret group request body for team %v: %v", teamSlug, err)
+		// 	return
+		// }
 
 		team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
 		if err != nil {

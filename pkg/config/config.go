@@ -137,9 +137,10 @@ func (o Oauth) Validate() error {
 }
 
 type GCP struct {
-	Project string `yaml:"project"`
-	Region  string `yaml:"region"`
-	Zone    string `yaml:"zone"`
+	Project        string `yaml:"project"`
+	SecretsProject string `yaml:"secretsProject"`
+	Region         string `yaml:"region"`
+	Zone           string `yaml:"zone"`
 }
 
 func (g GCP) Validate() error {

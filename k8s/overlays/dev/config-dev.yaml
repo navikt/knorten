@@ -5,6 +5,7 @@ oauth:
     redirect_url: https://knorten.dev.knada.io/oauth2/callback
 gcp:
     project: knada-dev
+    secretsProject: knada-gsm-dev
     region: europe-north1
     zone: europe-north1-b
 cookies:

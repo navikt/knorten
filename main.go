@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/navikt/knorten/pkg/github"
+	"github.com/navikt/knorten/pkg/secrets"
 
 	"github.com/navikt/knorten/pkg/gcpapi"
 	"github.com/navikt/knorten/pkg/gcpapi/mock"
@@ -147,6 +148,8 @@ func main() {
 		log.WithError(err).Fatal("creating helm client")
 	}
 
+	secretsClient := secrets.New(cfg.GCP.SecretsProject, cfg.GCP.Region)
+
 	eventHandler, err := events.NewHandler(
 		ctx,
 		dbClient,
@@ -232,7 +235,7 @@ func main() {
 		cfg.DryRun,
 	))
 
-	err = api.New(router, dbClient, azureClient, log.WithField("subsystem", "api"), cfg.DryRun, cfg.GCP.Project, cfg.GCP.Zone, cfg.TopLevelDomain)
+	err = api.New(router, dbClient, azureClient, secretsClient, log.WithField("subsystem", "api"), cfg.DryRun, cfg.GCP.Project, cfg.GCP.Region, cfg.GCP.Zone, cfg.TopLevelDomain)
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return

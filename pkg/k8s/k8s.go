@@ -7,6 +7,7 @@ import (
 	"time"
 
 	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
+	externalSecretsv1alpha "github.com/external-secrets/external-secrets/apis/externalsecrets/v1alpha1"
 	"github.com/navikt/knorten/pkg/k8s/core"
 	"github.com/navikt/knorten/pkg/k8s/networking"
 	v1 "k8s.io/api/core/v1"
@@ -117,6 +118,9 @@ type Manager interface {
 	DeleteServiceAccount(ctx context.Context, name, namespace string) error
 	ApplyNetworkPolicy(ctx context.Context, policy *netv1.NetworkPolicy) error
 	DeleteNetworkPolicy(ctx context.Context, name, namespace string) error
+	ApplyExternalSecret(ctx context.Context, externalSecret *externalSecretsv1alpha.ExternalSecret) error
+	DeleteExternalSecret(ctx context.Context, name, namespace string) error
+	GetExternalSecret(ctx context.Context, name, namespace string) (*externalSecretsv1alpha.ExternalSecret, error)
 }
 
 type manager struct {
@@ -277,6 +281,48 @@ func (m *manager) DeleteSecret(ctx context.Context, name, namespace string) erro
 	}
 
 	return nil
+}
+
+func (m *manager) ApplyExternalSecret(ctx context.Context, externalSecret *externalSecretsv1alpha.ExternalSecret) error {
+	err := m.apply(ctx, externalSecret)
+	if err != nil {
+		return fmt.Errorf("applying external secret: %w", err)
+	}
+
+	return nil
+}
+
+func (m *manager) DeleteExternalSecret(ctx context.Context, name, namespace string) error {
+	err := m.delete(ctx, &externalSecretsv1alpha.ExternalSecret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("deleting external secret: %w", err)
+	}
+
+	return nil
+}
+
+func (m *manager) GetExternalSecret(ctx context.Context, name, namespace string) (*externalSecretsv1alpha.ExternalSecret, error) {
+	obj, err := m.get(ctx, &externalSecretsv1alpha.ExternalSecret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("getting external secret: %w", err)
+	}
+
+	externalSecret, ok := obj.(*externalSecretsv1alpha.ExternalSecret)
+	if !ok {
+		return nil, fmt.Errorf("unable to cast object to external secret")
+	}
+
+	return externalSecret, nil
 }
 
 func SecretIsReadyFn() IsReadyFn {

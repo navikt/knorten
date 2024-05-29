@@ -222,6 +222,22 @@ func (c *client) setupTeamRoutes() {
 			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
+
+	c.router.GET("/team/:slug/secrets", func(ctx *gin.Context) {
+		teamSlug := ctx.Param("slug")
+
+		team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
+		if err != nil {
+			c.log.Errorf("problem getting team from slug %v: %v", teamSlug, err)
+			return
+		}
+		secretGroups, err := c.secretsClient.GetTeamSecretGroups(ctx, nil, team.ID)
+		if err != nil {
+			c.log.Errorf("problem getting secret groups for team id %v: %v", team.ID, err)
+			return
+		}
+		ctx.JSON(http.StatusOK, secretGroups)
+	})
 }
 
 func descriptiveMessageForTeamError(fieldError validator.FieldError) string {

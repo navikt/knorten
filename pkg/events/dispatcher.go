@@ -4,14 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
-	"github.com/external-secrets/external-secrets/apis/externalsecrets/v1alpha1"
 	"github.com/navikt/knorten/pkg/gcpapi"
 	"github.com/navikt/knorten/pkg/k8s"
 	"github.com/navikt/knorten/pkg/secrets"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/navikt/knorten/pkg/chart"
@@ -213,12 +210,7 @@ func (e EventHandler) processWork(ctx context.Context, event gensql.Event, logge
 		}
 
 		logger.Infof("applying changes to external secret %v", d.SecretGroup)
-		secrets, serr := e.secretsClient.GetTeamSecretGroup(ctx, nil, d.TeamID, d.SecretGroup)
-		if serr != nil {
-			return serr
-		}
-
-		err = e.mngr.ApplyExternalSecret(ctx, createExternalSecret(secrets, d.TeamID, d.SecretGroup))
+		err = e.secretsClient.ApplyExternalSecret(ctx, d.TeamID, d.SecretGroup)
 	}
 
 	if err != nil {
@@ -377,40 +369,4 @@ func (e EventHandler) isNewLeader(currentLeaderStatus bool) (bool, error) {
 	}
 
 	return isLeader, nil
-}
-
-func createExternalSecret(secrets []secrets.TeamSecret, teamID, secretGroup string) *v1alpha1.ExternalSecret {
-	secretData := []v1alpha1.ExternalSecretData{}
-	for _, secret := range secrets {
-		secretName := getSecretNameFromPath(secret.Key)
-		secretData = append(secretData, v1alpha1.ExternalSecretData{
-			SecretKey: secretName,
-			RemoteRef: v1alpha1.ExternalSecretDataRemoteRef{
-				Key: secretName,
-			},
-		})
-	}
-
-	return &v1alpha1.ExternalSecret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretGroup,
-			Namespace: k8s.TeamIDToNamespace(teamID),
-		},
-		Spec: v1alpha1.ExternalSecretSpec{
-			Data:            secretData,
-			RefreshInterval: &metav1.Duration{Duration: 10 * time.Minute},
-			Target: v1alpha1.ExternalSecretTarget{
-				Name: secretGroup,
-			},
-			SecretStoreRef: v1alpha1.SecretStoreRef{
-				Kind: v1alpha1.ClusterSecretStoreKind,
-				Name: "default-gsm-store",
-			},
-		},
-	}
-}
-
-func getSecretNameFromPath(secretPath string) string {
-	pathParts := strings.Split(secretPath, "/")
-	return pathParts[len(pathParts)-1]
 }

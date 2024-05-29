@@ -148,13 +148,14 @@ func main() {
 		log.WithError(err).Fatal("creating helm client")
 	}
 
-	secretsClient := secrets.New(cfg.GCP.SecretsProject, cfg.GCP.Region)
+	k8sManager := k8s.NewManager(c)
+	secretsClient := secrets.New(k8sManager, cfg.GCP.SecretsProject, cfg.GCP.Region)
 
 	eventHandler, err := events.NewHandler(
 		ctx,
 		dbClient,
 		azureClient,
-		k8s.NewManager(c),
+		k8sManager,
 		binder,
 		checker,
 		helmClient,

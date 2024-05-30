@@ -288,7 +288,10 @@ func (c *client) setupTeamRoutes() {
 			return
 		}
 
-		err = c.repo.RegisterDeleteExternalSecret(ctx, team.ID, secretGroup)
+		err = c.repo.RegisterDeleteExternalSecret(ctx, team.ID, secrets.EventData{
+			TeamID:      team.ID,
+			SecretGroup: secretGroup,
+		})
 		if err != nil {
 			c.log.Errorf("problem registering delete external secret event for team %v: %v", teamSlug, err)
 			return

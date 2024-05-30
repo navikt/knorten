@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/navikt/knorten/pkg/gcp"
 )
@@ -28,7 +29,7 @@ func (c Client) deleteUserGSMFromGCP(ctx context.Context, name string) error {
 		return nil
 	}
 
-	if err := gcp.DeleteSecret(ctx, c.gcpProject, name); err != nil {
+	if err := gcp.DeleteSecret(ctx, fmt.Sprintf("projects/%v/secrets/%v", c.gcpProject, name)); err != nil {
 		return err
 	}
 

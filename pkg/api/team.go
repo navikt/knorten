@@ -238,7 +238,16 @@ func (c *client) setupTeamRoutes() {
 			c.log.Errorf("problem getting secret groups for team id %v: %v", team.ID, err)
 			return
 		}
-		ctx.JSON(http.StatusOK, secretGroups)
+
+		ctx.HTML(http.StatusOK, "secrets/index", gin.H{
+			"secrets": secretGroups,
+			"slug":    team.Slug,
+			//"errors":   flashes,
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
+		})
+
+		// ctx.JSON(http.StatusOK, secretGroups)
 	})
 
 	c.router.GET("/team/:slug/secrets/:group", func(ctx *gin.Context) {

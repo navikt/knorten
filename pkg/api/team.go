@@ -277,6 +277,23 @@ func (c *client) setupTeamRoutes() {
 			return
 		}
 	})
+
+	c.router.GET("/team/:slug/secrets/:group/delete", func(ctx *gin.Context) {
+		teamSlug := ctx.Param("slug")
+		secretGroup := ctx.Param("group")
+
+		team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
+		if err != nil {
+			c.log.Errorf("problem getting team from slug %v: %v", teamSlug, err)
+			return
+		}
+
+		err = c.repo.RegisterDeleteExternalSecret(ctx, team.ID, secretGroup)
+		if err != nil {
+			c.log.Errorf("problem registering delete external secret event for team %v: %v", teamSlug, err)
+			return
+		}
+	})
 }
 
 func descriptiveMessageForTeamError(fieldError validator.FieldError) string {

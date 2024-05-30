@@ -103,14 +103,13 @@ func (e *ExternalSecretClient) CreateOrUpdateTeamSecretGroup(ctx context.Context
 	return nil
 }
 
-func (e *ExternalSecretClient) DeleteTeamSecretGroups(ctx context.Context, gcpProject *string, teamID string) error {
+func (e *ExternalSecretClient) deleteTeamSecretGroup(ctx context.Context, gcpProject *string, teamID, secretGroup string) error {
 	projectID := e.defaultGCPProject
 	if gcpProject != nil {
 		projectID = *gcpProject
 	}
 
-	filter := fmt.Sprintf("labels.%v=true AND labels.%v=%v", externalSecretLabelKey, teamIDLabelKey, teamID)
-	secrets, err := gcp.ListSecrets(ctx, teamID, projectID, e.defaultGCPLocation, filter)
+	secrets, err := gcp.ListSecrets(ctx, teamID, projectID, e.defaultGCPLocation, allSecretsInGroupFilter(teamID, secretGroup))
 	if err != nil {
 		return err
 	}

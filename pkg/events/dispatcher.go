@@ -209,8 +209,16 @@ func (e EventHandler) processWork(ctx context.Context, event gensql.Event, logge
 			return fmt.Errorf("invalid form type for type '%v'", event.Type)
 		}
 
-		logger.Infof("applying changes to external secret %v", d.SecretGroup)
+		logger.Infof("applying changes to external secret %v for team %v", d.SecretGroup, d.TeamID)
 		err = e.secretsClient.ApplyExternalSecret(ctx, d.TeamID, d.SecretGroup)
+	case database.EventTypeDeleteExternalSecret:
+		d, ok := form.(*secrets.EventData)
+		if !ok {
+			return fmt.Errorf("invalid form type for type '%v'", event.Type)
+		}
+
+		logger.Infof("deleting external secret %v for team %v", d.SecretGroup, d.TeamID)
+		err = e.secretsClient.DeleteExternalSecret(ctx, d.TeamID, d.SecretGroup)
 	}
 
 	if err != nil {

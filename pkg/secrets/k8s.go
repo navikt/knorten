@@ -19,7 +19,19 @@ func (e *ExternalSecretClient) ApplyExternalSecret(ctx context.Context, teamID, 
 
 	err = e.manager.ApplyExternalSecret(ctx, createExternalSecretManifest(secrets, teamID, secretGroup))
 	if err != nil {
-		return fmt.Errorf("applying external secret: %w", err)
+		return fmt.Errorf("applying external secret %v for team %v: %w", secretGroup, teamID, err)
+	}
+
+	return nil
+}
+
+func (e *ExternalSecretClient) DeleteExternalSecret(ctx context.Context, teamID, secretGroup string) error {
+	if err := e.deleteTeamSecretGroup(ctx, nil, teamID, secretGroup); err != nil {
+		return fmt.Errorf("deleting gsm secrets group %v for team %v: %w", secretGroup, teamID, err)
+	}
+
+	if err := e.manager.DeleteExternalSecret(ctx, secretGroup, k8s.TeamIDToNamespace(teamID)); err != nil {
+		return fmt.Errorf("deleting external secret %v for team %v: %w", secretGroup, teamID, err)
 	}
 
 	return nil

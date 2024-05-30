@@ -167,7 +167,7 @@ func (c Client) deleteGCPTeamResources(ctx context.Context, teamID string) error
 		return err
 	}
 
-	if err := gcp.DeleteSecret(ctx, c.gcpProject, teamID); err != nil {
+	if err := gcp.DeleteSecret(ctx, fmt.Sprintf("projects/%v/secrets/%v", c.gcpProject, teamID)); err != nil {
 		return err
 	}
 

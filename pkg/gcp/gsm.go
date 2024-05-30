@@ -133,21 +133,15 @@ func AddSecretVersion(ctx context.Context, gcpProject, location, secretName, sec
 	return nil
 }
 
-func DeleteSecret(ctx context.Context, gcpProject, secretID string) error {
+func DeleteSecret(ctx context.Context, secretID string) error {
 	client, err := secretmanager.NewClient(ctx)
 	if err != nil {
 		return err
 	}
 	defer client.Close()
 
-	project := fmt.Sprintf("projects/%v", gcpProject)
-	_ = client.ListSecrets(ctx, &secretmanagerpb.ListSecretsRequest{
-		Parent:   project,
-		PageSize: int32(500),
-	})
-
 	req := &secretmanagerpb.DeleteSecretRequest{
-		Name: fmt.Sprintf("%v/secrets/%v", project, secretID),
+		Name: secretID,
 	}
 
 	err = client.DeleteSecret(ctx, req)

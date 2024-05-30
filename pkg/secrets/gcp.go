@@ -115,7 +115,7 @@ func (e *ExternalSecretClient) deleteTeamSecretGroup(ctx context.Context, gcpPro
 	}
 
 	for _, secret := range secrets {
-		if err := gcp.DeleteSecret(ctx, projectID, secret.Name); err != nil {
+		if err := gcp.DeleteSecret(ctx, secret.Name); err != nil {
 			return err
 		}
 	}

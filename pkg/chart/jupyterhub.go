@@ -38,7 +38,6 @@ type jupyterValues struct {
 	CPUGuarantee          string   `helm:"singleuser.cpu.guarantee"`
 	MemoryLimit           string   `helm:"singleuser.memory.limit"`
 	MemoryGuarantee       string   `helm:"singleuser.memory.guarantee"`
-	AdminUsers            []string `helm:"hub.config.Authenticator.admin_users"`
 	AllowedUsers          []string `helm:"hub.config.Authenticator.allowed_users"`
 	OAuthCallbackURL      string   `helm:"hub.config.AzureAdOAuthenticator.oauth_callback_url"`
 	KnadaTeamSecret       string   `helm:"singleuser.extraEnv.KNADA_TEAM_SECRET"`
@@ -130,7 +129,6 @@ func (c Client) jupyterMergeValues(ctx context.Context, team gensql.TeamGetRow, 
 		CPUGuarantee:              configurableValues.CPURequest,
 		MemoryLimit:               configurableValues.MemoryLimit,
 		MemoryGuarantee:           configurableValues.MemoryRequest,
-		AdminUsers:                configurableValues.UserIdents,
 		AllowedUsers:              configurableValues.UserIdents,
 		OAuthCallbackURL:          fmt.Sprintf("https://%v.jupyter.%v/hub/oauth_callback", team.Slug, c.topLevelDomain),
 		KnadaTeamSecret:           fmt.Sprintf("projects/%v/secrets/%v", c.gcpProject, team.ID),

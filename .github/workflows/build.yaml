@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
     - uses: actions/setup-go@v5
       with:
         go-version: '^1.21' # The Go version to download (if necessary) and use.

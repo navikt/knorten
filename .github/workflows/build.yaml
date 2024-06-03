@@ -19,15 +19,6 @@ jobs:
       with:
         go-version: '^1.21' # The Go version to download (if necessary) and use.
         check-latest: true
-    - name: Cache Go modules and build
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/go/pkg/mod
-          ~/go/build
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
     - run: make check
     - run: go install honnef.co/go/tools/cmd/staticcheck@latest
     - run: staticcheck ./...

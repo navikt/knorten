@@ -166,7 +166,7 @@ deps:
 gofumpt: $(GOFUMPT)
 	$(GOFUMPT) -w .
 
-check: | gofumpt lint test staticcheck
+check: | gofumpt lint test
 .PHONY: check
 
 full-check: | check staticcheck vulncheck

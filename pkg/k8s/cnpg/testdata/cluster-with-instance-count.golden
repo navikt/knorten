@@ -24,8 +24,8 @@ spec:
   primaryUpdateStrategy: unsupervised
   resources:
     requests:
-      cpu: 300m
-      memory: 512Mi
+      cpu: 100m
+      memory: 180Mi
   storage:
     size: 10Gi
 status:

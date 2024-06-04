@@ -16,9 +16,15 @@ type EventData struct {
 	SecretGroup string `json:"secretGroup"`
 }
 
+type SecretGroup struct {
+	GCPProject string       `json:"gcpProject"`
+	Secrets    []TeamSecret `json:"secrets"`
+}
+
 type TeamSecret struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
+	Name  string `json:"name"`
 }
 
 type ExternalSecretClient struct {

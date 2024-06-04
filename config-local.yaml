@@ -5,6 +5,7 @@ oauth:
     redirect_url: http://localhost:8080/oauth2/callback
 gcp:
     project: nada-dev-db2e
+    secretsProject: knada-gsm-dev
     region: europe-north1
     zone: europe-north1-b
 cookies:
@@ -54,3 +55,9 @@ session_key: online-session
 login_page: http://localhost:8080/
 dry_run: true
 debug: false
+github:
+    organization: navikt
+    application_id: 1234
+    installation_id: 1234
+    private_key_path: /home/knorten/github-app-private-key.pem
+    refresh_interval_mins: 60

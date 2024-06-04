@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/mail"
 	"regexp"
@@ -246,45 +245,47 @@ func (c *client) setupTeamRoutes() {
 			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
 			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
-
-		// ctx.JSON(http.StatusOK, secretGroups)
 	})
 
-	c.router.GET("/team/:slug/secrets/:group", func(ctx *gin.Context) {
+	c.router.POST("/team/:slug/secrets/:group", func(ctx *gin.Context) {
 		teamSlug := ctx.Param("slug")
-		secretGroup := ctx.Param("group")
+		// secretGroup := ctx.Param("group")
 
-		_, err := io.ReadAll(ctx.Request.Body)
-		if err != nil {
-			c.log.Errorf("problem reading secret group request body for team %v: %v", teamSlug, err)
-			return
-		}
-
-		groupSecrets := []secrets.TeamSecret{}
-		// if err := json.Unmarshal(requestBody, &groupSecrets); err != nil {
-		// 	c.log.Errorf("problem unmarshalling secret group request body for team %v: %v", teamSlug, err)
-		// 	return
-		// }
-
-		team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
+		_, err := c.repo.TeamBySlugGet(ctx, teamSlug)
 		if err != nil {
 			c.log.Errorf("problem getting team from slug %v: %v", teamSlug, err)
 			return
 		}
 
-		if err := c.secretsClient.CreateOrUpdateTeamSecretGroup(ctx, nil, team.ID, secretGroup, groupSecrets); err != nil {
-			c.log.Errorf("problem updating secret group %v for team %v: %v", secretGroup, teamSlug, err)
+		if err := ctx.Request.ParseForm(); err != nil {
+			c.log.Errorf("problem getting team from slug %v: %v", teamSlug, err)
 			return
 		}
 
-		err = c.repo.RegisterApplyExternalSecret(ctx, team.ID, secrets.EventData{
-			TeamID:      team.ID,
-			SecretGroup: secretGroup,
-		})
-		if err != nil {
-			c.log.Errorf("problem registering apply external secret event for team %v: %v", teamSlug, err)
-			return
+		groupSecrets := []secrets.TeamSecret{}
+		for key, value := range ctx.Request.PostForm {
+			groupSecrets = append(groupSecrets, secrets.TeamSecret{
+				Key:   fmt.Sprintf("projects/%v/secrets/%v", "knada-gsm-dev", key),
+				Name:  key,
+				Value: value[0],
+			})
 		}
+
+		// if err := c.secretsClient.CreateOrUpdateTeamSecretGroup(ctx, nil, team.ID, secretGroup, groupSecrets); err != nil {
+		// 	c.log.Errorf("problem updating secret group %v for team %v: %v", secretGroup, teamSlug, err)
+		// 	return
+		// }
+
+		// err = c.repo.RegisterApplyExternalSecret(ctx, team.ID, secrets.EventData{
+		// 	TeamID:      team.ID,
+		// 	SecretGroup: secretGroup,
+		// })
+		// if err != nil {
+		// 	c.log.Errorf("problem registering apply external secret event for team %v: %v", teamSlug, err)
+		// 	return
+		// }
+
+		ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/secrets", teamSlug))
 	})
 
 	c.router.GET("/team/:slug/secrets/:group/delete", func(ctx *gin.Context) {

@@ -40,7 +40,7 @@ func ListSecrets(ctx context.Context, teamID, gcpProject, gcpRegion, filter stri
 	return secrets, nil
 }
 
-func GetSecret(ctx context.Context, secretName string) (*secretmanagerpb.Secret, error) {
+func GetSecret(ctx context.Context, project, secretName string) (*secretmanagerpb.Secret, error) {
 	client, err := secretmanager.NewClient(ctx)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func GetSecret(ctx context.Context, secretName string) (*secretmanagerpb.Secret,
 	defer client.Close()
 
 	return client.GetSecret(ctx, &secretmanagerpb.GetSecretRequest{
-		Name: secretName,
+		Name: fmt.Sprintf("projects/%v/secrets/%v", project, secretName),
 	})
 }
 
@@ -108,7 +108,7 @@ func CreateSecret(ctx context.Context, gcpProject, gcpRegion, secretID string, l
 	return s, nil
 }
 
-func AddSecretVersion(ctx context.Context, gcpProject, location, secretName, secretValue string) error {
+func AddSecretVersion(ctx context.Context, secretName, secretValue string) error {
 	client, err := secretmanager.NewClient(ctx)
 	if err != nil {
 		return err
@@ -121,7 +121,7 @@ func AddSecretVersion(ctx context.Context, gcpProject, location, secretName, sec
 	}
 
 	_, err = client.AddSecretVersion(ctx, &secretmanagerpb.AddSecretVersionRequest{
-		Parent: fmt.Sprintf("projects/%v/locations/%v/secrets/%v", gcpProject, location, secretName),
+		Parent: secretName,
 		Payload: &secretmanagerpb.SecretPayload{
 			Data: secretBytes,
 		},

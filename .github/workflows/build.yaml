@@ -82,7 +82,7 @@ jobs:
       - name: Build and push Dockerimage
         uses: docker/build-push-action@v5
         with:
-          dockerfile: Dockerfile-ci
+          file: Dockerfile-ci
           context: .
           push: true
           tags: ${{ env.IMAGE }}

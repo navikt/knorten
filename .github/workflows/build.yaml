@@ -27,10 +27,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: dominikh/staticcheck-action@v1
         with:
-          go-version: stable
-      - run: make staticcheck
+          version: "latest"
 
   tests:
     permissions:
@@ -54,7 +53,7 @@ jobs:
           go-version: stable
       - run: GOOS=linux GOARCH=amd64 go build -ldflags "-w -s" -o knorten main.go
 
-  build-and-push:
+  push:
     permissions:
       contents: write
       id-token: write

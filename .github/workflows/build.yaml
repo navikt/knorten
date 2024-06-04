@@ -56,6 +56,10 @@ jobs:
         with:
           go-version: stable
       - run: GOOS=linux GOARCH=amd64 go build -ldflags "-w -s" -o knorten main.go
+      - uses: actions/upload-artifact@v4
+        with:
+          name: knorten
+          path: knorten
 
   push:
     permissions:
@@ -83,6 +87,10 @@ jobs:
       - name: Create image tag
         run: |
           echo "IMAGE=$IMAGE_NAME:$(git --no-pager log -1 --pretty=format:%H)" >> $GITHUB_ENV
+      - name: Download knorten binary
+        uses: actions/download-artifact@v4
+        with:
+          name: knorten
       - name: Build and push Dockerimage
         uses: docker/build-push-action@v5
         with:

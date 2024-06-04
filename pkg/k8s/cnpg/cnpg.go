@@ -12,7 +12,7 @@ const (
 	defaultInstanceCount           = 2
 	defaultVolumeSnapshotClassName = "cnpg-vsp"
 	defaultStorageSize             = "10Gi"
-	defaultRequestMemory           = "180Mi"
+	defaultRequestMemory           = "500Mi"
 	defaultRequestCPU              = "100m"
 	DefaultBackupRetentionPolicy   = "30d"
 )

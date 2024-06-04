@@ -52,6 +52,8 @@ jobs:
     needs: [golangci,tests,staticchecks]
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: Google auth
         id: auth
         uses: google-github-actions/auth@v2
@@ -74,6 +76,8 @@ jobs:
           context: .
           push: true
           tags: ${{ env.IMAGE }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
       - name: Update imagetag in dev k8s manifest
         if: github.ref == 'refs/heads/main'
         working-directory: k8s/overlays/dev

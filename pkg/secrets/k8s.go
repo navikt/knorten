@@ -40,11 +40,11 @@ func (e *ExternalSecretClient) DeleteExternalSecret(ctx context.Context, teamID,
 func createExternalSecretManifest(secrets []TeamSecret, teamID, secretGroup string) *v1beta1.ExternalSecret {
 	secretData := []v1beta1.ExternalSecretData{}
 	for _, secret := range secrets {
-		secretName := getSecretNameFromPath(secret.Key)
+		remoteSecretKey, k8sSecretKey := getSecretNameFromPath(secret.Key)
 		secretData = append(secretData, v1beta1.ExternalSecretData{
-			SecretKey: secretName,
+			SecretKey: k8sSecretKey,
 			RemoteRef: v1beta1.ExternalSecretDataRemoteRef{
-				Key: secretName,
+				Key: remoteSecretKey,
 			},
 		})
 	}
@@ -72,7 +72,8 @@ func createExternalSecretManifest(secrets []TeamSecret, teamID, secretGroup stri
 	}
 }
 
-func getSecretNameFromPath(secretPath string) string {
+func getSecretNameFromPath(secretPath string) (string, string) {
 	pathParts := strings.Split(secretPath, "/")
-	return pathParts[len(pathParts)-1]
+	secretNameParts := strings.Split(pathParts[len(pathParts)-1], "-")
+	return pathParts[len(pathParts)-1], secretNameParts[len(secretNameParts)-1]
 }

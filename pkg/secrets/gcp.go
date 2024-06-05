@@ -110,12 +110,16 @@ func (e *ExternalSecretClient) CreateOrUpdateTeamSecretGroup(ctx context.Context
 		projectID = *gcpProject
 	}
 
-	var wg sync.WaitGroup
+	existing, err := gcp.ListSecrets(ctx, teamID, projectID, e.defaultGCPLocation, allSecretsInGroupFilter(teamID, group))
+	if err != nil {
+		return err
+	}
 
+	var wg sync.WaitGroup
 	for _, secret := range groupSecrets {
 		wg.Add(1)
 
-		go func() {
+		go func(secret TeamSecret) {
 			defer wg.Done()
 
 			s, err := e.getOrCreateSecret(ctx, projectID, teamID, group, secret.Name)
@@ -127,7 +131,23 @@ func (e *ExternalSecretClient) CreateOrUpdateTeamSecretGroup(ctx context.Context
 				e.log.Errorf("problem updating secret version for secret %v for team %v: %v", s.Name, teamID, err)
 				return
 			}
-		}()
+			existing = removeFromExisting(existing, s)
+		}(secret)
+	}
+
+	wg.Wait()
+
+	for _, es := range existing {
+		wg.Add(1)
+
+		go func(secret *secretmanagerpb.Secret) {
+			defer wg.Done()
+
+			if err := gcp.DeleteSecret(ctx, secret.Name); err != nil {
+				e.log.Errorf("problem updating secret version for secret %v for team %v: %v", secret.Name, teamID, err)
+				return
+			}
+		}(es)
 	}
 
 	wg.Wait()
@@ -199,4 +219,26 @@ func secretNameFromResourceName(resourceName string) string {
 	parts := strings.Split(resourceName, "/")
 	partsSecretName := strings.Split(parts[len(parts)-3], "-")
 	return partsSecretName[len(partsSecretName)-1]
+}
+
+func removeFromExisting(existingSecrets []*secretmanagerpb.Secret, secret *secretmanagerpb.Secret) []*secretmanagerpb.Secret {
+	for idx, es := range existingSecrets {
+		if es.Name == secret.Name {
+			return append(existingSecrets[:idx], existingSecrets[idx+1:]...)
+		}
+	}
+
+	return existingSecrets
+}
+
+func removeSecret(secretName string, secrets []TeamSecret) bool {
+	for _, s := range secrets {
+		fmt.Println(s.Key)
+		fmt.Println(secretName)
+		if s.Key == secretName {
+			return false
+		}
+	}
+
+	return true
 }

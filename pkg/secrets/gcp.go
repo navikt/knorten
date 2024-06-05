@@ -144,7 +144,7 @@ func (e *ExternalSecretClient) CreateOrUpdateTeamSecretGroup(ctx context.Context
 			defer wg.Done()
 
 			if err := gcp.DeleteSecret(ctx, secret.Name); err != nil {
-				e.log.Errorf("problem updating secret version for secret %v for team %v: %v", secret.Name, teamID, err)
+				e.log.Errorf("problem deleting secret %v for team %v: %v", secret.Name, teamID, err)
 				return
 			}
 		}(es)
@@ -229,16 +229,4 @@ func removeFromExisting(existingSecrets []*secretmanagerpb.Secret, secret *secre
 	}
 
 	return existingSecrets
-}
-
-func removeSecret(secretName string, secrets []TeamSecret) bool {
-	for _, s := range secrets {
-		fmt.Println(s.Key)
-		fmt.Println(secretName)
-		if s.Key == secretName {
-			return false
-		}
-	}
-
-	return true
 }

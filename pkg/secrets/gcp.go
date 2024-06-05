@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
+	"sync"
 
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"github.com/googleapis/gax-go/v2/apierror"
@@ -82,35 +82,35 @@ func (e *ExternalSecretClient) GetTeamSecretGroup(ctx context.Context, gcpProjec
 	return teamSecrets, nil
 }
 
-func (e *ExternalSecretClient) CreateOrUpdateTeamSecretGroup(gcpProject *string, teamID, group string, groupSecrets []TeamSecret) {
+func (e *ExternalSecretClient) CreateOrUpdateTeamSecretGroup(ctx context.Context, gcpProject *string, teamID, group string, groupSecrets []TeamSecret) error {
 	projectID := e.defaultGCPProject
 	if gcpProject != nil {
 		projectID = *gcpProject
 	}
 
-	ctxWithTimeout, cancel := context.WithTimeout(e.ctx, time.Second*20)
-	defer cancel()
+	var wg sync.WaitGroup
 
 	for _, secret := range groupSecrets {
-		s, err := e.getOrCreateSecret(ctxWithTimeout, projectID, teamID, group, secret.Name)
-		if err != nil {
-			e.log.Errorf("problem getting or creating secret for group %v for team %v: %v", group, teamID, err)
-			return
-		}
-		if err := gcp.AddSecretVersion(ctxWithTimeout, s.Name, secret.Value); err != nil {
-			e.log.Errorf("problem updating secret version for secret %v for team %v: %v", s.Name, teamID, err)
-			return
-		}
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			s, err := e.getOrCreateSecret(ctx, projectID, teamID, group, secret.Name)
+			if err != nil {
+				e.log.Errorf("problem getting or creating secret for group %v for team %v: %v", group, teamID, err)
+				return
+			}
+			if err := gcp.AddSecretVersion(ctx, s.Name, secret.Value); err != nil {
+				e.log.Errorf("problem updating secret version for secret %v for team %v: %v", s.Name, teamID, err)
+				return
+			}
+		}()
 	}
 
-	err := e.repo.RegisterApplyExternalSecret(ctxWithTimeout, teamID, EventData{
-		TeamID:      teamID,
-		SecretGroup: group,
-	})
-	if err != nil {
-		e.log.Errorf("problem registering apply external secret event for team %v: %v", teamID, err)
-		return
-	}
+	wg.Wait()
+
+	return nil
 }
 
 func (e *ExternalSecretClient) deleteTeamSecretGroup(ctx context.Context, gcpProject *string, teamID, secretGroup string) error {

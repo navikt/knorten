@@ -32,9 +32,7 @@ type TeamSecret struct {
 }
 
 type ExternalSecretClient struct {
-	ctx                context.Context
 	manager            k8s.Manager
-	repo               *database.Repo
 	defaultGCPProject  string
 	defaultGCPLocation string
 	log                *logrus.Entry
@@ -42,8 +40,6 @@ type ExternalSecretClient struct {
 
 func New(ctx context.Context, repo *database.Repo, manager k8s.Manager, defaultGCPProject, defaultGCPLocation string, log *logrus.Entry) *ExternalSecretClient {
 	return &ExternalSecretClient{
-		ctx:                ctx,
-		repo:               repo,
 		manager:            manager,
 		defaultGCPProject:  defaultGCPProject,
 		defaultGCPLocation: defaultGCPLocation,

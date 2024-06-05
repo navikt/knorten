@@ -282,7 +282,18 @@ func (c *client) setupTeamRoutes() {
 			})
 		}
 
-		go c.secretsClient.CreateOrUpdateTeamSecretGroup(nil, team.ID, secretGroup, groupSecrets)
+		if err := c.secretsClient.CreateOrUpdateTeamSecretGroup(ctx, nil, team.ID, secretGroup, groupSecrets); err != nil {
+			c.log.Errorf("creating or updating team secret group %v for team %v: %v", secretGroup, team.ID, err)
+		}
+
+		err = c.repo.RegisterApplyExternalSecret(ctx, team.ID, secrets.EventData{
+			TeamID:      team.ID,
+			SecretGroup: secretGroup,
+		})
+		if err != nil {
+			c.log.Errorf("problem registering apply external secret event for team %v: %v", team.ID, err)
+			return
+		}
 
 		ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/secrets", teamSlug))
 	})

@@ -6,7 +6,9 @@ RUN addgroup -g 1001 knorten && \
     mkdir -p /home/knorten/.config && \
     chown -R knorten:knorten /home/knorten
 
-COPY --chmod=755 --chown=knorten:knorten /knorten /knorten
+COPY /knorten /knorten
+RUN chown knorten:knorten /knorten
+RUN chmod +x /knorten
 
 FROM gcr.io/distroless/static-debian11
 
@@ -19,4 +21,4 @@ COPY --chown=knorten:knorten /assets /home/knorten/assets
 COPY --chown=knorten:knorten /templates /home/knorten/templates
 
 WORKDIR /home/knorten
-CMD ["knorten", "--config", "/home/knorten/config.yaml"]
+CMD ["/home/knorten/knorten", "--config", "/home/knorten/config.yaml"]

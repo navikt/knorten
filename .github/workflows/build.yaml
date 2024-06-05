@@ -52,7 +52,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: stable
-      - run: go build -ldflags "-w -s" -o knorten main.go
+      - run: CGO_ENABLED=0 go build -ldflags "-w -s" -o knorten main.go
       - uses: actions/upload-artifact@v4
         with:
           name: knorten

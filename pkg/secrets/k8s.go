@@ -12,7 +12,6 @@ import (
 )
 
 func (e *ExternalSecretClient) ApplyExternalSecret(ctx context.Context, teamID, secretGroup string) error {
-	return nil
 	secrets, err := e.GetTeamSecretGroup(ctx, nil, teamID, secretGroup)
 	if err != nil {
 		return err

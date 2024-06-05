@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/mail"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -249,9 +250,9 @@ func (c *client) setupTeamRoutes() {
 
 	c.router.POST("/team/:slug/secrets/:group", func(ctx *gin.Context) {
 		teamSlug := ctx.Param("slug")
-		// secretGroup := ctx.Param("group")
+		secretGroup := ctx.Param("group")
 
-		_, err := c.repo.TeamBySlugGet(ctx, teamSlug)
+		team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
 		if err != nil {
 			c.log.Errorf("problem getting team from slug %v: %v", teamSlug, err)
 			return
@@ -264,6 +265,16 @@ func (c *client) setupTeamRoutes() {
 
 		groupSecrets := []secrets.TeamSecret{}
 		for key, value := range ctx.Request.PostForm {
+			if strings.HasPrefix(key, "key.") {
+				key, value, err = findCorrespondingValueForNewKey(key, value[0], ctx.Request.PostForm)
+				if err != nil {
+					c.log.Errorf("error parsing form data for new secret: %v", err)
+					continue
+				}
+			} else if strings.HasPrefix(key, "value.") {
+				continue
+			}
+
 			groupSecrets = append(groupSecrets, secrets.TeamSecret{
 				Key:   fmt.Sprintf("projects/%v/secrets/%v", "knada-gsm-dev", key),
 				Name:  key,
@@ -271,19 +282,7 @@ func (c *client) setupTeamRoutes() {
 			})
 		}
 
-		// if err := c.secretsClient.CreateOrUpdateTeamSecretGroup(ctx, nil, team.ID, secretGroup, groupSecrets); err != nil {
-		// 	c.log.Errorf("problem updating secret group %v for team %v: %v", secretGroup, teamSlug, err)
-		// 	return
-		// }
-
-		// err = c.repo.RegisterApplyExternalSecret(ctx, team.ID, secrets.EventData{
-		// 	TeamID:      team.ID,
-		// 	SecretGroup: secretGroup,
-		// })
-		// if err != nil {
-		// 	c.log.Errorf("problem registering apply external secret event for team %v: %v", teamSlug, err)
-		// 	return
-		// }
+		go c.secretsClient.CreateOrUpdateTeamSecretGroup(nil, team.ID, secretGroup, groupSecrets)
 
 		ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/secrets", teamSlug))
 	})
@@ -418,10 +417,6 @@ func (c *client) editTeam(ctx *gin.Context) error {
 	return c.repo.RegisterUpdateTeamEvent(ctx, team)
 }
 
-// func (c *client) newSecretGroup(ctx *gin.Context) error {
-
-// }
-
 func (c *client) ensureUsersExists(users []string) error {
 	for _, u := range users {
 		if err := c.azureClient.UserExistsInAzureAD(u); err != nil {
@@ -439,4 +434,16 @@ func (c *client) deleteTeam(ctx *gin.Context, teamSlug string) error {
 	}
 
 	return c.repo.RegisterDeleteTeamEvent(ctx, team.ID)
+}
+
+func findCorrespondingValueForNewKey(keyID, keyValue string, formData url.Values) (string, []string, error) {
+	matchOn := strings.TrimPrefix(keyID, "key.")
+
+	for k, v := range formData {
+		if strings.HasPrefix(k, "value.") && strings.Contains(k, matchOn) {
+			return keyValue, v, nil
+		}
+	}
+
+	return "", nil, fmt.Errorf("error parsing new secret key value pair for keyID %v", keyID)
 }

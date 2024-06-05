@@ -2,8 +2,8 @@ package gcp
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"hash/crc32"
 
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
@@ -115,15 +115,14 @@ func AddSecretVersion(ctx context.Context, secretName, secretValue string) error
 	}
 	defer client.Close()
 
-	secretBytes, err := json.Marshal(secretValue)
-	if err != nil {
-		return err
-	}
-
+	payload := []byte(secretValue)
+	crc32c := crc32.MakeTable(crc32.Castagnoli)
+	checksum := int64(crc32.Checksum(payload, crc32c))
 	_, err = client.AddSecretVersion(ctx, &secretmanagerpb.AddSecretVersionRequest{
 		Parent: secretName,
 		Payload: &secretmanagerpb.SecretPayload{
-			Data: secretBytes,
+			Data:       payload,
+			DataCrc32C: &checksum,
 		},
 	})
 	if err != nil {

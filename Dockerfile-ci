@@ -19,4 +19,4 @@ COPY --chown=knorten:knorten /assets /home/knorten/assets
 COPY --chown=knorten:knorten /templates /home/knorten/templates
 
 WORKDIR /home/knorten
-CMD ["/home/knorten/knorten", "--config", "/home/knorten/config.yaml"]
+CMD ["knorten", "--config", "/home/knorten/config.yaml"]

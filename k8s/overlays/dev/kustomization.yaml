@@ -16,7 +16,7 @@ configMapGenerator:
 - files:
   - repositories.yaml=helm-repositories.yaml
   literals:
-  - airflow_chart_version="1.12.0"
+  - airflow_chart_version="1.13.1"
   - jupyter_chart_version="3.2.1"
   name: helm-repos
   namespace: knada-system
@@ -24,4 +24,4 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: europe-north1-docker.pkg.dev/knada-gcp/knada-north/knorten
-  newTag: d77cfb4b9eeca492768788c6c7b1fa9c67fead02
+  newTag: 652de5e3e104f1cd6aa900d2ce4e70b40e62dd7f

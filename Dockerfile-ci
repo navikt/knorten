@@ -14,7 +14,7 @@ COPY --chown=knorten:knorten --from=assets /home/knorten/.config /home/knorten/.
 
 COPY --chown=knorten:knorten /assets /home/knorten/assets
 COPY --chown=knorten:knorten /templates /home/knorten/templates
-COPY --chown=knorten:knorten /knorten /home/knorten/knorten
+COPY --chmod=755 --chown=knorten:knorten /knorten /home/knorten/knorten
 
 WORKDIR /home/knorten
 CMD ["/home/knorten/knorten", "--config", "/home/knorten/config.yaml"]

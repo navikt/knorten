@@ -12,6 +12,34 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+type SafeSecretGroups struct {
+	mutex            sync.Mutex
+	teamSecretGroups map[string]*SecretGroup
+}
+
+func (ssg *SafeSecretGroups) appendForGroup(group string, secretVersion *secretmanagerpb.AccessSecretVersionResponse) {
+	ssg.mutex.Lock()
+	defer ssg.mutex.Unlock()
+
+	if _, ok := ssg.teamSecretGroups[group]; !ok {
+		gcpProject, err := projectFromSecretName(secretVersion.Name)
+		if err != nil {
+			return
+		}
+		ssg.teamSecretGroups[group] = &SecretGroup{
+			GCPProject: gcpProject,
+			Secrets:    []TeamSecret{},
+		}
+	}
+
+	secretGroup := ssg.teamSecretGroups[group]
+	secretGroup.Secrets = append(secretGroup.Secrets, TeamSecret{
+		Key:   secretVersion.Name,
+		Value: string(secretVersion.Payload.Data),
+		Name:  secretNameFromResourceName(secretVersion.Name),
+	})
+}
+
 func (e *ExternalSecretClient) GetTeamSecretGroups(ctx context.Context, gcpProject *string, teamID string) (map[string]*SecretGroup, error) {
 	projectID := e.defaultGCPProject
 	if gcpProject != nil {
@@ -24,35 +52,29 @@ func (e *ExternalSecretClient) GetTeamSecretGroups(ctx context.Context, gcpProje
 		return nil, err
 	}
 
-	teamSecretGroups := map[string]*SecretGroup{}
+	var wg sync.WaitGroup
+	safeSecretGroup := SafeSecretGroups{
+		teamSecretGroups: map[string]*SecretGroup{},
+	}
 	for _, secret := range secrets {
 		if group, ok := secret.Labels[secretGroupKey]; ok {
-			secretVersion, err := gcp.GetLatestSecretVersion(ctx, secret.Name)
-			if err != nil {
-				return nil, err
-			}
+			wg.Add(1)
+			go func(secret *secretmanagerpb.Secret) {
+				defer wg.Done()
 
-			if _, ok := teamSecretGroups[group]; !ok {
-				gcpProject, err := projectFromSecretName(secretVersion.Name)
+				secretVersion, err := gcp.GetLatestSecretVersion(ctx, secret.Name)
 				if err != nil {
-					return nil, err
+					e.log.Errorf("getting latest secret version for secret %v: %v", secret.Name, err)
+					return
 				}
-				teamSecretGroups[group] = &SecretGroup{
-					GCPProject: gcpProject,
-					Secrets:    []TeamSecret{},
-				}
-			}
-
-			group := teamSecretGroups[group]
-			group.Secrets = append(group.Secrets, TeamSecret{
-				Key:   secret.Name,
-				Value: string(secretVersion.Payload.Data),
-				Name:  secretNameFromResourceName(secret.Name),
-			})
+				safeSecretGroup.appendForGroup(group, secretVersion)
+			}(secret)
 		}
 	}
 
-	return teamSecretGroups, nil
+	wg.Wait()
+
+	return safeSecretGroup.teamSecretGroups, nil
 }
 
 func (e *ExternalSecretClient) GetTeamSecretGroup(ctx context.Context, gcpProject *string, teamID, secretGroup string) ([]TeamSecret, error) {
@@ -175,6 +197,6 @@ func projectFromSecretName(secretName string) (string, error) {
 
 func secretNameFromResourceName(resourceName string) string {
 	parts := strings.Split(resourceName, "/")
-	partsSecretName := strings.Split(parts[len(parts)-1], "-")
+	partsSecretName := strings.Split(parts[len(parts)-3], "-")
 	return partsSecretName[len(partsSecretName)-1]
 }

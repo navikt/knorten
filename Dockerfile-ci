@@ -1,0 +1,24 @@
+FROM busybox:1.36.1 as assets
+
+RUN addgroup -g 1001 knorten && \
+    adduser -u 1001 -G knorten \
+            -h /home/knorten -D knorten && \
+    mkdir -p /home/knorten/.config && \
+    chown -R knorten:knorten /home/knorten
+
+COPY /knorten /knorten
+RUN chown knorten:knorten /knorten
+RUN chmod +x /knorten
+
+FROM gcr.io/distroless/static-debian11
+
+COPY --chown=knorten:knorten --from=assets /etc/passwd /etc/passwd
+COPY --chown=knorten:knorten --from=assets /home/knorten /home/knorten
+COPY --chown=knorten:knorten --from=assets /home/knorten/.config /home/knorten/.config
+COPY --chown=knorten:knorten --from=assets /knorten /home/knorten/knorten
+
+COPY --chown=knorten:knorten /assets /home/knorten/assets
+COPY --chown=knorten:knorten /templates /home/knorten/templates
+
+WORKDIR /home/knorten
+CMD ["/home/knorten/knorten", "--config", "/home/knorten/config.yaml"]

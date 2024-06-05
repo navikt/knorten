@@ -7,65 +7,111 @@ env:
   IMAGE_NAME: europe-north1-docker.pkg.dev/knada-gcp/knada-north/knorten
 
 jobs:
-  test:
+  golangci:
     permissions:
       contents: read
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-go@v5
-      with:
-        go-version: '^1.21' # The Go version to download (if necessary) and use.
-        check-latest: true
-    - run: make check
-    - run: go install honnef.co/go/tools/cmd/staticcheck@latest
-    - run: staticcheck ./...
+      - uses: actions/checkout@v4
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.55.2
 
-  build-and-push:
+  staticchecks:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - uses: dominikh/staticcheck-action@v1
+        with:
+          version: "latest"
+          install-go: false
+
+  tests:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - run: go test -v ./...
+
+  build:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - run: CGO_ENABLED=0 go build -ldflags "-w -s" -o knorten main.go
+      - uses: actions/upload-artifact@v4
+        with:
+          name: knorten
+          path: knorten
+
+  push:
     permissions:
       contents: write
       id-token: write
     runs-on: ubuntu-latest
-    needs: [test]
+    needs: [build,golangci,tests,staticchecks]
     steps:
-    - uses: actions/checkout@v4
-    - name: Google auth
-      id: auth
-      uses: google-github-actions/auth@v2
-      with:
-        token_format: access_token
-        workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
-        service_account: ci-knada-images@knada-gcp.iam.gserviceaccount.com
-    - name: Login to Google Artifact Registry
-      uses: docker/login-action@v3
-      with:
-        registry: europe-north1-docker.pkg.dev
-        username: oauth2accesstoken
-        password: ${{ steps.auth.outputs.access_token }}
-    - name: Create image tag
-      run: |
-        echo "IMAGE=$IMAGE_NAME:$(git --no-pager log -1 --pretty=format:%H)" >> $GITHUB_ENV
-    - name: Build and push Dockerimage
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: true
-        tags: ${{ env.IMAGE }}
-    - name: Update imagetag in dev k8s manifest
-      if: github.ref == 'refs/heads/main'
-      working-directory: k8s/overlays/dev
-      run: |
-        kustomize edit set image ${{ env.IMAGE }}
-    - name: Update imagetag in prod k8s manifest
-      if: github.ref == 'refs/heads/main'
-      working-directory: k8s/overlays/prod
-      run: |
-        kustomize edit set image ${{ env.IMAGE }}
-    - name: Commit tag changes
-      if: github.ref == 'refs/heads/main'
-      run: |
-        git config --global user.email ${{ github.actor }}@users.noreply.github.com
-        git config --global user.name ${{ github.actor }}
-        git add k8s/overlays
-        git commit -m "Updated image tag"
-        git push
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Google auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: access_token
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ci-knada-images@knada-gcp.iam.gserviceaccount.com
+      - name: Login to Google Artifact Registry
+        uses: docker/login-action@v3
+        with:
+          registry: europe-north1-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - name: Create image tag
+        run: |
+          echo "IMAGE=$IMAGE_NAME:$(git --no-pager log -1 --pretty=format:%H)" >> $GITHUB_ENV
+      - name: Download knorten binary
+        uses: actions/download-artifact@v4
+        with:
+          name: knorten
+      - name: Build and push Dockerimage
+        uses: docker/build-push-action@v5
+        with:
+          file: Dockerfile-ci
+          context: .
+          push: true
+          tags: ${{ env.IMAGE }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Update imagetag in dev k8s manifest
+        if: github.ref == 'refs/heads/main'
+        working-directory: k8s/overlays/dev
+        run: |
+          kustomize edit set image ${{ env.IMAGE }}
+      - name: Update imagetag in prod k8s manifest
+        if: github.ref == 'refs/heads/main'
+        working-directory: k8s/overlays/prod
+        run: |
+          kustomize edit set image ${{ env.IMAGE }}
+      - name: Commit tag changes
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config --global user.email ${{ github.actor }}@users.noreply.github.com
+          git config --global user.name ${{ github.actor }}
+          git add k8s/overlays
+          git commit -m "Updated image tag"
+          git push

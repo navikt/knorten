@@ -148,7 +148,7 @@ func main() {
 	}
 
 	k8sManager := k8s.NewManager(c)
-	secretsClient := secrets.New(k8sManager, cfg.GCP.SecretsProject, cfg.GCP.Region)
+	secretsClient := secrets.New(ctx, dbClient, k8sManager, cfg.GCP.SecretsProject, cfg.GCP.Region, log.WithField("subsystem", "external-secrets"))
 
 	eventHandler, err := events.NewHandler(
 		ctx,

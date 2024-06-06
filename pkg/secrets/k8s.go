@@ -52,7 +52,7 @@ func createExternalSecretManifest(secrets []TeamSecret, teamID, secretGroup stri
 	return &v1beta1.ExternalSecret{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ExternalSecret",
-			APIVersion: "v1beta1",
+			APIVersion: "external-secrets.io/v1beta1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretGroup,

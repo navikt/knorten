@@ -288,7 +288,7 @@ func (c *client) setupTeamRoutes() {
 
 		err = c.repo.RegisterApplyExternalSecret(ctx, team.ID, secrets.EventData{
 			TeamID:      team.ID,
-			SecretGroup: secretGroup,
+			SecretGroup: secrets.FormatGroupName(secretGroup),
 		})
 		if err != nil {
 			c.log.Errorf("problem registering apply external secret event for team %v: %v", team.ID, err)

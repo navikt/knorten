@@ -10,8 +10,11 @@ import (
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"github.com/googleapis/gax-go/v2/apierror"
 	"github.com/navikt/knorten/pkg/gcp"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 )
+
+const allowedGSMNameRegex = `[^\d^\w^\-^_]`
 
 type SafeSecretGroups struct {
 	mutex            sync.Mutex
@@ -53,27 +56,27 @@ func (e *ExternalSecretClient) GetTeamSecretGroups(ctx context.Context, gcpProje
 		return nil, err
 	}
 
-	var wg sync.WaitGroup
 	safeSecretGroup := SafeSecretGroups{
 		teamSecretGroups: map[string]*SecretGroup{},
 	}
+	g, ctx := errgroup.WithContext(ctx)
 	for _, secret := range secrets {
 		if group, ok := secret.Labels[secretGroupKey]; ok {
-			wg.Add(1)
-			go func(secret *secretmanagerpb.Secret) {
-				defer wg.Done()
-
-				secretVersion, err := gcp.GetLatestSecretVersion(ctx, secret.Name)
+			s := secret
+			g.Go(func() error {
+				secretVersion, err := gcp.GetLatestSecretVersion(ctx, s.Name)
 				if err != nil {
-					e.log.Errorf("getting latest secret version for secret %v: %v", secret.Name, err)
-					return
+					return fmt.Errorf("getting latest secret version for secret %v: %v", s.Name, err)
 				}
 				safeSecretGroup.appendForGroup(group, secretVersion)
-			}(secret)
+				return nil
+			})
 		}
 	}
 
-	wg.Wait()
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
 
 	return safeSecretGroup.teamSecretGroups, nil
 }
@@ -111,49 +114,42 @@ func (e *ExternalSecretClient) CreateOrUpdateTeamSecretGroup(ctx context.Context
 		projectID = *gcpProject
 	}
 
-	existing, err := gcp.ListSecrets(ctx, teamID, projectID, e.defaultGCPLocation, allSecretsInGroupFilter(teamID, group))
+	existingSecrets, err := gcp.ListSecrets(ctx, teamID, projectID, e.defaultGCPLocation, allSecretsInGroupFilter(teamID, group))
 	if err != nil {
 		return err
 	}
 
-	var wg sync.WaitGroup
-	for _, secret := range groupSecrets {
-		wg.Add(1)
-
-		go func(secret TeamSecret) {
-			defer wg.Done()
-
-			s, err := e.getOrCreateSecret(ctx, projectID, teamID, group, secret.Name)
+	g, ctx := errgroup.WithContext(ctx)
+	for _, groupSecret := range groupSecrets {
+		gs := groupSecret
+		g.Go(func() error {
+			s, err := e.getOrCreateSecret(ctx, projectID, teamID, group, gs.Name)
 			if err != nil {
-				e.log.Errorf("problem getting or creating secret for group %v for team %v: %v", group, teamID, err)
-				return
+				return fmt.Errorf("problem getting or creating secret for group %v for team %v: %v", group, teamID, err)
 			}
-			if err := gcp.AddSecretVersion(ctx, s.Name, secret.Value); err != nil {
-				e.log.Errorf("problem updating secret version for secret %v for team %v: %v", s.Name, teamID, err)
-				return
+			if err := gcp.AddSecretVersion(ctx, s.Name, gs.Value); err != nil {
+				return fmt.Errorf("problem updating secret version for secret %v for team %v: %v", s.Name, teamID, err)
 			}
-			existing = removeFromExisting(existing, s)
-		}(secret)
+			existingSecrets = removeFromExisting(existingSecrets, s)
+			return nil
+		})
 	}
 
-	wg.Wait()
-
-	for _, es := range existing {
-		wg.Add(1)
-
-		go func(secret *secretmanagerpb.Secret) {
-			defer wg.Done()
-
-			if err := gcp.DeleteSecret(ctx, secret.Name); err != nil {
-				e.log.Errorf("problem deleting secret %v for team %v: %v", secret.Name, teamID, err)
-				return
-			}
-		}(es)
+	if err := g.Wait(); err != nil {
+		return err
 	}
 
-	wg.Wait()
+	for _, existingSecret := range existingSecrets {
+		es := existingSecret
+		g.Go(func() error {
+			if err := gcp.DeleteSecret(ctx, es.Name); err != nil {
+				return fmt.Errorf("problem deleting secret %v for team %v: %v", es.Name, teamID, err)
+			}
+			return nil
+		})
+	}
 
-	return nil
+	return g.Wait()
 }
 
 func (e *ExternalSecretClient) deleteTeamSecretGroup(ctx context.Context, gcpProject *string, teamID, secretGroup string) error {
@@ -233,12 +229,12 @@ func removeFromExisting(existingSecrets []*secretmanagerpb.Secret, secret *secre
 }
 
 func FormatGroupName(group string) string {
-	re := regexp.MustCompile(`[^\d^\w^\-^_]`)
+	re := regexp.MustCompile(allowedGSMNameRegex)
 	return re.ReplaceAllString(strings.ToLower(group), "")
 }
 
 func FormatSecretName(secretName string) string {
-	re := regexp.MustCompile(`[^\d^\w^\-^_]`)
+	re := regexp.MustCompile(allowedGSMNameRegex)
 	upperCaseWithDashesReplaced := strings.ReplaceAll(strings.ToUpper(secretName), "-", "_")
 	return re.ReplaceAllString(upperCaseWithDashesReplaced, "")
 }

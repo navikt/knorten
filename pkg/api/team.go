@@ -276,13 +276,13 @@ func (c *client) setupTeamRoutes() {
 			}
 
 			groupSecrets = append(groupSecrets, secrets.TeamSecret{
-				Key:   fmt.Sprintf("projects/%v/secrets/%v", "knada-gsm-dev", key),
-				Name:  key,
+				Key:   fmt.Sprintf("projects/%v/secrets/%v", "knada-gsm-dev", secrets.FormatSecretName(key)),
+				Name:  secrets.FormatSecretName(key),
 				Value: value[0],
 			})
 		}
 
-		if err := c.secretsClient.CreateOrUpdateTeamSecretGroup(ctx, nil, team.ID, secretGroup, groupSecrets); err != nil {
+		if err := c.secretsClient.CreateOrUpdateTeamSecretGroup(ctx, nil, team.ID, secrets.FormatGroupName(secretGroup), groupSecrets); err != nil {
 			c.log.Errorf("creating or updating team secret group %v for team %v: %v", secretGroup, team.ID, err)
 		}
 
@@ -399,7 +399,7 @@ func (c *client) newTeam(ctx *gin.Context) error {
 	if err == nil {
 		return fmt.Errorf("team %v already exists", team.Slug)
 	}
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+	if !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
 

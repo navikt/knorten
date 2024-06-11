@@ -3,6 +3,7 @@ package secrets
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -191,7 +192,7 @@ func (e *ExternalSecretClient) getOrCreateSecret(ctx context.Context, projectID,
 }
 
 func createSecretID(teamID, group, secretName string) string {
-	return fmt.Sprintf("%v-%v-%v-%v", knadaSecretPrefix, strings.ToLower(teamID), strings.ToLower(group), strings.ToLower(secretName))
+	return fmt.Sprintf("%v-%v-%v-%v", knadaSecretPrefix, strings.ToLower(teamID), group, secretName)
 }
 
 func createSecretLabels(teamID, secretGroup string) map[string]string {
@@ -229,4 +230,15 @@ func removeFromExisting(existingSecrets []*secretmanagerpb.Secret, secret *secre
 	}
 
 	return existingSecrets
+}
+
+func FormatGroupName(group string) string {
+	re := regexp.MustCompile(`[^\d^\w^\-^_]`)
+	return re.ReplaceAllString(strings.ToLower(group), "")
+}
+
+func FormatSecretName(secretName string) string {
+	re := regexp.MustCompile(`[^\d^\w^\-^_]`)
+	upperCaseWithDashesReplaced := strings.ReplaceAll(strings.ToUpper(secretName), "-", "_")
+	return re.ReplaceAllString(upperCaseWithDashesReplaced, "")
 }

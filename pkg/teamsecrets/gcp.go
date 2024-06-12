@@ -1,4 +1,4 @@
-package secrets
+package teamsecrets
 
 import (
 	"context"
@@ -44,7 +44,7 @@ func (ssg *SafeSecretGroups) appendForGroup(group string, secretVersion *secretm
 	})
 }
 
-func (e *ExternalSecretClient) GetTeamSecretGroups(ctx context.Context, gcpProject *string, teamID string) (map[string]*SecretGroup, error) {
+func (e *TeamSecretClient) GetTeamSecretGroups(ctx context.Context, gcpProject *string, teamID string) (map[string]*SecretGroup, error) {
 	projectID := e.defaultGCPProject
 	if gcpProject != nil {
 		projectID = *gcpProject
@@ -81,7 +81,7 @@ func (e *ExternalSecretClient) GetTeamSecretGroups(ctx context.Context, gcpProje
 	return safeSecretGroup.teamSecretGroups, nil
 }
 
-func (e *ExternalSecretClient) GetTeamSecretGroup(ctx context.Context, gcpProject *string, teamID, secretGroup string) ([]TeamSecret, error) {
+func (e *TeamSecretClient) GetTeamSecretGroup(ctx context.Context, gcpProject *string, teamID, secretGroup string) ([]TeamSecret, error) {
 	projectID := e.defaultGCPProject
 	if gcpProject != nil {
 		projectID = *gcpProject
@@ -108,7 +108,7 @@ func (e *ExternalSecretClient) GetTeamSecretGroup(ctx context.Context, gcpProjec
 	return teamSecrets, nil
 }
 
-func (e *ExternalSecretClient) CreateOrUpdateTeamSecretGroup(ctx context.Context, gcpProject *string, teamID, group string, groupSecrets []TeamSecret) error {
+func (e *TeamSecretClient) CreateOrUpdateTeamSecretGroup(ctx context.Context, gcpProject *string, teamID, group string, groupSecrets []TeamSecret) error {
 	projectID := e.defaultGCPProject
 	if gcpProject != nil {
 		projectID = *gcpProject
@@ -125,10 +125,10 @@ func (e *ExternalSecretClient) CreateOrUpdateTeamSecretGroup(ctx context.Context
 		g.Go(func() error {
 			s, err := e.getOrCreateSecret(ctx, projectID, teamID, group, gs.Name)
 			if err != nil {
-				return fmt.Errorf("problem getting or creating secret for group %v for team %v: %v", group, teamID, err)
+				return fmt.Errorf("problem getting or creating secret for group %v for team %v: %w", group, teamID, err)
 			}
 			if err := gcp.AddSecretVersion(ctx, s.Name, gs.Value); err != nil {
-				return fmt.Errorf("problem updating secret version for secret %v for team %v: %v", s.Name, teamID, err)
+				return fmt.Errorf("problem updating secret version for secret %v for team %v: %w", s.Name, teamID, err)
 			}
 			existingSecrets = removeFromExisting(existingSecrets, s)
 			return nil
@@ -143,7 +143,7 @@ func (e *ExternalSecretClient) CreateOrUpdateTeamSecretGroup(ctx context.Context
 		es := existingSecret
 		g.Go(func() error {
 			if err := gcp.DeleteSecret(ctx, es.Name); err != nil {
-				return fmt.Errorf("problem deleting secret %v for team %v: %v", es.Name, teamID, err)
+				return fmt.Errorf("problem deleting secret %v for team %v: %w", es.Name, teamID, err)
 			}
 			return nil
 		})
@@ -152,27 +152,32 @@ func (e *ExternalSecretClient) CreateOrUpdateTeamSecretGroup(ctx context.Context
 	return g.Wait()
 }
 
-func (e *ExternalSecretClient) deleteTeamSecretGroup(ctx context.Context, gcpProject *string, teamID, secretGroup string) error {
+func (e *TeamSecretClient) DeleteTeamSecretGroup(ctx context.Context, gcpProject *string, teamID, group string) error {
 	projectID := e.defaultGCPProject
 	if gcpProject != nil {
 		projectID = *gcpProject
 	}
 
-	secrets, err := gcp.ListSecrets(ctx, teamID, projectID, e.defaultGCPLocation, allSecretsInGroupFilter(teamID, secretGroup))
+	existingSecrets, err := gcp.ListSecrets(ctx, teamID, projectID, e.defaultGCPLocation, allSecretsInGroupFilter(teamID, group))
 	if err != nil {
 		return err
 	}
 
-	for _, secret := range secrets {
-		if err := gcp.DeleteSecret(ctx, secret.Name); err != nil {
-			return err
-		}
+	g, ctx := errgroup.WithContext(ctx)
+	for _, existingSecret := range existingSecrets {
+		es := existingSecret
+		g.Go(func() error {
+			if err := gcp.DeleteSecret(ctx, es.Name); err != nil {
+				return fmt.Errorf("problem deleting secret %v for team %v: %w", es.Name, teamID, err)
+			}
+			return nil
+		})
 	}
 
-	return nil
+	return g.Wait()
 }
 
-func (e *ExternalSecretClient) getOrCreateSecret(ctx context.Context, projectID, teamID, group, secretName string) (*secretmanagerpb.Secret, error) {
+func (e *TeamSecretClient) getOrCreateSecret(ctx context.Context, projectID, teamID, group, secretName string) (*secretmanagerpb.Secret, error) {
 	secret, err := gcp.GetSecret(ctx, projectID, createSecretID(teamID, group, secretName))
 	if err != nil {
 		apiError, ok := apierror.FromError(err)

@@ -1,4 +1,4 @@
-package secrets
+package teamsecrets
 
 import (
 	"context"
@@ -31,15 +31,15 @@ type TeamSecret struct {
 	Name  string `json:"name"`
 }
 
-type ExternalSecretClient struct {
+type TeamSecretClient struct {
 	manager            k8s.Manager
 	defaultGCPProject  string
 	defaultGCPLocation string
 	log                *logrus.Entry
 }
 
-func New(ctx context.Context, repo *database.Repo, manager k8s.Manager, defaultGCPProject, defaultGCPLocation string, log *logrus.Entry) *ExternalSecretClient {
-	return &ExternalSecretClient{
+func New(ctx context.Context, repo *database.Repo, manager k8s.Manager, defaultGCPProject, defaultGCPLocation string, log *logrus.Entry) *TeamSecretClient {
+	return &TeamSecretClient{
 		manager:            manager,
 		defaultGCPProject:  defaultGCPProject,
 		defaultGCPLocation: defaultGCPLocation,

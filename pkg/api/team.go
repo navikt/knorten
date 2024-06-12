@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/mail"
-	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -19,7 +18,6 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/navikt/knorten/pkg/api/middlewares"
 	"github.com/navikt/knorten/pkg/database/gensql"
-	"github.com/navikt/knorten/pkg/secrets"
 )
 
 type teamForm struct {
@@ -225,98 +223,98 @@ func (c *client) setupTeamRoutes() {
 		})
 	})
 
-	c.router.GET("/team/:slug/secrets", func(ctx *gin.Context) {
-		teamSlug := ctx.Param("slug")
+	// c.router.GET("/team/:slug/secrets", func(ctx *gin.Context) {
+	// 	teamSlug := ctx.Param("slug")
 
-		team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
-		if err != nil {
-			c.log.Errorf("problem getting team from slug %v: %v", teamSlug, err)
-			return
-		}
-		secretGroups, err := c.secretsClient.GetTeamSecretGroups(ctx, nil, team.ID)
-		if err != nil {
-			c.log.Errorf("problem getting secret groups for team id %v: %v", team.ID, err)
-			return
-		}
+	// 	team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
+	// 	if err != nil {
+	// 		c.log.Errorf("problem getting team from slug %v: %v", teamSlug, err)
+	// 		return
+	// 	}
+	// 	secretGroups, err := c.secretsClient.GetTeamSecretGroups(ctx, nil, team.ID)
+	// 	if err != nil {
+	// 		c.log.Errorf("problem getting secret groups for team id %v: %v", team.ID, err)
+	// 		return
+	// 	}
 
-		ctx.HTML(http.StatusOK, "secrets/index", gin.H{
-			"secrets": secretGroups,
-			"slug":    team.Slug,
-			//"errors":   flashes,
-			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
-		})
-	})
+	// 	ctx.HTML(http.StatusOK, "secrets/index", gin.H{
+	// 		"secrets": secretGroups,
+	// 		"slug":    team.Slug,
+	// 		//"errors":   flashes,
+	// 		"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+	// 		"isAdmin":  ctx.GetBool(middlewares.AdminKey),
+	// 	})
+	// })
 
-	c.router.POST("/team/:slug/secrets/:group", func(ctx *gin.Context) {
-		teamSlug := ctx.Param("slug")
-		secretGroup := ctx.Param("group")
+	// c.router.POST("/team/:slug/secrets/:group", func(ctx *gin.Context) {
+	// 	teamSlug := ctx.Param("slug")
+	// 	secretGroup := ctx.Param("group")
 
-		team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
-		if err != nil {
-			c.log.Errorf("problem getting team from slug %v: %v", teamSlug, err)
-			return
-		}
+	// 	team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
+	// 	if err != nil {
+	// 		c.log.Errorf("problem getting team from slug %v: %v", teamSlug, err)
+	// 		return
+	// 	}
 
-		if err := ctx.Request.ParseForm(); err != nil {
-			c.log.Errorf("problem getting team from slug %v: %v", teamSlug, err)
-			return
-		}
+	// 	if err := ctx.Request.ParseForm(); err != nil {
+	// 		c.log.Errorf("problem getting team from slug %v: %v", teamSlug, err)
+	// 		return
+	// 	}
 
-		groupSecrets := []secrets.TeamSecret{}
-		for key, value := range ctx.Request.PostForm {
-			if strings.HasPrefix(key, "key.") {
-				key, value, err = findCorrespondingValueForNewKey(key, value[0], ctx.Request.PostForm)
-				if err != nil {
-					c.log.Errorf("error parsing form data for new secret: %v", err)
-					continue
-				}
-			} else if strings.HasPrefix(key, "value.") {
-				continue
-			}
+	// 	groupSecrets := []secrets.TeamSecret{}
+	// 	for key, value := range ctx.Request.PostForm {
+	// 		if strings.HasPrefix(key, "key.") {
+	// 			key, value, err = findCorrespondingValueForNewKey(key, value[0], ctx.Request.PostForm)
+	// 			if err != nil {
+	// 				c.log.Errorf("error parsing form data for new secret: %v", err)
+	// 				continue
+	// 			}
+	// 		} else if strings.HasPrefix(key, "value.") {
+	// 			continue
+	// 		}
 
-			groupSecrets = append(groupSecrets, secrets.TeamSecret{
-				Key:   fmt.Sprintf("projects/%v/secrets/%v", "knada-gsm-dev", secrets.FormatSecretName(key)),
-				Name:  secrets.FormatSecretName(key),
-				Value: value[0],
-			})
-		}
+	// 		groupSecrets = append(groupSecrets, secrets.TeamSecret{
+	// 			Key:   fmt.Sprintf("projects/%v/secrets/%v", "knada-gsm-dev", secrets.FormatSecretName(key)),
+	// 			Name:  secrets.FormatSecretName(key),
+	// 			Value: value[0],
+	// 		})
+	// 	}
 
-		if err := c.secretsClient.CreateOrUpdateTeamSecretGroup(ctx, nil, team.ID, secrets.FormatGroupName(secretGroup), groupSecrets); err != nil {
-			c.log.Errorf("creating or updating team secret group %v for team %v: %v", secretGroup, team.ID, err)
-		}
+	// 	if err := c.secretsClient.CreateOrUpdateTeamSecretGroup(ctx, nil, team.ID, secrets.FormatGroupName(secretGroup), groupSecrets); err != nil {
+	// 		c.log.Errorf("creating or updating team secret group %v for team %v: %v", secretGroup, team.ID, err)
+	// 	}
 
-		err = c.repo.RegisterApplyExternalSecret(ctx, team.ID, secrets.EventData{
-			TeamID:      team.ID,
-			SecretGroup: secrets.FormatGroupName(secretGroup),
-		})
-		if err != nil {
-			c.log.Errorf("problem registering apply external secret event for team %v: %v", team.ID, err)
-			return
-		}
+	// 	err = c.repo.RegisterApplyExternalSecret(ctx, team.ID, secrets.EventData{
+	// 		TeamID:      team.ID,
+	// 		SecretGroup: secrets.FormatGroupName(secretGroup),
+	// 	})
+	// 	if err != nil {
+	// 		c.log.Errorf("problem registering apply external secret event for team %v: %v", team.ID, err)
+	// 		return
+	// 	}
 
-		ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/secrets", teamSlug))
-	})
+	// 	ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/secrets", teamSlug))
+	// })
 
-	c.router.GET("/team/:slug/secrets/:group/delete", func(ctx *gin.Context) {
-		teamSlug := ctx.Param("slug")
-		secretGroup := ctx.Param("group")
+	// c.router.POST("/team/:slug/secrets/:group/delete", func(ctx *gin.Context) {
+	// 	teamSlug := ctx.Param("slug")
+	// 	secretGroup := ctx.Param("group")
 
-		team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
-		if err != nil {
-			c.log.Errorf("problem getting team from slug %v: %v", teamSlug, err)
-			return
-		}
+	// 	team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
+	// 	if err != nil {
+	// 		c.log.Errorf("problem getting team from slug %v: %v", teamSlug, err)
+	// 		return
+	// 	}
 
-		err = c.repo.RegisterDeleteExternalSecret(ctx, team.ID, secrets.EventData{
-			TeamID:      team.ID,
-			SecretGroup: secretGroup,
-		})
-		if err != nil {
-			c.log.Errorf("problem registering delete external secret event for team %v: %v", teamSlug, err)
-			return
-		}
-	})
+	// 	err = c.repo.RegisterDeleteExternalSecret(ctx, team.ID, secrets.EventData{
+	// 		TeamID:      team.ID,
+	// 		SecretGroup: secretGroup,
+	// 	})
+	// 	if err != nil {
+	// 		c.log.Errorf("problem registering delete external secret event for team %v: %v", teamSlug, err)
+	// 		return
+	// 	}
+	// })
 }
 
 func descriptiveMessageForTeamError(fieldError validator.FieldError) string {
@@ -445,16 +443,4 @@ func (c *client) deleteTeam(ctx *gin.Context, teamSlug string) error {
 	}
 
 	return c.repo.RegisterDeleteTeamEvent(ctx, team.ID)
-}
-
-func findCorrespondingValueForNewKey(keyID, keyValue string, formData url.Values) (string, []string, error) {
-	matchOn := strings.TrimPrefix(keyID, "key.")
-
-	for k, v := range formData {
-		if strings.HasPrefix(k, "value.") && strings.Contains(k, matchOn) {
-			return keyValue, v, nil
-		}
-	}
-
-	return "", nil, fmt.Errorf("error parsing new secret key value pair for keyID %v", keyID)
 }

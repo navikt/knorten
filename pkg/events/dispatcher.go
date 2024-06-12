@@ -8,7 +8,7 @@ import (
 
 	"github.com/navikt/knorten/pkg/gcpapi"
 	"github.com/navikt/knorten/pkg/k8s"
-	"github.com/navikt/knorten/pkg/secrets"
+	"github.com/navikt/knorten/pkg/teamsecrets"
 
 	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/navikt/knorten/pkg/chart"
@@ -31,7 +31,7 @@ type EventHandler struct {
 	chartClient   chartClient
 	helmClient    helmClient
 	mngr          k8s.Manager
-	secretsClient *secrets.ExternalSecretClient
+	secretsClient *teamsecrets.TeamSecretClient
 }
 
 const (
@@ -91,7 +91,7 @@ func (e EventHandler) distributeWork(eventType database.EventType) workerFunc {
 		}
 	case database.EventTypeApplyExternalSecret,
 		database.EventTypeDeleteExternalSecret:
-		var values secrets.EventData
+		var values teamsecrets.EventData
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			return e.processWork(ctx, event, logger, &values)
 		}
@@ -204,7 +204,7 @@ func (e EventHandler) processWork(ctx context.Context, event gensql.Event, logge
 		logger.Infof("Uninstalling helm chart for team '%v'", d.TeamID)
 		err = e.helmClient.Uninstall(ctx, d)
 	case database.EventTypeApplyExternalSecret:
-		d, ok := form.(*secrets.EventData)
+		d, ok := form.(*teamsecrets.EventData)
 		if !ok {
 			return fmt.Errorf("invalid form type for type '%v'", event.Type)
 		}
@@ -212,7 +212,7 @@ func (e EventHandler) processWork(ctx context.Context, event gensql.Event, logge
 		logger.Infof("applying changes to external secret %v for team %v", d.SecretGroup, d.TeamID)
 		err = e.secretsClient.ApplyExternalSecret(ctx, d.TeamID, d.SecretGroup)
 	case database.EventTypeDeleteExternalSecret:
-		d, ok := form.(*secrets.EventData)
+		d, ok := form.(*teamsecrets.EventData)
 		if !ok {
 			return fmt.Errorf("invalid form type for type '%v'", event.Type)
 		}
@@ -237,7 +237,7 @@ func NewHandler(
 	saBinder gcpapi.ServiceAccountPolicyBinder,
 	saChecker gcpapi.ServiceAccountChecker,
 	client *helm.Client,
-	secretsClient *secrets.ExternalSecretClient,
+	secretsClient *teamsecrets.TeamSecretClient,
 	gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion, topLevelDomain string,
 	dryRun bool,
 	log *logrus.Entry,

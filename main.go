@@ -9,11 +9,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/navikt/knorten/pkg/secrets"
-
 	"github.com/navikt/knorten/pkg/gcpapi"
 	"github.com/navikt/knorten/pkg/gcpapi/mock"
+	"github.com/navikt/knorten/pkg/github"
 	"github.com/navikt/knorten/pkg/k8s"
+	"github.com/navikt/knorten/pkg/teamsecrets"
 	"google.golang.org/api/iam/v1"
 
 	"github.com/gin-gonic/gin"
@@ -148,7 +148,7 @@ func main() {
 	}
 
 	k8sManager := k8s.NewManager(c)
-	secretsClient := secrets.New(ctx, dbClient, k8sManager, cfg.GCP.SecretsProject, cfg.GCP.Region, log.WithField("subsystem", "external-secrets"))
+	secretsClient := teamsecrets.New(ctx, dbClient, k8sManager, cfg.GCP.SecretsProject, cfg.GCP.Region, log.WithField("subsystem", "team-secrets"))
 
 	eventHandler, err := events.NewHandler(
 		ctx,
@@ -199,21 +199,32 @@ func main() {
 		dbClient,
 	)
 
-	// ghHttpClient, err := github.NewHTTPClientFromGithubAppCredentials(
-	// 	cfg.Github.ApplicationID,
-	// 	cfg.Github.InstallationID,
-	// 	cfg.Github.PrivateKeyPath,
-	// )
-	// if err != nil {
-	// 	log.WithError(err).Fatal("creating github http client")
-	// }
+	gsmService := service.NewGSMService(
+		secretsClient,
+		dbClient,
+	)
 
-	// ghc := github.NewFromHTTPClient(cfg.Github.Organization, ghHttpClient)
-	// ghf := github.NewFetcher(ghc, log.WithField("subsystem", "github"))
+	gsmHandler := handlers.NewGSMHandler(
+		cfg.GCP.SecretsProject,
+		gsmService,
+		log.WithField("subsystem", "gsm"),
+	)
 
-	// go ghf.StartRefreshLoop(ctx, time.Duration(cfg.Github.RefreshIntervalMins)*time.Minute)
+	ghHttpClient, err := github.NewHTTPClientFromGithubAppCredentials(
+		cfg.Github.ApplicationID,
+		cfg.Github.InstallationID,
+		cfg.Github.PrivateKeyPath,
+	)
+	if err != nil {
+		log.WithError(err).Fatal("creating github http client")
+	}
 
-	// githubHandler := handlers.NewGithubHandler(service.NewGithubService(ghf), log.WithField("subsystem", "github"))
+	ghc := github.NewFromHTTPClient(cfg.Github.Organization, ghHttpClient)
+	ghf := github.NewFetcher(ghc, log.WithField("subsystem", "github"))
+
+	go ghf.StartRefreshLoop(ctx, time.Duration(cfg.Github.RefreshIntervalMins)*time.Minute)
+
+	githubHandler := handlers.NewGithubHandler(service.NewGithubService(ghf), log.WithField("subsystem", "github"))
 
 	router.Use(session)
 	router.Static("/assets", "./assets")
@@ -227,8 +238,11 @@ func main() {
 	router.GET("/oauth2/login", authHandler.LoginHandler(cfg.DryRun))
 	router.GET("/oauth2/callback", authHandler.CallbackHandler())
 	router.GET("/oauth2/logout", authHandler.LogoutHandler())
-	// router.GET("/github/repositories", githubHandler.RepositoriesHandler())
-	// router.GET("/github/repository/:owner/:repo/branches", githubHandler.BranchesHandler())
+	router.GET("/github/repositories", githubHandler.RepositoriesHandler())
+	router.GET("/github/repository/:owner/:repo/branches", githubHandler.BranchesHandler())
+	router.GET("/team/:slug/secrets", gsmHandler.TeamSecretGroups())
+	router.POST("/team/:slug/secrets/:group", gsmHandler.CreateOrUpdateTeamSecretGroup())
+	router.POST("/team/:slug/secrets/:group/delete", gsmHandler.DeleteTeamSecretGroup())
 	router.Use(middlewares.Authenticate(
 		log.WithField("subsystem", "authentication"),
 		dbClient,

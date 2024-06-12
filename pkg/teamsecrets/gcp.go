@@ -235,7 +235,8 @@ func removeFromExisting(existingSecrets []*secretmanagerpb.Secret, secret *secre
 
 func FormatGroupName(group string) string {
 	re := regexp.MustCompile(allowedGSMNameRegex)
-	return re.ReplaceAllString(strings.ToLower(group), "")
+	lowerCaseWithUnderscoreReplaced := strings.ReplaceAll(strings.ToLower(group), "_", "-")
+	return re.ReplaceAllString(lowerCaseWithUnderscoreReplaced, "")
 }
 
 func FormatSecretName(secretName string) string {

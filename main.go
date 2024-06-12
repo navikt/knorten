@@ -240,15 +240,15 @@ func main() {
 	router.GET("/oauth2/logout", authHandler.LogoutHandler())
 	router.GET("/github/repositories", githubHandler.RepositoriesHandler())
 	router.GET("/github/repository/:owner/:repo/branches", githubHandler.BranchesHandler())
-	router.GET("/team/:slug/secrets", gsmHandler.TeamSecretGroups())
-	router.POST("/team/:slug/secrets/:group", gsmHandler.CreateOrUpdateTeamSecretGroup())
-	router.POST("/team/:slug/secrets/:group/delete", gsmHandler.DeleteTeamSecretGroup())
 	router.Use(middlewares.Authenticate(
 		log.WithField("subsystem", "authentication"),
 		dbClient,
 		azureClient,
 		cfg.DryRun,
 	))
+	router.GET("/team/:slug/secrets", gsmHandler.TeamSecretGroups())
+	router.POST("/team/:slug/secrets/:group", gsmHandler.CreateOrUpdateTeamSecretGroup())
+	router.POST("/team/:slug/secrets/:group/delete", gsmHandler.DeleteTeamSecretGroup())
 
 	err = api.New(router, dbClient, azureClient, secretsClient, log.WithField("subsystem", "api"), cfg.DryRun, cfg.GCP.Project, cfg.GCP.Zone, cfg.TopLevelDomain)
 	if err != nil {

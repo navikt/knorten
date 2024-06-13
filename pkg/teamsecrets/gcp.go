@@ -119,15 +119,15 @@ func (e *TeamSecretClient) CreateOrUpdateTeamSecretGroup(ctx context.Context, gc
 		return err
 	}
 
-	g, ctx := errgroup.WithContext(ctx)
+	g, createCtx := errgroup.WithContext(ctx)
 	for _, groupSecret := range groupSecrets {
 		gs := groupSecret
 		g.Go(func() error {
-			s, err := e.getOrCreateSecret(ctx, projectID, teamID, group, gs.Name)
+			s, err := e.getOrCreateSecret(createCtx, projectID, teamID, group, gs.Name)
 			if err != nil {
 				return fmt.Errorf("problem getting or creating secret for group %v for team %v: %w", group, teamID, err)
 			}
-			if err := gcp.AddSecretVersion(ctx, s.Name, gs.Value); err != nil {
+			if err := gcp.AddSecretVersion(createCtx, s.Name, gs.Value); err != nil {
 				return fmt.Errorf("problem updating secret version for secret %v for team %v: %w", s.Name, teamID, err)
 			}
 			existingSecrets = removeFromExisting(existingSecrets, s)
@@ -139,10 +139,12 @@ func (e *TeamSecretClient) CreateOrUpdateTeamSecretGroup(ctx context.Context, gc
 		return err
 	}
 
+	g, deleteCtx := errgroup.WithContext(ctx)
 	for _, existingSecret := range existingSecrets {
 		es := existingSecret
+		fmt.Println(es)
 		g.Go(func() error {
-			if err := gcp.DeleteSecret(ctx, es.Name); err != nil {
+			if err := gcp.DeleteSecret(deleteCtx, es.Name); err != nil {
 				return fmt.Errorf("problem deleting secret %v for team %v: %w", es.Name, teamID, err)
 			}
 			return nil

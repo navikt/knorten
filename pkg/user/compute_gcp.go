@@ -28,8 +28,8 @@ type computeInstanceConfig struct {
 
 func newComputeDefaultConfig(gcpProject, gcpRegion, gcpZone string) computeInstanceConfig {
 	return computeInstanceConfig{
-		vpcName:        "projects/knada-dev/global/networks/knada-vpc",
-		subnet:         fmt.Sprintf("projects/knada-dev/regions/%v/subnetworks/knada", gcpRegion),
+		vpcName:        fmt.Sprintf("projects/%s/global/networks/knada-vpc", gcpProject),
+		subnet:         fmt.Sprintf("projects/%s/regions/%v/subnetworks/knada", gcpProject, gcpRegion),
 		serviceAccount: fmt.Sprintf("knada-vm-ops-agent@%v.iam.gserviceaccount.com", gcpProject),
 		machineType:    fmt.Sprintf("zones/%v/machineTypes/n2-standard-2", gcpZone),
 		isBootDisk:     true,

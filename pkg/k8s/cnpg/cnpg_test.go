@@ -80,6 +80,17 @@ func TestNew(t *testing.T) {
 				cnpg.WithAppLabel("test-app"),
 			),
 		},
+		{
+			name: "cluster-with-monitoring",
+			desc: "Create a new cluster with monitoring",
+			cluster: cnpg.NewCluster(
+				"test-cluster",
+				"test-namespace",
+				"test-database",
+				"test-owner",
+				cnpg.WithMonitoring(true),
+			),
+		},
 	}
 
 	for _, tc := range testCases {

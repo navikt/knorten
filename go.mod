@@ -7,14 +7,14 @@ require (
 	cloud.google.com/go/compute v1.27.0
 	cloud.google.com/go/iam v1.1.8
 	cloud.google.com/go/secretmanager v1.13.1
-	cloud.google.com/go/storage v1.41.0
+	cloud.google.com/go/storage v1.42.0
 	github.com/bradleyfalzon/ghinstallation/v2 v2.11.0
-	github.com/cloudnative-pg/cloudnative-pg v1.23.1
+	github.com/cloudnative-pg/cloudnative-pg v1.23.2
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/gin-contrib/sessions v1.0.1
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
-	github.com/go-playground/validator/v10 v10.21.0
+	github.com/go-playground/validator/v10 v10.22.0
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-github/v62 v62.0.0
@@ -33,17 +33,17 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/sqlc-dev/sqlc v1.26.0
 	github.com/stretchr/testify v1.9.0
-	github.com/tdewolff/minify/v2 v2.20.33
+	github.com/tdewolff/minify/v2 v2.20.34
 	golang.org/x/exp v0.0.0-20240604190554-fc45aab8b7f8
 	golang.org/x/oauth2 v0.21.0
-	google.golang.org/api v0.183.0
+	google.golang.org/api v0.184.0
 	google.golang.org/grpc v1.64.0
 	gopkg.in/yaml.v3 v3.0.1
-	helm.sh/helm/v3 v3.15.1
-	k8s.io/api v0.30.1
-	k8s.io/apimachinery v0.30.1
-	k8s.io/client-go v0.30.1
-	k8s.io/klog/v2 v2.120.1
+	helm.sh/helm/v3 v3.15.2
+	k8s.io/api v0.30.2
+	k8s.io/apimachinery v0.30.2
+	k8s.io/client-go v0.30.2
+	k8s.io/klog/v2 v2.130.0
 	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0
 	sigs.k8s.io/controller-runtime v0.18.4
 	sigs.k8s.io/gateway-api v1.1.0
@@ -144,7 +144,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
-	github.com/kubernetes-csi/external-snapshotter/client/v7 v7.0.0 // indirect
+	github.com/kubernetes-csi/external-snapshotter/client/v8 v8.0.0 // indirect
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
@@ -195,7 +195,7 @@ require (
 	github.com/spf13/cobra v1.8.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/tdewolff/parse/v2 v2.7.14 // indirect
+	github.com/tdewolff/parse/v2 v2.7.15 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect

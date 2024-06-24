@@ -89,7 +89,7 @@ jobs:
         with:
           name: knorten
       - name: Build and push Dockerimage
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           file: Dockerfile-ci
           context: .

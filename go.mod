@@ -1,6 +1,6 @@
 module github.com/navikt/knorten
 
-go 1.22.4
+go 1.22.5
 
 require (
 	cloud.google.com/go/artifactregistry v1.14.13

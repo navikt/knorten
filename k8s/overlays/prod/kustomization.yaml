@@ -16,7 +16,7 @@ configMapGenerator:
 - files:
   - repositories.yaml=helm-repositories.yaml
   literals:
-  - airflow_chart_version="1.13.1"
+  - airflow_chart_version="1.15.0"
   - jupyter_chart_version="3.3.8"
   name: helm-repos
   namespace: knada-system

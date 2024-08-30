@@ -61,6 +61,9 @@ spec:
             - name: github-private-key
               mountPath: /home/knorten/github-app-private-key.pem
               subPath: PRIVATE_KEY
+            - name: knorten-maintenance-exclusion-dates
+              mountPath: /home/knorten/maintenance-exclusion-dates.json
+              subPath: maintenance_exclusion_dates
           resources:
             limits:
               memory: 1.5Gi
@@ -127,5 +130,8 @@ spec:
         - name: github-private-key
           secret:
             secretName: github-app-secret
+        - name: knorten-maintenance-exclusion-dates
+          configMap:
+              name: knorten-maintenance-exclusion-dates
       securityContext:
         runAsNonRoot: true

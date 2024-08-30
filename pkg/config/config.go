@@ -1,11 +1,14 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 
@@ -26,21 +29,22 @@ type Loader interface {
 }
 
 type Config struct {
-	Oauth          Oauth      `yaml:"oauth"`
-	GCP            GCP        `yaml:"gcp"`
-	Cookies        Cookies    `yaml:"cookies"`
-	Helm           Helm       `yaml:"helm"`
-	Server         Server     `yaml:"server"`
-	Postgres       Postgres   `yaml:"postgres"`
-	Kubernetes     Kubernetes `yaml:"kubernetes"`
-	Github         Github     `yaml:"github"`
-	DBEncKey       string     `yaml:"db_enc_key"`
-	AdminGroupID   string     `yaml:"admin_group_id"`
-	SessionKey     string     `yaml:"session_key"`
-	LoginPage      string     `yaml:"login_page"`
-	TopLevelDomain string     `yaml:"top_level_domain"`
-	DryRun         bool       `yaml:"dry_run"`
-	Debug          bool       `yaml:"debug"`
+	Oauth                Oauth                `yaml:"oauth"`
+	GCP                  GCP                  `yaml:"gcp"`
+	Cookies              Cookies              `yaml:"cookies"`
+	Helm                 Helm                 `yaml:"helm"`
+	Server               Server               `yaml:"server"`
+	Postgres             Postgres             `yaml:"postgres"`
+	Kubernetes           Kubernetes           `yaml:"kubernetes"`
+	Github               Github               `yaml:"github"`
+	DBEncKey             string               `yaml:"db_enc_key"`
+	AdminGroupID         string               `yaml:"admin_group_id"`
+	SessionKey           string               `yaml:"session_key"`
+	LoginPage            string               `yaml:"login_page"`
+	TopLevelDomain       string               `yaml:"top_level_domain"`
+	DryRun               bool                 `yaml:"dry_run"`
+	Debug                bool                 `yaml:"debug"`
+	MaintenanceExclusion MaintenanceExclusion `yaml:"maintenance_exclusion"`
 }
 
 func (c Config) Validate() error {
@@ -223,6 +227,31 @@ func (k Kubernetes) Validate() error {
 	return validation.ValidateStruct(&k,
 		validation.Field(&k.Context),
 	)
+}
+
+type MaintenanceExclusion struct {
+	Enabled  bool   `yaml:"enabled"`
+	FilePath string `yaml:"file_path"`
+}
+
+type MaintenanceExclusionPeriod struct {
+	Name  string    `json:"name"`
+	Start time.Time `json:"start"`
+	End   time.Time `json:"end"`
+}
+
+func LoadMaintenanceExclusionPeriods(maintenanceExclusion MaintenanceExclusion) ([]MaintenanceExclusionPeriod, error) {
+	maintenanceExclusionPeriods := []MaintenanceExclusionPeriod{}
+	if maintenanceExclusion.Enabled && maintenanceExclusion.FilePath != "" {
+		fileContentBytes, err := os.ReadFile(maintenanceExclusion.FilePath)
+		if err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal(fileContentBytes, &maintenanceExclusionPeriods); err != nil {
+			return nil, err
+		}
+	}
+	return maintenanceExclusionPeriods, nil
 }
 
 type FileParts struct {

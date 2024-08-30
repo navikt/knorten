@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/navikt/knorten/pkg/config"
 	"github.com/navikt/knorten/pkg/gcpapi"
 	"github.com/navikt/knorten/pkg/k8s"
 
@@ -22,13 +23,14 @@ import (
 )
 
 type EventHandler struct {
-	repo        database.Repository
-	log         *logrus.Entry
-	context     context.Context
-	teamClient  teamClient
-	userClient  userClient
-	chartClient chartClient
-	helmClient  helmClient
+	repo                        database.Repository
+	maintenanceExclusionPeriods []config.MaintenanceExclusionPeriod
+	log                         *logrus.Entry
+	context                     context.Context
+	teamClient                  teamClient
+	userClient                  userClient
+	chartClient                 chartClient
+	helmClient                  helmClient
 }
 
 const (
@@ -213,6 +215,7 @@ func NewHandler(
 	saChecker gcpapi.ServiceAccountChecker,
 	client *helm.Client,
 	gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion, topLevelDomain string,
+	maintenanceExclusionPeriods []config.MaintenanceExclusionPeriod,
 	dryRun bool,
 	log *logrus.Entry,
 ) (EventHandler, error) {
@@ -239,13 +242,14 @@ func NewHandler(
 	}
 
 	return EventHandler{
-		repo:        repo,
-		log:         log,
-		context:     ctx,
-		teamClient:  teamClient,
-		userClient:  user.NewClient(repo, gcpProject, gcpRegion, gcpZone, dryRun),
-		chartClient: chartClient,
-		helmClient:  client,
+		repo:                        repo,
+		maintenanceExclusionPeriods: maintenanceExclusionPeriods,
+		log:                         log,
+		context:                     ctx,
+		teamClient:                  teamClient,
+		userClient:                  user.NewClient(repo, gcpProject, gcpRegion, gcpZone, dryRun),
+		chartClient:                 chartClient,
+		helmClient:                  client,
 	}, nil
 }
 
@@ -274,6 +278,11 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 				continue
 			}
 			if !isLeader {
+				continue
+			}
+
+			if e.isMaintenanceExcludedPeriod() {
+				e.log.Info("Maintenance is disabled")
 				continue
 			}
 
@@ -349,4 +358,15 @@ func (e EventHandler) isNewLeader(currentLeaderStatus bool) (bool, error) {
 	}
 
 	return isLeader, nil
+}
+
+func (e EventHandler) isMaintenanceExcludedPeriod() bool {
+	today := time.Now()
+	for _, exclusionPeriod := range e.maintenanceExclusionPeriods {
+		if today.After(exclusionPeriod.Start) && today.Before(exclusionPeriod.End) {
+			return true
+		}
+	}
+
+	return false
 }

@@ -54,6 +54,9 @@ github:
     refresh_interval_mins: 60
 kubernetes:
     context: ""
+maintenance_exclusion:
+    enabled: true
+    file_path: /home/knorten/maintenance-exclusion-dates.json
 db_enc_key: # Set through env var KNORTEN_DB_ENC_KEY
 admin_group_id: f2816319-7db0-4061-8d0c-5ddbe232d60c
 session_key: # Set through env var KNORTEN_SESSION_KEY

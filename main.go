@@ -58,6 +58,11 @@ func main() {
 		log.WithError(err).Fatal("validating config")
 	}
 
+	maintenanceExclusionPeriods, err := config.LoadMaintenanceExclusionPeriods(cfg.MaintenanceExclusion)
+	if err != nil {
+		log.WithError(err).Fatal("loading maintenance exclusion periods")
+	}
+
 	dbClient, err := database.New(cfg.Postgres.ConnectionString(), cfg.DBEncKey, log.WithField("subsystem", "db"))
 	if err != nil {
 		log.WithError(err).Fatal("setting up database")
@@ -161,6 +166,7 @@ func main() {
 		cfg.Helm.AirflowChartVersion,
 		cfg.Helm.JupyterChartVersion,
 		cfg.TopLevelDomain,
+		maintenanceExclusionPeriods,
 		cfg.DryRun,
 		log.WithField("subsystem", "events"),
 	)

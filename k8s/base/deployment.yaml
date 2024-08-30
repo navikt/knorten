@@ -16,6 +16,7 @@ spec:
         app: knorten
       annotations:
         kubectl.kubernetes.io/default-container: knorten
+        reloader.stakater.com/auto: "true"
     spec:
       serviceAccountName: knorten
       containers:

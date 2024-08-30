@@ -58,7 +58,7 @@ func main() {
 		log.WithError(err).Fatal("validating config")
 	}
 
-	maintenanceExclusionPeriods, err := config.LoadMaintenanceExclusionPeriods(cfg.MaintenanceExclusion)
+	maintenanceExclusion, err := config.LoadMaintenanceExclusionPeriods(cfg.MaintenanceExclusionConfig)
 	if err != nil {
 		log.WithError(err).Fatal("loading maintenance exclusion periods")
 	}
@@ -166,7 +166,7 @@ func main() {
 		cfg.Helm.AirflowChartVersion,
 		cfg.Helm.JupyterChartVersion,
 		cfg.TopLevelDomain,
-		maintenanceExclusionPeriods,
+		maintenanceExclusion,
 		cfg.DryRun,
 		log.WithField("subsystem", "events"),
 	)
@@ -238,7 +238,7 @@ func main() {
 		cfg.DryRun,
 	))
 
-	err = api.New(router, dbClient, azureClient, log.WithField("subsystem", "api"), cfg.DryRun, cfg.GCP.Project, cfg.GCP.Zone, cfg.TopLevelDomain, maintenanceExclusionPeriods)
+	err = api.New(router, dbClient, azureClient, log.WithField("subsystem", "api"), cfg.DryRun, cfg.GCP.Project, cfg.GCP.Zone, cfg.TopLevelDomain, maintenanceExclusion)
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return

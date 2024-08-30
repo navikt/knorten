@@ -9,33 +9,33 @@ import (
 )
 
 type client struct {
-	azureClient                *auth.Azure
-	router                     *gin.Engine
-	repo                       *database.Repo
-	log                        *logrus.Entry
-	dryRun                     bool
-	gcpProject                 string
-	gcpZone                    string
-	topLevelDomain             string
-	maintenanceExcludedPeriods []config.MaintenanceExclusionPeriod
+	azureClient         *auth.Azure
+	router              *gin.Engine
+	repo                *database.Repo
+	log                 *logrus.Entry
+	dryRun              bool
+	gcpProject          string
+	gcpZone             string
+	topLevelDomain      string
+	maintenanceExcluded *config.MaintenanceExclusion
 }
 
-func New(router *gin.Engine, db *database.Repo, azureClient *auth.Azure, log *logrus.Entry, dryRun bool, project, zone, topLevelDomain string, maintenanceExcludedPeriods []config.MaintenanceExclusionPeriod) error {
+func New(router *gin.Engine, db *database.Repo, azureClient *auth.Azure, log *logrus.Entry, dryRun bool, project, zone, topLevelDomain string, maintenanceExcluded *config.MaintenanceExclusion) error {
 	router.Use(gin.Recovery())
 	router.Use(func(ctx *gin.Context) {
 		log.WithField("subsystem", "gin").Infof("%v %v %v", ctx.Request.Method, ctx.Request.URL.Path, ctx.Writer.Status())
 	})
 
 	api := client{
-		azureClient:                azureClient,
-		router:                     router,
-		repo:                       db,
-		log:                        log,
-		dryRun:                     dryRun,
-		gcpProject:                 project,
-		gcpZone:                    zone,
-		topLevelDomain:             topLevelDomain,
-		maintenanceExcludedPeriods: maintenanceExcludedPeriods,
+		azureClient:         azureClient,
+		router:              router,
+		repo:                db,
+		log:                 log,
+		dryRun:              dryRun,
+		gcpProject:          project,
+		gcpZone:             zone,
+		topLevelDomain:      topLevelDomain,
+		maintenanceExcluded: maintenanceExcluded,
 	}
 
 	api.setupAuthenticatedRoutes()
@@ -51,14 +51,4 @@ func (c *client) setupAuthenticatedRoutes() {
 	c.setupComputeRoutes()
 	c.setupSecretRoutes()
 	c.setupChartRoutes()
-}
-
-func (c *client) upgradesPausedStatus() *config.MaintenanceExclusionPeriod {
-	for _, mep := range c.maintenanceExcludedPeriods {
-		if mep.IsMaintenanceExcludedPeriod() {
-			return &mep
-		}
-	}
-
-	return nil
 }

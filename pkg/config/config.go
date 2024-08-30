@@ -29,22 +29,22 @@ type Loader interface {
 }
 
 type Config struct {
-	Oauth                Oauth                `yaml:"oauth"`
-	GCP                  GCP                  `yaml:"gcp"`
-	Cookies              Cookies              `yaml:"cookies"`
-	Helm                 Helm                 `yaml:"helm"`
-	Server               Server               `yaml:"server"`
-	Postgres             Postgres             `yaml:"postgres"`
-	Kubernetes           Kubernetes           `yaml:"kubernetes"`
-	Github               Github               `yaml:"github"`
-	DBEncKey             string               `yaml:"db_enc_key"`
-	AdminGroupID         string               `yaml:"admin_group_id"`
-	SessionKey           string               `yaml:"session_key"`
-	LoginPage            string               `yaml:"login_page"`
-	TopLevelDomain       string               `yaml:"top_level_domain"`
-	DryRun               bool                 `yaml:"dry_run"`
-	Debug                bool                 `yaml:"debug"`
-	MaintenanceExclusion MaintenanceExclusion `yaml:"maintenance_exclusion"`
+	Oauth                      Oauth                      `yaml:"oauth"`
+	GCP                        GCP                        `yaml:"gcp"`
+	Cookies                    Cookies                    `yaml:"cookies"`
+	Helm                       Helm                       `yaml:"helm"`
+	Server                     Server                     `yaml:"server"`
+	Postgres                   Postgres                   `yaml:"postgres"`
+	Kubernetes                 Kubernetes                 `yaml:"kubernetes"`
+	Github                     Github                     `yaml:"github"`
+	DBEncKey                   string                     `yaml:"db_enc_key"`
+	AdminGroupID               string                     `yaml:"admin_group_id"`
+	SessionKey                 string                     `yaml:"session_key"`
+	LoginPage                  string                     `yaml:"login_page"`
+	TopLevelDomain             string                     `yaml:"top_level_domain"`
+	DryRun                     bool                       `yaml:"dry_run"`
+	Debug                      bool                       `yaml:"debug"`
+	MaintenanceExclusionConfig MaintenanceExclusionConfig `yaml:"maintenance_exclusion"`
 }
 
 func (c Config) Validate() error {
@@ -229,9 +229,13 @@ func (k Kubernetes) Validate() error {
 	)
 }
 
-type MaintenanceExclusion struct {
+type MaintenanceExclusionConfig struct {
 	Enabled  bool   `yaml:"enabled"`
 	FilePath string `yaml:"file_path"`
+}
+
+type MaintenanceExclusion struct {
+	Periods []MaintenanceExclusionPeriod
 }
 
 type MaintenanceExclusionPeriod struct {
@@ -240,15 +244,21 @@ type MaintenanceExclusionPeriod struct {
 	End   time.Time `json:"end"`
 }
 
-func (m MaintenanceExclusionPeriod) IsMaintenanceExcludedPeriod() bool {
+func (me MaintenanceExclusion) CurrentExcludePeriod() *MaintenanceExclusionPeriod {
 	today := time.Now()
-	return today.After(m.Start) && today.Before(m.End)
+	for _, period := range me.Periods {
+		if today.After(period.Start) && today.Before(period.End) {
+			return &period
+		}
+	}
+
+	return nil
 }
 
-func LoadMaintenanceExclusionPeriods(maintenanceExclusion MaintenanceExclusion) ([]MaintenanceExclusionPeriod, error) {
+func LoadMaintenanceExclusionPeriods(maintenanceExclusionConfig MaintenanceExclusionConfig) (*MaintenanceExclusion, error) {
 	maintenanceExclusionPeriods := []MaintenanceExclusionPeriod{}
-	if maintenanceExclusion.Enabled && maintenanceExclusion.FilePath != "" {
-		fileContentBytes, err := os.ReadFile(maintenanceExclusion.FilePath)
+	if maintenanceExclusionConfig.Enabled && maintenanceExclusionConfig.FilePath != "" {
+		fileContentBytes, err := os.ReadFile(maintenanceExclusionConfig.FilePath)
 		if err != nil {
 			return nil, err
 		}
@@ -256,7 +266,7 @@ func LoadMaintenanceExclusionPeriods(maintenanceExclusion MaintenanceExclusion) 
 			return nil, err
 		}
 	}
-	return maintenanceExclusionPeriods, nil
+	return &MaintenanceExclusion{Periods: maintenanceExclusionPeriods}, nil
 }
 
 type FileParts struct {

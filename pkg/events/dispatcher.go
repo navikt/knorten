@@ -23,14 +23,14 @@ import (
 )
 
 type EventHandler struct {
-	repo                        database.Repository
-	maintenanceExclusionPeriods []config.MaintenanceExclusionPeriod
-	log                         *logrus.Entry
-	context                     context.Context
-	teamClient                  teamClient
-	userClient                  userClient
-	chartClient                 chartClient
-	helmClient                  helmClient
+	repo                 database.Repository
+	maintenanceExclusion *config.MaintenanceExclusion
+	log                  *logrus.Entry
+	context              context.Context
+	teamClient           teamClient
+	userClient           userClient
+	chartClient          chartClient
+	helmClient           helmClient
 }
 
 const (
@@ -215,7 +215,7 @@ func NewHandler(
 	saChecker gcpapi.ServiceAccountChecker,
 	client *helm.Client,
 	gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion, topLevelDomain string,
-	maintenanceExclusionPeriods []config.MaintenanceExclusionPeriod,
+	maintenanceExclusion *config.MaintenanceExclusion,
 	dryRun bool,
 	log *logrus.Entry,
 ) (EventHandler, error) {
@@ -242,14 +242,14 @@ func NewHandler(
 	}
 
 	return EventHandler{
-		repo:                        repo,
-		maintenanceExclusionPeriods: maintenanceExclusionPeriods,
-		log:                         log,
-		context:                     ctx,
-		teamClient:                  teamClient,
-		userClient:                  user.NewClient(repo, gcpProject, gcpRegion, gcpZone, dryRun),
-		chartClient:                 chartClient,
-		helmClient:                  client,
+		repo:                 repo,
+		maintenanceExclusion: maintenanceExclusion,
+		log:                  log,
+		context:              ctx,
+		teamClient:           teamClient,
+		userClient:           user.NewClient(repo, gcpProject, gcpRegion, gcpZone, dryRun),
+		chartClient:          chartClient,
+		helmClient:           client,
 	}, nil
 }
 
@@ -281,8 +281,8 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 				continue
 			}
 
-			if e.isMaintenanceExcludedPeriod() {
-				e.log.Info("Maintenance is disabled")
+			if e.isUpdatesPaused() {
+				e.log.Debug("Maintenance is disabled")
 				continue
 			}
 
@@ -360,13 +360,6 @@ func (e EventHandler) isNewLeader(currentLeaderStatus bool) (bool, error) {
 	return isLeader, nil
 }
 
-func (e EventHandler) isMaintenanceExcludedPeriod() bool {
-	today := time.Now()
-	for _, exclusionPeriod := range e.maintenanceExclusionPeriods {
-		if today.After(exclusionPeriod.Start) && today.Before(exclusionPeriod.End) {
-			return true
-		}
-	}
-
-	return false
+func (e EventHandler) isUpdatesPaused() bool {
+	return e.maintenanceExclusion.CurrentExcludePeriod() != nil
 }

@@ -87,7 +87,7 @@ func (c *client) setupTeamRoutes() {
 		ctx.HTML(http.StatusOK, "team/new", gin.H{
 			"form":                form,
 			"errors":              flashes,
-			"upgradePausedStatus": c.upgradesPausedStatus(),
+			"upgradePausedStatus": c.maintenanceExcluded.CurrentExcludePeriod(),
 			"loggedIn":            ctx.GetBool(middlewares.LoggedInKey),
 			"isAdmin":             ctx.GetBool(middlewares.AdminKey),
 		})
@@ -145,7 +145,7 @@ func (c *client) setupTeamRoutes() {
 		ctx.HTML(http.StatusOK, "team/edit", gin.H{
 			"team":                team,
 			"errors":              flashes,
-			"upgradePausedStatus": c.upgradesPausedStatus(),
+			"upgradePausedStatus": c.maintenanceExcluded.CurrentExcludePeriod(),
 			"loggedIn":            ctx.GetBool(middlewares.LoggedInKey),
 			"isAdmin":             ctx.GetBool(middlewares.AdminKey),
 		})
@@ -220,7 +220,7 @@ func (c *client) setupTeamRoutes() {
 			"events":              events,
 			"slug":                team.Slug,
 			"errors":              flashes,
-			"upgradePausedStatus": c.upgradesPausedStatus(),
+			"upgradePausedStatus": c.maintenanceExcluded.CurrentExcludePeriod(),
 			"loggedIn":            ctx.GetBool(middlewares.LoggedInKey),
 			"isAdmin":             ctx.GetBool(middlewares.AdminKey),
 		})

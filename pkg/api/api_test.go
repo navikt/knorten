@@ -116,7 +116,7 @@ func TestMain(m *testing.M) {
 		true,
 	))
 
-	err = New(router, repo, azureClient, logger, true, "", "", "test.io", []config.MaintenanceExclusionPeriod{})
+	err = New(router, repo, azureClient, logger, true, "", "", "test.io", &config.MaintenanceExclusion{Periods: []config.MaintenanceExclusionPeriod{}})
 	if err != nil {
 		log.Fatalf("setting up api: %v", err)
 	}

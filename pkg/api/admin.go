@@ -88,7 +88,7 @@ func (c *client) setupAdminRoutes() {
 			"errors":              flashes,
 			"teams":               teamApps,
 			"gcpProject":          c.gcpProject,
-			"upgradePausedStatus": c.upgradesPausedStatus(),
+			"upgradePausedStatus": c.maintenanceExcluded.CurrentExcludePeriod(),
 			"loggedIn":            ctx.GetBool(middlewares.LoggedInKey),
 			"isAdmin":             ctx.GetBool(middlewares.AdminKey),
 		})
@@ -125,7 +125,7 @@ func (c *client) setupAdminRoutes() {
 			"values":              values,
 			"errors":              flashes,
 			"chart":               string(chartType),
-			"upgradePausedStatus": c.upgradesPausedStatus(),
+			"upgradePausedStatus": c.maintenanceExcluded.CurrentExcludePeriod(),
 			"loggedIn":            ctx.GetBool(middlewares.LoggedInKey),
 			"isAdmin":             ctx.GetBool(middlewares.AdminKey),
 		})
@@ -201,7 +201,7 @@ func (c *client) setupAdminRoutes() {
 		ctx.HTML(http.StatusOK, "admin/confirm", gin.H{
 			"changedValues":       changedValues,
 			"chart":               string(chartType),
-			"upgradePausedStatus": c.upgradesPausedStatus(),
+			"upgradePausedStatus": c.maintenanceExcluded.CurrentExcludePeriod(),
 			"loggedIn":            ctx.GetBool(middlewares.LoggedInKey),
 			"isAdmin":             ctx.GetBool(middlewares.AdminKey),
 		})

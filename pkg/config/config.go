@@ -240,6 +240,11 @@ type MaintenanceExclusionPeriod struct {
 	End   time.Time `json:"end"`
 }
 
+func (m MaintenanceExclusionPeriod) IsMaintenanceExcludedPeriod() bool {
+	today := time.Now()
+	return today.After(m.Start) && today.Before(m.End)
+}
+
 func LoadMaintenanceExclusionPeriods(maintenanceExclusion MaintenanceExclusion) ([]MaintenanceExclusionPeriod, error) {
 	maintenanceExclusionPeriods := []MaintenanceExclusionPeriod{}
 	if maintenanceExclusion.Enabled && maintenanceExclusion.FilePath != "" {

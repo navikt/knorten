@@ -149,11 +149,12 @@ func (c *client) setupChartRoutes() {
 		}
 
 		ctx.HTML(http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
-			"team":     slug,
-			"form":     form,
-			"errors":   flashes,
-			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
+			"team":                slug,
+			"form":                form,
+			"errors":              flashes,
+			"upgradePausedStatus": c.upgradesPausedStatus(),
+			"loggedIn":            ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":             ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -228,11 +229,12 @@ func (c *client) setupChartRoutes() {
 		}
 
 		ctx.HTML(http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
-			"team":     teamSlug,
-			"values":   form,
-			"errors":   flashes,
-			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
+			"team":                teamSlug,
+			"values":              form,
+			"errors":              flashes,
+			"upgradePausedStatus": c.upgradesPausedStatus(),
+			"loggedIn":            ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":             ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 

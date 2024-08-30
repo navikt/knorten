@@ -85,11 +85,12 @@ func (c *client) setupAdminRoutes() {
 		}
 
 		ctx.HTML(http.StatusOK, "admin/index", gin.H{
-			"errors":     flashes,
-			"teams":      teamApps,
-			"gcpProject": c.gcpProject,
-			"loggedIn":   ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":    ctx.GetBool(middlewares.AdminKey),
+			"errors":              flashes,
+			"teams":               teamApps,
+			"gcpProject":          c.gcpProject,
+			"upgradePausedStatus": c.upgradesPausedStatus(),
+			"loggedIn":            ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":             ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -121,11 +122,12 @@ func (c *client) setupAdminRoutes() {
 		}
 
 		ctx.HTML(http.StatusOK, "admin/chart", gin.H{
-			"values":   values,
-			"errors":   flashes,
-			"chart":    string(chartType),
-			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
+			"values":              values,
+			"errors":              flashes,
+			"chart":               string(chartType),
+			"upgradePausedStatus": c.upgradesPausedStatus(),
+			"loggedIn":            ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":             ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -197,10 +199,11 @@ func (c *client) setupAdminRoutes() {
 		}
 
 		ctx.HTML(http.StatusOK, "admin/confirm", gin.H{
-			"changedValues": changedValues,
-			"chart":         string(chartType),
-			"loggedIn":      ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":       ctx.GetBool(middlewares.AdminKey),
+			"changedValues":       changedValues,
+			"chart":               string(chartType),
+			"upgradePausedStatus": c.upgradesPausedStatus(),
+			"loggedIn":            ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":             ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/navikt/knorten/pkg/config"
 	"github.com/navikt/knorten/pkg/database/gensql"
 )
 
@@ -176,28 +177,20 @@ func (r *Repo) EventsReset(ctx context.Context) error {
 	return r.querier.EventsReset(ctx)
 }
 
-func (r *Repo) DispatchableEventsGet(ctx context.Context, pauseAirflowEvents bool) ([]gensql.Event, error) {
+func (r *Repo) DispatchableEventsGet(ctx context.Context, maintenanceExclusionPeriod *config.MaintenanceExclusionPeriod) ([]gensql.Event, error) {
 	processingEvents, err := r.querier.EventsProcessingGet(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var upcomingEvents []gensql.Event
-	if pauseAirflowEvents {
-		upcomingEvents, err = r.querier.EventsUpcomingExcludingAirflowGet(ctx)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		upcomingEvents, err = r.querier.EventsUpcomingGet(ctx)
-		if err != nil {
-			return nil, err
-		}
+	upcomingEvents, err := r.querier.EventsUpcomingGet(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	var dispatchableEvents []gensql.Event
 	for _, upcomingEvent := range upcomingEvents {
-		if isEventDispatchable(processingEvents, dispatchableEvents, upcomingEvent) {
+		if isEventDispatchable(processingEvents, dispatchableEvents, upcomingEvent, maintenanceExclusionPeriod) {
 			dispatchableEvents = append(dispatchableEvents, upcomingEvent)
 		}
 	}
@@ -205,7 +198,10 @@ func (r *Repo) DispatchableEventsGet(ctx context.Context, pauseAirflowEvents boo
 	return dispatchableEvents, nil
 }
 
-func isEventDispatchable(processingEvents, dispatchableEvents []gensql.Event, upcoming gensql.Event) bool {
+func isEventDispatchable(processingEvents, dispatchableEvents []gensql.Event, upcoming gensql.Event, maintenanceExclusionPeriod *config.MaintenanceExclusionPeriod) bool {
+	if isUpgradesPausedForTeam(upcoming, maintenanceExclusionPeriod) {
+		return false
+	}
 	if containsEvent(dispatchableEvents, upcoming) {
 		return false
 	}
@@ -214,6 +210,19 @@ func isEventDispatchable(processingEvents, dispatchableEvents []gensql.Event, up
 	}
 
 	return true
+}
+
+func isUpgradesPausedForTeam(event gensql.Event, maintenanceExclusionPeriod *config.MaintenanceExclusionPeriod) bool {
+	if maintenanceExclusionPeriod == nil || event.Owner != maintenanceExclusionPeriod.Team {
+		return false
+	}
+
+	switch event.Type {
+	case string(EventTypeCreateAirflow), string(EventTypeUpdateAirflow), string(EventTypeHelmRolloutAirflow), string(EventTypeHelmRollbackAirflow):
+		return true
+	default:
+		return false
+	}
 }
 
 func containsEvent(events []gensql.Event, new gensql.Event) bool {

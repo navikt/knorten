@@ -70,12 +70,12 @@
     {{ if .upgradePausedStatus }}
         <article class="bg-white rounded-md p-4">
             <h2 class="pb-4">⛔ Oppgraderinger av Airflow er satt på pause!</h2>
-            <p class="flex items-center gap-4 pb-4">
-                Gjelder fra {{ .upgradePausedStatus.Name }}.
+            <p class="pb-4">
+                Gjelder for team <strong> {{ .upgradePausedStatus.Team }} </strong> fra {{ .upgradePausedStatus.Name }}.
             </p>
             <p>
                 Se <a class="navds-link" href="/maintenance-exclusion">her</a> for oversikt over alle planlagte perioder
-                hvor Airflow oppgraderinger settes på pause.
+                hvor Airflow oppgraderinger settes på pause for dine team.
             </p>
         </article>
     {{ end }}

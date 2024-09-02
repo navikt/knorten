@@ -6,7 +6,7 @@
             <div>
                 <ul class="list-disc pl-6 gap-2">
                     {{ range .airflowUpgradesPausedPeriods }}
-                    <li>Fra {{ .Name }}</li>
+                    <li>Team <strong>{{ .Team }}</strong> - fra {{ .Name }}</li>
                     {{ end }}
                 </ul>
             </div>

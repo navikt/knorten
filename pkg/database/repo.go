@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
+	"github.com/navikt/knorten/pkg/config"
 	"github.com/navikt/knorten/pkg/database/crypto"
 	"github.com/navikt/knorten/pkg/database/gensql"
 	"github.com/pressly/goose/v3"
@@ -27,7 +28,7 @@ var embedMigrations embed.FS
 type Repository interface {
 	EventSetStatus(context.Context, uuid.UUID, EventStatus) error
 	EventIncrementRetryCount(context.Context, uuid.UUID) error
-	DispatchableEventsGet(context.Context, bool) ([]gensql.Event, error)
+	DispatchableEventsGet(context.Context, *config.MaintenanceExclusionPeriod) ([]gensql.Event, error)
 	EventsReset(context.Context) error
 	EventLogCreate(context.Context, uuid.UUID, string, LogType) error
 }

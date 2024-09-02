@@ -240,6 +240,7 @@ type MaintenanceExclusion struct {
 
 type MaintenanceExclusionPeriod struct {
 	Name  string    `json:"name"`
+	Team  string    `json:"team"`
 	Start time.Time `json:"start"`
 	End   time.Time `json:"end"`
 }
@@ -253,6 +254,27 @@ func (me MaintenanceExclusion) CurrentExcludePeriod() *MaintenanceExclusionPerio
 	}
 
 	return nil
+}
+
+func (me MaintenanceExclusion) MaintenanceExclusionPeriodsForTeams(teams []string) []*MaintenanceExclusionPeriod {
+	periods := []*MaintenanceExclusionPeriod{}
+	for _, period := range me.Periods {
+		if contains(teams, period.Team) {
+			periods = append(periods, &period)
+		}
+	}
+
+	return periods
+}
+
+func contains(slice []string, elem string) bool {
+	for _, e := range slice {
+		if e == elem {
+			return true
+		}
+	}
+
+	return false
 }
 
 func LoadAirflowUpgradesPausedPeriods(maintenanceExclusionConfig MaintenanceExclusionConfig) (*MaintenanceExclusion, error) {

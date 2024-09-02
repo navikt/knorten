@@ -148,7 +148,7 @@ func TestRepo_DispatchableEventsGet(t *testing.T) {
 				}
 			})
 
-			events, err := repo.DispatchableEventsGet(ctx, tt.args.airflowEventsPaused)
+			events, err := repo.DispatchableEventsGet(ctx, nil)
 			if err != nil {
 				t.Error(err)
 			}

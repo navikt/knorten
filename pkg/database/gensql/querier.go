@@ -26,7 +26,6 @@ type Querier interface {
 	EventsGetType(ctx context.Context, eventType string) ([]Event, error)
 	EventsProcessingGet(ctx context.Context) ([]Event, error)
 	EventsReset(ctx context.Context) error
-	EventsUpcomingExcludingAirflowGet(ctx context.Context) ([]Event, error)
 	EventsUpcomingGet(ctx context.Context) ([]Event, error)
 	GlobalValueDelete(ctx context.Context, arg GlobalValueDeleteParams) error
 	GlobalValueGet(ctx context.Context, arg GlobalValueGetParams) (ChartGlobalValue, error)

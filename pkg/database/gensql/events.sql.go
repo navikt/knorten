@@ -275,51 +275,6 @@ func (q *Queries) EventsReset(ctx context.Context) error {
 	return err
 }
 
-const eventsUpcomingExcludingAirflowGet = `-- name: EventsUpcomingExcludingAirflowGet :many
-SELECT id, type, payload, status, deadline, created_at, updated_at, owner, retry_count
-FROM Events
-WHERE NOT (type = ANY('{create:airflow,update:airflow,rolloutAirflow:helm,rollbackAirflow:helm}'))
-AND (
-   status = 'new'
-   OR status = 'pending'
-   OR status = 'deadline_reached'
-)
-ORDER BY created_at ASC
-`
-
-func (q *Queries) EventsUpcomingExcludingAirflowGet(ctx context.Context) ([]Event, error) {
-	rows, err := q.db.QueryContext(ctx, eventsUpcomingExcludingAirflowGet)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []Event{}
-	for rows.Next() {
-		var i Event
-		if err := rows.Scan(
-			&i.ID,
-			&i.Type,
-			&i.Payload,
-			&i.Status,
-			&i.Deadline,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.Owner,
-			&i.RetryCount,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const eventsUpcomingGet = `-- name: EventsUpcomingGet :many
 SELECT id, type, payload, status, deadline, created_at, updated_at, owner, retry_count
 FROM Events

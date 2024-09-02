@@ -281,7 +281,7 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 				continue
 			}
 
-			events, err := e.repo.DispatchableEventsGet(e.context, e.isAirflowUpgradesPaused())
+			events, err := e.repo.DispatchableEventsGet(e.context, e.pauseAirflowUpgrades.CurrentExcludePeriod())
 			if err != nil {
 				e.log.WithError(err).Error("failed to fetch events")
 				continue

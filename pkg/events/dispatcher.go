@@ -281,12 +281,13 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 				continue
 			}
 
+			pauseAirflowEvents := false
 			if e.isUpdatesPaused() {
-				e.log.Debug("Maintenance is disabled")
-				continue
+				pauseAirflowEvents = true
+				e.log.Debug("Airflow events are paused")
 			}
 
-			events, err := e.repo.DispatchableEventsGet(e.context)
+			events, err := e.repo.DispatchableEventsGet(e.context, pauseAirflowEvents)
 			if err != nil {
 				e.log.WithError(err).Error("failed to fetch events")
 				continue

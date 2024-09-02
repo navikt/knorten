@@ -176,15 +176,23 @@ func (r *Repo) EventsReset(ctx context.Context) error {
 	return r.querier.EventsReset(ctx)
 }
 
-func (r *Repo) DispatchableEventsGet(ctx context.Context) ([]gensql.Event, error) {
+func (r *Repo) DispatchableEventsGet(ctx context.Context, pauseAirflowEvents bool) ([]gensql.Event, error) {
 	processingEvents, err := r.querier.EventsProcessingGet(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	upcomingEvents, err := r.querier.EventsUpcomingGet(ctx)
-	if err != nil {
-		return nil, err
+	upcomingEvents := []gensql.Event{}
+	if pauseAirflowEvents {
+		upcomingEvents, err = r.querier.EventsUpcomingExcludingAirflowGet(ctx)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		upcomingEvents, err = r.querier.EventsUpcomingGet(ctx)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var dispatchableEvents []gensql.Event

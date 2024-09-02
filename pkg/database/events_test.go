@@ -100,7 +100,7 @@ func TestRepo_DispatchableEventsGet(t *testing.T) {
 				}
 			})
 
-			events, err := repo.DispatchableEventsGet(ctx)
+			events, err := repo.DispatchableEventsGet(ctx, false)
 			if err != nil {
 				t.Error(err)
 			}

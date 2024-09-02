@@ -182,7 +182,7 @@ func (r *Repo) DispatchableEventsGet(ctx context.Context, pauseAirflowEvents boo
 		return nil, err
 	}
 
-	upcomingEvents := []gensql.Event{}
+	var upcomingEvents []gensql.Event
 	if pauseAirflowEvents {
 		upcomingEvents, err = r.querier.EventsUpcomingExcludingAirflowGet(ctx)
 		if err != nil {

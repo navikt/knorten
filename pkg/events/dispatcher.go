@@ -354,7 +354,3 @@ func (e EventHandler) isNewLeader(currentLeaderStatus bool) (bool, error) {
 
 	return isLeader, nil
 }
-
-func (e EventHandler) isAirflowUpgradesPaused() bool {
-	return e.pauseAirflowUpgrades.CurrentExcludePeriod() != nil
-}

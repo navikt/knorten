@@ -25,7 +25,7 @@ func (r *RepoMock) DispatcherEventsGet(ctx context.Context) ([]gensql.Event, err
 	return nil, nil
 }
 
-func (r *RepoMock) DispatchableEventsGet(ctx context.Context) ([]gensql.Event, error) {
+func (r *RepoMock) DispatchableEventsGet(ctx context.Context, pauseAirflowEvents bool) ([]gensql.Event, error) {
 	return nil, nil
 }
 

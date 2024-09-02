@@ -1,0 +1,16 @@
+{{ define "maintenance-exclusion/list" }}
+    {{ template "head" . }}
+    <article class="bg-white rounded-md p-4">
+        <div class="flex flex-col gap-4">
+            <label for="machine_types" class="navds-form-field__label navds-label">Tidspunkter hvor oppgraderinger av Airflow er satt på pause</label>
+            <div>
+                <ul class="list-disc pl-6 gap-2">
+                    {{ range .maintenanceExclusionPeriods }}
+                    <li>Fra {{ .Name }}</li>
+                    {{ end }}
+                </ul>
+            </div>
+        </div>
+    </article>
+    {{ template "footer" }}
+{{ end }}

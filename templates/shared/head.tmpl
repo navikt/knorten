@@ -69,13 +69,13 @@
     <section class="w-full md:w-[64rem] flex flex-col gap-4 p-4"> {{/* main section start */}}
     {{ if .upgradePausedStatus }}
         <article class="bg-white rounded-md p-4">
-            <h2 class="pb-4">⛔ Oppdateringer av tjenester er stoppet!</h2>
+            <h2 class="pb-4">⛔ Oppgraderinger av Airflow er satt på pause!</h2>
             <p class="flex items-center gap-4 pb-4">
                 Gjelder fra {{ .upgradePausedStatus.Name }}.
             </p>
             <p>
                 Se <a class="navds-link" href="/maintenance-exclusion">her</a> for oversikt over alle planlagte perioder
-                hvor vi setter oppdateringer på pause.
+                hvor Airflow oppgraderinger settes på pause.
             </p>
         </article>
     {{ end }}

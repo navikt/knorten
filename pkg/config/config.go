@@ -255,18 +255,18 @@ func (me MaintenanceExclusion) CurrentExcludePeriod() *MaintenanceExclusionPerio
 	return nil
 }
 
-func LoadMaintenanceExclusionPeriods(maintenanceExclusionConfig MaintenanceExclusionConfig) (*MaintenanceExclusion, error) {
-	maintenanceExclusionPeriods := []MaintenanceExclusionPeriod{}
+func LoadAirflowUpgradesPausedPeriods(maintenanceExclusionConfig MaintenanceExclusionConfig) (*MaintenanceExclusion, error) {
+	airflowUpgradesPausedPeriods := []MaintenanceExclusionPeriod{}
 	if maintenanceExclusionConfig.Enabled && maintenanceExclusionConfig.FilePath != "" {
 		fileContentBytes, err := os.ReadFile(maintenanceExclusionConfig.FilePath)
 		if err != nil {
 			return nil, err
 		}
-		if err := json.Unmarshal(fileContentBytes, &maintenanceExclusionPeriods); err != nil {
+		if err := json.Unmarshal(fileContentBytes, &airflowUpgradesPausedPeriods); err != nil {
 			return nil, err
 		}
 	}
-	return &MaintenanceExclusion{Periods: maintenanceExclusionPeriods}, nil
+	return &MaintenanceExclusion{Periods: airflowUpgradesPausedPeriods}, nil
 }
 
 type FileParts struct {

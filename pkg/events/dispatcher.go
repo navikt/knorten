@@ -24,7 +24,7 @@ import (
 
 type EventHandler struct {
 	repo                 database.Repository
-	maintenanceExclusion *config.MaintenanceExclusion
+	pauseAirflowUpgrades *config.MaintenanceExclusion
 	log                  *logrus.Entry
 	context              context.Context
 	teamClient           teamClient
@@ -215,7 +215,7 @@ func NewHandler(
 	saChecker gcpapi.ServiceAccountChecker,
 	client *helm.Client,
 	gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion, topLevelDomain string,
-	maintenanceExclusion *config.MaintenanceExclusion,
+	airflowUpgradesPaused *config.MaintenanceExclusion,
 	dryRun bool,
 	log *logrus.Entry,
 ) (EventHandler, error) {
@@ -243,7 +243,7 @@ func NewHandler(
 
 	return EventHandler{
 		repo:                 repo,
-		maintenanceExclusion: maintenanceExclusion,
+		pauseAirflowUpgrades: airflowUpgradesPaused,
 		log:                  log,
 		context:              ctx,
 		teamClient:           teamClient,
@@ -281,13 +281,7 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 				continue
 			}
 
-			pauseAirflowEvents := false
-			if e.isUpdatesPaused() {
-				pauseAirflowEvents = true
-				e.log.Debug("Airflow events are paused")
-			}
-
-			events, err := e.repo.DispatchableEventsGet(e.context, pauseAirflowEvents)
+			events, err := e.repo.DispatchableEventsGet(e.context, e.isAirflowUpgradesPaused())
 			if err != nil {
 				e.log.WithError(err).Error("failed to fetch events")
 				continue
@@ -361,6 +355,6 @@ func (e EventHandler) isNewLeader(currentLeaderStatus bool) (bool, error) {
 	return isLeader, nil
 }
 
-func (e EventHandler) isUpdatesPaused() bool {
-	return e.maintenanceExclusion.CurrentExcludePeriod() != nil
+func (e EventHandler) isAirflowUpgradesPaused() bool {
+	return e.pauseAirflowUpgrades.CurrentExcludePeriod() != nil
 }

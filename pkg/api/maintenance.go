@@ -10,9 +10,9 @@ import (
 func (c *client) setupMaintenanceExclusionRoutes() {
 	c.router.GET("/maintenance-exclusion", func(ctx *gin.Context) {
 		ctx.HTML(http.StatusOK, "maintenance-exclusion/list", gin.H{
-			"maintenanceExclusionPeriods": c.maintenanceExcluded.Periods,
-			"loggedIn":                    ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":                     ctx.GetBool(middlewares.AdminKey),
+			"airflowUpgradesPausedPeriods": c.airflowUpgradesPaused.Periods,
+			"loggedIn":                     ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":                      ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 }

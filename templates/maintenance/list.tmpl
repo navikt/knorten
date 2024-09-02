@@ -5,7 +5,7 @@
             <label for="machine_types" class="navds-form-field__label navds-label">Tidspunkter hvor oppgraderinger av Airflow settes på pause</label>
             <div>
                 <ul class="list-disc pl-6 gap-2">
-                    {{ range .maintenanceExclusionPeriods }}
+                    {{ range .airflowUpgradesPausedPeriods }}
                     <li>Fra {{ .Name }}</li>
                     {{ end }}
                 </ul>

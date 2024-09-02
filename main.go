@@ -58,9 +58,9 @@ func main() {
 		log.WithError(err).Fatal("validating config")
 	}
 
-	maintenanceExclusion, err := config.LoadMaintenanceExclusionPeriods(cfg.MaintenanceExclusionConfig)
+	pauseAirflowUpgradesPeriods, err := config.LoadAirflowUpgradesPausedPeriods(cfg.MaintenanceExclusionConfig)
 	if err != nil {
-		log.WithError(err).Fatal("loading maintenance exclusion periods")
+		log.WithError(err).Fatal("loading airflow upgrades paused periods")
 	}
 
 	dbClient, err := database.New(cfg.Postgres.ConnectionString(), cfg.DBEncKey, log.WithField("subsystem", "db"))
@@ -166,7 +166,7 @@ func main() {
 		cfg.Helm.AirflowChartVersion,
 		cfg.Helm.JupyterChartVersion,
 		cfg.TopLevelDomain,
-		maintenanceExclusion,
+		pauseAirflowUpgradesPeriods,
 		cfg.DryRun,
 		log.WithField("subsystem", "events"),
 	)
@@ -238,7 +238,7 @@ func main() {
 		cfg.DryRun,
 	))
 
-	err = api.New(router, dbClient, azureClient, log.WithField("subsystem", "api"), cfg.DryRun, cfg.GCP.Project, cfg.GCP.Zone, cfg.TopLevelDomain, maintenanceExclusion)
+	err = api.New(router, dbClient, azureClient, log.WithField("subsystem", "api"), cfg.DryRun, cfg.GCP.Project, cfg.GCP.Zone, cfg.TopLevelDomain, pauseAirflowUpgradesPeriods)
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return

@@ -37,6 +37,17 @@ WHERE status = 'new'
    OR status = 'deadline_reached'
 ORDER BY created_at ASC;
 
+-- name: EventsUpcomingExcludingAirflowGet :many
+SELECT *
+FROM Events
+WHERE NOT (type = ANY('{create:airflow,update:airflow,rolloutAirflow:helm,rollbackAirflow:helm}'))
+AND (
+   status = 'new'
+   OR status = 'pending'
+   OR status = 'deadline_reached'
+)
+ORDER BY created_at ASC;
+
 -- name: EventsGetType :many
 SELECT *
 FROM Events

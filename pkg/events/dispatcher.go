@@ -352,8 +352,8 @@ func (e EventHandler) getDispatchableEvents() ([]gensql.Event, error) {
 func (e EventHandler) omitAirflowEventsIfUpgradesPaused(in []gensql.Event) []gensql.Event {
 	out := []gensql.Event{}
 	for _, event := range in {
-		switch event.Type {
-		case string(database.EventTypeCreateAirflow), string(database.EventTypeUpdateAirflow), string(database.EventTypeHelmRolloutAirflow), string(database.EventTypeHelmRollbackAirflow):
+		switch database.EventType(event.Type) {
+		case database.EventTypeCreateAirflow, database.EventTypeUpdateAirflow, database.EventTypeHelmRolloutAirflow, database.EventTypeHelmRollbackAirflow:
 			if e.maintenanceExclusionConfig.ActiveExcludePeriodForTeam(event.Owner) != nil {
 				continue
 			}

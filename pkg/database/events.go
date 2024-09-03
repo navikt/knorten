@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/navikt/knorten/pkg/database/gensql"
-	"github.com/navikt/knorten/pkg/maintenance"
 )
 
 type EventType string
@@ -207,19 +206,6 @@ func isEventDispatchable(processingEvents, dispatchableEvents []gensql.Event, up
 	}
 
 	return true
-}
-
-func isUpgradesPausedForTeam(event gensql.Event, maintenanceExclusionPeriod *maintenance.MaintenanceExclusionPeriod) bool {
-	if maintenanceExclusionPeriod == nil || event.Owner != maintenanceExclusionPeriod.Team {
-		return false
-	}
-
-	switch event.Type {
-	case string(EventTypeCreateAirflow), string(EventTypeUpdateAirflow), string(EventTypeHelmRolloutAirflow), string(EventTypeHelmRollbackAirflow):
-		return true
-	default:
-		return false
-	}
 }
 
 func containsEvent(events []gensql.Event, new gensql.Event) bool {

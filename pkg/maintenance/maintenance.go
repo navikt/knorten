@@ -71,13 +71,3 @@ func (me MaintenanceExclusion) ExclusionPeriodsForTeams(teams []string) []*Maint
 
 	return periods
 }
-
-func contains(slice []string, elem string) bool {
-	for _, e := range slice {
-		if e == elem {
-			return true
-		}
-	}
-
-	return false
-}

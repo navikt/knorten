@@ -42,7 +42,7 @@ func (c *client) setupUserRoutes() {
 			"user":                  services,
 			"gcpProject":            c.gcpProject,
 			"gcpZone":               c.gcpZone,
-			"upgradePausedStatuses": c.airflowUpgradesPaused.ActiveExcludePeriodForTeams(teams),
+			"upgradePausedStatuses": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams(teams),
 			"loggedIn":              ctx.GetBool(middlewares.LoggedInKey),
 			"isAdmin":               ctx.GetBool(middlewares.AdminKey),
 		})

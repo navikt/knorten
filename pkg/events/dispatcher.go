@@ -23,14 +23,14 @@ import (
 )
 
 type EventHandler struct {
-	repo                 database.Repository
-	pauseAirflowUpgrades *maintenance.MaintenanceExclusion
-	log                  *logrus.Entry
-	context              context.Context
-	teamClient           teamClient
-	userClient           userClient
-	chartClient          chartClient
-	helmClient           helmClient
+	repo                       database.Repository
+	maintenanceExclusionConfig *maintenance.MaintenanceExclusion
+	log                        *logrus.Entry
+	context                    context.Context
+	teamClient                 teamClient
+	userClient                 userClient
+	chartClient                chartClient
+	helmClient                 helmClient
 }
 
 const (
@@ -215,7 +215,7 @@ func NewHandler(
 	saChecker gcpapi.ServiceAccountChecker,
 	client *helm.Client,
 	gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion, topLevelDomain string,
-	airflowUpgradesPaused *maintenance.MaintenanceExclusion,
+	maintenanceExclusionConfig *maintenance.MaintenanceExclusion,
 	dryRun bool,
 	log *logrus.Entry,
 ) (EventHandler, error) {
@@ -242,14 +242,14 @@ func NewHandler(
 	}
 
 	return EventHandler{
-		repo:                 repo,
-		pauseAirflowUpgrades: airflowUpgradesPaused,
-		log:                  log,
-		context:              ctx,
-		teamClient:           teamClient,
-		userClient:           user.NewClient(repo, gcpProject, gcpRegion, gcpZone, dryRun),
-		chartClient:          chartClient,
-		helmClient:           client,
+		repo:                       repo,
+		maintenanceExclusionConfig: maintenanceExclusionConfig,
+		log:                        log,
+		context:                    ctx,
+		teamClient:                 teamClient,
+		userClient:                 user.NewClient(repo, gcpProject, gcpRegion, gcpZone, dryRun),
+		chartClient:                chartClient,
+		helmClient:                 client,
 	}, nil
 }
 
@@ -346,19 +346,21 @@ func (e EventHandler) getDispatchableEvents() ([]gensql.Event, error) {
 		return nil, err
 	}
 
-	return e.omitUpgradePausedEvents(dispatchableEvents), nil
+	return e.omitAirflowEventsIfUpgradesPaused(dispatchableEvents), nil
 }
 
-func (e EventHandler) omitUpgradePausedEvents(in []gensql.Event) []gensql.Event {
+func (e EventHandler) omitAirflowEventsIfUpgradesPaused(in []gensql.Event) []gensql.Event {
 	out := []gensql.Event{}
 	for _, event := range in {
 		switch event.Type {
 		case string(database.EventTypeCreateAirflow), string(database.EventTypeUpdateAirflow), string(database.EventTypeHelmRolloutAirflow), string(database.EventTypeHelmRollbackAirflow):
-			if e.pauseAirflowUpgrades.ActiveExcludePeriodForTeam(event.Owner) != nil {
+			if e.maintenanceExclusionConfig.ActiveExcludePeriodForTeam(event.Owner) != nil {
 				continue
 			}
+			fallthrough
+		default:
+			out = append(out, event)
 		}
-		out = append(out, event)
 	}
 
 	return out

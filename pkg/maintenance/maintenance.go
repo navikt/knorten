@@ -19,7 +19,7 @@ type MaintenanceExclusionPeriod struct {
 	End   time.Time `json:"end"`
 }
 
-func LoadAirflowUpgradesPausedPeriods(maintenanceExclusionConfig config.MaintenanceExclusionConfig) (*MaintenanceExclusion, error) {
+func LoadMaintenanceExclusionConfig(maintenanceExclusionConfig config.MaintenanceExclusionConfig) (*MaintenanceExclusion, error) {
 	airflowUpgradesPausedPeriods := []*MaintenanceExclusionPeriod{}
 	if maintenanceExclusionConfig.Enabled && maintenanceExclusionConfig.FilePath != "" {
 		fileContentBytes, err := os.ReadFile(maintenanceExclusionConfig.FilePath)

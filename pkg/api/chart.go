@@ -165,7 +165,7 @@ func (c *client) setupChartRoutes() {
 			"team":                  slug,
 			"form":                  form,
 			"errors":                flashes,
-			"upgradePausedStatuses": c.airflowUpgradesPaused.ActiveExcludePeriodForTeams([]string{team.ID}),
+			"upgradePausedStatuses": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams([]string{team.ID}),
 			"loggedIn":              ctx.GetBool(middlewares.LoggedInKey),
 			"isAdmin":               ctx.GetBool(middlewares.AdminKey),
 		})
@@ -245,7 +245,7 @@ func (c *client) setupChartRoutes() {
 			"team":                  teamSlug,
 			"values":                form,
 			"errors":                flashes,
-			"upgradePausedStatuses": c.airflowUpgradesPaused.ActiveExcludePeriodForTeams([]string{teamID}),
+			"upgradePausedStatuses": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams([]string{teamID}),
 			"loggedIn":              ctx.GetBool(middlewares.LoggedInKey),
 			"isAdmin":               ctx.GetBool(middlewares.AdminKey),
 		})

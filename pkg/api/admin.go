@@ -85,12 +85,12 @@ func (c *client) setupAdminRoutes() {
 		}
 
 		ctx.HTML(http.StatusOK, "admin/index", gin.H{
-			"errors":     flashes,
-			"teams":      teamApps,
-			"gcpProject": c.gcpProject,
-			//"upgradePausedStatus": c.airflowUpgradesPaused.ActiveExcludePeriodForTeams(),
-			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
+			"errors":                flashes,
+			"teams":                 teamApps,
+			"gcpProject":            c.gcpProject,
+			"upgradePausedStatuses": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams(getTeamIDs(teams)),
+			"loggedIn":              ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":               ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -122,10 +122,9 @@ func (c *client) setupAdminRoutes() {
 		}
 
 		ctx.HTML(http.StatusOK, "admin/chart", gin.H{
-			"values": values,
-			"errors": flashes,
-			"chart":  string(chartType),
-			//"upgradePausedStatus": c.airflowUpgradesPaused.CurrentExcludePeriod(),
+			"values":   values,
+			"errors":   flashes,
+			"chart":    string(chartType),
 			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
 			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
@@ -201,9 +200,8 @@ func (c *client) setupAdminRoutes() {
 		ctx.HTML(http.StatusOK, "admin/confirm", gin.H{
 			"changedValues": changedValues,
 			"chart":         string(chartType),
-			//"upgradePausedStatus": c.airflowUpgradesPaused.CurrentExcludePeriod(),
-			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
+			"loggedIn":      ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":       ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -601,4 +599,12 @@ func (c *client) setEventStatus(ctx *gin.Context) error {
 	}
 
 	return c.repo.EventSetStatus(ctx, eventID, status)
+}
+
+func getTeamIDs(teams []gensql.Team) []string {
+	teamIDs := []string{}
+	for _, t := range teams {
+		teamIDs = append(teamIDs, t.ID)
+	}
+	return teamIDs
 }

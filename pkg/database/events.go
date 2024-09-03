@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/navikt/knorten/pkg/config"
 	"github.com/navikt/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/maintenance"
 )
 
 type EventType string
@@ -177,7 +177,7 @@ func (r *Repo) EventsReset(ctx context.Context) error {
 	return r.querier.EventsReset(ctx)
 }
 
-func (r *Repo) DispatchableEventsGet(ctx context.Context, maintenanceExclusionPeriod *config.MaintenanceExclusionPeriod) ([]gensql.Event, error) {
+func (r *Repo) DispatchableEventsGet(ctx context.Context) ([]gensql.Event, error) {
 	processingEvents, err := r.querier.EventsProcessingGet(ctx)
 	if err != nil {
 		return nil, err
@@ -190,7 +190,7 @@ func (r *Repo) DispatchableEventsGet(ctx context.Context, maintenanceExclusionPe
 
 	var dispatchableEvents []gensql.Event
 	for _, upcomingEvent := range upcomingEvents {
-		if isEventDispatchable(processingEvents, dispatchableEvents, upcomingEvent, maintenanceExclusionPeriod) {
+		if isEventDispatchable(processingEvents, dispatchableEvents, upcomingEvent) {
 			dispatchableEvents = append(dispatchableEvents, upcomingEvent)
 		}
 	}
@@ -198,10 +198,7 @@ func (r *Repo) DispatchableEventsGet(ctx context.Context, maintenanceExclusionPe
 	return dispatchableEvents, nil
 }
 
-func isEventDispatchable(processingEvents, dispatchableEvents []gensql.Event, upcoming gensql.Event, maintenanceExclusionPeriod *config.MaintenanceExclusionPeriod) bool {
-	if isUpgradesPausedForTeam(upcoming, maintenanceExclusionPeriod) {
-		return false
-	}
+func isEventDispatchable(processingEvents, dispatchableEvents []gensql.Event, upcoming gensql.Event) bool {
 	if containsEvent(dispatchableEvents, upcoming) {
 		return false
 	}
@@ -212,7 +209,7 @@ func isEventDispatchable(processingEvents, dispatchableEvents []gensql.Event, up
 	return true
 }
 
-func isUpgradesPausedForTeam(event gensql.Event, maintenanceExclusionPeriod *config.MaintenanceExclusionPeriod) bool {
+func isUpgradesPausedForTeam(event gensql.Event, maintenanceExclusionPeriod *maintenance.MaintenanceExclusionPeriod) bool {
 	if maintenanceExclusionPeriod == nil || event.Owner != maintenanceExclusionPeriod.Team {
 		return false
 	}

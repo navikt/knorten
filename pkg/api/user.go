@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 
+	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/navikt/knorten/pkg/api/middlewares"
 
 	"github.com/gin-contrib/sessions"
@@ -13,7 +14,7 @@ func (c *client) setupUserRoutes() {
 	c.router.GET("/oversikt", func(ctx *gin.Context) {
 		session := sessions.Default(ctx)
 
-		user, err := getUser(ctx)
+		user, teams, err := c.getUserAndTeams(ctx)
 		if err != nil {
 			session.AddFlash(err.Error())
 			err := session.Save()
@@ -36,14 +37,28 @@ func (c *client) setupUserRoutes() {
 
 		services, err := c.repo.ServicesForUser(ctx, user.Email, c.topLevelDomain)
 		ctx.HTML(http.StatusOK, "oversikt/index", gin.H{
-			"errors":              err,
-			"flashes":             flashes,
-			"user":                services,
-			"gcpProject":          c.gcpProject,
-			"gcpZone":             c.gcpZone,
-			"upgradePausedStatus": c.airflowUpgradesPaused.CurrentExcludePeriod(),
-			"loggedIn":            ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":             ctx.GetBool(middlewares.AdminKey),
+			"errors":                err,
+			"flashes":               flashes,
+			"user":                  services,
+			"gcpProject":            c.gcpProject,
+			"gcpZone":               c.gcpZone,
+			"upgradePausedStatuses": c.airflowUpgradesPaused.ActiveExcludePeriodForTeams(teams),
+			"loggedIn":              ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":               ctx.GetBool(middlewares.AdminKey),
 		})
 	})
+}
+
+func (c client) getUserAndTeams(ctx *gin.Context) (*auth.User, []string, error) {
+	user, err := getUser(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	teams, err := c.repo.TeamsForUser(ctx, user.Email)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return user, teams, nil
 }

@@ -3,9 +3,7 @@ package database
 import (
 	"context"
 	"testing"
-	"time"
 
-	"github.com/navikt/knorten/pkg/config"
 	"github.com/navikt/knorten/pkg/database/gensql"
 )
 
@@ -30,8 +28,7 @@ func TestRepo_DispatchableEventsGet(t *testing.T) {
 	})
 
 	type args struct {
-		maintenanceExclusionPeriod *config.MaintenanceExclusionPeriod
-		events                     []gensql.Event
+		events []gensql.Event
 	}
 	tests := []struct {
 		name string
@@ -41,7 +38,6 @@ func TestRepo_DispatchableEventsGet(t *testing.T) {
 		{
 			name: "Dispatchable events verify priority",
 			args: args{
-				maintenanceExclusionPeriod: nil,
 				events: []gensql.Event{
 					{
 						Type:    string(EventTypeUpdateTeam),
@@ -75,7 +71,6 @@ func TestRepo_DispatchableEventsGet(t *testing.T) {
 		{
 			name: "Dispatchable events verify new not dispatchable when processing same type",
 			args: args{
-				maintenanceExclusionPeriod: nil,
 				events: []gensql.Event{
 					{
 						Type:    string(EventTypeDeleteJupyter),
@@ -93,56 +88,6 @@ func TestRepo_DispatchableEventsGet(t *testing.T) {
 			},
 			want: []gensql.Event{},
 		},
-		{
-			name: "Dispatchable events verify airflow events are excluded when airflowEventsPaused is set",
-			args: args{
-				maintenanceExclusionPeriod: &config.MaintenanceExclusionPeriod{
-					Name:  "1. januar 1970 til 2. januar 1970",
-					Team:  team.ID,
-					Start: time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC),
-					End:   time.Date(1970, 1, 2, 0, 0, 0, 0, time.UTC),
-				},
-				events: []gensql.Event{
-					{
-						Type:    string(EventTypeCreateJupyter),
-						Payload: []byte("{}"),
-						Status:  string(EventStatusNew),
-						Owner:   team.ID,
-					},
-					{
-						Type:    string(EventTypeCreateAirflow),
-						Payload: []byte("{}"),
-						Status:  string(EventStatusNew),
-						Owner:   team.ID,
-					},
-					{
-						Type:    string(EventTypeUpdateAirflow),
-						Payload: []byte("{}"),
-						Status:  string(EventStatusNew),
-						Owner:   team.ID,
-					},
-					{
-						Type:    string(EventTypeHelmRolloutAirflow),
-						Payload: []byte("{}"),
-						Status:  string(EventStatusNew),
-						Owner:   team.ID,
-					},
-					{
-						Type:    string(EventTypeHelmRollbackAirflow),
-						Payload: []byte("{}"),
-						Status:  string(EventStatusNew),
-						Owner:   team.ID,
-					},
-				},
-			},
-			want: []gensql.Event{
-				{
-					Type:   string(EventTypeCreateJupyter),
-					Owner:  team.ID,
-					Status: string(EventStatusNew),
-				},
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -155,7 +100,7 @@ func TestRepo_DispatchableEventsGet(t *testing.T) {
 				}
 			})
 
-			events, err := repo.DispatchableEventsGet(ctx, tt.args.maintenanceExclusionPeriod)
+			events, err := repo.DispatchableEventsGet(ctx)
 			if err != nil {
 				t.Error(err)
 			}

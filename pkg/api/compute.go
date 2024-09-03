@@ -29,9 +29,8 @@ func (c *client) setupComputeRoutes() {
 
 	c.router.GET("/compute/new", func(ctx *gin.Context) {
 		ctx.HTML(http.StatusOK, "compute/new", gin.H{
-			"upgradePausedStatus": c.airflowUpgradesPaused.CurrentExcludePeriod(),
-			"loggedIn":            ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":             ctx.GetBool(middlewares.AdminKey),
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -83,13 +82,12 @@ func (c *client) setupComputeRoutes() {
 		}
 
 		ctx.HTML(http.StatusOK, "compute/edit", gin.H{
-			"name":                "compute-" + getNormalizedNameFromEmail(user.Email),
-			"gcpZone":             c.gcpZone,
-			"gcpProject":          c.gcpProject,
-			"diskSize":            computeInstance.DiskSize,
-			"upgradePausedStatus": c.airflowUpgradesPaused.CurrentExcludePeriod(),
-			"loggedIn":            ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":             ctx.GetBool(middlewares.AdminKey),
+			"name":       "compute-" + getNormalizedNameFromEmail(user.Email),
+			"gcpZone":    c.gcpZone,
+			"gcpProject": c.gcpProject,
+			"diskSize":   computeInstance.DiskSize,
+			"loggedIn":   ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":    ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 

@@ -3,8 +3,8 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/navikt/knorten/pkg/api/auth"
-	"github.com/navikt/knorten/pkg/config"
 	"github.com/navikt/knorten/pkg/database"
+	"github.com/navikt/knorten/pkg/maintenance"
 	"github.com/sirupsen/logrus"
 )
 
@@ -17,10 +17,10 @@ type client struct {
 	gcpProject            string
 	gcpZone               string
 	topLevelDomain        string
-	airflowUpgradesPaused *config.MaintenanceExclusion
+	airflowUpgradesPaused *maintenance.MaintenanceExclusion
 }
 
-func New(router *gin.Engine, db *database.Repo, azureClient *auth.Azure, log *logrus.Entry, dryRun bool, project, zone, topLevelDomain string, airflowUpgradesPaused *config.MaintenanceExclusion) error {
+func New(router *gin.Engine, db *database.Repo, azureClient *auth.Azure, log *logrus.Entry, dryRun bool, project, zone, topLevelDomain string, airflowUpgradesPaused *maintenance.MaintenanceExclusion) error {
 	router.Use(gin.Recovery())
 	router.Use(func(ctx *gin.Context) {
 		log.WithField("subsystem", "gin").Infof("%v %v %v", ctx.Request.Method, ctx.Request.URL.Path, ctx.Writer.Status())

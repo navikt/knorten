@@ -67,12 +67,14 @@
 </header>
 <div class="max-w-screen-md flex my-8 grow"> {{/* main container start */}}
     <section class="w-full md:w-[64rem] flex flex-col gap-4 p-4"> {{/* main section start */}}
-    {{ if .upgradePausedStatus }}
+    {{ if .upgradePausedStatuses }}
         <article class="bg-white rounded-md p-4">
             <h2 class="pb-4">⛔ Oppgraderinger av Airflow er satt på pause!</h2>
+            {{ range .upgradePausedStatuses }}
             <p class="pb-4">
-                Gjelder for team <strong> {{ .upgradePausedStatus.Team }} </strong> fra {{ .upgradePausedStatus.Name }}.
+                Gjelder for team <strong> {{ .Team }} </strong> fra {{ .Name }}.
             </p>
+            {{ end }}
             <p>
                 Se <a class="navds-link" href="/maintenance-exclusion">her</a> for oversikt over alle planlagte perioder
                 hvor Airflow oppgraderinger settes på pause for dine team.

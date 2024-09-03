@@ -15,6 +15,7 @@ import (
 
 	"github.com/navikt/knorten/pkg/api/service"
 	"github.com/navikt/knorten/pkg/config"
+	"github.com/navikt/knorten/pkg/maintenance"
 
 	"github.com/navikt/knorten/pkg/api/handlers"
 
@@ -116,7 +117,7 @@ func TestMain(m *testing.M) {
 		true,
 	))
 
-	err = New(router, repo, azureClient, logger, true, "", "", "test.io", &config.MaintenanceExclusion{Periods: []config.MaintenanceExclusionPeriod{}})
+	err = New(router, repo, azureClient, logger, true, "", "", "test.io", &maintenance.MaintenanceExclusion{Periods: map[string][]*maintenance.MaintenanceExclusionPeriod{}})
 	if err != nil {
 		log.Fatalf("setting up api: %v", err)
 	}

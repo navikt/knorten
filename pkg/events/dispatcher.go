@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/navikt/knorten/pkg/config"
 	"github.com/navikt/knorten/pkg/gcpapi"
 	"github.com/navikt/knorten/pkg/k8s"
+	"github.com/navikt/knorten/pkg/maintenance"
 
 	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/navikt/knorten/pkg/chart"
@@ -24,7 +24,7 @@ import (
 
 type EventHandler struct {
 	repo                 database.Repository
-	pauseAirflowUpgrades *config.MaintenanceExclusion
+	pauseAirflowUpgrades *maintenance.MaintenanceExclusion
 	log                  *logrus.Entry
 	context              context.Context
 	teamClient           teamClient
@@ -215,7 +215,7 @@ func NewHandler(
 	saChecker gcpapi.ServiceAccountChecker,
 	client *helm.Client,
 	gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion, topLevelDomain string,
-	airflowUpgradesPaused *config.MaintenanceExclusion,
+	airflowUpgradesPaused *maintenance.MaintenanceExclusion,
 	dryRun bool,
 	log *logrus.Entry,
 ) (EventHandler, error) {
@@ -281,7 +281,7 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 				continue
 			}
 
-			events, err := e.repo.DispatchableEventsGet(e.context, e.pauseAirflowUpgrades.CurrentExcludePeriod())
+			events, err := e.getDispatchableEvents()
 			if err != nil {
 				e.log.WithError(err).Error("failed to fetch events")
 				continue
@@ -337,6 +337,31 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 			}
 		}
 	}()
+}
+
+func (e EventHandler) getDispatchableEvents() ([]gensql.Event, error) {
+	dispatchableEvents, err := e.repo.DispatchableEventsGet(e.context)
+	if err != nil {
+		e.log.WithError(err).Error("failed to fetch events")
+		return nil, err
+	}
+
+	return e.omitUpgradePausedEvents(dispatchableEvents), nil
+}
+
+func (e EventHandler) omitUpgradePausedEvents(in []gensql.Event) []gensql.Event {
+	out := []gensql.Event{}
+	for _, event := range in {
+		switch event.Type {
+		case string(database.EventTypeCreateAirflow), string(database.EventTypeUpdateAirflow), string(database.EventTypeHelmRolloutAirflow), string(database.EventTypeHelmRollbackAirflow):
+			if e.pauseAirflowUpgrades.ActiveExcludePeriodForTeam(event.Owner) != nil {
+				continue
+			}
+		}
+		out = append(out, event)
+	}
+
+	return out
 }
 
 func (e EventHandler) isNewLeader(currentLeaderStatus bool) (bool, error) {

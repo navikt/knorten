@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/navikt/knorten/pkg/config"
 	"github.com/navikt/knorten/pkg/database/gensql"
 )
 
@@ -26,7 +25,7 @@ func (r *RepoMock) DispatcherEventsGet(ctx context.Context) ([]gensql.Event, err
 	return nil, nil
 }
 
-func (r *RepoMock) DispatchableEventsGet(ctx context.Context, maintenanceExclusionPeriod *config.MaintenanceExclusionPeriod) ([]gensql.Event, error) {
+func (r *RepoMock) DispatchableEventsGet(ctx context.Context) ([]gensql.Event, error) {
 	return nil, nil
 }
 

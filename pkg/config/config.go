@@ -1,14 +1,11 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 
@@ -232,63 +229,6 @@ func (k Kubernetes) Validate() error {
 type MaintenanceExclusionConfig struct {
 	Enabled  bool   `yaml:"enabled"`
 	FilePath string `yaml:"file_path"`
-}
-
-type MaintenanceExclusion struct {
-	Periods []MaintenanceExclusionPeriod
-}
-
-type MaintenanceExclusionPeriod struct {
-	Name  string    `json:"name"`
-	Team  string    `json:"team"`
-	Start time.Time `json:"start"`
-	End   time.Time `json:"end"`
-}
-
-func (me MaintenanceExclusion) CurrentExcludePeriod() *MaintenanceExclusionPeriod {
-	today := time.Now()
-	for _, period := range me.Periods {
-		if today.After(period.Start) && today.Before(period.End) {
-			return &period
-		}
-	}
-
-	return nil
-}
-
-func (me MaintenanceExclusion) MaintenanceExclusionPeriodsForTeams(teams []string) []*MaintenanceExclusionPeriod {
-	periods := []*MaintenanceExclusionPeriod{}
-	for _, period := range me.Periods {
-		if contains(teams, period.Team) {
-			periods = append(periods, &period)
-		}
-	}
-
-	return periods
-}
-
-func contains(slice []string, elem string) bool {
-	for _, e := range slice {
-		if e == elem {
-			return true
-		}
-	}
-
-	return false
-}
-
-func LoadAirflowUpgradesPausedPeriods(maintenanceExclusionConfig MaintenanceExclusionConfig) (*MaintenanceExclusion, error) {
-	airflowUpgradesPausedPeriods := []MaintenanceExclusionPeriod{}
-	if maintenanceExclusionConfig.Enabled && maintenanceExclusionConfig.FilePath != "" {
-		fileContentBytes, err := os.ReadFile(maintenanceExclusionConfig.FilePath)
-		if err != nil {
-			return nil, err
-		}
-		if err := json.Unmarshal(fileContentBytes, &airflowUpgradesPausedPeriods); err != nil {
-			return nil, err
-		}
-	}
-	return &MaintenanceExclusion{Periods: airflowUpgradesPausedPeriods}, nil
 }
 
 type FileParts struct {

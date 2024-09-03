@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/navikt/knorten/pkg/github"
+	"github.com/navikt/knorten/pkg/maintenance"
 
 	"github.com/navikt/knorten/pkg/gcpapi"
 	"github.com/navikt/knorten/pkg/gcpapi/mock"
@@ -58,7 +59,7 @@ func main() {
 		log.WithError(err).Fatal("validating config")
 	}
 
-	pauseAirflowUpgradesPeriods, err := config.LoadAirflowUpgradesPausedPeriods(cfg.MaintenanceExclusionConfig)
+	pauseAirflowUpgradesPeriods, err := maintenance.LoadAirflowUpgradesPausedPeriods(cfg.MaintenanceExclusionConfig)
 	if err != nil {
 		log.WithError(err).Fatal("loading airflow upgrades paused periods")
 	}

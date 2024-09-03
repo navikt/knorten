@@ -85,11 +85,10 @@ func (c *client) setupTeamRoutes() {
 
 		form.Users = []string{user.Email}
 		ctx.HTML(http.StatusOK, "team/new", gin.H{
-			"form":                form,
-			"errors":              flashes,
-			"upgradePausedStatus": c.airflowUpgradesPaused.CurrentExcludePeriod(),
-			"loggedIn":            ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":             ctx.GetBool(middlewares.AdminKey),
+			"form":     form,
+			"errors":   flashes,
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -143,11 +142,10 @@ func (c *client) setupTeamRoutes() {
 		}
 
 		ctx.HTML(http.StatusOK, "team/edit", gin.H{
-			"team":                team,
-			"errors":              flashes,
-			"upgradePausedStatus": c.airflowUpgradesPaused.CurrentExcludePeriod(),
-			"loggedIn":            ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":             ctx.GetBool(middlewares.AdminKey),
+			"team":     team,
+			"errors":   flashes,
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -217,12 +215,11 @@ func (c *client) setupTeamRoutes() {
 		}
 
 		ctx.HTML(http.StatusOK, "team/events", gin.H{
-			"events":              events,
-			"slug":                team.Slug,
-			"errors":              flashes,
-			"upgradePausedStatus": c.airflowUpgradesPaused.CurrentExcludePeriod(),
-			"loggedIn":            ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":             ctx.GetBool(middlewares.AdminKey),
+			"events":   events,
+			"slug":     team.Slug,
+			"errors":   flashes,
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 }

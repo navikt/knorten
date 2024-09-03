@@ -26,9 +26,9 @@ func (c *client) setupMaintenanceExclusionRoutes() {
 			return
 		}
 		ctx.HTML(http.StatusOK, "maintenance-exclusion/list", gin.H{
-			"airflowUpgradesPausedPeriods": c.airflowUpgradesPaused.MaintenanceExclusionPeriodsForTeams(teams),
-			"loggedIn":                     ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":                      ctx.GetBool(middlewares.AdminKey),
+			"upgradesPausedPeriods": c.airflowUpgradesPaused.ExclusionPeriodsForTeams(teams),
+			"loggedIn":              ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":               ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 }

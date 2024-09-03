@@ -42,6 +42,22 @@
         </form>
     </article>
 
+    <article class="bg-white rounded-md p-4 flex flex-col gap-2">
+        <h2 class="mb-2">Frys av Airflow oppgraderinger</h2>
+        <p>
+        Se <a class="navds-link" href="/admin/maintenance-exclusion">her</a> for oversikt over alle planlagte perioder
+        hvor Airflow oppgraderinger settes på pause.
+        </p>
+        {{ if .airflowUgradesPaused }}
+        <h3 class="mb-2">Aktive frysperioder nå</h3>
+        <ul class="list-disc pl-6 gap-2">
+            {{ range .airflowUgradesPaused }}
+            <li>Team <strong>{{ .Team }}</strong> - fra {{ .Name }}</li>
+            {{ end }}
+        </ul>
+        {{ end }}
+    </article>
+
     {{ range .teams }}
         {{ $teamID := .ID }}
         <article class="bg-white rounded-md p-4">

@@ -84,7 +84,7 @@ func TestMaintenance(t *testing.T) {
 		exclusionPeriods := exclusionConfig.ActiveExcludePeriodForTeams([]string{teamID})
 		expected := []*MaintenanceExclusionPeriod{maintenanceExclusionConfig[0]}
 
-		require.Len(t, expected, 1)
+		require.Len(t, exclusionPeriods, 1)
 		diff := cmp.Diff(expected, exclusionPeriods)
 		assert.Empty(t, diff)
 	})
@@ -101,7 +101,7 @@ func TestMaintenance(t *testing.T) {
 		exclusionPeriods := exclusionConfig.ExclusionPeriodsForTeams([]string{teamID})
 		expected := maintenanceExclusionConfig
 
-		require.Len(t, expected, 2)
+		require.Len(t, exclusionPeriods, 2)
 		diff := cmp.Diff(expected, exclusionPeriods)
 		assert.Empty(t, diff)
 	})

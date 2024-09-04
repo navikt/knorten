@@ -25,10 +25,11 @@ func (c *client) setupMaintenanceExclusionRoutes() {
 			ctx.Redirect(http.StatusSeeOther, "/")
 			return
 		}
+
 		ctx.HTML(http.StatusOK, "maintenance-exclusion/list", gin.H{
-			"upgradesPausedPeriods": c.maintenanceExclusionConfig.ExclusionPeriodsForTeams(teams),
-			"loggedIn":              ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":               ctx.GetBool(middlewares.AdminKey),
+			"airflowUgradesPaused": c.maintenanceExclusionConfig.ExclusionPeriodsForTeams(teams),
+			"loggedIn":             ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":              ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 }

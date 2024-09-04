@@ -361,7 +361,7 @@ func (c *client) setupAdminRoutes() {
 		ctx.Redirect(http.StatusSeeOther, "/admin/event/"+ctx.Param("id"))
 	})
 
-	c.router.GET("/admin/maintenance", func(ctx *gin.Context) {
+	c.router.GET("/admin/maintenance-exclusion", func(ctx *gin.Context) {
 		session := sessions.Default(ctx)
 		flashes := session.Flashes()
 		err := session.Save()
@@ -386,11 +386,11 @@ func (c *client) setupAdminRoutes() {
 			return
 		}
 
-		ctx.HTML(http.StatusOK, "admin/maintenance", gin.H{
-			"errors":                flashes,
-			"upgradesPausedPeriods": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams(getTeamIDs(teams)),
-			"loggedIn":              ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":               ctx.GetBool(middlewares.AdminKey),
+		ctx.HTML(http.StatusOK, "admin/maintenance-exclusion", gin.H{
+			"errors":               flashes,
+			"airflowUgradesPaused": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams(getTeamIDs(teams)),
+			"loggedIn":             ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":              ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 }

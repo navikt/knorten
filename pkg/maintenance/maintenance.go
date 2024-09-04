@@ -20,19 +20,19 @@ type MaintenanceExclusionPeriod struct {
 }
 
 func LoadMaintenanceExclusionConfig(maintenanceExclusionConfig config.MaintenanceExclusionConfig) (*MaintenanceExclusion, error) {
-	airflowUpgradesPausedPeriods := []*MaintenanceExclusionPeriod{}
+	maintenanceExclusionPeriods := []*MaintenanceExclusionPeriod{}
 	if maintenanceExclusionConfig.Enabled && maintenanceExclusionConfig.FilePath != "" {
 		fileContentBytes, err := os.ReadFile(maintenanceExclusionConfig.FilePath)
 		if err != nil {
 			return nil, err
 		}
-		if err := json.Unmarshal(fileContentBytes, &airflowUpgradesPausedPeriods); err != nil {
+		if err := json.Unmarshal(fileContentBytes, &maintenanceExclusionPeriods); err != nil {
 			return nil, err
 		}
 	}
 
 	maintenanceExclusion := &MaintenanceExclusion{Periods: map[string][]*MaintenanceExclusionPeriod{}}
-	for _, mep := range airflowUpgradesPausedPeriods {
+	for _, mep := range maintenanceExclusionPeriods {
 		maintenanceExclusion.Periods[mep.Team] = append(maintenanceExclusion.Periods[mep.Team], mep)
 	}
 

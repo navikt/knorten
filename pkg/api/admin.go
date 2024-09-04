@@ -85,11 +85,12 @@ func (c *client) setupAdminRoutes() {
 		}
 
 		ctx.HTML(http.StatusOK, "admin/index", gin.H{
-			"errors":     flashes,
-			"teams":      teamApps,
-			"gcpProject": c.gcpProject,
-			"loggedIn":   ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":    ctx.GetBool(middlewares.AdminKey),
+			"errors":               flashes,
+			"teams":                teamApps,
+			"gcpProject":           c.gcpProject,
+			"airflowUgradesPaused": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams(getTeamIDs(teams)),
+			"loggedIn":             ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":              ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -359,6 +360,39 @@ func (c *client) setupAdminRoutes() {
 
 		ctx.Redirect(http.StatusSeeOther, "/admin/event/"+ctx.Param("id"))
 	})
+
+	c.router.GET("/admin/maintenance-exclusion", func(ctx *gin.Context) {
+		session := sessions.Default(ctx)
+		flashes := session.Flashes()
+		err := session.Save()
+		if err != nil {
+			c.log.WithError(err).Error("problem saving session")
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err})
+			return
+		}
+
+		teams, err := c.repo.TeamsGet(ctx)
+		if err != nil {
+			session := sessions.Default(ctx)
+			session.AddFlash(err.Error())
+			err = session.Save()
+			if err != nil {
+				c.log.WithError(err).Error("problem saving session")
+				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err})
+				return
+			}
+
+			ctx.Redirect(http.StatusSeeOther, "/admin")
+			return
+		}
+
+		ctx.HTML(http.StatusOK, "admin/maintenance-exclusion", gin.H{
+			"errors":               flashes,
+			"airflowUgradesPaused": c.maintenanceExclusionConfig.ExclusionPeriodsForTeams(getTeamIDs(teams)),
+			"loggedIn":             ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":              ctx.GetBool(middlewares.AdminKey),
+		})
+	})
 }
 
 func (c *client) syncTeams(ctx context.Context) error {
@@ -598,4 +632,12 @@ func (c *client) setEventStatus(ctx *gin.Context) error {
 	}
 
 	return c.repo.EventSetStatus(ctx, eventID, status)
+}
+
+func getTeamIDs(teams []gensql.Team) []string {
+	teamIDs := []string{}
+	for _, t := range teams {
+		teamIDs = append(teamIDs, t.ID)
+	}
+	return teamIDs
 }

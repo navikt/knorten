@@ -3,11 +3,16 @@ package events
 import (
 	"context"
 	"testing"
+	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/navikt/knorten/pkg/database"
 	"github.com/navikt/knorten/pkg/database/gensql"
+	"github.com/navikt/knorten/pkg/maintenance"
 )
 
 func TestEventHandler_distributeWork(t *testing.T) {
@@ -81,6 +86,128 @@ func TestEventHandler_distributeWork(t *testing.T) {
 			if count := checkEventType(eventType, chartMock, teamMock, userMock, helmMock); count != 1 {
 				t.Errorf("distributeWork(): expected 1 %v event, got %v", eventType, count)
 			}
+		})
+	}
+}
+
+func TestOmitAirflowEventsIfUpgradesPaused(t *testing.T) {
+	teamOneID := "teamone-1234"
+	teamTwoID := "teamtwo-4321"
+
+	maintenanceExclusionConfig := &maintenance.MaintenanceExclusion{Periods: map[string][]*maintenance.MaintenanceExclusionPeriod{
+		teamOneID: {
+			{
+				Name:  "active period for team one",
+				Team:  teamOneID,
+				Start: time.Now(),
+				End:   time.Now().Add(time.Hour * 24),
+			},
+		},
+		teamTwoID: {
+			{
+				Name:  "active period for team two",
+				Team:  teamTwoID,
+				Start: time.Now().Add(time.Hour * 24),
+				End:   time.Now().Add(time.Hour * 48),
+			},
+		},
+	}}
+
+	airflowEventsOmittedTests := []struct {
+		name     string
+		events   []gensql.Event
+		expected []gensql.Event
+	}{
+		{
+			name: "airflow events are omitted",
+			events: []gensql.Event{
+				{
+					Status: string(database.EventStatusNew),
+					Type:   string(database.EventTypeUpdateJupyter),
+					Owner:  teamOneID,
+				},
+				{
+					Status: string(database.EventStatusNew),
+					Type:   string(database.EventTypeCreateAirflow),
+					Owner:  teamOneID,
+				},
+				{
+					Status: string(database.EventStatusNew),
+					Type:   string(database.EventTypeUpdateAirflow),
+					Owner:  teamOneID,
+				},
+				{
+					Status: string(database.EventStatusNew),
+					Type:   string(database.EventTypeHelmRolloutAirflow),
+					Owner:  teamOneID,
+				},
+				{
+					Status: string(database.EventStatusNew),
+					Type:   string(database.EventTypeHelmRollbackAirflow),
+					Owner:  teamOneID,
+				},
+			},
+			expected: []gensql.Event{
+				{
+					Status: string(database.EventStatusNew),
+					Type:   string(database.EventTypeUpdateJupyter),
+					Owner:  teamOneID,
+				},
+			},
+		},
+		{
+			name: "airflow event is only omitted for team affected by maintenance exclusion",
+			events: []gensql.Event{
+				{
+					Status: string(database.EventStatusNew),
+					Type:   string(database.EventTypeUpdateJupyter),
+					Owner:  teamOneID,
+				},
+				{
+					Status: string(database.EventStatusNew),
+					Type:   string(database.EventTypeUpdateAirflow),
+					Owner:  teamOneID,
+				},
+				{
+					Status: string(database.EventStatusNew),
+					Type:   string(database.EventTypeUpdateAirflow),
+					Owner:  teamTwoID,
+				},
+			},
+			expected: []gensql.Event{
+				{
+					Status: string(database.EventStatusNew),
+					Type:   string(database.EventTypeUpdateJupyter),
+					Owner:  teamOneID,
+				},
+				{
+					Status: string(database.EventStatusNew),
+					Type:   string(database.EventTypeUpdateAirflow),
+					Owner:  teamTwoID,
+				},
+			},
+		},
+	}
+
+	for _, tt := range airflowEventsOmittedTests {
+		t.Run(tt.name, func(t *testing.T) {
+			userMock := newUserMock()
+			teamMock := newTeamMock()
+			chartMock := newChartMock()
+			helmMock := newHelmMock()
+			handler := EventHandler{
+				repo:                       &database.RepoMock{},
+				userClient:                 &userMock,
+				teamClient:                 &teamMock,
+				chartClient:                &chartMock,
+				helmClient:                 &helmMock,
+				maintenanceExclusionConfig: maintenanceExclusionConfig,
+			}
+
+			got := handler.omitAirflowEventsIfUpgradesPaused(tt.events)
+			require.Len(t, got, len(tt.expected))
+			diff := cmp.Diff(tt.expected, got)
+			assert.Empty(t, diff)
 		})
 	}
 }

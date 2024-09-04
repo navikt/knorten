@@ -54,6 +54,9 @@ github:
     refresh_interval_mins: 60
 kubernetes:
     context: minikube
+maintenance_exclusion:
+    enabled: true
+    file_path: ./.maintenance-exclusion-dates.json
 db_enc_key: jegersekstentegn
 admin_group_id: f2816319-7db0-4061-8d0c-5ddbe232d60c
 session_key: offline-session

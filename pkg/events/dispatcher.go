@@ -8,6 +8,7 @@ import (
 
 	"github.com/navikt/knorten/pkg/gcpapi"
 	"github.com/navikt/knorten/pkg/k8s"
+	"github.com/navikt/knorten/pkg/maintenance"
 
 	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/navikt/knorten/pkg/chart"
@@ -22,13 +23,14 @@ import (
 )
 
 type EventHandler struct {
-	repo        database.Repository
-	log         *logrus.Entry
-	context     context.Context
-	teamClient  teamClient
-	userClient  userClient
-	chartClient chartClient
-	helmClient  helmClient
+	repo                       database.Repository
+	maintenanceExclusionConfig *maintenance.MaintenanceExclusion
+	log                        *logrus.Entry
+	context                    context.Context
+	teamClient                 teamClient
+	userClient                 userClient
+	chartClient                chartClient
+	helmClient                 helmClient
 }
 
 const (
@@ -213,6 +215,7 @@ func NewHandler(
 	saChecker gcpapi.ServiceAccountChecker,
 	client *helm.Client,
 	gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion, topLevelDomain string,
+	maintenanceExclusionConfig *maintenance.MaintenanceExclusion,
 	dryRun bool,
 	log *logrus.Entry,
 ) (EventHandler, error) {
@@ -239,13 +242,14 @@ func NewHandler(
 	}
 
 	return EventHandler{
-		repo:        repo,
-		log:         log,
-		context:     ctx,
-		teamClient:  teamClient,
-		userClient:  user.NewClient(repo, gcpProject, gcpRegion, gcpZone, dryRun),
-		chartClient: chartClient,
-		helmClient:  client,
+		repo:                       repo,
+		maintenanceExclusionConfig: maintenanceExclusionConfig,
+		log:                        log,
+		context:                    ctx,
+		teamClient:                 teamClient,
+		userClient:                 user.NewClient(repo, gcpProject, gcpRegion, gcpZone, dryRun),
+		chartClient:                chartClient,
+		helmClient:                 client,
 	}, nil
 }
 
@@ -277,7 +281,7 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 				continue
 			}
 
-			events, err := e.repo.DispatchableEventsGet(e.context)
+			events, err := e.getDispatchableEvents()
 			if err != nil {
 				e.log.WithError(err).Error("failed to fetch events")
 				continue
@@ -333,6 +337,33 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 			}
 		}
 	}()
+}
+
+func (e EventHandler) getDispatchableEvents() ([]gensql.Event, error) {
+	dispatchableEvents, err := e.repo.DispatchableEventsGet(e.context)
+	if err != nil {
+		e.log.WithError(err).Error("failed to fetch events")
+		return nil, err
+	}
+
+	return e.omitAirflowEventsIfUpgradesPaused(dispatchableEvents), nil
+}
+
+func (e EventHandler) omitAirflowEventsIfUpgradesPaused(in []gensql.Event) []gensql.Event {
+	out := []gensql.Event{}
+	for _, event := range in {
+		switch database.EventType(event.Type) {
+		case database.EventTypeCreateAirflow, database.EventTypeUpdateAirflow, database.EventTypeHelmRolloutAirflow, database.EventTypeHelmRollbackAirflow:
+			if e.maintenanceExclusionConfig.ActiveExcludePeriodForTeam(event.Owner) != nil {
+				continue
+			}
+			fallthrough
+		default:
+			out = append(out, event)
+		}
+	}
+
+	return out
 }
 
 func (e EventHandler) isNewLeader(currentLeaderStatus bool) (bool, error) {

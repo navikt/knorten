@@ -138,7 +138,20 @@ func (c *client) setupChartRoutes() {
 
 		session := sessions.Default(ctx)
 		flashes := session.Flashes()
-		err := session.Save()
+
+		team, err := c.repo.TeamBySlugGet(ctx, slug)
+		if err != nil {
+			err := session.Save()
+			if err != nil {
+				c.log.WithError(err).Error("problem saving session")
+				ctx.Redirect(http.StatusSeeOther, "/oversikt")
+				return
+			}
+			ctx.Redirect(http.StatusSeeOther, "/oversikt")
+			return
+		}
+
+		err = session.Save()
 		if err != nil {
 			c.log.WithField("team", slug).WithField("chart", chartType).WithError(err).Error("problem saving session")
 			ctx.JSON(http.StatusInternalServerError, map[string]string{
@@ -149,11 +162,12 @@ func (c *client) setupChartRoutes() {
 		}
 
 		ctx.HTML(http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
-			"team":     slug,
-			"form":     form,
-			"errors":   flashes,
-			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
+			"team":                  slug,
+			"form":                  form,
+			"errors":                flashes,
+			"upgradePausedStatuses": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams([]string{team.ID}),
+			"loggedIn":              ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":               ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -197,7 +211,7 @@ func (c *client) setupChartRoutes() {
 
 		session := sessions.Default(ctx)
 
-		form, err := c.getEditChart(ctx, teamSlug, chartType)
+		form, teamID, err := c.getEditChart(ctx, teamSlug, chartType)
 		if err != nil {
 			var validationErrorse validator.ValidationErrors
 			if errors.As(err, &validationErrorse) {
@@ -228,11 +242,12 @@ func (c *client) setupChartRoutes() {
 		}
 
 		ctx.HTML(http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
-			"team":     teamSlug,
-			"values":   form,
-			"errors":   flashes,
-			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
+			"team":                  teamSlug,
+			"values":                form,
+			"errors":                flashes,
+			"upgradePausedStatuses": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams([]string{teamID}),
+			"loggedIn":              ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":               ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -406,10 +421,10 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 	return fmt.Errorf("chart type %v is not supported", chartType)
 }
 
-func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensql.ChartType) (any, error) {
+func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensql.ChartType) (any, string, error) {
 	team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	var chartObjects any
@@ -419,12 +434,12 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 	case gensql.ChartTypeAirflow:
 		chartObjects = &chart.AirflowConfigurableValues{}
 	default:
-		return nil, fmt.Errorf("chart type %v is not supported", chartType)
+		return nil, "", fmt.Errorf("chart type %v is not supported", chartType)
 	}
 
 	err = c.repo.TeamConfigurableValuesGet(ctx, chartType, team.ID, chartObjects)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	var form any
@@ -433,12 +448,12 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 		jupyterhubValues := chartObjects.(*chart.JupyterConfigurableValues)
 		allowlist, err := c.getExistingAllowlist(ctx, team.ID)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
+			return nil, "", err
 		}
 
 		pypiAccessTeamValue, err := c.repo.TeamValueGet(ctx, chart.TeamValueKeyPYPIAccess, team.ID)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
+			return nil, "", err
 		}
 
 		pypiAccess := "off"
@@ -461,7 +476,7 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 		airflowValues := chartObjects.(*chart.AirflowConfigurableValues)
 		apiAccessTeamValue, err := c.repo.TeamValueGet(ctx, chart.TeamValueKeyApiAccess, team.ID)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
+			return nil, "", err
 		}
 
 		apiAccess := ""
@@ -482,7 +497,7 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 		}
 	}
 
-	return form, nil
+	return form, team.ID, nil
 }
 
 func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.ChartType) error {

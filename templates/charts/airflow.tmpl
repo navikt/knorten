@@ -107,9 +107,15 @@
                 </div>
 
                 <div class="flex gap-2 items-center">
+                    {{ if .upgradePausedStatuses }}
+                    <button disabled title="Airflow oppgraderinger er satt på pause" id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action">
+                        <span class="navds-label">Lagre</span>
+                    </button>
+                    {{ else }}
                     <button id="submit" type="submit" class="navds-button navds-button--primary bg-surface-action">
                         <span class="navds-label">Lagre</span>
                     </button>
+                    {{ end }}
                     <a href="/oversikt" class="navds-link">Avbryt</a>
                 </div>
             </fieldset>

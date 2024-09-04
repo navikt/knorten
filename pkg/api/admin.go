@@ -388,7 +388,7 @@ func (c *client) setupAdminRoutes() {
 
 		ctx.HTML(http.StatusOK, "admin/maintenance-exclusion", gin.H{
 			"errors":               flashes,
-			"airflowUgradesPaused": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams(getTeamIDs(teams)),
+			"airflowUgradesPaused": c.maintenanceExclusionConfig.ExclusionPeriodsForTeams(getTeamIDs(teams)),
 			"loggedIn":             ctx.GetBool(middlewares.LoggedInKey),
 			"isAdmin":              ctx.GetBool(middlewares.AdminKey),
 		})

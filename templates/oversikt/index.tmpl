@@ -7,6 +7,15 @@
         {{ . }}
     {{ end }}
 
+    {{ if .allPlannedUpgradePaused }}
+    <article class="bg-white rounded-md p-4">
+        <p>
+            Se <a class="navds-link" href="/maintenance-exclusion">her</a> for oversikt over alle planlagte perioder
+            hvor Airflow oppgraderinger settes på pause for teamene dine.
+        </p>
+    </article>
+    {{ end }}
+
     <article class="bg-white rounded-md p-4">
         <div class="flex flex-col gap-4">
             <div class="flex items-center gap-4">

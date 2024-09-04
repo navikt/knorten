@@ -37,14 +37,15 @@ func (c *client) setupUserRoutes() {
 
 		services, err := c.repo.ServicesForUser(ctx, user.Email, c.topLevelDomain)
 		ctx.HTML(http.StatusOK, "oversikt/index", gin.H{
-			"errors":                err,
-			"flashes":               flashes,
-			"user":                  services,
-			"gcpProject":            c.gcpProject,
-			"gcpZone":               c.gcpZone,
-			"upgradePausedStatuses": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams(teams),
-			"loggedIn":              ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":               ctx.GetBool(middlewares.AdminKey),
+			"errors":                  err,
+			"flashes":                 flashes,
+			"user":                    services,
+			"gcpProject":              c.gcpProject,
+			"gcpZone":                 c.gcpZone,
+			"upgradePausedStatuses":   c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams(teams),
+			"allPlannedUpgradePaused": c.maintenanceExclusionConfig.ExclusionPeriodsForTeams(teams),
+			"loggedIn":                ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":                 ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 }

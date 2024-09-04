@@ -55,6 +55,8 @@
             <li>Team <strong>{{ .Team }}</strong> - fra {{ .Name }}</li>
             {{ end }}
         </ul>
+        {{ else }}
+        <p><i>Det er ingen aktive frysperioder.</i></p>
         {{ end }}
     </article>
 

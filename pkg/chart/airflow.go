@@ -292,7 +292,7 @@ func (Client) createAirflowWebServerEnvs(users []string, apiAccess bool) (string
 			"name": "AZURE_APPLICATION_ID",
 			"valueFrom": map[string]any{
 				"secretKeyRef": map[string]string{
-					"name": "azuread-creds",
+					"name": "azuread-secret",
 					"key":  "AZURE_APPLICATION_ID",
 				},
 			},
@@ -301,7 +301,7 @@ func (Client) createAirflowWebServerEnvs(users []string, apiAccess bool) (string
 			"name": "AZURE_CLIENT_SECRET",
 			"valueFrom": map[string]any{
 				"secretKeyRef": map[string]string{
-					"name": "azuread-creds",
+					"name": "azuread-secret",
 					"key":  "AZURE_CLIENT_SECRET",
 				},
 			},
@@ -310,7 +310,7 @@ func (Client) createAirflowWebServerEnvs(users []string, apiAccess bool) (string
 			"name": "AZURE_TENANT_ID",
 			"valueFrom": map[string]any{
 				"secretKeyRef": map[string]string{
-					"name": "azuread-creds",
+					"name": "azuread-secret",
 					"key":  "AZURE_TENANT_ID",
 				},
 			},

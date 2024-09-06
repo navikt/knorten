@@ -195,7 +195,7 @@ func TestCharts(t *testing.T) {
 				},
 			},
 			want: map[string]string{
-				"webserver.env":                 `[{"name":"AIRFLOW_USERS","value":"dummy@nav.no,user.one@nav.no"},{"name": "AZURE_APPLICATION_ID","valueFrom":{"secretKeyRef":{"name": "azuread-secret", "key": "AZURE_APPLICATION_ID"}}},{"name": "AZURE_CLIENT_SECRET","valueFrom":{"secretKeyRef":{"name": "azuread-secret", "key": "AZURE_CLIENT_SECRET"}}},{"name": "AZURE_TENANT_ID","valueFrom":{"secretKeyRef":{"name": "azuread-secret", "key": "AZURE_TENANT_ID"}}}]`,
+				"webserver.env":                 `[{"name":"AIRFLOW_USERS","value":"dummy@nav.no,user.one@nav.no"},{"name":"AZURE_APPLICATION_ID","valueFrom":{"secretKeyRef":{"key":"AZURE_APPLICATION_ID","name":"azuread-secret"}}},{"name":"AZURE_CLIENT_SECRET","valueFrom":{"secretKeyRef":{"key":"AZURE_CLIENT_SECRET","name":"azuread-secret"}}},{"name":"AZURE_TENANT_ID","valueFrom":{"secretKeyRef":{"key":"AZURE_TENANT_ID","name":"azuread-secret"}}}]`,
 				"dags.gitSync.repo":             "navikt/my-dags",
 				"dags.gitSync.branch":           "main",
 				"webserver.serviceAccount.name": "test-team-1234",
@@ -219,7 +219,7 @@ func TestCharts(t *testing.T) {
 				"workers.serviceAccount.name":   "test-team-1234",
 				"webserver.serviceAccount.name": "test-team-1234",
 				"env":                           `[{"name":"KNADA_TEAM_SECRET","value":"projects/project/secrets/test-team-1234"},{"name":"TEAM","value":"test-team-1234"},{"name":"NAMESPACE","value":"team-test-team-1234"},{"name":"AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER","value":"gs://airflow-logs-test-team-1234-north"},{"name":"AIRFLOW__LOGGING__REMOTE_LOGGING","value":"True"}]`,
-				"webserver.env":                 `[{"name":"AIRFLOW_USERS","value":"dummy@nav.no,user.one@nav.no"},{"name": "AZURE_APPLICATION_ID","valueFrom":{"secretKeyRef":{"name": "azuread-secret", "key": "AZURE_APPLICATION_ID"}}},{"name": "AZURE_CLIENT_SECRET","valueFrom":{"secretKeyRef":{"name": "azuread-secret", "key": "AZURE_CLIENT_SECRET"}}},{"name": "AZURE_TENANT_ID","valueFrom":{"secretKeyRef":{"name": "azuread-secret", "key": "AZURE_TENANT_ID"}}}]`,
+				"webserver.env":                 `[{"name":"AIRFLOW_USERS","value":"dummy@nav.no,user.one@nav.no"},{"name":"AZURE_APPLICATION_ID","valueFrom":{"secretKeyRef":{"key":"AZURE_APPLICATION_ID","name":"azuread-secret"}}},{"name":"AZURE_CLIENT_SECRET","valueFrom":{"secretKeyRef":{"key":"AZURE_CLIENT_SECRET","name":"azuread-secret"}}},{"name":"AZURE_TENANT_ID","valueFrom":{"secretKeyRef":{"key":"AZURE_TENANT_ID","name":"azuread-secret"}}}]`,
 				"workers.labels":                `{"team":"test-team-1234"}`,
 				"dags.gitSync.repo":             "navikt/other-dags",
 				"dags.gitSync.branch":           "master",

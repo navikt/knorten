@@ -268,11 +268,52 @@ type airflowEnv struct {
 	Value string `json:"value"`
 }
 
+type airflowEnvValueFrom struct {
+	Name      string    `json:"name"`
+	ValueFrom valueFrom `json:"valueFrom"`
+}
+
+type valueFrom struct {
+	SecretKeyRef secretKeyRef `json:"secretKeyRef"`
+}
+
+type secretKeyRef struct {
+	Name string `json:"name"`
+	Key  string `json:"key"`
+}
+
 func (Client) createAirflowWebServerEnvs(users []string, apiAccess bool) (string, error) {
-	envs := []airflowEnv{
-		{
+	envs := []any{
+		airflowEnv{
 			Name:  "AIRFLOW_USERS",
 			Value: strings.Join(users, ","),
+		},
+		airflowEnvValueFrom{
+			Name: "AZURE_APPLICATION_ID",
+			ValueFrom: valueFrom{
+				SecretKeyRef: secretKeyRef{
+					Name: "azuread-creds",
+					Key:  "AZURE_APPLICATION_ID",
+				},
+			},
+		},
+		airflowEnvValueFrom{
+			Name: "AZURE_CLIENT_SECRET",
+			ValueFrom: valueFrom{
+				SecretKeyRef: secretKeyRef{
+					Name: "azuread-creds",
+					Key:  "AZURE_CLIENT_SECRET",
+				},
+			},
+		},
+		airflowEnvValueFrom{
+			Name: "AZURE_TENANT_ID",
+			ValueFrom: valueFrom{
+				SecretKeyRef: secretKeyRef{
+					Name: "azuread-creds",
+					Key:  "AZURE_TENANT_ID",
+				},
+			},
 		},
 	}
 

@@ -268,20 +268,6 @@ type airflowEnv struct {
 	Value string `json:"value"`
 }
 
-type airflowEnvValueFrom struct {
-	Name      string    `json:"name"`
-	ValueFrom valueFrom `json:"valueFrom"`
-}
-
-type valueFrom struct {
-	SecretKeyRef secretKeyRef `json:"secretKeyRef"`
-}
-
-type secretKeyRef struct {
-	Name string `json:"name"`
-	Key  string `json:"key"`
-}
-
 func (Client) createAirflowWebServerEnvs(users []string, apiAccess bool) (string, error) {
 	envs := []any{
 		map[string]string{

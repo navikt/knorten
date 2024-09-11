@@ -269,10 +269,37 @@ type airflowEnv struct {
 }
 
 func (Client) createAirflowWebServerEnvs(users []string, apiAccess bool) (string, error) {
-	envs := []airflowEnv{
-		{
-			Name:  "AIRFLOW_USERS",
-			Value: strings.Join(users, ","),
+	envs := []any{
+		map[string]string{
+			"name":  "AIRFLOW_USERS",
+			"value": strings.Join(users, ","),
+		},
+		map[string]any{
+			"name": "AZURE_APPLICATION_ID",
+			"valueFrom": map[string]any{
+				"secretKeyRef": map[string]string{
+					"name": "azuread-secret",
+					"key":  "AZURE_APPLICATION_ID",
+				},
+			},
+		},
+		map[string]any{
+			"name": "AZURE_CLIENT_SECRET",
+			"valueFrom": map[string]any{
+				"secretKeyRef": map[string]string{
+					"name": "azuread-secret",
+					"key":  "AZURE_CLIENT_SECRET",
+				},
+			},
+		},
+		map[string]any{
+			"name": "AZURE_TENANT_ID",
+			"valueFrom": map[string]any{
+				"secretKeyRef": map[string]string{
+					"name": "azuread-secret",
+					"key":  "AZURE_TENANT_ID",
+				},
+			},
 		},
 	}
 

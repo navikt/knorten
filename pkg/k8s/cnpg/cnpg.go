@@ -115,7 +115,7 @@ func NewCluster(name, namespace, database, owner string, options ...ClusterOptio
 }
 
 const (
-	defaultScheduleEverydayAtMidnight   = "0 8 0 * * 1-5"
+	defaultScheduleEverydayAtMidnight   = "0 0 8 * * 1-5"
 	scheduledBackupOwnerReferenceSelf   = "self"
 	scheduledBackupMethodVolumeSnapshot = "volumeSnapshot"
 	scheduledBackupKind                 = "ScheduledBackup"

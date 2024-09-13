@@ -12,5 +12,5 @@ spec:
     name: test-cluster
   immediate: true
   method: volumeSnapshot
-  schedule: 0 8 0 * * 1-5
+  schedule: 0 0 8 * * 1-5
 status: {}

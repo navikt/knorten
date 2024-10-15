@@ -8,6 +8,7 @@ metadata:
 spec:
   instances: 2
 
+  primaryUpdateMethod: switchover
   primaryUpdateStrategy: unsupervised
 
   backup:

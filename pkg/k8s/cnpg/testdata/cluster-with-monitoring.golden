@@ -23,6 +23,7 @@ spec:
   postgresql:
     syncReplicaElectionConstraint:
       enabled: false
+  primaryUpdateMethod: switchover
   primaryUpdateStrategy: unsupervised
   resources:
     requests:

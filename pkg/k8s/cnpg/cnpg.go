@@ -83,6 +83,7 @@ func NewCluster(name, namespace, database, owner string, options ...ClusterOptio
 		Spec: cnpgv1.ClusterSpec{
 			Instances:             defaultInstanceCount,
 			PrimaryUpdateStrategy: cnpgv1.PrimaryUpdateStrategyUnsupervised,
+			PrimaryUpdateMethod:   cnpgv1.PrimaryUpdateMethodSwitchover,
 			StorageConfiguration: cnpgv1.StorageConfiguration{
 				Size: defaultStorageSize,
 			},

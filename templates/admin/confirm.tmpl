@@ -33,7 +33,26 @@
                     </div>
                 {{ end }}
             </fieldset>
-            <div>
+            <div class="flex flex-col gap-2 mb-2">
+                <div class="navds-checkbox navds-checkbox--medium">
+                    <input type="checkbox" class="navds-checkbox__input" name="action-trigger-resync"
+                           id="action-trigger-resync" checked/>
+                    <label class="navds-checkbox__label" for="action-trigger-resync">
+                        <span class="navds-checkbox__label-text">Trigge resync av chart for alle teams</span></label>
+                </div>
+                <div class="navds-alert navds-alert--warning navds-alert--medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="none" viewBox="0 0 24 24"
+                         focusable="false" role="img" aria-labelledby="title-R2t6" class="navds-alert__icon"><title
+                                id="title-R2t6">Advarsel</title>
+                        <path fill="currentColor" fill-rule="evenodd"
+                              d="M12 2.25a.75.75 0 0 1 .656.387l9.527 17.25A.75.75 0 0 1 21.526 21H2.474a.75.75 0 0 1-.657-1.113l9.526-17.25A.75.75 0 0 1 12 2.25M12 8.75a.75.75 0 0 1 .75.75v4a.75.75 0 0 1-1.5 0v-4a.75.75 0 0 1 .75-.75m-1 7.75a1 1 0 1 1 2 0 1 1 0 0 1-2 0"
+                              clip-rule="evenodd"></path>
+                    </svg>
+                    <div class="navds-alert__wrapper navds-alert__wrapper--maxwidth navds-body-long navds-body-long--medium">
+                        Vær oppmerksom på at hvis du ikke kjører resync, er det ingenting som forhindrer andre i Nada
+                        eller automatiske jobber fra å kjøre resync.
+                    </div>
+                </div>
                 <button type="submit" class="navds-button navds-button--primary bg-surface-action">
                     <span class="navds-label">Lagre</span>
                 </button>

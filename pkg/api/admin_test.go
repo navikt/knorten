@@ -217,7 +217,42 @@ func TestAdminAPI(t *testing.T) {
 		}
 	})
 
-	t.Run("update jupyter global values", func(t *testing.T) {
+	t.Run("update jupyter global values and trigger resync", func(t *testing.T) {
+		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeUpdateJupyter)
+		if err != nil {
+			t.Error(err)
+		}
+
+		data := url.Values{"jupytervalue": {"updated"}, "new": {"new"}, ActionTriggerResync: {"on"}}
+		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/jupyterhub/confirm", server.URL), data)
+		if err != nil {
+			t.Error(err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+		}
+
+		events, err := repo.EventsGetType(ctx, database.EventTypeUpdateJupyter)
+		if err != nil {
+			t.Error(err)
+		}
+
+		newEvents := getNewEvents(oldEvents, events)
+		for _, team := range teams {
+			eventPayload, err := getEventForJupyterhub(newEvents, team.ID)
+			if err != nil {
+				t.Error(err)
+			}
+
+			if eventPayload.TeamID == "" {
+				t.Errorf("update admin values: no update jupyterhub event registered for team %v", team.ID)
+			}
+		}
+	})
+
+	t.Run("update jupyter global values and not trigger resync", func(t *testing.T) {
 		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeUpdateJupyter)
 		if err != nil {
 			t.Error(err)
@@ -246,8 +281,8 @@ func TestAdminAPI(t *testing.T) {
 				t.Error(err)
 			}
 
-			if eventPayload.TeamID == "" {
-				t.Errorf("update admin values: no update jupyterhub event registered for team %v", team.ID)
+			if eventPayload.TeamID != "" {
+				t.Errorf("update admin values: update jupyterhub event registered for team %v", team.ID)
 			}
 		}
 	})
@@ -441,7 +476,40 @@ func TestAdminAPI(t *testing.T) {
 		}
 	})
 
-	t.Run("update airflow global values", func(t *testing.T) {
+	t.Run("update airflow global values and trigger resync", func(t *testing.T) {
+		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeUpdateAirflow)
+		if err != nil {
+			t.Error(err)
+		}
+
+		data := url.Values{"airflowvalue": {"updated"}, "new": {"new"}, ActionTriggerResync: {"on"}}
+		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/airflow/confirm", server.URL), data)
+		if err != nil {
+			t.Error(err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+		}
+
+		events, err := repo.EventsGetType(ctx, database.EventTypeUpdateAirflow)
+		if err != nil {
+			t.Error(err)
+		}
+
+		newEvents := getNewEvents(oldEvents, events)
+		eventPayload, err := getEventForAirflow(newEvents, teams[1].ID)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if eventPayload.TeamID == "" {
+			t.Errorf("update airflow global values: no update airflow event registered for team %v", teams[1].ID)
+		}
+	})
+
+	t.Run("update airflow global values and not trigger resync", func(t *testing.T) {
 		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeUpdateAirflow)
 		if err != nil {
 			t.Error(err)
@@ -469,8 +537,8 @@ func TestAdminAPI(t *testing.T) {
 			t.Error(err)
 		}
 
-		if eventPayload.TeamID == "" {
-			t.Errorf("update airflow global values: no update airflow event registered for team %v", teams[1].ID)
+		if eventPayload.TeamID != "" {
+			t.Errorf("update airflow global values: airflow event registered for team %v", teams[1].ID)
 		}
 	})
 

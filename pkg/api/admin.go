@@ -35,6 +35,8 @@ type teamInfo struct {
 	Events    []gensql.Event
 }
 
+const ActionTriggerResync = "action-trigger-resync"
+
 func (c *client) setupAdminRoutes() {
 	c.router.GET("/admin", func(ctx *gin.Context) {
 		session := sessions.Default(ctx)
@@ -223,7 +225,13 @@ func (c *client) setupAdminRoutes() {
 			return
 		}
 
-		if err := c.updateGlobalValues(ctx, ctx.Request.PostForm, chartType); err != nil {
+		triggerResync := false
+		if _, found := ctx.Request.PostForm[ActionTriggerResync]; found {
+			ctx.Request.PostForm.Del(ActionTriggerResync)
+			triggerResync = true
+		}
+
+		if err := c.updateGlobalValues(ctx, ctx.Request.PostForm, chartType, triggerResync); err != nil {
 			c.log.WithError(err)
 			session.AddFlash(err.Error())
 			err = session.Save()
@@ -461,7 +469,7 @@ func (c *client) findGlobalValueChanges(ctx context.Context, formValues url.Valu
 	return changed, nil
 }
 
-func (c *client) updateGlobalValues(ctx context.Context, formValues url.Values, chartType gensql.ChartType) error {
+func (c *client) updateGlobalValues(ctx context.Context, formValues url.Values, chartType gensql.ChartType, resync bool) error {
 	for key, values := range formValues {
 		if values[0] == "" {
 			err := c.repo.GlobalValueDelete(ctx, key, chartType)
@@ -481,7 +489,11 @@ func (c *client) updateGlobalValues(ctx context.Context, formValues url.Values, 
 		}
 	}
 
-	return c.syncChartForAllTeams(ctx, chartType)
+	if resync {
+		return c.syncChartForAllTeams(ctx, chartType)
+	}
+
+	return nil
 }
 
 func (c *client) parseValue(values []string) (string, bool, error) {

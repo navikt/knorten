@@ -490,7 +490,6 @@ func (c *client) updateGlobalValues(ctx context.Context, formValues url.Values, 
 	}
 
 	if resync {
-		fmt.Println("Resyncing charts")
 		return c.syncChartForAllTeams(ctx, chartType)
 	}
 

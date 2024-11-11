@@ -5,8 +5,8 @@ go 1.23
 toolchain go1.23.2
 
 require (
-	cloud.google.com/go/artifactregistry v1.15.2
-	cloud.google.com/go/compute v1.28.2
+	cloud.google.com/go/artifactregistry v1.16.0
+	cloud.google.com/go/compute v1.28.3
 	cloud.google.com/go/iam v1.2.2
 	cloud.google.com/go/secretmanager v1.14.2
 	cloud.google.com/go/storage v1.46.0
@@ -37,9 +37,9 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/tdewolff/minify/v2 v2.21.1
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
-	golang.org/x/oauth2 v0.23.0
-	google.golang.org/api v0.204.0
-	google.golang.org/grpc v1.67.1
+	golang.org/x/oauth2 v0.24.0
+	google.golang.org/api v0.205.0
+	google.golang.org/grpc v1.68.0
 	gopkg.in/yaml.v3 v3.0.1
 	helm.sh/helm/v3 v3.16.2
 	k8s.io/api v0.31.2
@@ -55,7 +55,7 @@ require (
 require (
 	cel.dev/expr v0.16.1 // indirect
 	cloud.google.com/go v0.116.0 // indirect
-	cloud.google.com/go/auth v0.10.0 // indirect
+	cloud.google.com/go/auth v0.10.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.5 // indirect
 	cloud.google.com/go/compute/metadata v0.5.2 // indirect
 	cloud.google.com/go/longrunning v0.6.1 // indirect

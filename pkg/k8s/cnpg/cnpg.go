@@ -87,6 +87,16 @@ func NewCluster(name, namespace, database, owner string, options ...ClusterOptio
 			StorageConfiguration: cnpgv1.StorageConfiguration{
 				Size: defaultStorageSize,
 			},
+			Affinity: cnpgv1.AffinityConfiguration{
+				NodeSelector: map[string]string{"knada-infrastructure": ""},
+				Tolerations: []v1.Toleration{
+					{
+						Key:      "knada-infrastructure",
+						Operator: v1.TolerationOpExists,
+						Effect:   v1.TaintEffectNoSchedule,
+					},
+				},
+			},
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
 					v1.ResourceCPU:    resource.MustParse(defaultRequestCPU),

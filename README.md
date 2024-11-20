@@ -9,7 +9,7 @@ Ellers blir Knorten satt opp gjennom [nais/knada-gcp](https://github.com/nais/kn
 
 ## Utvikling
 
-For å jobbe med Knorten lokalt trenger man å ha Postgres kjørende, og basen må prepouleres med litt data.
+For å jobbe med Knorten lokalt trenger man å ha Postgres kjørende, og basen må prepopuleres med litt data.
 I tillegg benytter vi et oppsett med Tailwind og Designsystemet.
 
 

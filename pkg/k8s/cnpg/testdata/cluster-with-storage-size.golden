@@ -7,7 +7,13 @@ metadata:
   name: test-cluster
   namespace: test-namespace
 spec:
-  affinity: {}
+  affinity:
+    nodeSelector:
+      knada-infrastructure: ""
+    tolerations:
+    - effect: NoSchedule
+      key: knada-infrastructure
+      operator: Exists
   backup:
     retentionPolicy: 30d
     volumeSnapshot:

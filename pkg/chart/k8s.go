@@ -91,25 +91,3 @@ func (c Client) deleteHealthCheckPolicy(ctx context.Context, namespace string, c
 
 	return c.manager.DeleteHealthCheckPolicy(ctx, name, namespace)
 }
-
-func (c Client) alterJupyterDefaultFQDNNetpol(ctx context.Context, namespace string, enabled bool) error {
-	if c.dryRun {
-		return nil
-	}
-
-	if enabled {
-		err := c.manager.ApplyNetworkPolicy(ctx, networking.NewNetworkPolicyJupyterPyPi(k8sJupyterhubNetworPolicy, namespace))
-		if err != nil {
-			return fmt.Errorf("applying network policy: %w", err)
-		}
-
-		return nil
-	}
-
-	err := c.manager.DeleteNetworkPolicy(ctx, k8sJupyterhubNetworPolicy, namespace)
-	if err != nil {
-		return fmt.Errorf("deleting network policy: %w", err)
-	}
-
-	return nil
-}

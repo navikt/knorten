@@ -119,10 +119,6 @@ func TestJupyterAPI(t *testing.T) {
 			t.Errorf("create jupyterhub: culltimeout value - expected %v, got %v", culltimeout, eventPayload.CullTimeout)
 		}
 
-		if eventPayload.PYPIAccess {
-			t.Errorf("create jupyterhub: pypiAccess value - expected %v, got %v", false, eventPayload.PYPIAccess)
-		}
-
 		if len(eventPayload.UserIdents) != 3 {
 			t.Errorf("create jupyterhub: expected 3 users, got %v", len(eventPayload.UserIdents))
 		}
@@ -246,10 +242,6 @@ func TestJupyterAPI(t *testing.T) {
 
 		if eventPayload.ImageTag != imageTag {
 			t.Errorf("edit jupyterhub: image tag value - expected %v, got %v", imageTag, eventPayload.ImageTag)
-		}
-
-		if !eventPayload.PYPIAccess {
-			t.Errorf("edit jupyterhub: pypi access value - expected %v, got %v", true, eventPayload.PYPIAccess)
 		}
 
 		if len(eventPayload.UserIdents) != 3 {

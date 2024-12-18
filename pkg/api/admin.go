@@ -2,9 +2,7 @@ package api
 
 import (
 	"context"
-	"database/sql"
 	"encoding/gob"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -438,13 +436,8 @@ func (c *client) syncChartForAllTeams(ctx context.Context, chartType gensql.Char
 func (c *client) syncChart(ctx context.Context, teamID string, chartType gensql.ChartType) error {
 	switch chartType {
 	case gensql.ChartTypeJupyterhub:
-		pypiAccessValue, err := c.repo.TeamValueGet(ctx, chart.TeamValueKeyPYPIAccess, teamID)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return err
-		}
 		values := chart.JupyterConfigurableValues{
-			TeamID:     teamID,
-			PYPIAccess: pypiAccessValue.Value == "true",
+			TeamID: teamID,
 		}
 		return c.repo.RegisterUpdateJupyterEvent(ctx, teamID, values)
 	case gensql.ChartTypeAirflow:

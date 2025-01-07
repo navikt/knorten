@@ -3,7 +3,6 @@ package chart
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/navikt/knorten/pkg/database"
@@ -25,7 +24,6 @@ type JupyterConfigurableValues struct {
 	ImageName     string `helm:"singleuser.image.name"`
 	ImageTag      string `helm:"singleuser.image.tag"`
 	CullTimeout   string `helm:"cull.timeout"`
-	PYPIAccess    bool
 	AllowList     []string
 }
 
@@ -59,10 +57,6 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues *JupyterConf
 		return fmt.Errorf("merging values: %w", err)
 	}
 
-	if err := c.repo.TeamValueInsert(ctx, gensql.ChartTypeJupyterhub, TeamValueKeyPYPIAccess, strconv.FormatBool(values.PYPIAccess), team.ID); err != nil {
-		return fmt.Errorf("inserting %v team value to database: %w", TeamValueKeyPYPIAccess, err)
-	}
-
 	namespace := k8s.TeamIDToNamespace(team.ID)
 
 	if err := c.createHttpRoute(ctx, team.Slug+".jupyter."+c.topLevelDomain, namespace, gensql.ChartTypeJupyterhub); err != nil {
@@ -71,10 +65,6 @@ func (c Client) syncJupyter(ctx context.Context, configurableValues *JupyterConf
 
 	if err := c.createHealthCheckPolicy(ctx, namespace, gensql.ChartTypeJupyterhub); err != nil {
 		return fmt.Errorf("creating health check policy: %w", err)
-	}
-
-	if err := c.alterJupyterDefaultFQDNNetpol(ctx, namespace, configurableValues.PYPIAccess); err != nil {
-		return fmt.Errorf("creating jupyter default FQDN netpol: %w", err)
 	}
 
 	chartValues, err := reflect.CreateChartValues(values)

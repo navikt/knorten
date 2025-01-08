@@ -17,5 +17,5 @@ repositories:
   name: apache-airflow
   pass_credentials_all: false
   password: ""
-  url: https://airflow.apache.org
+  url: oci://europe-north1-docker.pkg.dev/knada-gcp/knada-helm-charts
   username: ""

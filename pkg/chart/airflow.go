@@ -57,6 +57,7 @@ type AirflowValues struct {
 	ExtraEnvs               string `helm:"env"`
 	WebserverEnv            string `helm:"webserver.env"`
 	WebserverServiceAccount string `helm:"webserver.serviceAccount.name"`
+	SchedulerServiceAccount string `helm:"scheduler.serviceAccount.name"`
 	WorkerServiceAccount    string `helm:"workers.serviceAccount.name"`
 	WorkerLabels            string `helm:"workers.labels"`
 }
@@ -259,6 +260,7 @@ func (c Client) mergeAirflowValues(ctx context.Context, team gensql.TeamGetRow, 
 		WebserverEnv:              webserverEnv,
 		WebserverSecretKey:        webserverSecretKey,
 		WebserverServiceAccount:   team.ID,
+		SchedulerServiceAccount:   team.ID,
 		WorkerServiceAccount:      team.ID,
 	}, nil
 }

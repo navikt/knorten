@@ -479,7 +479,7 @@ func (c Client) registerAirflowHelmEvent(ctx context.Context, teamID string, eve
 		Namespace:    k8s.TeamIDToNamespace(teamID),
 		ReleaseName:  string(gensql.ChartTypeAirflow),
 		ChartType:    gensql.ChartTypeAirflow,
-		ChartRepo:    "apache-airflow",
+		ChartRepo:    fmt.Sprintf("oci://%s-docker.pkg.dev/%s/knada-helm-charts", c.gcpRegion, c.gcpProject),
 		ChartName:    "airflow",
 		ChartVersion: c.chartVersionAirflow,
 	}

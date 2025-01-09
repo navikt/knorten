@@ -10,12 +10,3 @@ repositories:
   password: ""
   url: https://jupyterhub.github.io/helm-chart
   username: ""
-- caFile: ""
-  certFile: ""
-  insecure_skip_tls_verify: false
-  keyFile: ""
-  name: apache-airflow
-  pass_credentials_all: false
-  password: ""
-  url: https://airflow.apache.org
-  username: ""

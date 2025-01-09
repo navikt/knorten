@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/oauth2/google"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -24,7 +25,9 @@ import (
 const (
 	// DefaultHelmDriver is set to secrets, which is the default
 	// for Helm 3: https://helm.sh/docs/topics/advanced/#storage-backends
-	DefaultHelmDriver = "secrets"
+	DefaultHelmDriver   = "secrets"
+	ociHost             = "https://europe-north1-docker.pkg.dev"
+	oauth2BasicAuthUser = "oauth2accesstoken"
 )
 
 type ErrRollback struct {
@@ -288,7 +291,7 @@ func (h *Helm) Rollback(_ context.Context, opts *RollbackOpts) error {
 	return nil
 }
 
-func (h *Helm) Fetch(_ context.Context, repo, chartName, version string) (*chart.Chart, error) {
+func (h *Helm) Fetch(ctx context.Context, repo, chartName, version string) (*chart.Chart, error) {
 	restoreFn, err := EstablishEnv(h.config.ToHelmEnvs())
 	if err != nil {
 		return nil, fmt.Errorf("establishing helm env: %w", err)
@@ -312,6 +315,20 @@ func (h *Helm) Fetch(_ context.Context, repo, chartName, version string) (*chart
 		return nil, fmt.Errorf("creating registry client: %w", err)
 	}
 
+	token, err := getGoogleAccessToken(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting token: %w", err)
+	}
+
+	err = registryClient.Login(
+		ociHost,
+		registry.LoginOptBasicAuth(oauth2BasicAuthUser, token),
+		registry.LoginOptInsecure(false),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("logging in to registry: %w", err)
+	}
+
 	actionConfig := new(action.Configuration)
 	actionConfig.RegistryClient = registryClient
 	client := action.NewPullWithOpts(action.WithConfig(actionConfig))
@@ -330,6 +347,20 @@ func (h *Helm) Fetch(_ context.Context, repo, chartName, version string) (*chart
 	}
 
 	return ch, nil
+}
+
+func getGoogleAccessToken(ctx context.Context) (string, error) {
+	tokenSource, err := google.DefaultTokenSource(ctx)
+	if err != nil {
+		return "", fmt.Errorf("getting default token source: %w", err)
+	}
+
+	token, err := tokenSource.Token()
+	if err != nil {
+		return "", fmt.Errorf("getting token: %w", err)
+	}
+
+	return token.AccessToken, nil
 }
 
 func (h *Helm) Update(_ context.Context) error {

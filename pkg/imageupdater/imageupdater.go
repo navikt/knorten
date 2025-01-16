@@ -135,14 +135,7 @@ func (c *client) getImageWithTagFromVersion(ctx context.Context, image string, v
 		Filter: fmt.Sprintf(`version="%v"`, version.Name),
 	})
 
-	for {
-		tag, err := tags.Next()
-		if err != nil {
-			return nil, err
-		}
-
-		return tag, nil
-	}
+	return tags.Next()
 }
 
 func getTagFromImageWithTag(imgWithTag string) string {

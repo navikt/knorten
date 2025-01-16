@@ -92,7 +92,7 @@ func (c *client) syncChart(ctx context.Context, teamID string, chartType gensql.
 	return nil
 }
 
-func (c *client) getLatestImageTagInGAR(ctx context.Context, image, tagsFilter string) (string, error) {
+func (c *client) getLatestImageTagInGAR(ctx context.Context, image string) (string, error) {
 	imagePath, err := imageToGCPPath(image)
 	if err != nil {
 		return "", err
@@ -116,16 +116,16 @@ func (c *client) getLatestImageTagInGAR(ctx context.Context, image, tagsFilter s
 	}
 
 	for i := len(versions) - 1; i >= 0; i-- {
-		tag, err := c.getImageWithTagFromVersion(ctx, image, versions[i], tagsFilter)
+		tag, err := c.getImageWithTagFromVersion(ctx, image, versions[i])
 		if err == nil {
 			return getTagFromImageWithTag(tag.Name), nil
 		}
 	}
 
-	return "", fmt.Errorf("tag for image %v not found in GAR with tags filter %v", image, tagsFilter)
+	return "", fmt.Errorf("tag for image %v not found in GAR", image)
 }
 
-func (c *client) getImageWithTagFromVersion(ctx context.Context, image string, version *artifactregistrypb.Version, tagsFilter string) (*artifactregistrypb.Tag, error) {
+func (c *client) getImageWithTagFromVersion(ctx context.Context, image string, version *artifactregistrypb.Version) (*artifactregistrypb.Tag, error) {
 	imagePath, err := imageToGCPPath(image)
 	if err != nil {
 		return nil, err
@@ -141,9 +141,7 @@ func (c *client) getImageWithTagFromVersion(ctx context.Context, image string, v
 			return nil, err
 		}
 
-		if strings.Contains(tag.Name, tagsFilter) {
-			return tag, nil
-		}
+		return tag, nil
 	}
 }
 

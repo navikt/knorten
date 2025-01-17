@@ -71,13 +71,7 @@ func (c *client) updateIfNeeded(ctx context.Context, p *profile) (bool, error) {
 	image := parts[0]
 	tag := parts[1]
 
-	tagParts := strings.Split(tag, "-")
-	if len(tagParts) != 5 {
-		return false, fmt.Errorf("tag format invalid, should be yyyy-mm-dd-gitsha-pythonVersion, got %v", tag)
-	}
-	pythonVersion := tagParts[4]
-
-	garImageTag, err := c.getLatestImageTagInGAR(ctx, image, pythonVersion)
+	garImageTag, err := c.getLatestImageTagInGAR(ctx, image)
 	if err != nil {
 		return false, err
 	}

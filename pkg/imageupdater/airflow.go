@@ -70,7 +70,7 @@ func (c *client) updateAirflowImage(ctx context.Context, imageNameKey, imageTagK
 		return false, nil
 	}
 
-	garImageTag, err := c.getLatestImageTagInGAR(ctx, imageName.Value, "")
+	garImageTag, err := c.getLatestImageTagInGAR(ctx, imageName.Value)
 	if err != nil {
 		return false, fmt.Errorf("getting latest image in GAR: %w, image: %s", err, imageName.Value)
 	}
@@ -114,7 +114,7 @@ func (c *client) updateGlobalEnvs(ctx context.Context) (bool, error) {
 				return false, fmt.Errorf("invalid image format for image %v, should be <image>:<tag>", env.Value)
 			}
 
-			latestGARImageTag, err := c.getLatestImageTagInGAR(ctx, currentImageParts[0], "")
+			latestGARImageTag, err := c.getLatestImageTagInGAR(ctx, currentImageParts[0])
 			if err != nil {
 				return false, fmt.Errorf("getting latest image in GAR: %w, image: %s", err, currentImageParts[0])
 			}

@@ -23,6 +23,7 @@ spec:
     initdb:
       database: test-database
       owner: test-owner
+  imageName: ghcr.io/cloudnative-pg/postgresql:16
   instances: 2
   postgresql:
     syncReplicaElectionConstraint:

@@ -1,6 +1,8 @@
 package cnpg
 
 import (
+	"fmt"
+
 	cnpgv1 "github.com/cloudnative-pg/cloudnative-pg/api/v1"
 	"github.com/navikt/knorten/pkg/k8s/meta"
 	v1 "k8s.io/api/core/v1"
@@ -9,6 +11,7 @@ import (
 )
 
 const (
+	postgresVersion                = "16"
 	defaultInstanceCount           = 2
 	defaultVolumeSnapshotClassName = "cnpg-vsp"
 	defaultStorageSize             = "10Gi"
@@ -82,6 +85,7 @@ func NewCluster(name, namespace, database, owner string, options ...ClusterOptio
 		},
 		Spec: cnpgv1.ClusterSpec{
 			Instances:             defaultInstanceCount,
+			ImageName:             fmt.Sprintf("ghcr.io/cloudnative-pg/postgresql:%s", postgresVersion),
 			PrimaryUpdateStrategy: cnpgv1.PrimaryUpdateStrategyUnsupervised,
 			PrimaryUpdateMethod:   cnpgv1.PrimaryUpdateMethodSwitchover,
 			StorageConfiguration: cnpgv1.StorageConfiguration{

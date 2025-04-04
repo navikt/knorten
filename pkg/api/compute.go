@@ -27,31 +27,6 @@ func (c *client) setupComputeRoutes() {
 		}
 	}
 
-	c.router.GET("/compute/new", func(ctx *gin.Context) {
-		ctx.HTML(http.StatusOK, "compute/new", gin.H{
-			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
-		})
-	})
-
-	c.router.POST("/compute/new", func(ctx *gin.Context) {
-		err := c.createComputeInstance(ctx)
-		if err != nil {
-			session := sessions.Default(ctx)
-			session.AddFlash(err.Error())
-			err := session.Save()
-			if err != nil {
-				c.log.WithError(err).Error("problem saving session")
-				ctx.Redirect(http.StatusSeeOther, "/compute/new")
-				return
-			}
-			ctx.Redirect(http.StatusSeeOther, "/compute/new")
-			return
-		}
-
-		ctx.Redirect(http.StatusSeeOther, "/oversikt")
-	})
-
 	c.router.GET("/compute/edit", func(ctx *gin.Context) {
 		user, err := getUser(ctx)
 		if err != nil {

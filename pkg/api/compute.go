@@ -10,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
-	"github.com/navikt/knorten/pkg/database/gensql"
 	"github.com/navikt/knorten/pkg/user"
 )
 
@@ -138,19 +137,4 @@ func (c *client) deleteComputeInstance(ctx *gin.Context) error {
 	}
 
 	return c.repo.RegisterDeleteComputeEvent(ctx, user.Email)
-}
-
-func (c *client) createComputeInstance(ctx *gin.Context) error {
-	u, err := getUser(ctx)
-	if err != nil {
-		return err
-	}
-
-	instance := gensql.ComputeInstance{
-		Owner:    u.Email,
-		Name:     "compute-" + getNormalizedNameFromEmail(u.Email),
-		DiskSize: user.DefaultComputeDiskSize,
-	}
-
-	return c.repo.RegisterCreateComputeEvent(ctx, instance.Owner, instance)
 }

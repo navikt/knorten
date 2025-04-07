@@ -72,12 +72,6 @@ type ChartTeamValue struct {
 	TeamID    string
 }
 
-type ComputeInstance struct {
-	Owner    string
-	Name     string
-	DiskSize int32
-}
-
 type Event struct {
 	ID         uuid.UUID
 	Type       string

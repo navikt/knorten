@@ -23,9 +23,6 @@ const (
 	EventTypeCreateAirflow        EventType = "create:airflow"
 	EventTypeUpdateAirflow        EventType = "update:airflow"
 	EventTypeDeleteAirflow        EventType = "delete:airflow"
-	EventTypeCreateCompute        EventType = "create:compute"
-	EventTypeResizeCompute        EventType = "resize:compute"
-	EventTypeDeleteCompute        EventType = "delete:compute"
 	EventTypeCreateUserGSM        EventType = "create:usergsm"
 	EventTypeDeleteUserGSM        EventType = "delete:usergsm"
 	EventTypeHelmRolloutJupyter   EventType = "rolloutJupyter:helm"
@@ -91,18 +88,6 @@ func (r *Repo) RegisterUpdateTeamEvent(ctx context.Context, team gensql.Team) er
 
 func (r *Repo) RegisterDeleteTeamEvent(ctx context.Context, teamID string) error {
 	return r.registerEvent(ctx, EventTypeDeleteTeam, teamID, 5*time.Minute, nil)
-}
-
-func (r *Repo) RegisterDeleteComputeEvent(ctx context.Context, email string) error {
-	return r.registerEvent(ctx, EventTypeDeleteCompute, email, 5*time.Minute, nil)
-}
-
-func (r *Repo) RegisterCreateComputeEvent(ctx context.Context, owner string, values any) error {
-	return r.registerEvent(ctx, EventTypeCreateCompute, owner, 5*time.Minute, values)
-}
-
-func (r *Repo) RegisterResizeComputeDiskEvent(ctx context.Context, owner string, values any) error {
-	return r.registerEvent(ctx, EventTypeResizeCompute, owner, 5*time.Minute, values)
 }
 
 func (r *Repo) RegisterCreateAirflowEvent(ctx context.Context, teamID string, values any) error {

@@ -52,12 +52,6 @@ func (e EventHandler) distributeWork(eventType database.EventType) workerFunc {
 			var manager gensql.UserGoogleSecretManager
 			return e.processWork(ctx, event, logger, &manager)
 		}
-	case database.EventTypeCreateCompute,
-		database.EventTypeResizeCompute:
-		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
-			var instance gensql.ComputeInstance
-			return e.processWork(ctx, event, logger, &instance)
-		}
 	case database.EventTypeCreateAirflow,
 		database.EventTypeUpdateAirflow:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
@@ -72,7 +66,6 @@ func (e EventHandler) distributeWork(eventType database.EventType) workerFunc {
 		}
 	case database.EventTypeDeleteTeam,
 		database.EventTypeDeleteUserGSM,
-		database.EventTypeDeleteCompute,
 		database.EventTypeDeleteAirflow,
 		database.EventTypeDeleteJupyter:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
@@ -135,23 +128,6 @@ func (e EventHandler) processWork(ctx context.Context, event gensql.Event, logge
 		err = e.userClient.CreateUserGSM(ctx, m)
 	case database.EventTypeDeleteUserGSM:
 		err = e.userClient.DeleteUserGSM(ctx, event.Owner)
-	case database.EventTypeCreateCompute:
-		i, ok := form.(*gensql.ComputeInstance)
-		if !ok {
-			return fmt.Errorf("invalid form type for event type %v", event.Type)
-		}
-		logger.Infof("Creating compute instance for user '%v'", i.Owner)
-		err = e.userClient.CreateComputeInstance(ctx, i)
-	case database.EventTypeResizeCompute:
-		i, ok := form.(*gensql.ComputeInstance)
-		if !ok {
-			return fmt.Errorf("invalid form type for event type %v", event.Type)
-		}
-		logger.Infof("Resizing compute instance disk for user '%v'", i.Owner)
-		err = e.userClient.ResizeComputeInstanceDisk(ctx, i)
-	case database.EventTypeDeleteCompute:
-		logger.Infof("Deleting compute instance for user '%v'", event.Owner)
-		err = e.userClient.DeleteComputeInstance(ctx, event.Owner)
 	case database.EventTypeCreateAirflow, database.EventTypeUpdateAirflow:
 		v, ok := form.(*chart.AirflowConfigurableValues)
 		if !ok {

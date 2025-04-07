@@ -15,7 +15,6 @@ func TestUserGSM(t *testing.T) {
 	ctx := context.Background()
 	defaultManager := gensql.UserGoogleSecretManager{
 		Owner: "dummy@nav.no",
-		Name:  "compute-dummy",
 	}
 
 	t.Cleanup(func() {

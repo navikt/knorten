@@ -48,7 +48,6 @@ func New(router *gin.Engine, db *database.Repo, azureClient *auth.Azure, log *lo
 func (c *client) setupAuthenticatedRoutes() {
 	c.setupUserRoutes()
 	c.setupTeamRoutes()
-	c.setupComputeRoutes()
 	c.setupSecretRoutes()
 	c.setupChartRoutes()
 	c.setupMaintenanceExclusionRoutes()

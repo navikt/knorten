@@ -6,7 +6,6 @@ toolchain go1.24.1
 
 require (
 	cloud.google.com/go/artifactregistry v1.16.1
-	cloud.google.com/go/compute v1.31.1
 	cloud.google.com/go/iam v1.3.1
 	cloud.google.com/go/secretmanager v1.14.3
 	cloud.google.com/go/storage v1.50.0

@@ -28,7 +28,6 @@ type TeamServices struct {
 
 type UserServices struct {
 	Services   []TeamServices
-	Compute    *gensql.ComputeInstance
 	UserGSM    *gensql.UserGoogleSecretManager
 	UserEvents []EventWithLogs
 }
@@ -111,16 +110,6 @@ func (r *Repo) ServicesForUser(ctx context.Context, email, topLevelDomain string
 	}
 
 	var hasUserServices bool
-	compute, err := r.querier.ComputeInstanceGet(ctx, email)
-	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			return UserServices{}, err
-		}
-	} else {
-		userServices.Compute = &compute
-		hasUserServices = true
-	}
-
 	manager, err := r.querier.UserGoogleSecretManagerGet(ctx, email)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {

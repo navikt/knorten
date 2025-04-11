@@ -20,9 +20,6 @@
         <div class="flex flex-col gap-4">
             <div class="flex items-center gap-4">
                 <h2>Personlige tjenester</h2>
-                {{ if .user.Compute }}
-                    <a class="navds-button--small navds-button--secondary" href="compute/edit">Rediger</a>
-                {{ end }}
             </div>
             <p>
                 Google Secret Manager er en tjeneste som gir en sikker og praktisk metode for å lagre API-nøkler,
@@ -45,34 +42,6 @@
             </tr>
             </thead>
             <tbody class="navds-table__body">
-            <tr class="navds-table__row navds-table__row--shade-on-hover">
-                <th class="navds-table__header-cell navds-label navds-label--small">
-                    {{ with .user.Compute }}
-                        <a class="navds-link" target="_blank"
-                           href="https://console.cloud.google.com/compute/instancesDetail/zones/{{ $.gcpZone }}/instances/{{ .Name }}?project={{ $.gcpProject }}">
-                            {{ .Name }}
-                        </a>
-                    {{ else }}
-                        Compute instance
-                    {{ end }}
-                </th>
-                <td class="navds-table__data-cell navds-body-short navds-body-short--small">
-                    <a class="navds-link" target="_blank"
-                       href="https://docs.knada.io/analyse/knada-vm/#koble-til-vm-med-ssh">docs.knada.io</a>
-                </td>
-                <td class="navds-table__data-cell navds-body-short navds-body-short--small">
-                    <a class="navds-link" target="_blank" href="https://grafana.nav.cloud.nais.io/d/d3b703a2-e3c8-4702-abd7-54f19469b310/knada-vm-er?orgId=1">
-                       Grafana
-                    </a>
-                </td>
-                <td class="navds-table__data-cell navds-body-short navds-body-short--small">
-                    {{ if .user.Compute }}
-                        <a class="navds-link" href="compute/edit">rediger</a>
-                    {{ else }}
-                        <a class="navds-link" href="/compute/new">opprett</a>
-                    {{ end }}
-                </td>
-            </tr>
             <tr class="navds-table__row navds-table__row--shade-on-hover">
                 <th class="navds-table__header-cell navds-label navds-label--small">
                     {{ with .user.UserGSM }}

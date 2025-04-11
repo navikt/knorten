@@ -11,11 +11,6 @@ import (
 type Querier interface {
 	ChartDelete(ctx context.Context, arg ChartDeleteParams) error
 	ChartsForTeamGet(ctx context.Context, teamID string) ([]ChartType, error)
-	ComputeInstanceCreate(ctx context.Context, arg ComputeInstanceCreateParams) error
-	ComputeInstanceDelete(ctx context.Context, owner string) error
-	ComputeInstanceGet(ctx context.Context, owner string) (ComputeInstance, error)
-	ComputeInstanceUpdate(ctx context.Context, arg ComputeInstanceUpdateParams) error
-	ComputeInstancesGet(ctx context.Context) ([]ComputeInstance, error)
 	EventCreate(ctx context.Context, arg EventCreateParams) error
 	EventGet(ctx context.Context, id uuid.UUID) (Event, error)
 	EventIncrementRetryCount(ctx context.Context, id uuid.UUID) error

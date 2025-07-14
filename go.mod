@@ -29,7 +29,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/ory/dockertest/v3 v3.12.0
 	github.com/pressly/goose/v3 v3.24.1
-	github.com/sebdah/goldie/v2 v2.5.5
+	github.com/sebdah/goldie/v2 v2.7.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.20.1
 	github.com/sqlc-dev/sqlc v1.27.0

@@ -20,6 +20,12 @@ spec:
         kubectl.kubernetes.io/default-container: knorten
     spec:
       serviceAccountName: knorten
+      nodeSelector:
+        knada-infrastructure: ""
+      tolerations:
+        - key: "knada-infrastructure"
+          effect: "NoSchedule"
+          operator: "Exists"
       containers:
         - name: knorten
           image: europe-north1-docker.pkg.dev/knada-gcp/knada-north/knorten

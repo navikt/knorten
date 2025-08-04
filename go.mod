@@ -11,7 +11,7 @@ require (
 	cloud.google.com/go/storage v1.50.0
 	github.com/bradleyfalzon/ghinstallation/v2 v2.16.0
 	github.com/cloudnative-pg/cloudnative-pg v1.24.1
-	github.com/coreos/go-oidc v2.3.0+incompatible
+	github.com/coreos/go-oidc v2.4.0+incompatible
 	github.com/gin-contrib/sessions v1.0.4
 	github.com/gin-gonic/gin v1.10.1
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0

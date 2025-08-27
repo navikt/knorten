@@ -176,6 +176,7 @@ func (h *Helm) Apply(ctx context.Context, loader ChartLoader, opts *ApplyOpts) e
 		installClient.Timeout = timeout
 		installClient.CreateNamespace = true
 		installClient.DryRun = h.config.DryRun
+		installClient.SkipSchemaValidation = true
 		if h.config.Debug {
 			installClient.PostRenderer = NewStreamRenderer(h.config.Err)
 		}
@@ -194,6 +195,7 @@ func (h *Helm) Apply(ctx context.Context, loader ChartLoader, opts *ApplyOpts) e
 	upgradeClient.Namespace = opts.Namespace
 	upgradeClient.Timeout = timeout
 	upgradeClient.DryRun = h.config.DryRun
+	upgradeClient.SkipSchemaValidation = true
 
 	if h.config.Debug {
 		upgradeClient.PostRenderer = NewStreamRenderer(h.config.Err)

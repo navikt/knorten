@@ -16,7 +16,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
-          version: v1.55.2
+          version: v2.1.0
 
   staticchecks:
     permissions:

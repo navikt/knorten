@@ -155,8 +155,8 @@ func TestEnricher(t *testing.T) {
 			values: map[string]any{},
 			expect: map[string]any{
 				"singleuser": map[string]any{
-					"profileList": []map[string]any{
-						{"profile": "value"},
+					"profileList": []any{
+						map[string]any{"profile": "value"},
 					},
 				},
 			},
@@ -213,9 +213,13 @@ func TestEnricher(t *testing.T) {
 			),
 			values: map[string]any{},
 			expect: map[string]any{
-				"env": []map[string]string{
-					{"globalKey": "value"},
-					{"teamKey": "teamValue"},
+				"env": []any{
+					map[string]any{
+						"globalKey": "value",
+					},
+					map[string]any{
+						"teamKey": "teamValue",
+					},
 				},
 			},
 			filter: cmp.FilterPath(func(p cmp.Path) bool {

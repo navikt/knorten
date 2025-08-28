@@ -1,73 +1,52 @@
+version: "2"
 run:
-  go: '1.22'
-  timeout: 10m
-
+  go: "1.23"
 linters:
-  enable-all: true
+  default: all
   disable:
-    # Linters that check comments for correctness; disallow fixme, todo, etc., missing punctuation, etc.
-    - godox
-    - godot
-    - stylecheck
-
-    # Linters with dubious value
     - depguard
+    - err113
+    - exhaustive
+    - exhaustruct
+    - godot
+    - godox
     - tagalign
     - tagliatelle
-    - goerr113
-    - gci
     - varnamelen
-
-    # These linters find structures with uninitialized fields, which is useful under
-    # certain conditions, but shouldn't be generally enabled.
-    - exhaustivestruct
-    - exhaustruct
-    - exhaustive
-
-    # DEPRECATED LINTERS: do not re-enable
-    # These linters have been abandoned by their authors and are no longer maintained, and
-    # most have been replaced by newer linters.
-    - deadcode
-    - golint
-    - ifshort
-    - interfacer
-    - maligned
-    - nosnakecase
-    - scopelint
-    - structcheck
-    - varcheck
-
-issues:
-  # Show only new issues created after git revision
-  # A long-term goal should be to fix all existing issues, and then remove this
-  new-from-rev: HEAD
-
-  exclude-use-default: false
-  exclude-rules:
-    - path: (.+)_test.go
-      # NOTE: We should be very careful about excluding linters for test files, as tests are
-      # also code and should be held to the same standards as the rest of the code.
-      # Only exclude linters that are known to be problematic for test files, or don't
-      # add value.
-      linters:
-        - dogsled
-        - funlen
-  exclude:
-    # should have a package comment, unless it's in another file for this package (golint)
-    - 'in another file for this package'
-
-linters-settings:
-  dupl:
-    threshold: 400
-  lll:
-    line-length: 170
-  gocyclo:
-    min-complexity: 15
-  revive:
-    ignore-generated-header: true
+  settings:
+    dupl:
+      threshold: 400
+    gocyclo:
+      min-complexity: 15
+    lll:
+      line-length: 170
+    revive:
+      rules:
+        - name: package-comments
+          disabled: true
+  exclusions:
+    generated: lax
     rules:
-      - name: package-comments
-        disabled: true
-
-output:
-  format: colored-line-number
+      - linters:
+          - dogsled
+          - funlen
+        path: (.+)_test.go
+      - path: (.+)\.go$
+        text: in another file for this package
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+issues:
+  new-from-rev: HEAD
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

@@ -174,7 +174,7 @@ type JupyterhubEnricher struct {
 }
 
 func (e *JupyterhubEnricher) Enrich(ctx context.Context, values map[string]any) (map[string]any, error) {
-	var userProfiles []map[string]any
+	var userProfiles []any
 
 	userProfileList, err := e.store.TeamValueGet(ctx, ProfileListKey, e.teamID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
@@ -193,7 +193,7 @@ func (e *JupyterhubEnricher) Enrich(ctx context.Context, values map[string]any) 
 		return nil, fmt.Errorf("getting global profile list: %w", err)
 	}
 
-	var globalProfiles []map[string]any
+	var globalProfiles []any
 
 	if !errors.Is(err, sql.ErrNoRows) {
 		err = json.Unmarshal([]byte(globalProfileList.Value), &globalProfiles)

@@ -155,8 +155,8 @@ func TestEnricher(t *testing.T) {
 			values: map[string]any{},
 			expect: map[string]any{
 				"singleuser": map[string]any{
-					"profileList": []map[string]any{
-						{"profile": "value"},
+					"profileList": []any{
+						map[string]any{"profile": "value"},
 					},
 				},
 			},

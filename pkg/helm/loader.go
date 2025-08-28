@@ -174,7 +174,7 @@ type JupyterhubEnricher struct {
 }
 
 func (e *JupyterhubEnricher) Enrich(ctx context.Context, values map[string]any) (map[string]any, error) {
-	var userProfiles []map[string]any
+	var userProfiles []any
 
 	userProfileList, err := e.store.TeamValueGet(ctx, ProfileListKey, e.teamID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
@@ -193,7 +193,7 @@ func (e *JupyterhubEnricher) Enrich(ctx context.Context, values map[string]any) 
 		return nil, fmt.Errorf("getting global profile list: %w", err)
 	}
 
-	var globalProfiles []map[string]any
+	var globalProfiles []any
 
 	if !errors.Is(err, sql.ErrNoRows) {
 		err = json.Unmarshal([]byte(globalProfileList.Value), &globalProfiles)
@@ -240,60 +240,60 @@ func (e *AirflowEnricher) Enrich(ctx context.Context, values map[string]any) (ma
 
 	image := map[string]any{
 		"workers": map[string]any{
-			"extraInitContainers": []map[string]any{
-				{
+			"extraInitContainers": []any{
+				map[string]any{
 					"name":  "knaudit",
 					"image": knauditImage.Value,
-					"env": []map[string]any{
-						{
+					"env": []any{
+						map[string]any{
 							"name":      "POD_NAME",
-							"valueFrom": map[string]any{"fieldRef": map[string]string{"fieldPath": "metadata.name"}},
+							"valueFrom": map[string]any{"fieldRef": map[string]any{"fieldPath": "metadata.name"}},
 						},
-						{
+						map[string]any{
 							"name":      "NAMESPACE",
-							"valueFrom": map[string]any{"fieldRef": map[string]string{"fieldPath": "metadata.namespace"}},
+							"valueFrom": map[string]any{"fieldRef": map[string]any{"fieldPath": "metadata.namespace"}},
 						},
-						{
+						map[string]any{
 							"name":  "KNAUDIT_PROXY_URL",
 							"value": "http://knaudit-proxy.knada-system.svc.cluster.local",
 						},
-						{
+						map[string]any{
 							"name":  "CA_CERT_PATH",
 							"value": "/etc/pki/tls/certs/ca-bundle.crt",
 						},
-						{
+						map[string]any{
 							"name":  "GIT_REPO_PATH",
 							"value": "/dags",
 						},
-						{
+						map[string]any{
 							"name":      "AIRFLOW_DAG_ID",
-							"valueFrom": map[string]any{"fieldRef": map[string]string{"fieldPath": "metadata.annotations['dag_id']"}},
+							"valueFrom": map[string]any{"fieldRef": map[string]any{"fieldPath": "metadata.annotations['dag_id']"}},
 						},
-						{
+						map[string]any{
 							"name":      "AIRFLOW_RUN_ID",
-							"valueFrom": map[string]any{"fieldRef": map[string]string{"fieldPath": "metadata.annotations['run_id']"}},
+							"valueFrom": map[string]any{"fieldRef": map[string]any{"fieldPath": "metadata.annotations['run_id']"}},
 						},
-						{
+						map[string]any{
 							"name":      "AIRFLOW_TASK_ID",
-							"valueFrom": map[string]any{"fieldRef": map[string]string{"fieldPath": "metadata.annotations['task_id']"}},
+							"valueFrom": map[string]any{"fieldRef": map[string]any{"fieldPath": "metadata.annotations['task_id']"}},
 						},
-						{
+						map[string]any{
 							"name":      "AIRFLOW_DB_URL",
-							"valueFrom": map[string]any{"secretKeyRef": map[string]string{"name": "airflow-db", "key": "connection"}},
+							"valueFrom": map[string]any{"secretKeyRef": map[string]any{"name": "airflow-db", "key": "connection"}},
 						},
 					},
 					"resources": map[string]any{
-						"requests": map[string]string{
+						"requests": map[string]any{
 							"cpu":    "200m",
 							"memory": "128Mi",
 						},
 					},
-					"volumeMounts": []map[string]any{
-						{
+					"volumeMounts": []any{
+						map[string]any{
 							"mountPath": "/dags",
 							"name":      "dags",
 						},
-						{
+						map[string]any{
 							"mountPath": "/etc/pki/tls/certs/ca-bundle.crt",
 							"name":      "ca-bundle-pem",
 							"readOnly":  true,
@@ -317,7 +317,7 @@ func (e *AirflowEnricher) Enrich(ctx context.Context, values map[string]any) (ma
 		return nil, fmt.Errorf("getting global envs: %w", err)
 	}
 
-	var globalEnvs []map[string]string
+	var globalEnvs []any
 	if err := json.Unmarshal([]byte(globalEnvsSQL.Value), &globalEnvs); err != nil {
 		return nil, fmt.Errorf("unmarshalling global envs: %w", err)
 	}
@@ -327,7 +327,7 @@ func (e *AirflowEnricher) Enrich(ctx context.Context, values map[string]any) (ma
 		return nil, fmt.Errorf("getting team envs: %w", err)
 	}
 
-	var teamEnvs []map[string]string
+	var teamEnvs []any
 	if err := json.Unmarshal([]byte(teamEnvsSQL.Value), &teamEnvs); err != nil {
 		return nil, fmt.Errorf("unmarshalling team envs: %w", err)
 	}

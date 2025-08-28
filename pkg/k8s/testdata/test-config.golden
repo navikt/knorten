@@ -11,7 +11,6 @@ contexts:
   name: test-config
 current-context: test-config
 kind: Config
-preferences: {}
 users:
 - name: test-config
   user: {}

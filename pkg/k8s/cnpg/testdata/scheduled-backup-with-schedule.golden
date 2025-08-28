@@ -1,7 +1,6 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup
 metadata:
-  creationTimestamp: null
   labels:
     managed-by: knorten.knada.io
   name: test-scheduled-backup

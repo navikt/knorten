@@ -1,7 +1,6 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  creationTimestamp: null
   labels:
     app: test-app
     managed-by: knorten.knada.io

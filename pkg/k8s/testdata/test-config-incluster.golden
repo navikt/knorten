@@ -11,7 +11,6 @@ contexts:
   name: test-config-incluster
 current-context: test-config-incluster
 kind: Config
-preferences: {}
 users:
 - name: test-config-incluster
   user:

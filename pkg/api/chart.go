@@ -1,9 +1,7 @@
 package api
 
 import (
-	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -309,29 +307,6 @@ func (c *client) setupChartRoutes() {
 	})
 }
 
-func (c *client) getExistingAllowlist(ctx context.Context, teamID string) ([]string, error) {
-	extraAnnotations, err := c.repo.TeamValueGet(ctx, "singleuser.extraAnnotations", teamID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return []string{}, nil
-		}
-		return nil, err
-	}
-
-	var annotations map[string]string
-	if err := json.Unmarshal([]byte(extraAnnotations.Value), &annotations); err != nil {
-		return nil, err
-	}
-
-	for k, v := range annotations {
-		if k == "allowlist" {
-			return strings.Split(v, ","), nil
-		}
-	}
-
-	return []string{}, nil
-}
-
 func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.ChartType) error {
 	team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
 	if err != nil {
@@ -485,24 +460,4 @@ func (c *client) deleteChart(ctx *gin.Context, teamSlug, chartTypeString string)
 	}
 
 	return fmt.Errorf("chart type %v is not supported", chartTypeString)
-}
-
-func parseCPU(cpu string) (string, error) {
-	floatVal, err := strconv.ParseFloat(cpu, 64)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%.1f", floatVal), nil
-}
-
-func parseMemory(memory string) (string, error) {
-	if strings.HasSuffix(memory, "G") {
-		return memory, nil
-	}
-	_, err := strconv.ParseFloat(memory, 64)
-	if err != nil {
-		return "", err
-	}
-	return memory + "G", nil
 }

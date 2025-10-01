@@ -52,6 +52,11 @@ func TestAdminAPI(t *testing.T) {
 			t.Error(err)
 		}
 
+		eventsTeamA, err := repo.EventsByOwnerGet(ctx, teams[0].ID, 1)
+		if err != nil {
+			t.Error(err)
+		}
+
 		eventsTeamB, err := repo.EventsByOwnerGet(ctx, teams[1].ID, 1)
 		if err != nil {
 			t.Error(err)
@@ -59,6 +64,12 @@ func TestAdminAPI(t *testing.T) {
 
 		expected, err := createExpectedHTML("admin/index", map[string]any{
 			"teams": []teamInfo{
+				{
+					Team:      teams[0],
+					Namespace: k8s.TeamIDToNamespace(teams[0].ID),
+					Apps:      []gensql.ChartType{},
+					Events:    eventsTeamA,
+				},
 				{
 					Team:      teams[1],
 					Namespace: k8s.TeamIDToNamespace(teams[1].ID),

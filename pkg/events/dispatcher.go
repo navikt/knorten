@@ -145,7 +145,6 @@ func (e EventHandler) processWork(
 		if !ok {
 			return fmt.Errorf("invalid form type for event type %v", event.Type)
 		}
-
 		logger.Infof("Rolling out helm chart for team '%v'", d.TeamID)
 		err = e.helmClient.InstallOrUpgrade(ctx, d)
 	case database.EventTypeHelmRollbackAirflow:
@@ -153,7 +152,6 @@ func (e EventHandler) processWork(
 		if !ok {
 			return fmt.Errorf("invalid form type for event type %v", event.Type)
 		}
-
 		logger.Infof("Rolling back helm chart for team '%v'", d.TeamID)
 		err = e.helmClient.Rollback(ctx, d)
 	case database.EventTypeHelmUninstallAirflow:
@@ -161,7 +159,6 @@ func (e EventHandler) processWork(
 		if !ok {
 			return fmt.Errorf("invalid form type for event type %v", event.Type)
 		}
-
 		logger.Infof("Uninstalling helm chart for team '%v'", d.TeamID)
 		err = e.helmClient.Uninstall(ctx, d)
 	case database.EventTypeDeleteSchedulerPods:
@@ -172,6 +169,8 @@ func (e EventHandler) processWork(
 
 		logger.Infof("Deleting Airflow scheduler pods for team '%v'", event.Owner)
 		err = e.airflowClient.DeleteSchedulerPods(ctx, props.Namespace)
+		logger.Infof("Uninstalling helm chart for team '%v'", d.TeamID)
+		err = e.helmClient.Uninstall(ctx, d)
 	}
 
 	if err != nil {
@@ -190,12 +189,8 @@ func NewHandler(
 	saBinder gcpapi.ServiceAccountPolicyBinder,
 	saChecker gcpapi.ServiceAccountChecker,
 	client *helm.Client,
-<<<<<<< HEAD
 	teamAirflowClient airflowClient,
-	gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion, topLevelDomain string,
-=======
 	gcpProject, gcpRegion, gcpZone, airflowChartVersion, topLevelDomain string,
->>>>>>> dfda333 (Fjern jupyterhub fra backend)
 	maintenanceExclusionConfig *maintenance.MaintenanceExclusion,
 	dryRun bool,
 	log *logrus.Entry,

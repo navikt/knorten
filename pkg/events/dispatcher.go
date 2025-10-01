@@ -133,6 +133,27 @@ func (e EventHandler) processWork(
 		err = e.chartClient.SyncAirflow(ctx, v)
 	case database.EventTypeDeleteAirflow:
 		err = e.chartClient.DeleteAirflow(ctx, event.Owner)
+	case database.EventTypeHelmRolloutAirflow:
+		d, ok := form.(*helm.EventData)
+		if !ok {
+			return fmt.Errorf("invalid form type for event type %v", event.Type)
+		}
+		logger.Infof("Rolling out helm chart for team '%v'", d.TeamID)
+		err = e.helmClient.InstallOrUpgrade(ctx, d)
+	case database.EventTypeHelmRollbackAirflow:
+		d, ok := form.(*helm.EventData)
+		if !ok {
+			return fmt.Errorf("invalid form type for event type %v", event.Type)
+		}
+		logger.Infof("Rolling back helm chart for team '%v'", d.TeamID)
+		err = e.helmClient.Rollback(ctx, d)
+	case database.EventTypeHelmUninstallAirflow:
+		d, ok := form.(*helm.EventData)
+		if !ok {
+			return fmt.Errorf("invalid form type for event type %v", event.Type)
+		}
+		logger.Infof("Uninstalling helm chart for team '%v'", d.TeamID)
+		err = e.helmClient.Uninstall(ctx, d)
 	}
 
 	if err != nil {

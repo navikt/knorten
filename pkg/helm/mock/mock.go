@@ -21,25 +21,38 @@ type EnricherStore struct {
 // We should probably have a mock for each of the interfaces in the helm package, but
 // for now we will make it a little simpler, and just create one store mock for all enrichers
 var (
-	_ helm.GlobalEnricherStore     = &EnricherStore{}
-	_ helm.TeamEnricherStore       = &EnricherStore{}
-	_ helm.AirflowEnricherStore    = &EnricherStore{}
-	_ helm.JupyterhubEnricherStore = &EnricherStore{}
+	_ helm.GlobalEnricherStore  = &EnricherStore{}
+	_ helm.TeamEnricherStore    = &EnricherStore{}
+	_ helm.AirflowEnricherStore = &EnricherStore{}
 )
 
-func (s *EnricherStore) GlobalValuesGet(ctx context.Context, chartType gensql.ChartType) ([]gensql.ChartGlobalValue, error) {
+func (s *EnricherStore) GlobalValuesGet(
+	ctx context.Context,
+	chartType gensql.ChartType,
+) ([]gensql.ChartGlobalValue, error) {
 	return s.GlobalValuesGetFn(ctx, chartType)
 }
 
-func (s *EnricherStore) GlobalValueGet(ctx context.Context, chartType gensql.ChartType, key string) (gensql.ChartGlobalValue, error) {
+func (s *EnricherStore) GlobalValueGet(
+	ctx context.Context,
+	chartType gensql.ChartType,
+	key string,
+) (gensql.ChartGlobalValue, error) {
 	return s.GlobalValueGetFn(ctx, chartType, key)
 }
 
-func (s *EnricherStore) TeamValueGet(ctx context.Context, key, teamID string) (gensql.ChartTeamValue, error) {
+func (s *EnricherStore) TeamValueGet(
+	ctx context.Context,
+	key, teamID string,
+) (gensql.ChartTeamValue, error) {
 	return s.TeamValueGetFn(ctx, key, teamID)
 }
 
-func (s *EnricherStore) TeamValuesGet(ctx context.Context, chartType gensql.ChartType, teamID string) ([]gensql.ChartTeamValue, error) {
+func (s *EnricherStore) TeamValuesGet(
+	ctx context.Context,
+	chartType gensql.ChartType,
+	teamID string,
+) ([]gensql.ChartTeamValue, error) {
 	return s.TeamValuesGetFn(ctx, chartType, teamID)
 }
 
@@ -57,7 +70,12 @@ func (e *EnricherStore) SetTeamValue(key string, value gensql.ChartTeamValue) *E
 	return e
 }
 
-func NewEnricherStore(decryptValue *string, globalValue *gensql.ChartGlobalValue, teamValue *gensql.ChartTeamValue, err error) *EnricherStore {
+func NewEnricherStore(
+	decryptValue *string,
+	globalValue *gensql.ChartGlobalValue,
+	teamValue *gensql.ChartTeamValue,
+	err error,
+) *EnricherStore {
 	e := &EnricherStore{
 		globalValues: map[string]gensql.ChartGlobalValue{},
 		teamValues:   map[string]gensql.ChartTeamValue{},

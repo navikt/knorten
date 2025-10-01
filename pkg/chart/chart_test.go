@@ -54,7 +54,14 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	azureClient, err = auth.NewAzureClient(true, "", "", "", "", logrus.NewEntry(logrus.StandardLogger()))
+	azureClient, err = auth.NewAzureClient(
+		true,
+		"",
+		"",
+		"",
+		"",
+		logrus.NewEntry(logrus.StandardLogger()),
+	)
 	if err != nil {
 		log.Fatalf("creating azure client: %v", err)
 	}
@@ -83,11 +90,6 @@ func TestCharts(t *testing.T) {
 
 	operation := func(ctx context.Context, eventType database.EventType, values any, chartClient *Client) error {
 		switch eventType {
-		case database.EventTypeCreateJupyter,
-			database.EventTypeUpdateJupyter:
-			return chartClient.SyncJupyter(ctx, values.(*JupyterConfigurableValues))
-		case database.EventTypeDeleteJupyter:
-			return chartClient.DeleteJupyter(ctx, values.(*JupyterConfigurableValues).TeamID)
 		case database.EventTypeCreateAirflow,
 			database.EventTypeUpdateAirflow:
 			return chartClient.SyncAirflow(ctx, values.(*AirflowConfigurableValues))
@@ -109,80 +111,6 @@ func TestCharts(t *testing.T) {
 		args args
 		want map[string]string
 	}{
-		{
-			name: "Create jupyter chart",
-			args: args{
-				eventType: database.EventTypeCreateJupyter,
-				chartType: gensql.ChartTypeJupyterhub,
-				values: &JupyterConfigurableValues{
-					TeamID:        team.ID,
-					UserIdents:    []string{"d123456", "u654321"},
-					CPULimit:      "1.0",
-					CPURequest:    "1.0",
-					MemoryLimit:   "2G",
-					MemoryRequest: "1G",
-					ImageName:     "ghcr.io/navikt/image",
-					ImageTag:      "v1",
-					CullTimeout:   "7200",
-				},
-			},
-			want: map[string]string{
-				"cull.timeout":                                        "7200",
-				"singleuser.image.name":                               "ghcr.io/navikt/image",
-				"singleuser.image.tag":                                "v1",
-				"singleuser.cpu.limit":                                "1.0",
-				"singleuser.cpu.guarantee":                            "1.0",
-				"singleuser.memory.limit":                             "2G",
-				"singleuser.memory.guarantee":                         "1G",
-				"singleuser.extraLabels":                              `{"team": "test-team-1234", "hub.jupyter.org/network-access-hub": "true"}`,
-				"hub.config.Authenticator.allowed_users":              `["d123456", "u654321"]`,
-				"hub.config.AzureAdOAuthenticator.oauth_callback_url": "https://test-team.jupyter.knada.io/hub/oauth_callback",
-				"singleuser.extraEnv.KNADA_TEAM_SECRET":               `projects/project/secrets/test-team-1234`,
-				"singleuser.profileList":                              `[{"display_name":"Custom image","description":"Custom image for team test-team-1234","kubespawner_override":{"image":"ghcr.io/navikt/image:v1"}}]`,
-			},
-		},
-		{
-			name: "Update jupyter chart",
-			args: args{
-				eventType: database.EventTypeCreateJupyter,
-				chartType: gensql.ChartTypeJupyterhub,
-				values: &JupyterConfigurableValues{
-					TeamID:        team.ID,
-					UserIdents:    []string{"d123456"},
-					CPULimit:      "1.0",
-					MemoryLimit:   "4G",
-					MemoryRequest: "2G",
-					ImageName:     "ghcr.io/navikt/image",
-					ImageTag:      "v2",
-					CullTimeout:   "7200",
-				},
-			},
-			want: map[string]string{
-				"cull.timeout":                                        "7200",
-				"singleuser.image.name":                               "ghcr.io/navikt/image",
-				"singleuser.image.tag":                                "v2",
-				"singleuser.cpu.limit":                                "1.0",
-				"singleuser.cpu.guarantee":                            "1.0",
-				"singleuser.memory.limit":                             "4G",
-				"singleuser.memory.guarantee":                         "2G",
-				"singleuser.extraLabels":                              `{"team": "test-team-1234", "hub.jupyter.org/network-access-hub": "true"}`,
-				"hub.config.Authenticator.allowed_users":              `["d123456"]`,
-				"hub.config.AzureAdOAuthenticator.oauth_callback_url": "https://test-team.jupyter.knada.io/hub/oauth_callback",
-				"singleuser.extraEnv.KNADA_TEAM_SECRET":               `projects/project/secrets/test-team-1234`,
-				"singleuser.profileList":                              `[{"display_name":"Custom image","description":"Custom image for team test-team-1234","kubespawner_override":{"image":"ghcr.io/navikt/image:v2"}}]`,
-			},
-		},
-		{
-			name: "Delete jupyter chart",
-			args: args{
-				eventType: database.EventTypeDeleteJupyter,
-				chartType: gensql.ChartTypeJupyterhub,
-				values: &JupyterConfigurableValues{
-					TeamID: team.ID,
-				},
-			},
-			want: map[string]string{},
-		},
 		{
 			name: "Create airflow chart",
 			args: args{
@@ -267,7 +195,6 @@ func TestCharts(t *testing.T) {
 				gcpapi.NewServiceAccountChecker("project", fetcher),
 				true,
 				"1.10.0",
-				"2.0.0",
 				"project",
 				"",
 				"knada.io",

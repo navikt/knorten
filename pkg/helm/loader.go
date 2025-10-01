@@ -2,9 +2,7 @@ package helm
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/navikt/knorten/pkg/database/gensql"
@@ -47,7 +45,11 @@ func (l *ClassicLoader) Load(ctx context.Context) (*chart.Chart, error) {
 	return ch, nil
 }
 
-func NewClassicLoader(repositoryName, chartName, version string, fetcher ChartFetcher, enricher Enricher) *ClassicLoader {
+func NewClassicLoader(
+	repositoryName, chartName, version string,
+	fetcher ChartFetcher,
+	enricher Enricher,
+) *ClassicLoader {
 	return &ClassicLoader{
 		RepositoryName: repositoryName,
 		ChartName:      chartName,
@@ -80,7 +82,10 @@ func NewChainEnricher(enrichers ...Enricher) *ChainEnricher {
 }
 
 type GlobalEnricherStore interface {
-	GlobalValuesGet(ctx context.Context, chartType gensql.ChartType) ([]gensql.ChartGlobalValue, error)
+	GlobalValuesGet(
+		ctx context.Context,
+		chartType gensql.ChartType,
+	) ([]gensql.ChartGlobalValue, error)
 	DecryptValue(encValue string) (string, error)
 }
 
@@ -89,7 +94,10 @@ type GlobalEnricher struct {
 	store     GlobalEnricherStore
 }
 
-func (g *GlobalEnricher) Enrich(ctx context.Context, values map[string]any) (map[string]any, error) {
+func (g *GlobalEnricher) Enrich(
+	ctx context.Context,
+	values map[string]any,
+) (map[string]any, error) {
 	dbValues, err := g.store.GlobalValuesGet(ctx, g.chartType)
 	if err != nil {
 		return nil, fmt.Errorf("getting global values: %w", err)
@@ -126,7 +134,11 @@ func NewGlobalEnricher(chartType gensql.ChartType, store GlobalEnricherStore) *G
 }
 
 type TeamEnricherStore interface {
-	TeamValuesGet(ctx context.Context, chartType gensql.ChartType, teamID string) ([]gensql.ChartTeamValue, error)
+	TeamValuesGet(
+		ctx context.Context,
+		chartType gensql.ChartType,
+		teamID string,
+	) ([]gensql.ChartTeamValue, error)
 }
 
 type TeamEnricher struct {
@@ -155,7 +167,11 @@ func (e TeamEnricher) Enrich(ctx context.Context, values map[string]any) (map[st
 	return values, nil
 }
 
-func NewTeamEnricher(chartType gensql.ChartType, teamID string, store TeamEnricherStore) *TeamEnricher {
+func NewTeamEnricher(
+	chartType gensql.ChartType,
+	teamID string,
+	store TeamEnricherStore,
+) *TeamEnricher {
 	return &TeamEnricher{
 		chartType: chartType,
 		teamID:    teamID,
@@ -163,67 +179,12 @@ func NewTeamEnricher(chartType gensql.ChartType, teamID string, store TeamEnrich
 	}
 }
 
-type JupyterhubEnricherStore interface {
-	TeamValueGet(ctx context.Context, key, teamID string) (gensql.ChartTeamValue, error)
-	GlobalValueGet(ctx context.Context, chartType gensql.ChartType, key string) (gensql.ChartGlobalValue, error)
-}
-
-type JupyterhubEnricher struct {
-	teamID string
-	store  JupyterhubEnricherStore
-}
-
-func (e *JupyterhubEnricher) Enrich(ctx context.Context, values map[string]any) (map[string]any, error) {
-	var userProfiles []any
-
-	userProfileList, err := e.store.TeamValueGet(ctx, ProfileListKey, e.teamID)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return nil, fmt.Errorf("getting user profile list: %w", err)
-	}
-
-	if !errors.Is(err, sql.ErrNoRows) {
-		err = json.Unmarshal([]byte(userProfileList.Value), &userProfiles)
-		if err != nil {
-			return nil, fmt.Errorf("unmarshalling user profile list: %w", err)
-		}
-	}
-
-	globalProfileList, err := e.store.GlobalValueGet(ctx, gensql.ChartTypeJupyterhub, ProfileListKey)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return nil, fmt.Errorf("getting global profile list: %w", err)
-	}
-
-	var globalProfiles []any
-
-	if !errors.Is(err, sql.ErrNoRows) {
-		err = json.Unmarshal([]byte(globalProfileList.Value), &globalProfiles)
-		if err != nil {
-			return nil, fmt.Errorf("unmarshalling global profile list: %w", err)
-		}
-	}
-
-	profiles := append(userProfiles, globalProfiles...)
-
-	if len(profiles) > 0 {
-		mergeMaps(values, map[string]any{
-			"singleuser": map[string]any{
-				"profileList": append(userProfiles, globalProfiles...),
-			},
-		})
-	}
-
-	return values, nil
-}
-
-func NewJupyterhubEnricher(teamID string, store JupyterhubEnricherStore) *JupyterhubEnricher {
-	return &JupyterhubEnricher{
-		store:  store,
-		teamID: teamID,
-	}
-}
-
 type AirflowEnricherStore interface {
-	GlobalValueGet(ctx context.Context, chartType gensql.ChartType, key string) (gensql.ChartGlobalValue, error)
+	GlobalValueGet(
+		ctx context.Context,
+		chartType gensql.ChartType,
+		key string,
+	) (gensql.ChartGlobalValue, error)
 	TeamValueGet(ctx context.Context, key, teamID string) (gensql.ChartTeamValue, error)
 }
 
@@ -232,7 +193,10 @@ type AirflowEnricher struct {
 	store  AirflowEnricherStore
 }
 
-func (e *AirflowEnricher) Enrich(ctx context.Context, values map[string]any) (map[string]any, error) {
+func (e *AirflowEnricher) Enrich(
+	ctx context.Context,
+	values map[string]any,
+) (map[string]any, error) {
 	knauditImage, err := e.store.GlobalValueGet(ctx, gensql.ChartTypeAirflow, KnauditImageKey)
 	if err != nil {
 		return nil, fmt.Errorf("getting knaudit image: %w", err)
@@ -246,12 +210,16 @@ func (e *AirflowEnricher) Enrich(ctx context.Context, values map[string]any) (ma
 					"image": knauditImage.Value,
 					"env": []any{
 						map[string]any{
-							"name":      "POD_NAME",
-							"valueFrom": map[string]any{"fieldRef": map[string]any{"fieldPath": "metadata.name"}},
+							"name": "POD_NAME",
+							"valueFrom": map[string]any{
+								"fieldRef": map[string]any{"fieldPath": "metadata.name"},
+							},
 						},
 						map[string]any{
-							"name":      "NAMESPACE",
-							"valueFrom": map[string]any{"fieldRef": map[string]any{"fieldPath": "metadata.namespace"}},
+							"name": "NAMESPACE",
+							"valueFrom": map[string]any{
+								"fieldRef": map[string]any{"fieldPath": "metadata.namespace"},
+							},
 						},
 						map[string]any{
 							"name":  "KNAUDIT_PROXY_URL",
@@ -266,20 +234,37 @@ func (e *AirflowEnricher) Enrich(ctx context.Context, values map[string]any) (ma
 							"value": "/dags",
 						},
 						map[string]any{
-							"name":      "AIRFLOW_DAG_ID",
-							"valueFrom": map[string]any{"fieldRef": map[string]any{"fieldPath": "metadata.annotations['dag_id']"}},
+							"name": "AIRFLOW_DAG_ID",
+							"valueFrom": map[string]any{
+								"fieldRef": map[string]any{
+									"fieldPath": "metadata.annotations['dag_id']",
+								},
+							},
 						},
 						map[string]any{
-							"name":      "AIRFLOW_RUN_ID",
-							"valueFrom": map[string]any{"fieldRef": map[string]any{"fieldPath": "metadata.annotations['run_id']"}},
+							"name": "AIRFLOW_RUN_ID",
+							"valueFrom": map[string]any{
+								"fieldRef": map[string]any{
+									"fieldPath": "metadata.annotations['run_id']",
+								},
+							},
 						},
 						map[string]any{
-							"name":      "AIRFLOW_TASK_ID",
-							"valueFrom": map[string]any{"fieldRef": map[string]any{"fieldPath": "metadata.annotations['task_id']"}},
+							"name": "AIRFLOW_TASK_ID",
+							"valueFrom": map[string]any{
+								"fieldRef": map[string]any{
+									"fieldPath": "metadata.annotations['task_id']",
+								},
+							},
 						},
 						map[string]any{
-							"name":      "AIRFLOW_DB_URL",
-							"valueFrom": map[string]any{"secretKeyRef": map[string]any{"name": "airflow-db", "key": "connection"}},
+							"name": "AIRFLOW_DB_URL",
+							"valueFrom": map[string]any{
+								"secretKeyRef": map[string]any{
+									"name": "airflow-db",
+									"key":  "connection",
+								},
+							},
 						},
 					},
 					"resources": map[string]any{

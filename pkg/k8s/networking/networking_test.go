@@ -37,15 +37,6 @@ func TestHTTPRoute(t *testing.T) {
 			),
 		},
 		{
-			name: "route-with-jupyterhub",
-			desc: "Create a new route with jupyterhub",
-			route: networking.NewJupyterhubHTTPRoute(
-				"test-route",
-				"test-namespace",
-				"hostname.example.com",
-			),
-		},
-		{
 			name: "route-with-airflow",
 			desc: "Create a new route with airflow",
 			route: networking.NewAirflowHTTPRoute(
@@ -100,16 +91,6 @@ func TestHealthCheckPolicy(t *testing.T) {
 				)
 			},
 		},
-		{
-			name: "healthcheckpolicy-with-jupyterhub",
-			desc: "Create a new health check policy with jupyterhub",
-			fn: func() (*unstructured.Unstructured, error) {
-				return networking.NewJupyterhubHealthCheckPolicy(
-					"jupyter-test-policy",
-					"test-namespace",
-				)
-			},
-		},
 	}
 
 	for _, tc := range testCases {
@@ -144,14 +125,13 @@ func TestNewNetworkPolicy(t *testing.T) {
 		policy *netv1.NetworkPolicy
 	}{
 		{
-			name:   "plain-networkpolicy",
-			desc:   "Create a new network policy",
-			policy: networking.NewNetworkPolicy("test-policy", "test-namespace", map[string]string{"app": "test-app"}),
-		},
-		{
-			name:   "jupyter-pypi-networkpolicy",
-			desc:   "Create a new network policy for jupyterhub that allows access to PyPi",
-			policy: networking.NewNetworkPolicyJupyterPyPi("jupyter-policy", "test-namespace"),
+			name: "plain-networkpolicy",
+			desc: "Create a new network policy",
+			policy: networking.NewNetworkPolicy(
+				"test-policy",
+				"test-namespace",
+				map[string]string{"app": "test-app"},
+			),
 		},
 	}
 

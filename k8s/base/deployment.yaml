@@ -39,11 +39,6 @@ spec:
                 configMapKeyRef:
                   name: helm-repos
                   key: airflow_chart_version
-            - name: KNORTEN_HELM_JUPYTER_CHART_VERSION
-              valueFrom:
-                configMapKeyRef:
-                  name: helm-repos
-                  key: jupyter_chart_version
             - name: ELECTOR_PATH
               value: localhost:4040
             - name: KNORTEN_GITHUB_APPLICATION_ID

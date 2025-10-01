@@ -50,10 +50,6 @@ func (c *client) Run(frequency time.Duration) {
 }
 
 func (c *client) run(ctx context.Context) {
-	if err := c.updateJupyterhubImages(ctx); err != nil {
-		c.log.WithError(err).Error("updating jupyterhub images")
-	}
-
 	if err := c.updateAirflowImages(ctx); err != nil {
 		c.log.WithError(err).Error("updating airflow images")
 	}
@@ -77,11 +73,6 @@ func (c *client) triggerSync(ctx context.Context, chartType gensql.ChartType) er
 
 func (c *client) syncChart(ctx context.Context, teamID string, chartType gensql.ChartType) error {
 	switch chartType {
-	case gensql.ChartTypeJupyterhub:
-		values := chart.JupyterConfigurableValues{
-			TeamID: teamID,
-		}
-		return c.repo.RegisterUpdateJupyterEvent(ctx, teamID, values)
 	case gensql.ChartTypeAirflow:
 		values := chart.AirflowConfigurableValues{
 			TeamID: teamID,
@@ -125,7 +116,11 @@ func (c *client) getLatestImageTagInGAR(ctx context.Context, image string) (stri
 	return "", fmt.Errorf("tag for image %v not found in GAR", image)
 }
 
-func (c *client) getImageWithTagFromVersion(ctx context.Context, image string, version *artifactregistrypb.Version) (*artifactregistrypb.Tag, error) {
+func (c *client) getImageWithTagFromVersion(
+	ctx context.Context,
+	image string,
+	version *artifactregistrypb.Version,
+) (*artifactregistrypb.Tag, error) {
 	imagePath, err := imageToGCPPath(image)
 	if err != nil {
 		return nil, err
@@ -153,5 +148,11 @@ func imageToGCPPath(image string) (string, error) {
 	repository := imageParts[2]
 	imageName := imageParts[3]
 
-	return fmt.Sprintf("projects/%v/locations/%v/repositories/%v/packages/%v", project, location, repository, imageName), nil
+	return fmt.Sprintf(
+		"projects/%v/locations/%v/repositories/%v/packages/%v",
+		project,
+		location,
+		repository,
+		imageName,
+	), nil
 }

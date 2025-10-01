@@ -1,9 +1,7 @@
 package api
 
 import (
-	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -20,45 +18,15 @@ import (
 	"github.com/navikt/knorten/pkg/database/gensql"
 )
 
-type jupyterForm struct {
-	CPULimit      string   `form:"cpulimit" binding:"validCPUSpec"`
-	CPURequest    string   `form:"cpurequest" binding:"validCPUSpec"`
-	MemoryLimit   string   `form:"memorylimit" binding:"validMemorySpec"`
-	MemoryRequest string   `form:"memoryrequest" binding:"validMemorySpec"`
-	ImageName     string   `form:"imagename"`
-	ImageTag      string   `form:"imagetag"`
-	CullTimeout   string   `form:"culltimeout"`
-	PYPIAccess    string   `form:"pypiaccess"`
-	Allowlist     []string `form:"allowlist[]"`
-}
-
-func (v jupyterForm) MemoryLimitWithoutUnit() string {
-	if v.MemoryLimit == "" {
-		return ""
-	}
-
-	return v.MemoryLimit[:len(v.MemoryLimit)-1]
-}
-
-func (v jupyterForm) MemoryRequestWithoutUnit() string {
-	if v.MemoryRequest == "" {
-		return ""
-	}
-
-	return v.MemoryRequest[:len(v.MemoryRequest)-1]
-}
-
 type airflowForm struct {
-	DagRepo       string `form:"dagrepo" binding:"required,startswith=navikt/,validAirflowRepo"`
+	DagRepo       string `form:"dagrepo"       binding:"required,startswith=navikt/,validAirflowRepo"`
 	DagRepoBranch string `form:"dagrepobranch" binding:"validRepoBranch"`
-	AirflowImage  string `form:"airflowimage" binding:"validAirflowImage"`
+	AirflowImage  string `form:"airflowimage"  binding:"validAirflowImage"`
 	ApiAccess     string `form:"apiaccess"`
 }
 
 func getChartType(chartType string) gensql.ChartType {
 	switch chartType {
-	case string(gensql.ChartTypeJupyterhub):
-		return gensql.ChartTypeJupyterhub
 	case string(gensql.ChartTypeAirflow):
 		return gensql.ChartTypeAirflow
 	default:
@@ -124,8 +92,6 @@ func (c *client) setupChartRoutes() {
 
 		var form any
 		switch chartType {
-		case gensql.ChartTypeJupyterhub:
-			form = jupyterForm{}
 		case gensql.ChartTypeAirflow:
 			form = airflowForm{}
 		default:
@@ -153,7 +119,10 @@ func (c *client) setupChartRoutes() {
 
 		err = session.Save()
 		if err != nil {
-			c.log.WithField("team", slug).WithField("chart", chartType).WithError(err).Error("problem saving session")
+			c.log.WithField("team", slug).
+				WithField("chart", chartType).
+				WithError(err).
+				Error("problem saving session")
 			ctx.JSON(http.StatusInternalServerError, map[string]string{
 				"status":  strconv.Itoa(http.StatusInternalServerError),
 				"message": "Internal server error",
@@ -162,12 +131,14 @@ func (c *client) setupChartRoutes() {
 		}
 
 		ctx.HTML(http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
-			"team":                  slug,
-			"form":                  form,
-			"errors":                flashes,
-			"upgradePausedStatuses": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams([]string{team.ID}),
-			"loggedIn":              ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":               ctx.GetBool(middlewares.AdminKey),
+			"team":   slug,
+			"form":   form,
+			"errors": flashes,
+			"upgradePausedStatuses": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams(
+				[]string{team.ID},
+			),
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -242,12 +213,14 @@ func (c *client) setupChartRoutes() {
 		}
 
 		ctx.HTML(http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
-			"team":                  teamSlug,
-			"values":                form,
-			"errors":                flashes,
-			"upgradePausedStatuses": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams([]string{teamID}),
-			"loggedIn":              ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":               ctx.GetBool(middlewares.AdminKey),
+			"team":   teamSlug,
+			"values": form,
+			"errors": flashes,
+			"upgradePausedStatuses": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams(
+				[]string{teamID},
+			),
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -273,7 +246,10 @@ func (c *client) setupChartRoutes() {
 			err := session.Save()
 			if err != nil {
 				log.WithError(err).Error("problem saving session")
-				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", teamSlug, chartType))
+				ctx.Redirect(
+					http.StatusSeeOther,
+					fmt.Sprintf("/team/%v/%v/edit", teamSlug, chartType),
+				)
 				return
 			}
 
@@ -291,7 +267,8 @@ func (c *client) setupChartRoutes() {
 
 		err := c.deleteChart(ctx, teamSlug, chartTypeString)
 		if err != nil {
-			log.WithError(err).Errorf("problem deleting chart %v for team %v", chartTypeString, teamSlug)
+			log.WithError(err).
+				Errorf("problem deleting chart %v for team %v", chartTypeString, teamSlug)
 			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
@@ -304,29 +281,6 @@ func (c *client) setupChartRoutes() {
 	})
 }
 
-func (c *client) getExistingAllowlist(ctx context.Context, teamID string) ([]string, error) {
-	extraAnnotations, err := c.repo.TeamValueGet(ctx, "singleuser.extraAnnotations", teamID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return []string{}, nil
-		}
-		return nil, err
-	}
-
-	var annotations map[string]string
-	if err := json.Unmarshal([]byte(extraAnnotations.Value), &annotations); err != nil {
-		return nil, err
-	}
-
-	for k, v := range annotations {
-		if k == "allowlist" {
-			return strings.Split(v, ","), nil
-		}
-	}
-
-	return []string{}, nil
-}
-
 func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.ChartType) error {
 	team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
 	if err != nil {
@@ -334,57 +288,6 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 	}
 
 	switch chartType {
-	case gensql.ChartTypeJupyterhub:
-		var form jupyterForm
-		err := ctx.ShouldBindWith(&form, binding.Form)
-		if err != nil {
-			return err
-		}
-
-		cullTimeout, err := strconv.ParseUint(form.CullTimeout, 10, 64)
-		if err != nil {
-			return err
-		}
-
-		userIdents, err := c.azureClient.ConvertEmailsToIdents(team.Users)
-		if err != nil {
-			return err
-		}
-
-		cpuLimit, err := parseCPU(form.CPULimit)
-		if err != nil {
-			return err
-		}
-
-		cpuRequest, err := parseCPU(form.CPURequest)
-		if err != nil {
-			return err
-		}
-
-		memoryLimit, err := parseMemory(form.MemoryLimit)
-		if err != nil {
-			return err
-		}
-
-		memoryRequest, err := parseMemory(form.MemoryRequest)
-		if err != nil {
-			return err
-		}
-
-		values := chart.JupyterConfigurableValues{
-			TeamID:        team.ID,
-			UserIdents:    userIdents,
-			CPULimit:      cpuLimit,
-			CPURequest:    cpuRequest,
-			MemoryLimit:   memoryLimit,
-			MemoryRequest: memoryRequest,
-			ImageName:     form.ImageName,
-			ImageTag:      form.ImageTag,
-			CullTimeout:   strconv.FormatUint(cullTimeout, 10),
-			AllowList:     removeEmptySliceElements(form.Allowlist),
-		}
-
-		return c.repo.RegisterCreateJupyterEvent(ctx, team.ID, values)
 	case gensql.ChartTypeAirflow:
 		var form airflowForm
 		err := ctx.ShouldBindWith(&form, binding.Form)
@@ -420,7 +323,11 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 	return fmt.Errorf("chart type %v is not supported", chartType)
 }
 
-func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensql.ChartType) (any, string, error) {
+func (c *client) getEditChart(
+	ctx *gin.Context,
+	teamSlug string,
+	chartType gensql.ChartType,
+) (any, string, error) {
 	team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
 	if err != nil {
 		return nil, "", err
@@ -428,8 +335,6 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 
 	var chartObjects any
 	switch chartType {
-	case gensql.ChartTypeJupyterhub:
-		chartObjects = &chart.JupyterConfigurableValues{}
 	case gensql.ChartTypeAirflow:
 		chartObjects = &chart.AirflowConfigurableValues{}
 	default:
@@ -443,34 +348,6 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 
 	var form any
 	switch chartType {
-	case gensql.ChartTypeJupyterhub:
-		jupyterhubValues := chartObjects.(*chart.JupyterConfigurableValues)
-		allowlist, err := c.getExistingAllowlist(ctx, team.ID)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, "", err
-		}
-
-		pypiAccessTeamValue, err := c.repo.TeamValueGet(ctx, chart.TeamValueKeyPYPIAccess, team.ID)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, "", err
-		}
-
-		pypiAccess := "off"
-		if pypiAccessTeamValue.Value == "true" {
-			pypiAccess = "on"
-		}
-
-		form = jupyterForm{
-			CPULimit:      jupyterhubValues.CPULimit,
-			CPURequest:    jupyterhubValues.CPURequest,
-			MemoryLimit:   jupyterhubValues.MemoryLimit,
-			MemoryRequest: jupyterhubValues.MemoryRequest,
-			ImageName:     jupyterhubValues.ImageName,
-			ImageTag:      jupyterhubValues.ImageTag,
-			CullTimeout:   jupyterhubValues.CullTimeout,
-			PYPIAccess:    pypiAccess,
-			Allowlist:     allowlist,
-		}
 	case gensql.ChartTypeAirflow:
 		airflowValues := chartObjects.(*chart.AirflowConfigurableValues)
 		apiAccessTeamValue, err := c.repo.TeamValueGet(ctx, chart.TeamValueKeyApiAccess, team.ID)
@@ -485,7 +362,11 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 
 		airflowImage := ""
 		if airflowValues.AirflowImage != "" && airflowValues.AirflowTag != "" {
-			airflowImage = fmt.Sprintf("%v:%v", airflowValues.AirflowImage, airflowValues.AirflowTag)
+			airflowImage = fmt.Sprintf(
+				"%v:%v",
+				airflowValues.AirflowImage,
+				airflowValues.AirflowTag,
+			)
 		}
 
 		form = airflowForm{
@@ -506,52 +387,6 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 	}
 
 	switch chartType {
-	case gensql.ChartTypeJupyterhub:
-		var form jupyterForm
-		err := ctx.ShouldBindWith(&form, binding.Form)
-		if err != nil {
-			return err
-		}
-
-		userIdents, err := c.azureClient.ConvertEmailsToIdents(team.Users)
-		if err != nil {
-			return err
-		}
-
-		cpuLimit, err := parseCPU(form.CPULimit)
-		if err != nil {
-			return err
-		}
-
-		cpuRequest, err := parseCPU(form.CPURequest)
-		if err != nil {
-			return err
-		}
-
-		memoryLimit, err := parseMemory(form.MemoryLimit)
-		if err != nil {
-			return err
-		}
-
-		memoryRequest, err := parseMemory(form.MemoryRequest)
-		if err != nil {
-			return err
-		}
-
-		values := chart.JupyterConfigurableValues{
-			TeamID:        team.ID,
-			UserIdents:    userIdents,
-			CPULimit:      cpuLimit,
-			CPURequest:    cpuRequest,
-			MemoryLimit:   memoryLimit,
-			MemoryRequest: memoryRequest,
-			ImageName:     form.ImageName,
-			ImageTag:      form.ImageTag,
-			CullTimeout:   form.CullTimeout,
-			AllowList:     removeEmptySliceElements(form.Allowlist),
-		}
-
-		return c.repo.RegisterUpdateJupyterEvent(ctx, team.ID, values)
 	case gensql.ChartTypeAirflow:
 		var form airflowForm
 		err := ctx.ShouldBindWith(&form, binding.Form)
@@ -594,31 +429,9 @@ func (c *client) deleteChart(ctx *gin.Context, teamSlug, chartTypeString string)
 	}
 
 	switch getChartType(chartTypeString) {
-	case gensql.ChartTypeJupyterhub:
-		return c.repo.RegisterDeleteJupyterEvent(ctx, team.ID)
 	case gensql.ChartTypeAirflow:
 		return c.repo.RegisterDeleteAirflowEvent(ctx, team.ID)
 	}
 
 	return fmt.Errorf("chart type %v is not supported", chartTypeString)
-}
-
-func parseCPU(cpu string) (string, error) {
-	floatVal, err := strconv.ParseFloat(cpu, 64)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%.1f", floatVal), nil
-}
-
-func parseMemory(memory string) (string, error) {
-	if strings.HasSuffix(memory, "G") {
-		return memory, nil
-	}
-	_, err := strconv.ParseFloat(memory, 64)
-	if err != nil {
-		return "", err
-	}
-	return memory + "G", nil
 }

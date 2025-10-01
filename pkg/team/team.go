@@ -24,7 +24,12 @@ type Client struct {
 	dryRun     bool
 }
 
-func NewClient(repo *database.Repo, mngr k8s.Manager, gcpProject, gcpRegion string, dryRun bool) (*Client, error) {
+func NewClient(
+	repo *database.Repo,
+	mngr k8s.Manager,
+	gcpProject, gcpRegion string,
+	dryRun bool,
+) (*Client, error) {
 	return &Client{
 		repo:       repo,
 		manager:    mngr,
@@ -77,7 +82,14 @@ func (c Client) Update(ctx context.Context, team *gensql.Team) error {
 		return fmt.Errorf("updating k8s namespace: %w", err)
 	}
 
-	err = c.manager.ApplyServiceAccount(ctx, core.NewServiceAccount(team.ID, namespace, core.WithGKEIAMAccountAnnotation(team.ID, c.gcpProject)))
+	err = c.manager.ApplyServiceAccount(
+		ctx,
+		core.NewServiceAccount(
+			team.ID,
+			namespace,
+			core.WithGKEIAMAccountAnnotation(team.ID, c.gcpProject),
+		),
+	)
 	if err != nil {
 		return fmt.Errorf("updating k8s service account: %w", err)
 	}
@@ -93,13 +105,6 @@ func (c Client) Update(ctx context.Context, team *gensql.Team) error {
 
 	for _, app := range apps {
 		switch app {
-		case gensql.ChartTypeJupyterhub:
-			jupyterValues := chart.JupyterConfigurableValues{
-				TeamID: team.ID,
-			}
-			if err := c.repo.RegisterUpdateJupyterEvent(ctx, team.ID, jupyterValues); err != nil {
-				return fmt.Errorf("registering Jupyter update event: %w", err)
-			}
 		case gensql.ChartTypeAirflow:
 			airflowValues := chart.AirflowConfigurableValues{
 				TeamID: team.ID,

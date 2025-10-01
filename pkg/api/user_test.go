@@ -60,12 +60,6 @@ func TestUserAPI(t *testing.T) {
 					{
 						TeamID: team.ID,
 						Slug:   team.Slug,
-						Jupyterhub: &database.AppService{
-							App:       string(gensql.ChartTypeJupyterhub),
-							Ingress:   fmt.Sprintf("https://%v.jupyter.test.io", team.Slug),
-							Slug:      team.Slug,
-							Namespace: k8s.TeamIDToNamespace(team.ID),
-						},
 						Airflow: &database.AppService{
 							App:       string(gensql.ChartTypeAirflow),
 							Ingress:   fmt.Sprintf("https://%v.airflow.test.io", team.Slug),
@@ -99,10 +93,6 @@ func prepareUserTests(ctx context.Context) (*gensql.Team, error) {
 	}
 	err := repo.TeamCreate(ctx, &team)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := createChart(ctx, team.ID, gensql.ChartTypeJupyterhub); err != nil {
 		return nil, err
 	}
 

@@ -2,7 +2,6 @@ package helm_test
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 	"testing"
@@ -48,7 +47,12 @@ func TestEnricher(t *testing.T) {
 			name: "global: with stored values",
 			enricher: helm.NewGlobalEnricher(
 				"test",
-				mock.NewEnricherStore(nil, &gensql.ChartGlobalValue{Key: "global", Value: "value"}, nil, nil),
+				mock.NewEnricherStore(
+					nil,
+					&gensql.ChartGlobalValue{Key: "global", Value: "value"},
+					nil,
+					nil,
+				),
 			),
 			values: map[string]any{},
 			expect: map[string]any{"global": "value"},
@@ -57,7 +61,12 @@ func TestEnricher(t *testing.T) {
 			name: "global: with stored and existing values",
 			enricher: helm.NewGlobalEnricher(
 				"test",
-				mock.NewEnricherStore(nil, &gensql.ChartGlobalValue{Key: "global", Value: "value"}, nil, nil),
+				mock.NewEnricherStore(
+					nil,
+					&gensql.ChartGlobalValue{Key: "global", Value: "value"},
+					nil,
+					nil,
+				),
 			),
 			values: map[string]any{"global": "old"},
 			expect: map[string]any{"global": "value"},
@@ -66,7 +75,12 @@ func TestEnricher(t *testing.T) {
 			name: "global: with decrypted stored values",
 			enricher: helm.NewGlobalEnricher(
 				"test",
-				mock.NewEnricherStore(&decrypted, &gensql.ChartGlobalValue{Key: "global", Value: "enc", Encrypted: true}, nil, nil),
+				mock.NewEnricherStore(
+					&decrypted,
+					&gensql.ChartGlobalValue{Key: "global", Value: "enc", Encrypted: true},
+					nil,
+					nil,
+				),
 			),
 			values: map[string]any{},
 			expect: map[string]any{"global": "decrypted"},
@@ -96,7 +110,12 @@ func TestEnricher(t *testing.T) {
 			enricher: helm.NewTeamEnricher(
 				"test",
 				"team",
-				mock.NewEnricherStore(nil, nil, &gensql.ChartTeamValue{Key: "team", Value: "value"}, nil),
+				mock.NewEnricherStore(
+					nil,
+					nil,
+					&gensql.ChartTeamValue{Key: "team", Value: "value"},
+					nil,
+				),
 			),
 			values: map[string]any{},
 			expect: map[string]any{"team": "value"},
@@ -106,7 +125,12 @@ func TestEnricher(t *testing.T) {
 			enricher: helm.NewTeamEnricher(
 				"test",
 				"team",
-				mock.NewEnricherStore(nil, nil, &gensql.ChartTeamValue{Key: "team", Value: "value"}, nil),
+				mock.NewEnricherStore(
+					nil,
+					nil,
+					&gensql.ChartTeamValue{Key: "team", Value: "value"},
+					nil,
+				),
 			),
 			values: map[string]any{"team": "old"},
 			expect: map[string]any{"team": "value"},
@@ -116,50 +140,15 @@ func TestEnricher(t *testing.T) {
 			enricher: helm.NewTeamEnricher(
 				"test",
 				"team",
-				mock.NewEnricherStore(nil, nil, &gensql.ChartTeamValue{Key: "fernetKey", Value: "value"}, nil),
+				mock.NewEnricherStore(
+					nil,
+					nil,
+					&gensql.ChartTeamValue{Key: "fernetKey", Value: "value"},
+					nil,
+				),
 			),
 			values: map[string]any{},
 			expect: map[string]any{},
-		},
-		{
-			name: "jupyterhub: with no errors or values",
-			enricher: helm.NewJupyterhubEnricher(
-				"team",
-				mock.NewEnricherStore(nil, nil, nil, sql.ErrNoRows),
-			),
-			values: map[string]any{},
-			expect: map[string]any{},
-		},
-		{
-			name: "jupyterhub: with error",
-			enricher: helm.NewJupyterhubEnricher(
-				"team",
-				mock.NewEnricherStore(nil, nil, nil, fmt.Errorf("oops")),
-			),
-			expectErr: true,
-		},
-		{
-			name: "jupyterhub: with stored values",
-			enricher: helm.NewJupyterhubEnricher(
-				"team",
-				mock.NewEnricherStore(nil, nil, nil, nil).
-					SetTeamValue(helm.ProfileListKey, gensql.ChartTeamValue{
-						Key:   helm.ProfileListKey,
-						Value: "[]",
-					}).
-					SetGlobalValue(helm.ProfileListKey, gensql.ChartGlobalValue{
-						Key:   helm.ProfileListKey,
-						Value: "[{\"profile\": \"value\"}]",
-					}),
-			),
-			values: map[string]any{},
-			expect: map[string]any{
-				"singleuser": map[string]any{
-					"profileList": []any{
-						map[string]any{"profile": "value"},
-					},
-				},
-			},
 		},
 		{
 			name: "airflow: with no errors or values",
@@ -225,26 +214,6 @@ func TestEnricher(t *testing.T) {
 			filter: cmp.FilterPath(func(p cmp.Path) bool {
 				return strings.Contains(p.GoString(), "workers")
 			}, cmp.Ignore()),
-		},
-		{
-			name: "chain: with no errors or values",
-			enricher: helm.NewChainEnricher(
-				helm.NewGlobalEnricher(
-					"test",
-					mock.NewEnricherStore(nil, nil, nil, nil),
-				),
-				helm.NewTeamEnricher(
-					"test",
-					"team",
-					mock.NewEnricherStore(nil, nil, nil, nil),
-				),
-				helm.NewJupyterhubEnricher(
-					"team",
-					mock.NewEnricherStore(nil, nil, nil, sql.ErrNoRows),
-				),
-			),
-			values: map[string]any{},
-			expect: map[string]any{},
 		},
 	}
 

@@ -85,12 +85,14 @@ func (c *client) setupAdminRoutes() {
 		}
 
 		ctx.HTML(http.StatusOK, "admin/index", gin.H{
-			"errors":               flashes,
-			"teams":                teamApps,
-			"gcpProject":           c.gcpProject,
-			"airflowUgradesPaused": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams(getTeamIDs(teams)),
-			"loggedIn":             ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":              ctx.GetBool(middlewares.AdminKey),
+			"errors":     flashes,
+			"teams":      teamApps,
+			"gcpProject": c.gcpProject,
+			"airflowUgradesPaused": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams(
+				getTeamIDs(teams),
+			),
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -393,10 +395,12 @@ func (c *client) setupAdminRoutes() {
 		}
 
 		ctx.HTML(http.StatusOK, "admin/maintenance-exclusion", gin.H{
-			"errors":               flashes,
-			"airflowUgradesPaused": c.maintenanceExclusionConfig.ExclusionPeriodsForTeams(getTeamIDs(teams)),
-			"loggedIn":             ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":              ctx.GetBool(middlewares.AdminKey),
+			"errors": flashes,
+			"airflowUgradesPaused": c.maintenanceExclusionConfig.ExclusionPeriodsForTeams(
+				getTeamIDs(teams),
+			),
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 }
@@ -435,11 +439,6 @@ func (c *client) syncChartForAllTeams(ctx context.Context, chartType gensql.Char
 
 func (c *client) syncChart(ctx context.Context, teamID string, chartType gensql.ChartType) error {
 	switch chartType {
-	case gensql.ChartTypeJupyterhub:
-		values := chart.JupyterConfigurableValues{
-			TeamID: teamID,
-		}
-		return c.repo.RegisterUpdateJupyterEvent(ctx, teamID, values)
 	case gensql.ChartTypeAirflow:
 		values := chart.AirflowConfigurableValues{
 			TeamID: teamID,
@@ -450,7 +449,11 @@ func (c *client) syncChart(ctx context.Context, teamID string, chartType gensql.
 	return nil
 }
 
-func (c *client) findGlobalValueChanges(ctx context.Context, formValues url.Values, chartType gensql.ChartType) (map[string]diffValue, error) {
+func (c *client) findGlobalValueChanges(
+	ctx context.Context,
+	formValues url.Values,
+	chartType gensql.ChartType,
+) (map[string]diffValue, error) {
 	originals, err := c.repo.GlobalValuesGet(ctx, chartType)
 	if err != nil {
 		return nil, err
@@ -462,7 +465,12 @@ func (c *client) findGlobalValueChanges(ctx context.Context, formValues url.Valu
 	return changed, nil
 }
 
-func (c *client) updateGlobalValues(ctx context.Context, formValues url.Values, chartType gensql.ChartType, resync bool) error {
+func (c *client) updateGlobalValues(
+	ctx context.Context,
+	formValues url.Values,
+	chartType gensql.ChartType,
+	resync bool,
+) error {
 	for key, values := range formValues {
 		if values[0] == "" {
 			err := c.repo.GlobalValueDelete(ctx, key, chartType)
@@ -501,7 +509,11 @@ func (c *client) parseValue(values []string) (string, bool, error) {
 	return values[0], false, nil
 }
 
-func findDeletedValues(changedValues map[string]diffValue, originals []gensql.ChartGlobalValue, formValues url.Values) {
+func findDeletedValues(
+	changedValues map[string]diffValue,
+	originals []gensql.ChartGlobalValue,
+	formValues url.Values,
+) {
 	for _, original := range originals {
 		notFound := true
 		for key := range formValues {
@@ -519,7 +531,10 @@ func findDeletedValues(changedValues map[string]diffValue, originals []gensql.Ch
 	}
 }
 
-func findChangedValues(originals []gensql.ChartGlobalValue, formValues url.Values) map[string]diffValue {
+func findChangedValues(
+	originals []gensql.ChartGlobalValue,
+	formValues url.Values,
+) map[string]diffValue {
 	changedValues := map[string]diffValue{}
 
 	for key, values := range formValues {

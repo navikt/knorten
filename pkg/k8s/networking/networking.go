@@ -16,14 +16,11 @@ import (
 const (
 	defaultAirflowServiceName       = "airflow-webserver"
 	defaultAirflowPort              = 8080
-	defaultJupyterhubServiceName    = "proxy-public"
-	defaultJupyterhubPort           = 80
 	defaultHTTPRouteSystemNamespace = "knada-system"
 	defaultHTTPRouteName            = "knada-io"
 	httpRouteKind                   = "HTTPRoute"
 	gatewayKind                     = "Gateway"
 	serviceKind                     = "Service"
-	groupNameCore                   = "core"
 )
 
 type HTTPRouteOption func(*gwapiv1b1.HTTPRoute)
@@ -62,7 +59,10 @@ func WithServiceBackend(serviceName string, port int) HTTPRouteOption {
 	}
 }
 
-func NewHTTPRoute(name, namespace, hostname string, options ...HTTPRouteOption) *gwapiv1b1.HTTPRoute {
+func NewHTTPRoute(
+	name, namespace, hostname string,
+	options ...HTTPRouteOption,
+) *gwapiv1b1.HTTPRoute {
 	route := &gwapiv1b1.HTTPRoute{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       httpRouteKind,
@@ -87,20 +87,17 @@ func NewHTTPRoute(name, namespace, hostname string, options ...HTTPRouteOption) 
 	return route
 }
 
-func NewHTTPRouteWithDefaultGateway(name, namespace, hostname string, options ...HTTPRouteOption) *gwapiv1b1.HTTPRoute {
+func NewHTTPRouteWithDefaultGateway(
+	name, namespace, hostname string,
+	options ...HTTPRouteOption,
+) *gwapiv1b1.HTTPRoute {
 	return NewHTTPRoute(name, namespace, hostname, append(options, WithDefaultGatewayRef())...)
 }
 
-func NewJupyterhubHTTPRoute(name, namespace, hostname string, options ...HTTPRouteOption) *gwapiv1b1.HTTPRoute {
-	options = append(
-		options,
-		WithServiceBackend(defaultJupyterhubServiceName, defaultJupyterhubPort),
-	)
-
-	return NewHTTPRouteWithDefaultGateway(name, namespace, hostname, options...)
-}
-
-func NewAirflowHTTPRoute(name, namespace, hostname string, options ...HTTPRouteOption) *gwapiv1b1.HTTPRoute {
+func NewAirflowHTTPRoute(
+	name, namespace, hostname string,
+	options ...HTTPRouteOption,
+) *gwapiv1b1.HTTPRoute {
 	options = append(
 		options,
 		WithServiceBackend(defaultAirflowServiceName, defaultAirflowPort),
@@ -171,7 +168,10 @@ func WithHTTPHealthCheck(requestPath string) HealthCheckPolicyOption {
 	}
 }
 
-func NewHealthCheckPolicy(name, namespace string, options ...HealthCheckPolicyOption) (*unstructured.Unstructured, error) {
+func NewHealthCheckPolicy(
+	name, namespace string,
+	options ...HealthCheckPolicyOption,
+) (*unstructured.Unstructured, error) {
 	policy := &HealthCheckPolicy{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       healthCheckPolicyKind,
@@ -204,15 +204,6 @@ func NewAirflowHealthCheckPolicy(name, namespace string) (*unstructured.Unstruct
 		namespace,
 		WithServiceTargetRef(defaultAirflowServiceName),
 		WithHTTPHealthCheck("/health"),
-	)
-}
-
-func NewJupyterhubHealthCheckPolicy(name, namespace string) (*unstructured.Unstructured, error) {
-	return NewHealthCheckPolicy(
-		name,
-		namespace,
-		WithServiceTargetRef(defaultJupyterhubServiceName),
-		WithHTTPHealthCheck("/hub/login"),
 	)
 }
 
@@ -300,7 +291,11 @@ func WithEgressRule(ports map[int32]string, ipBlocks []string) NetworkPolicyOpti
 	}
 }
 
-func NewNetworkPolicy(name, namespace string, matchLabels map[string]string, options ...NetworkPolicyOption) *netv1.NetworkPolicy {
+func NewNetworkPolicy(
+	name, namespace string,
+	matchLabels map[string]string,
+	options ...NetworkPolicyOption,
+) *netv1.NetworkPolicy {
 	p := &netv1.NetworkPolicy{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       networkPolicyKind,
@@ -323,27 +318,6 @@ func NewNetworkPolicy(name, namespace string, matchLabels map[string]string, opt
 	}
 
 	return p
-}
-
-func NewNetworkPolicyJupyterPyPi(name, namespace string) *netv1.NetworkPolicy {
-	return NewNetworkPolicy(
-		name,
-		namespace,
-		map[string]string{
-			"app":       "jupyterhub",
-			"component": "singleuser-server",
-		},
-		// Fastly CDN (for Pypi)
-		// curl -v  "https://api.fastly.com/public-ip-list" -H "Accept: application/json"
-		WithEgressRule(
-			map[int32]string{
-				443: "TCP",
-			},
-			[]string{
-				"151.101.0.0/16",
-			},
-		),
-	)
 }
 
 func groupPtr(group string) *gwapiv1b1.Group {

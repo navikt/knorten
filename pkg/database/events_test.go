@@ -68,26 +68,6 @@ func TestRepo_DispatchableEventsGet(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "Dispatchable events verify new not dispatchable when processing same type",
-			args: args{
-				events: []gensql.Event{
-					{
-						Type:    string(EventTypeDeleteJupyter),
-						Payload: []byte("{}"),
-						Status:  string(EventStatusNew),
-						Owner:   team.ID,
-					},
-					{
-						Type:    string(EventTypeUpdateJupyter),
-						Payload: []byte("{}"),
-						Status:  string(EventStatusProcessing),
-						Owner:   team.ID,
-					},
-				},
-			},
-			want: []gensql.Event{},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

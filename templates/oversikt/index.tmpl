@@ -141,18 +141,6 @@
                     </td>
                     <td class="navds-table__data-cell navds-body-short navds-body-short--small"></td>
                 </tr>
-                {{ with .Jupyterhub }}
-                    {{ template "oversikt/row" . }}
-                {{ else }}
-                    <tr class="navds-table__row navds-table__row--shade-on-hover">
-                        <th class="navds-table__header-cell navds-label navds-label--small">Jupyter</th>
-                        <td class="navds-table__data-cell navds-body-short navds-body-short--small"></td>
-                        <td class="navds-table__data-cell navds-body-short navds-body-short--small"></td>
-                        <td class="navds-table__data-cell navds-body-short navds-body-short--small">
-                            <a class="navds-link" href="/team/{{ .Slug }}/jupyterhub/new">Installer</a>
-                        </td>
-                    </tr>
-                {{ end }}
                 {{ with .Airflow }}
                     {{ template "oversikt/row" . }}
                 {{ else }}

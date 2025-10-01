@@ -60,8 +60,6 @@ func (c *Client) InstallOrUpgrade(ctx context.Context, ev *EventData) error {
 	}
 
 	switch ev.ChartType {
-	case gensql.ChartTypeJupyterhub:
-		enrichers = append(enrichers, NewJupyterhubEnricher(ev.TeamID, c.repo))
 	case gensql.ChartTypeAirflow:
 		enrichers = append(enrichers, NewAirflowEnricher(ev.TeamID, c.repo))
 	}
@@ -92,8 +90,6 @@ func handleErrWithRollback(ctx context.Context, err error, helmEvent *EventData,
 	var rollbackErr *ErrRollback
 	if errors.As(err, &rollbackErr) {
 		switch helmEvent.ChartType {
-		case gensql.ChartTypeJupyterhub:
-			_ = c.repo.RegisterHelmRollbackJupyterEvent(ctx, helmEvent.TeamID, helmEvent)
 		case gensql.ChartTypeAirflow:
 			_ = c.repo.RegisterHelmRollbackAirflowEvent(ctx, helmEvent.TeamID, helmEvent)
 		}

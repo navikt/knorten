@@ -15,8 +15,7 @@ import (
 type ChartType string
 
 const (
-	ChartTypeJupyterhub ChartType = "jupyterhub"
-	ChartTypeAirflow    ChartType = "airflow"
+	ChartTypeAirflow ChartType = "airflow"
 )
 
 func (e *ChartType) Scan(src interface{}) error {

@@ -19,7 +19,6 @@ type Client struct {
 	azureClient         *auth.Azure
 	dryRun              bool
 	chartVersionAirflow string
-	chartVersionJupyter string
 	gcpProject          string
 	gcpRegion           string
 	topLevelDomain      string
@@ -32,7 +31,7 @@ func NewClient(
 	saBinder gcpapi.ServiceAccountPolicyBinder,
 	saChecker gcpapi.ServiceAccountChecker,
 	dryRun bool,
-	airflowChartVersion, jupyterChartVersion, gcpProject, gcpRegion, topLevelDomain string,
+	airflowChartVersion, gcpProject, gcpRegion, topLevelDomain string,
 ) (*Client, error) {
 	return &Client{
 		repo:                repo,
@@ -42,39 +41,10 @@ func NewClient(
 		azureClient:         azureClient,
 		dryRun:              dryRun,
 		chartVersionAirflow: airflowChartVersion,
-		chartVersionJupyter: jupyterChartVersion,
 		gcpProject:          gcpProject,
 		gcpRegion:           gcpRegion,
 		topLevelDomain:      topLevelDomain,
 	}, nil
-}
-
-func (c Client) SyncJupyter(ctx context.Context, values *JupyterConfigurableValues) error {
-	err := c.syncJupyter(ctx, values)
-	if err != nil {
-		return fmt.Errorf("syncing jupyter: %w", err)
-	}
-
-	err = c.registerJupyterHelmEvent(ctx, values.TeamID, database.EventTypeHelmRolloutJupyter)
-	if err != nil {
-		return fmt.Errorf("registering jupyter helm event: %w", err)
-	}
-
-	return nil
-}
-
-func (c Client) DeleteJupyter(ctx context.Context, teamID string) error {
-	err := c.deleteJupyter(ctx, teamID)
-	if err != nil {
-		return fmt.Errorf("deleting jupyter: %w", err)
-	}
-
-	err = c.registerJupyterHelmEvent(ctx, teamID, database.EventTypeHelmUninstallJupyter)
-	if err != nil {
-		return fmt.Errorf("registering jupyter helm event: %w", err)
-	}
-
-	return nil
 }
 
 func (c Client) SyncAirflow(ctx context.Context, values *AirflowConfigurableValues) error {
@@ -105,16 +75,13 @@ func (c Client) DeleteAirflow(ctx context.Context, teamID string) error {
 	return nil
 }
 
-func (c Client) registerHelmEvent(ctx context.Context, eventType database.EventType, teamID string, helmEventData helm.EventData) error {
+func (c Client) registerHelmEvent(
+	ctx context.Context,
+	eventType database.EventType,
+	teamID string,
+	helmEventData helm.EventData,
+) error {
 	switch eventType {
-	case database.EventTypeHelmRolloutJupyter:
-		if err := c.repo.RegisterHelmRolloutJupyterEvent(ctx, teamID, helmEventData); err != nil {
-			return err
-		}
-	case database.EventTypeHelmUninstallJupyter:
-		if err := c.repo.RegisterHelmUninstallJupyterEvent(ctx, teamID, helmEventData); err != nil {
-			return err
-		}
 	case database.EventTypeHelmRolloutAirflow:
 		if err := c.repo.RegisterHelmRolloutAirflowEvent(ctx, teamID, helmEventData); err != nil {
 			return err

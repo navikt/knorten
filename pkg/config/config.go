@@ -144,26 +144,29 @@ type GCP struct {
 }
 
 func (g GCP) Validate() error {
-	return validation.ValidateStruct(&g,
+	return validation.ValidateStruct(
+		&g,
 		validation.Field(&g.Project, validation.Required),
 		// Valid regions and zones:
 		// - https://cloud.google.com/compute/docs/regions-zones
 		validation.Field(&g.Region, validation.Required, validation.In("europe-north1")),
-		validation.Field(&g.Zone, validation.Required, validation.In("europe-north1-a", "europe-north1-b", "europe-north1-c")),
+		validation.Field(
+			&g.Zone,
+			validation.Required,
+			validation.In("europe-north1-a", "europe-north1-b", "europe-north1-c"),
+		),
 	)
 }
 
 type Helm struct {
 	RepositoryConfig    string `yaml:"repository_config"`
 	AirflowChartVersion string `yaml:"airflow_chart_version"`
-	JupyterChartVersion string `yaml:"jupyter_chart_version"`
 }
 
 func (h Helm) Validate() error {
 	return validation.ValidateStruct(&h,
 		validation.Field(&h.RepositoryConfig, validation.Required),
 		validation.Field(&h.AirflowChartVersion, validation.Required),
-		validation.Field(&h.JupyterChartVersion, validation.Required),
 	)
 }
 
@@ -248,7 +251,11 @@ func ProcessConfigPath(configFile string) (FileParts, error) {
 	extension := filepath.Ext(fileName)
 
 	if strings.ReplaceAll(strings.ToLower(extension), ".", "") != defaultExtension {
-		return FileParts{}, fmt.Errorf("config file must have extension %s, got: %s", defaultExtension, extension)
+		return FileParts{}, fmt.Errorf(
+			"config file must have extension %s, got: %s",
+			defaultExtension,
+			extension,
+		)
 	}
 
 	return FileParts{

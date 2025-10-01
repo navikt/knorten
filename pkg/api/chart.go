@@ -25,34 +25,6 @@ type AirflowProperties struct {
 	Namespace string
 }
 
-type jupyterForm struct {
-	CPULimit      string   `form:"cpulimit"      binding:"validCPUSpec"`
-	CPURequest    string   `form:"cpurequest"    binding:"validCPUSpec"`
-	MemoryLimit   string   `form:"memorylimit"   binding:"validMemorySpec"`
-	MemoryRequest string   `form:"memoryrequest" binding:"validMemorySpec"`
-	ImageName     string   `form:"imagename"`
-	ImageTag      string   `form:"imagetag"`
-	CullTimeout   string   `form:"culltimeout"`
-	PYPIAccess    string   `form:"pypiaccess"`
-	Allowlist     []string `form:"allowlist[]"`
-}
-
-func (v jupyterForm) MemoryLimitWithoutUnit() string {
-	if v.MemoryLimit == "" {
-		return ""
-	}
-
-	return v.MemoryLimit[:len(v.MemoryLimit)-1]
-}
-
-func (v jupyterForm) MemoryRequestWithoutUnit() string {
-	if v.MemoryRequest == "" {
-		return ""
-	}
-
-	return v.MemoryRequest[:len(v.MemoryRequest)-1]
-}
-
 type airflowForm struct {
 	DagRepo       string `form:"dagrepo"       binding:"required,startswith=navikt/,validAirflowRepo"`
 	DagRepoBranch string `form:"dagrepobranch" binding:"validRepoBranch"`
@@ -62,8 +34,6 @@ type airflowForm struct {
 
 func getChartType(chartType string) gensql.ChartType {
 	switch chartType {
-	case string(gensql.ChartTypeJupyterhub):
-		return gensql.ChartTypeJupyterhub
 	case string(gensql.ChartTypeAirflow):
 		return gensql.ChartTypeAirflow
 	default:
@@ -129,8 +99,6 @@ func (c *client) setupChartRoutes() {
 
 		var form any
 		switch chartType {
-		case gensql.ChartTypeJupyterhub:
-			form = jupyterForm{}
 		case gensql.ChartTypeAirflow:
 			form = airflowForm{}
 		default:
@@ -371,57 +339,6 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 	}
 
 	switch chartType {
-	case gensql.ChartTypeJupyterhub:
-		var form jupyterForm
-		err := ctx.ShouldBindWith(&form, binding.Form)
-		if err != nil {
-			return err
-		}
-
-		cullTimeout, err := strconv.ParseUint(form.CullTimeout, 10, 64)
-		if err != nil {
-			return err
-		}
-
-		userIdents, err := c.azureClient.ConvertEmailsToIdents(team.Users)
-		if err != nil {
-			return err
-		}
-
-		cpuLimit, err := parseCPU(form.CPULimit)
-		if err != nil {
-			return err
-		}
-
-		cpuRequest, err := parseCPU(form.CPURequest)
-		if err != nil {
-			return err
-		}
-
-		memoryLimit, err := parseMemory(form.MemoryLimit)
-		if err != nil {
-			return err
-		}
-
-		memoryRequest, err := parseMemory(form.MemoryRequest)
-		if err != nil {
-			return err
-		}
-
-		values := chart.JupyterConfigurableValues{
-			TeamID:        team.ID,
-			UserIdents:    userIdents,
-			CPULimit:      cpuLimit,
-			CPURequest:    cpuRequest,
-			MemoryLimit:   memoryLimit,
-			MemoryRequest: memoryRequest,
-			ImageName:     form.ImageName,
-			ImageTag:      form.ImageTag,
-			CullTimeout:   strconv.FormatUint(cullTimeout, 10),
-			AllowList:     removeEmptySliceElements(form.Allowlist),
-		}
-
-		return c.repo.RegisterCreateJupyterEvent(ctx, team.ID, values)
 	case gensql.ChartTypeAirflow:
 		var form airflowForm
 		err := ctx.ShouldBindWith(&form, binding.Form)
@@ -469,8 +386,6 @@ func (c *client) getEditChart(
 
 	var chartObjects any
 	switch chartType {
-	case gensql.ChartTypeJupyterhub:
-		chartObjects = &chart.JupyterConfigurableValues{}
 	case gensql.ChartTypeAirflow:
 		chartObjects = &chart.AirflowConfigurableValues{}
 	default:
@@ -484,34 +399,6 @@ func (c *client) getEditChart(
 
 	var form any
 	switch chartType {
-	case gensql.ChartTypeJupyterhub:
-		jupyterhubValues := chartObjects.(*chart.JupyterConfigurableValues)
-		allowlist, err := c.getExistingAllowlist(ctx, team.ID)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, "", err
-		}
-
-		pypiAccessTeamValue, err := c.repo.TeamValueGet(ctx, chart.TeamValueKeyPYPIAccess, team.ID)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, "", err
-		}
-
-		pypiAccess := "off"
-		if pypiAccessTeamValue.Value == "true" {
-			pypiAccess = "on"
-		}
-
-		form = jupyterForm{
-			CPULimit:      jupyterhubValues.CPULimit,
-			CPURequest:    jupyterhubValues.CPURequest,
-			MemoryLimit:   jupyterhubValues.MemoryLimit,
-			MemoryRequest: jupyterhubValues.MemoryRequest,
-			ImageName:     jupyterhubValues.ImageName,
-			ImageTag:      jupyterhubValues.ImageTag,
-			CullTimeout:   jupyterhubValues.CullTimeout,
-			PYPIAccess:    pypiAccess,
-			Allowlist:     allowlist,
-		}
 	case gensql.ChartTypeAirflow:
 		airflowValues := chartObjects.(*chart.AirflowConfigurableValues)
 		apiAccessTeamValue, err := c.repo.TeamValueGet(ctx, chart.TeamValueKeyApiAccess, team.ID)
@@ -551,52 +438,6 @@ func (c *client) editChart(ctx *gin.Context, teamSlug string, chartType gensql.C
 	}
 
 	switch chartType {
-	case gensql.ChartTypeJupyterhub:
-		var form jupyterForm
-		err := ctx.ShouldBindWith(&form, binding.Form)
-		if err != nil {
-			return err
-		}
-
-		userIdents, err := c.azureClient.ConvertEmailsToIdents(team.Users)
-		if err != nil {
-			return err
-		}
-
-		cpuLimit, err := parseCPU(form.CPULimit)
-		if err != nil {
-			return err
-		}
-
-		cpuRequest, err := parseCPU(form.CPURequest)
-		if err != nil {
-			return err
-		}
-
-		memoryLimit, err := parseMemory(form.MemoryLimit)
-		if err != nil {
-			return err
-		}
-
-		memoryRequest, err := parseMemory(form.MemoryRequest)
-		if err != nil {
-			return err
-		}
-
-		values := chart.JupyterConfigurableValues{
-			TeamID:        team.ID,
-			UserIdents:    userIdents,
-			CPULimit:      cpuLimit,
-			CPURequest:    cpuRequest,
-			MemoryLimit:   memoryLimit,
-			MemoryRequest: memoryRequest,
-			ImageName:     form.ImageName,
-			ImageTag:      form.ImageTag,
-			CullTimeout:   form.CullTimeout,
-			AllowList:     removeEmptySliceElements(form.Allowlist),
-		}
-
-		return c.repo.RegisterUpdateJupyterEvent(ctx, team.ID, values)
 	case gensql.ChartTypeAirflow:
 		var form airflowForm
 		err := ctx.ShouldBindWith(&form, binding.Form)
@@ -639,8 +480,6 @@ func (c *client) deleteChart(ctx *gin.Context, teamSlug, chartTypeString string)
 	}
 
 	switch getChartType(chartTypeString) {
-	case gensql.ChartTypeJupyterhub:
-		return c.repo.RegisterDeleteJupyterEvent(ctx, team.ID)
 	case gensql.ChartTypeAirflow:
 		return c.repo.RegisterDeleteAirflowEvent(ctx, team.ID)
 	}

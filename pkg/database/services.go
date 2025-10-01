@@ -20,11 +20,10 @@ type AppService struct {
 }
 
 type TeamServices struct {
-	TeamID     string
-	Slug       string
-	Jupyterhub *AppService
-	Airflow    *AppService
-	Events     []EventWithLogs
+	TeamID  string
+	Slug    string
+	Airflow *AppService
+	Events  []EventWithLogs
 }
 
 type UserServices struct {
@@ -35,8 +34,6 @@ type UserServices struct {
 
 func createIngress(team string, chartType gensql.ChartType, topLevelDomain string) string {
 	switch chartType {
-	case gensql.ChartTypeJupyterhub:
-		return fmt.Sprintf("https://%v.jupyter.%s", team, topLevelDomain)
 	case gensql.ChartTypeAirflow:
 		return fmt.Sprintf("https://%v.airflow.%s", team, topLevelDomain)
 	}
@@ -107,8 +104,6 @@ func (r *Repo) ServicesForUser(
 
 		for _, app := range apps {
 			switch app {
-			case gensql.ChartTypeJupyterhub:
-				teamServices.Jupyterhub = createAppService(team, app, topLevelDomain)
 			case gensql.ChartTypeAirflow:
 				teamServices.Airflow = createAppService(team, app, topLevelDomain)
 			}

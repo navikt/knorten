@@ -19,11 +19,15 @@ func Test_parseTeamValue(t *testing.T) {
 		{
 			name: "Simple test",
 			args: args{
-				key:    "webserver.name",
-				value:  "flowtheair",
-				values: map[string]any{"webserver": map[string]any{"image": "ghcr.io/org/repo:tag"}},
+				key:   "webserver.name",
+				value: "flowtheair",
+				values: map[string]any{
+					"webserver": map[string]any{"image": "ghcr.io/org/repo:tag"},
+				},
 			},
-			want: map[string]any{"webserver": map[string]any{"image": "ghcr.io/org/repo:tag", "name": "flowtheair"}},
+			want: map[string]any{
+				"webserver": map[string]any{"image": "ghcr.io/org/repo:tag", "name": "flowtheair"},
+			},
 		},
 		{
 			name: "Quoted value",
@@ -41,7 +45,13 @@ func Test_parseTeamValue(t *testing.T) {
 				value:  `"true"`,
 				values: map[string]any{},
 			},
-			want: map[string]any{"ingress": map[string]any{"web": map[string]any{"annotations": map[string]any{"kubernetes.io/ingress.allow-http": "true"}}}},
+			want: map[string]any{
+				"ingress": map[string]any{
+					"web": map[string]any{
+						"annotations": map[string]any{"kubernetes.io/ingress.allow-http": "true"},
+					},
+				},
+			},
 		},
 		{
 			name: "Handle omitted values",
@@ -79,26 +89,71 @@ func Test_mergeMap(t *testing.T) {
 		{
 			name: "Simple test",
 			args: args{
-				base:   map[string]any{"webserver": map[string]any{"image": "ghcr.io/org/repo:tag"}},
-				custom: map[string]any{"webserver": map[string]any{"image": "ghcr.io/org/repo:tag2", "name": "flowtheair"}},
+				base: map[string]any{
+					"webserver": map[string]any{"image": "ghcr.io/org/repo:tag"},
+				},
+				custom: map[string]any{
+					"webserver": map[string]any{
+						"image": "ghcr.io/org/repo:tag2",
+						"name":  "flowtheair",
+					},
+				},
 			},
-			want: map[string]any{"webserver": map[string]any{"image": "ghcr.io/org/repo:tag2", "name": "flowtheair"}},
+			want: map[string]any{
+				"webserver": map[string]any{"image": "ghcr.io/org/repo:tag2", "name": "flowtheair"},
+			},
 		},
 		{
 			name: "With slice",
 			args: args{
-				base:   map[string]any{"webserver": map[string]any{"image": "ghcr.io/org/repo:tag", "myslice": []any{"one", "two"}, "scheduler": "1234"}},
-				custom: map[string]any{"webserver": map[string]any{"image": "ghcr.io/org/repo:tag2", "name": "flowtheair"}},
+				base: map[string]any{
+					"webserver": map[string]any{
+						"image":     "ghcr.io/org/repo:tag",
+						"myslice":   []any{"one", "two"},
+						"scheduler": "1234",
+					},
+				},
+				custom: map[string]any{
+					"webserver": map[string]any{
+						"image": "ghcr.io/org/repo:tag2",
+						"name":  "flowtheair",
+					},
+				},
 			},
-			want: map[string]any{"webserver": map[string]any{"image": "ghcr.io/org/repo:tag2", "name": "flowtheair", "myslice": []any{"one", "two"}, "scheduler": "1234"}},
+			want: map[string]any{
+				"webserver": map[string]any{
+					"image":     "ghcr.io/org/repo:tag2",
+					"name":      "flowtheair",
+					"myslice":   []any{"one", "two"},
+					"scheduler": "1234",
+				},
+			},
 		},
 		{
 			name: "Nested test",
 			args: args{
-				base:   map[string]any{"webserver": map[string]any{"image": "ghcr.io/org/repo:tag"}, "scheduler": map[string]any{"image": "ghcr.io/org/repository", "values": []any{"1", "2"}}},
-				custom: map[string]any{"webserver": map[string]any{"image": "ghcr.io/org/repo:tag2", "slice": []any{"12"}}, "scheduler": map[string]any{"values": []any{"3", "4"}}},
+				base: map[string]any{
+					"webserver": map[string]any{"image": "ghcr.io/org/repo:tag"},
+					"scheduler": map[string]any{
+						"image":  "ghcr.io/org/repository",
+						"values": []any{"1", "2"},
+					},
+				},
+				custom: map[string]any{
+					"webserver": map[string]any{
+						"image": "ghcr.io/org/repo:tag2",
+						"slice": []any{"12"},
+					},
+					"scheduler": map[string]any{"values": []any{"3", "4"}},
+				},
 			},
-			want: map[string]any{"webserver": map[string]any{"image": "ghcr.io/org/repo:tag2", "slice": []any{"12"}}, "scheduler": map[string]any{"image": "ghcr.io/org/repository", "values": []any{"3", "4"}}},
+			want: map[string]any{
+				"webserver": map[string]any{"image": "ghcr.io/org/repo:tag2", "slice": []any{"12"}},
+				"scheduler": map[string]any{
+					"image":  "ghcr.io/org/repository",
+					"values": []any{"3", "4"},
+				},
+			},
 		},
 		{
 			name: "Test creating none existing paths in base",
@@ -106,7 +161,10 @@ func Test_mergeMap(t *testing.T) {
 				base:   map[string]any{"scheduler": "value"},
 				custom: map[string]any{"webserver": map[string]any{"newkey": "value"}},
 			},
-			want: map[string]any{"scheduler": "value", "webserver": map[string]any{"newkey": "value"}},
+			want: map[string]any{
+				"scheduler": "value",
+				"webserver": map[string]any{"newkey": "value"},
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -114,55 +172,6 @@ func Test_mergeMap(t *testing.T) {
 			mergeMaps(tt.args.base, tt.args.custom)
 			if !reflect.DeepEqual(tt.args.base, tt.want) {
 				t.Errorf("parse() = %v, want %v", tt.args.base, tt.want)
-			}
-		})
-	}
-}
-
-func Test_SetChartValue(t *testing.T) {
-	type args struct {
-		keys  []string
-		value string
-		chart map[string]interface{}
-	}
-	tests := []struct {
-		name string
-		args args
-		want map[string]interface{}
-	}{
-		{
-			name: "Simple test",
-			args: args{
-				keys:  []string{"singleuser", "image", "name"},
-				value: "navikt/jupyter",
-				chart: map[string]any{"singleuser": map[string]any{"image": map[string]any{"name": "jupyter"}}},
-			},
-			want: map[string]any{"singleuser": map[string]any{"image": map[string]any{"name": "navikt/jupyter"}}},
-		},
-		{
-			name: "No missing values",
-			args: args{
-				keys:  []string{"singleuser", "image", "name"},
-				value: "navikt/jupyter",
-				chart: map[string]any{"singleuser": map[string]any{"image": map[string]any{"name": "jupyter", "tag": "v1"}}},
-			},
-			want: map[string]any{"singleuser": map[string]any{"image": map[string]any{"name": "navikt/jupyter", "tag": "v1"}}},
-		},
-		{
-			name: "Missing nested path in chart values",
-			args: args{
-				keys:  []string{"hub", "config", "AzureAdOAuthenticator", "tenant_id"},
-				value: "id",
-				chart: map[string]any{"hub": map[string]any{"config": map[string]any{"Jupyterhub": map[string]any{"authenticator_class": "dummy"}}}},
-			},
-			want: map[string]any{"hub": map[string]any{"config": map[string]any{"Jupyterhub": map[string]any{"authenticator_class": "dummy"}, "AzureAdOAuthenticator": map[string]any{"tenant_id": "id"}}}},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			SetChartValue(tt.args.keys, tt.args.value, tt.args.chart)
-			if !reflect.DeepEqual(tt.args.chart, tt.want) {
-				t.Errorf("setChartValue() = %v, want %v", tt.args.chart, tt.want)
 			}
 		})
 	}

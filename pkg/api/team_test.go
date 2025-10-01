@@ -414,16 +414,6 @@ func prepareTeamEventsTest(ctx context.Context) (gensql.Team, error) {
 	}
 
 	// create events
-	if err := repo.RegisterCreateJupyterEvent(ctx, team.ID, chart.JupyterConfigurableValues{}); err != nil {
-		return gensql.Team{}, err
-	}
-	if err := repo.RegisterUpdateJupyterEvent(ctx, team.ID, chart.JupyterConfigurableValues{}); err != nil {
-		return gensql.Team{}, err
-	}
-	if err := repo.RegisterDeleteJupyterEvent(ctx, team.ID); err != nil {
-		return gensql.Team{}, err
-	}
-
 	if err := repo.RegisterCreateAirflowEvent(ctx, team.ID, chart.AirflowConfigurableValues{}); err != nil {
 		return gensql.Team{}, err
 	}

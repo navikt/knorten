@@ -21,8 +21,8 @@ func NewAirflowClient(
 	mngr k8s.Manager,
 	gcpProject, gcpRegion string,
 	dryRun bool,
-) (*Client, error) {
-	return &Client{
+) (*AirflowClient, error) {
+	return &AirflowClient{
 		repo:       repo,
 		manager:    mngr,
 		gcpProject: gcpProject,

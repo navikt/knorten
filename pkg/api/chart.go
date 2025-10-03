@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/navikt/knorten/pkg/api/middlewares"
+	"github.com/navikt/knorten/pkg/k8s"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -20,10 +21,14 @@ import (
 	"github.com/navikt/knorten/pkg/database/gensql"
 )
 
+type AirflowProperties struct {
+	Namespace string
+}
+
 type jupyterForm struct {
-	CPULimit      string   `form:"cpulimit" binding:"validCPUSpec"`
-	CPURequest    string   `form:"cpurequest" binding:"validCPUSpec"`
-	MemoryLimit   string   `form:"memorylimit" binding:"validMemorySpec"`
+	CPULimit      string   `form:"cpulimit"      binding:"validCPUSpec"`
+	CPURequest    string   `form:"cpurequest"    binding:"validCPUSpec"`
+	MemoryLimit   string   `form:"memorylimit"   binding:"validMemorySpec"`
 	MemoryRequest string   `form:"memoryrequest" binding:"validMemorySpec"`
 	ImageName     string   `form:"imagename"`
 	ImageTag      string   `form:"imagetag"`
@@ -49,9 +54,9 @@ func (v jupyterForm) MemoryRequestWithoutUnit() string {
 }
 
 type airflowForm struct {
-	DagRepo       string `form:"dagrepo" binding:"required,startswith=navikt/,validAirflowRepo"`
+	DagRepo       string `form:"dagrepo"       binding:"required,startswith=navikt/,validAirflowRepo"`
 	DagRepoBranch string `form:"dagrepobranch" binding:"validRepoBranch"`
-	AirflowImage  string `form:"airflowimage" binding:"validAirflowImage"`
+	AirflowImage  string `form:"airflowimage"  binding:"validAirflowImage"`
 	ApiAccess     string `form:"apiaccess"`
 }
 
@@ -153,7 +158,10 @@ func (c *client) setupChartRoutes() {
 
 		err = session.Save()
 		if err != nil {
-			c.log.WithField("team", slug).WithField("chart", chartType).WithError(err).Error("problem saving session")
+			c.log.WithField("team", slug).
+				WithField("chart", chartType).
+				WithError(err).
+				Error("problem saving session")
 			ctx.JSON(http.StatusInternalServerError, map[string]string{
 				"status":  strconv.Itoa(http.StatusInternalServerError),
 				"message": "Internal server error",
@@ -162,12 +170,14 @@ func (c *client) setupChartRoutes() {
 		}
 
 		ctx.HTML(http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
-			"team":                  slug,
-			"form":                  form,
-			"errors":                flashes,
-			"upgradePausedStatuses": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams([]string{team.ID}),
-			"loggedIn":              ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":               ctx.GetBool(middlewares.AdminKey),
+			"team":   slug,
+			"form":   form,
+			"errors": flashes,
+			"upgradePausedStatuses": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams(
+				[]string{team.ID},
+			),
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -242,12 +252,14 @@ func (c *client) setupChartRoutes() {
 		}
 
 		ctx.HTML(http.StatusOK, fmt.Sprintf("charts/%v", chartType), gin.H{
-			"team":                  teamSlug,
-			"values":                form,
-			"errors":                flashes,
-			"upgradePausedStatuses": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams([]string{teamID}),
-			"loggedIn":              ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":               ctx.GetBool(middlewares.AdminKey),
+			"team":   teamSlug,
+			"values": form,
+			"errors": flashes,
+			"upgradePausedStatuses": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams(
+				[]string{teamID},
+			),
+			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
 		})
 	})
 
@@ -273,7 +285,10 @@ func (c *client) setupChartRoutes() {
 			err := session.Save()
 			if err != nil {
 				log.WithError(err).Error("problem saving session")
-				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/team/%v/%v/edit", teamSlug, chartType))
+				ctx.Redirect(
+					http.StatusSeeOther,
+					fmt.Sprintf("/team/%v/%v/edit", teamSlug, chartType),
+				)
 				return
 			}
 
@@ -291,13 +306,35 @@ func (c *client) setupChartRoutes() {
 
 		err := c.deleteChart(ctx, teamSlug, chartTypeString)
 		if err != nil {
-			log.WithError(err).Errorf("problem deleting chart %v for team %v", chartTypeString, teamSlug)
+			log.WithError(err).
+				Errorf("problem deleting chart %v for team %v", chartTypeString, teamSlug)
 			session := sessions.Default(ctx)
 			session.AddFlash(err.Error())
 			err := session.Save()
 			if err != nil {
 				log.WithError(err).Error("problem saving session")
 			}
+		}
+
+		ctx.Redirect(http.StatusSeeOther, "/oversikt")
+	})
+
+	c.router.POST("/team/:slug/airflow/restart", func(ctx *gin.Context) {
+		teamSlug := ctx.Param("slug")
+		team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
+		log := c.log.WithField("team", teamSlug)
+
+		if err != nil {
+			log.WithError(err).Error("problem fetching team")
+		}
+		namespace := k8s.TeamIDToNamespace(team.ID)
+
+		values := AirflowProperties{Namespace: namespace}
+
+		err = c.repo.RegisterDeleteSchedulerPodsEvent(ctx, team.ID, values)
+		if err != nil {
+			log.WithError(err).
+				Errorf("problem registering restart airflow scheduler event for team %s", team.ID)
 		}
 
 		ctx.Redirect(http.StatusSeeOther, "/oversikt")
@@ -420,7 +457,11 @@ func (c *client) newChart(ctx *gin.Context, teamSlug string, chartType gensql.Ch
 	return fmt.Errorf("chart type %v is not supported", chartType)
 }
 
-func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensql.ChartType) (any, string, error) {
+func (c *client) getEditChart(
+	ctx *gin.Context,
+	teamSlug string,
+	chartType gensql.ChartType,
+) (any, string, error) {
 	team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
 	if err != nil {
 		return nil, "", err
@@ -485,7 +526,11 @@ func (c *client) getEditChart(ctx *gin.Context, teamSlug string, chartType gensq
 
 		airflowImage := ""
 		if airflowValues.AirflowImage != "" && airflowValues.AirflowTag != "" {
-			airflowImage = fmt.Sprintf("%v:%v", airflowValues.AirflowImage, airflowValues.AirflowTag)
+			airflowImage = fmt.Sprintf(
+				"%v:%v",
+				airflowValues.AirflowImage,
+				airflowValues.AirflowTag,
+			)
 		}
 
 		form = airflowForm{

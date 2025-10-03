@@ -10,6 +10,7 @@ import (
 	"github.com/navikt/knorten/pkg/k8s"
 	"github.com/navikt/knorten/pkg/maintenance"
 
+	"github.com/navikt/knorten/pkg/api"
 	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/navikt/knorten/pkg/chart"
 	"github.com/navikt/knorten/pkg/database"
@@ -84,8 +85,8 @@ func (e EventHandler) distributeWork(eventType database.EventType) workerFunc {
 		}
 	case database.EventTypeDeleteSchedulerPods:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
-			var team gensql.Team
-			return e.processWork(ctx, event, logger, &team)
+			var airflowProperties api.AirflowProperties
+			return e.processWork(ctx, event, logger, &airflowProperties)
 		}
 	}
 
@@ -184,11 +185,12 @@ func (e EventHandler) processWork(
 		logger.Infof("Uninstalling helm chart for team '%v'", d.TeamID)
 		err = e.helmClient.Uninstall(ctx, d)
 	case database.EventTypeDeleteSchedulerPods:
-		t, ok := form.(*gensql.Team)
+		props, ok := form.(*api.AirflowProperties)
 		if !ok {
 			return fmt.Errorf("invalid form type for event type %v", event.Type)
 		}
-		err = e.airflowClient.DeleteSchedulerPods(ctx, t.ID)
+
+		err = e.airflowClient.DeleteSchedulerPods(ctx, props.Namespace)
 	}
 
 	if err != nil {
@@ -234,6 +236,17 @@ func NewHandler(
 		return EventHandler{}, err
 	}
 
+	airflowClient, err := team.NewAirflowClient(
+		repo,
+		mngr,
+		gcpProject,
+		gcpRegion,
+		dryRun,
+	)
+	if err != nil {
+		return EventHandler{}, err
+	}
+
 	return EventHandler{
 		repo:                       repo,
 		maintenanceExclusionConfig: maintenanceExclusionConfig,
@@ -243,6 +256,7 @@ func NewHandler(
 		userClient:                 user.NewClient(repo, gcpProject, gcpRegion, gcpZone, dryRun),
 		chartClient:                chartClient,
 		helmClient:                 client,
+		airflowClient:              airflowClient,
 	}, nil
 }
 

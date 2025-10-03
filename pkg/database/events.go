@@ -177,8 +177,12 @@ func (r *Repo) RegisterHelmUninstallAirflowEvent(
 	return r.registerEvent(ctx, EventTypeHelmUninstallAirflow, teamID, 10*time.Minute, values)
 }
 
-func (r *Repo) RegisterDeleteSchedulerPodsEvent(ctx context.Context, teamID string) error {
-	return r.registerEvent(ctx, EventTypeDeleteSchedulerPods, teamID, 5*time.Minute, nil)
+func (r *Repo) RegisterDeleteSchedulerPodsEvent(
+	ctx context.Context,
+	teamID string,
+	values any,
+) error {
+	return r.registerEvent(ctx, EventTypeDeleteSchedulerPods, teamID, 5*time.Minute, values)
 }
 
 func (r *Repo) EventSetStatus(ctx context.Context, id uuid.UUID, status EventStatus) error {

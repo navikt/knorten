@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/rest"
@@ -117,6 +118,7 @@ type Manager interface {
 	DeleteServiceAccount(ctx context.Context, name, namespace string) error
 	ApplyNetworkPolicy(ctx context.Context, policy *netv1.NetworkPolicy) error
 	DeleteNetworkPolicy(ctx context.Context, name, namespace string) error
+	DeletePodsWithLables(ctx context.Context, namespace, lables string) error
 }
 
 type manager struct {
@@ -188,7 +190,10 @@ func (m *manager) GetSecret(ctx context.Context, name, namespace string) (*v1.Se
 	return s, nil
 }
 
-func (m *manager) ApplyServiceAccount(ctx context.Context, serviceAccount *v1.ServiceAccount) error {
+func (m *manager) ApplyServiceAccount(
+	ctx context.Context,
+	serviceAccount *v1.ServiceAccount,
+) error {
 	err := m.apply(ctx, serviceAccount)
 	if err != nil {
 		return fmt.Errorf("applying serviceaccount: %w", err)
@@ -332,7 +337,10 @@ func (m *manager) DeleteHTTPRoute(ctx context.Context, name, namespace string) e
 	return nil
 }
 
-func (m *manager) ApplyHealthCheckPolicy(ctx context.Context, policy *unstructured.Unstructured) error {
+func (m *manager) ApplyHealthCheckPolicy(
+	ctx context.Context,
+	policy *unstructured.Unstructured,
+) error {
 	err := m.apply(ctx, policy)
 	if err != nil {
 		return fmt.Errorf("applying healthcheckpolicy: %w", err)
@@ -355,7 +363,30 @@ func (m *manager) DeleteHealthCheckPolicy(ctx context.Context, name, namespace s
 	return nil
 }
 
-func (m *manager) waitForResource(ctx context.Context, from client.Object, toPtr any, fn IsReadyFn) error {
+func (m *manager) DeletePodsWithLables(ctx context.Context, namespace, lables string) error {
+	podlist := &v1.PodList{}
+
+	err := m.list(ctx, namespace, lables, podlist)
+	if err != nil {
+		return fmt.Errorf("listing pods with lables: %w", err)
+	}
+
+	for _, pod := range podlist.Items {
+		err = m.delete(ctx, &pod)
+		if err != nil {
+			return fmt.Errorf("deleting pod: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (m *manager) waitForResource(
+	ctx context.Context,
+	from client.Object,
+	toPtr any,
+	fn IsReadyFn,
+) error {
 	watcher, err := client.NewWithWatch(m.client.RESTConfig, client.Options{})
 	if err != nil {
 		return fmt.Errorf("creating client with watcher: %w", err)
@@ -474,6 +505,28 @@ func (m *manager) apply(ctx context.Context, obj client.Object) error {
 	})
 	if err != nil {
 		return fmt.Errorf("patching resource: %w", err)
+	}
+
+	return nil
+}
+
+func (m *manager) list(
+	ctx context.Context,
+	namespace string,
+	labelSelectorString string,
+	obj client.ObjectList,
+) error {
+	labelSelector, err := labels.Parse(labelSelectorString)
+	if err != nil {
+		return fmt.Errorf("parsing label selector: %w", err)
+	}
+
+	err = m.client.List(ctx, obj, &client.ListOptions{
+		Namespace:     namespace,
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return fmt.Errorf("listing resources: %w", err)
 	}
 
 	return nil

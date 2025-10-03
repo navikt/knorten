@@ -31,6 +31,7 @@ type EventHandler struct {
 	userClient                 userClient
 	chartClient                chartClient
 	helmClient                 helmClient
+	airflowClient              airflowClient
 }
 
 const (
@@ -81,12 +82,22 @@ func (e EventHandler) distributeWork(eventType database.EventType) workerFunc {
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			return e.processWork(ctx, event, logger, &values)
 		}
+	case database.EventTypeDeleteSchedulerPods:
+		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
+			var team gensql.Team
+			return e.processWork(ctx, event, logger, &team)
+		}
 	}
 
 	return nil
 }
 
-func (e EventHandler) processWork(ctx context.Context, event gensql.Event, logger logger.Logger, form any) error {
+func (e EventHandler) processWork(
+	ctx context.Context,
+	event gensql.Event,
+	logger logger.Logger,
+	form any,
+) error {
 	if err := json.Unmarshal(event.Payload, &form); err != nil {
 		if err := e.repo.EventSetStatus(e.context, event.ID, database.EventStatusFailed); err != nil {
 			return err
@@ -172,6 +183,12 @@ func (e EventHandler) processWork(ctx context.Context, event gensql.Event, logge
 
 		logger.Infof("Uninstalling helm chart for team '%v'", d.TeamID)
 		err = e.helmClient.Uninstall(ctx, d)
+	case database.EventTypeDeleteSchedulerPods:
+		t, ok := form.(*gensql.Team)
+		if !ok {
+			return fmt.Errorf("invalid form type for event type %v", event.Type)
+		}
+		err = e.airflowClient.DeleteSchedulerPods(ctx, t.ID)
 	}
 
 	if err != nil {
@@ -267,7 +284,8 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 				eventQueue <- struct{}{}
 				worker := e.distributeWork(database.EventType(event.Type))
 				if worker == nil {
-					e.log.WithField("eventID", event.ID).Errorf("No worker found for event type %v", event.Type)
+					e.log.WithField("eventID", event.ID).
+						Errorf("No worker found for event type %v", event.Type)
 					continue
 				}
 
@@ -287,9 +305,11 @@ func (e EventHandler) Run(tickDuration time.Duration) {
 					if err := worker(ctx, event, eventLogger); err != nil {
 						eventLogger.log.WithError(err).Info("failed processing event")
 						if event.RetryCount > 5 {
-							eventLogger.log.WithError(err).Error("failed processing event, reached max retries")
+							eventLogger.log.WithError(err).
+								Error("failed processing event, reached max retries")
 							if err := e.repo.EventSetStatus(e.context, event.ID, database.EventStatusFailed); err != nil {
-								eventLogger.log.WithError(err).Error("failed setting event status to 'failed'")
+								eventLogger.log.WithError(err).
+									Error("failed setting event status to 'failed'")
 							}
 						} else {
 							if err := e.repo.EventIncrementRetryCount(e.context, event.ID); err != nil {
@@ -329,7 +349,10 @@ func (e EventHandler) omitAirflowEventsIfUpgradesPaused(in []gensql.Event) []gen
 	out := []gensql.Event{}
 	for _, event := range in {
 		switch database.EventType(event.Type) {
-		case database.EventTypeCreateAirflow, database.EventTypeUpdateAirflow, database.EventTypeHelmRolloutAirflow, database.EventTypeHelmRollbackAirflow:
+		case database.EventTypeCreateAirflow,
+			database.EventTypeUpdateAirflow,
+			database.EventTypeHelmRolloutAirflow,
+			database.EventTypeHelmRollbackAirflow:
 			if e.maintenanceExclusionConfig.ActiveExcludePeriodForTeam(event.Owner) != nil {
 				continue
 			}

@@ -31,7 +31,7 @@ const (
 	EventTypeHelmRolloutAirflow   EventType = "rolloutAirflow:helm"
 	EventTypeHelmRollbackAirflow  EventType = "rollbackAirflow:helm"
 	EventTypeHelmUninstallAirflow EventType = "uninstallAirflow:helm"
-	EventTypeDeleteSchedulerPods  EventType = "delete:pods"
+	EventTypeDeleteSchedulerPods  EventType = "restart:airflowscheduler"
 )
 
 type EventStatus string

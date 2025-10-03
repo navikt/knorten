@@ -190,6 +190,7 @@ func (e EventHandler) processWork(
 			return fmt.Errorf("invalid form type for event type %v", event.Type)
 		}
 
+		logger.Infof("Deleting Airflow scheduler pods for team '%v'", event.Owner)
 		err = e.airflowClient.DeleteSchedulerPods(ctx, props.Namespace)
 	}
 

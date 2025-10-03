@@ -404,7 +404,7 @@ func (c *client) setupAdminRoutes() {
 		})
 	})
 
-	c.router.POST("/admin/airflow/:slug/restart", func(ctx *gin.Context) {
+	c.router.POST("/admin/airflow/restart/:slug", func(ctx *gin.Context) {
 		teamSlug := ctx.Param("slug")
 		team, err := c.repo.TeamBySlugGet(ctx, teamSlug)
 		log := c.log.WithField("team", teamSlug)

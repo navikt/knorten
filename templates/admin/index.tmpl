@@ -67,7 +67,7 @@
                 <h2>
                     {{ .Slug }} ({{ .ID }})
                 </h2>
-                <form action="/admin/airflow/{{ .Slug }}/restart" method="POST">
+                <form action="/admin/airflow/restart/{{ .Slug }}" method="POST">
                     <fieldset>
                         <button type="submit"
                                 class="navds-button navds-button--warning navds-button--small bg-orange-500"

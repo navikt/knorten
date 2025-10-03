@@ -124,7 +124,10 @@ func (c *Client) Rollback(ctx context.Context, helmEvent *EventData) error {
 	return nil
 }
 
-func lastSuccessfulHelmRelease(releaseName string, actionConfig *action.Configuration) (int, error) {
+func lastSuccessfulHelmRelease(
+	releaseName string,
+	actionConfig *action.Configuration,
+) (int, error) {
 	historyClient := action.NewHistory(actionConfig)
 
 	releases, err := historyClient.Run(releaseName)

@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -509,6 +510,42 @@ func TestAdminAPI(t *testing.T) {
 		}
 	})
 
+	t.Run("restart airflow creates event", func(t *testing.T) {
+		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeDeleteSchedulerPods)
+		if err != nil {
+			t.Error(err)
+		}
+
+		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/airflow/restart/%s", server.URL, teams[1].Slug), nil)
+		if err != nil {
+			t.Error(err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
+		}
+
+		events, err := repo.EventsGetType(ctx, database.EventTypeDeleteSchedulerPods)
+		if err != nil {
+			t.Error(err)
+		}
+
+		newEvents := getNewEvents(oldEvents, events)
+
+		airflowProperties, err := getAirflowProperties(newEvents)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if len(airflowProperties) != 1 {
+			t.Errorf("AirflowProperties contains %d items", len(airflowProperties))
+		}
+		if airflowProperties[0].Namespace != k8s.TeamIDToNamespace(teams[1].ID) {
+			t.Errorf("AirflowProperties namespace was %s, should be %s", airflowProperties[0].Namespace, k8s.TeamIDToNamespace(teams[1].ID))
+		}
+	})
+
 	t.Run("update airflow global values and not trigger resync", func(t *testing.T) {
 		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeUpdateAirflow)
 		if err != nil {
@@ -895,4 +932,18 @@ func containsEvent(events []gensql.Event, event gensql.Event) bool {
 	}
 
 	return false
+}
+
+func getAirflowProperties(events []gensql.Event) ([]AirflowProperties, error) {
+	properties := []AirflowProperties{}
+	for _, event := range events {
+		payload := AirflowProperties{}
+		err := json.Unmarshal(event.Payload, &payload)
+		if err != nil {
+			return []AirflowProperties{}, err
+		}
+
+		properties = append(properties, payload)
+	}
+	return properties, nil
 }

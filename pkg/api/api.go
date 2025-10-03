@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/navikt/knorten/pkg/database"
+	"github.com/navikt/knorten/pkg/k8s"
 	"github.com/navikt/knorten/pkg/maintenance"
 	"github.com/sirupsen/logrus"
 )
@@ -18,12 +19,23 @@ type client struct {
 	gcpZone                    string
 	topLevelDomain             string
 	maintenanceExclusionConfig *maintenance.MaintenanceExclusion
+	k8sManager                 k8s.Manager
 }
 
-func New(router *gin.Engine, db *database.Repo, azureClient *auth.Azure, log *logrus.Entry, dryRun bool, project, zone, topLevelDomain string, maintenanceExclusionConfig *maintenance.MaintenanceExclusion) error {
+func New(
+	router *gin.Engine,
+	db *database.Repo,
+	azureClient *auth.Azure,
+	log *logrus.Entry,
+	dryRun bool,
+	project, zone, topLevelDomain string,
+	maintenanceExclusionConfig *maintenance.MaintenanceExclusion,
+	k8sManager k8s.Manager,
+) error {
 	router.Use(gin.Recovery())
 	router.Use(func(ctx *gin.Context) {
-		log.WithField("subsystem", "gin").Infof("%v %v %v", ctx.Request.Method, ctx.Request.URL.Path, ctx.Writer.Status())
+		log.WithField("subsystem", "gin").
+			Infof("%v %v %v", ctx.Request.Method, ctx.Request.URL.Path, ctx.Writer.Status())
 	})
 
 	api := client{
@@ -36,6 +48,7 @@ func New(router *gin.Engine, db *database.Repo, azureClient *auth.Azure, log *lo
 		gcpZone:                    zone,
 		topLevelDomain:             topLevelDomain,
 		maintenanceExclusionConfig: maintenanceExclusionConfig,
+		k8sManager:                 k8sManager,
 	}
 
 	api.setupAuthenticatedRoutes()

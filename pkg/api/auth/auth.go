@@ -318,7 +318,7 @@ func (k *KeyDiscovery) Map() (result map[string]CertificateList, err error) {
 		result[key.Kid] = certList
 	}
 
-	return
+	return result, err
 }
 
 // Decode a base64 encoded certificate into a X509 structure.

@@ -12,10 +12,11 @@ import (
 )
 
 type AppService struct {
-	App       string
-	Ingress   string
-	Slug      string
-	Namespace string
+	App             string
+	Ingress         string
+	Slug            string
+	Namespace       string
+	IsSchedulerDown bool
 }
 
 type TeamServices struct {
@@ -43,7 +44,11 @@ func createIngress(team string, chartType gensql.ChartType, topLevelDomain strin
 	return ""
 }
 
-func createAppService(team gensql.TeamsForUserGetRow, chartType gensql.ChartType, topLevelDomain string) *AppService {
+func createAppService(
+	team gensql.TeamsForUserGetRow,
+	chartType gensql.ChartType,
+	topLevelDomain string,
+) *AppService {
 	return &AppService{
 		App:       string(chartType),
 		Ingress:   createIngress(team.Slug, chartType, topLevelDomain),
@@ -63,7 +68,10 @@ func (r *Repo) ChartDelete(ctx context.Context, teamID string, chartType gensql.
 	})
 }
 
-func (r *Repo) ServicesForUser(ctx context.Context, email, topLevelDomain string) (UserServices, error) {
+func (r *Repo) ServicesForUser(
+	ctx context.Context,
+	email, topLevelDomain string,
+) (UserServices, error) {
 	teamsForUser, err := r.querier.TeamsForUserGet(ctx, email)
 	if err != nil {
 		return UserServices{}, err
@@ -132,7 +140,11 @@ func (r *Repo) ServicesForUser(ctx context.Context, email, topLevelDomain string
 	return userServices, nil
 }
 
-func (r *Repo) TeamValueInsert(ctx context.Context, chartType gensql.ChartType, key, value, teamID string) error {
+func (r *Repo) TeamValueInsert(
+	ctx context.Context,
+	chartType gensql.ChartType,
+	key, value, teamID string,
+) error {
 	return r.querier.TeamValueInsert(ctx, gensql.TeamValueInsertParams{
 		Key:       key,
 		Value:     value,
@@ -141,7 +153,12 @@ func (r *Repo) TeamValueInsert(ctx context.Context, chartType gensql.ChartType, 
 	})
 }
 
-func (r *Repo) HelmChartValuesInsert(ctx context.Context, chartType gensql.ChartType, chartValues map[string]string, teamID string) error {
+func (r *Repo) HelmChartValuesInsert(
+	ctx context.Context,
+	chartType gensql.ChartType,
+	chartValues map[string]string,
+	teamID string,
+) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -157,7 +174,8 @@ func (r *Repo) HelmChartValuesInsert(ctx context.Context, chartType gensql.Chart
 		})
 		if err != nil {
 			if err := tx.Rollback(); err != nil {
-				r.log.WithError(err).Error("rolling back service create transaction - team chart value insert")
+				r.log.WithError(err).
+					Error("rolling back service create transaction - team chart value insert")
 			}
 			return err
 		}

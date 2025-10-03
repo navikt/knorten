@@ -240,9 +240,6 @@ func NewHandler(
 	airflowClient, err := team.NewAirflowClient(
 		repo,
 		mngr,
-		gcpProject,
-		gcpRegion,
-		dryRun,
 	)
 	if err != nil {
 		return EventHandler{}, err

@@ -119,6 +119,10 @@ type Manager interface {
 	ApplyNetworkPolicy(ctx context.Context, policy *netv1.NetworkPolicy) error
 	DeleteNetworkPolicy(ctx context.Context, name, namespace string) error
 	DeletePodsWithLables(ctx context.Context, namespace, lables string) error
+	GetStatusForPodsWithLabels(
+		ctx context.Context,
+		namespace, labels string,
+	) ([]v1.PodStatus, error)
 }
 
 type manager struct {
@@ -379,6 +383,26 @@ func (m *manager) DeletePodsWithLables(ctx context.Context, namespace, lables st
 	}
 
 	return nil
+}
+
+func (m *manager) GetStatusForPodsWithLabels(
+	ctx context.Context,
+	namespace, labels string,
+) ([]v1.PodStatus, error) {
+	podlist := &v1.PodList{}
+
+	statuses := []v1.PodStatus{}
+
+	err := m.list(ctx, namespace, labels, podlist)
+	if err != nil {
+		return statuses, fmt.Errorf("listing pods with lables: %w", err)
+	}
+
+	for _, pod := range podlist.Items {
+		statuses = append(statuses, pod.Status)
+	}
+
+	return statuses, nil
 }
 
 func (m *manager) waitForResource(

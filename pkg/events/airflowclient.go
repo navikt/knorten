@@ -7,7 +7,8 @@ import (
 )
 
 type airflowClient interface {
-	DeleteSchedulerPods(ctx context.Context, teamID string) error
+	DeleteSchedulerPods(ctx context.Context, namespace string) error
+	IsSchedulerDown(ctx context.Context, namespace string) (bool, error)
 }
 
 type airflowMock struct {
@@ -20,7 +21,11 @@ func newAirflowMock() airflowMock {
 	}
 }
 
-func (ac airflowMock) DeleteSchedulerPods(ctx context.Context, teamID string) error {
+func (ac airflowMock) DeleteSchedulerPods(ctx context.Context, namespace string) error {
 	ac.EventCounts[database.EventTypeDeleteSchedulerPods]++
 	return nil
+}
+
+func (ac airflowMock) IsSchedulerDown(ctx context.Context, namespace string) (bool, error) {
+	return false, nil
 }

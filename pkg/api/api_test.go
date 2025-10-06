@@ -132,6 +132,8 @@ func TestMain(m *testing.M) {
 		RESTConfig: nil,
 	})
 
+	airflowService := service.NewAirflowService(manager)
+
 	err = New(
 		router,
 		repo,
@@ -144,7 +146,7 @@ func TestMain(m *testing.M) {
 		&maintenance.MaintenanceExclusion{
 			Periods: map[string][]*maintenance.MaintenanceExclusionPeriod{},
 		},
-		manager,
+		airflowService,
 	)
 	if err != nil {
 		log.Fatalf("setting up api: %v", err)

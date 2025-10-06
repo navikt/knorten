@@ -67,10 +67,11 @@ func TestUserAPI(t *testing.T) {
 							Namespace: k8s.TeamIDToNamespace(team.ID),
 						},
 						Airflow: &database.AppService{
-							App:       string(gensql.ChartTypeAirflow),
-							Ingress:   fmt.Sprintf("https://%v.airflow.test.io", team.Slug),
-							Slug:      team.Slug,
-							Namespace: k8s.TeamIDToNamespace(team.ID),
+							App:             string(gensql.ChartTypeAirflow),
+							Ingress:         fmt.Sprintf("https://%v.airflow.test.io", team.Slug),
+							Slug:            team.Slug,
+							Namespace:       k8s.TeamIDToNamespace(team.ID),
+							IsSchedulerDown: true,
 						},
 					},
 				},
@@ -84,6 +85,12 @@ func TestUserAPI(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
+
+		// fmt.Println("----- received -----")
+		// fmt.Println(string(received))
+
+		// fmt.Println("----- expected -----")
+		// fmt.Println(expected)
 
 		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)

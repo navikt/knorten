@@ -270,7 +270,7 @@ func main() {
 		cfg.GCP.Zone,
 		cfg.TopLevelDomain,
 		maintenanceExclusionConfig,
-		k8sManager,
+		service.NewAirflowService(k8sManager),
 	)
 	if err != nil {
 		log.WithError(err).Fatal("creating api")

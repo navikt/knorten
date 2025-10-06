@@ -1,20 +1,14 @@
 package api
 
 import (
-	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/navikt/knorten/pkg/api/middlewares"
-	"github.com/navikt/knorten/pkg/k8s"
-	v1 "k8s.io/api/core/v1"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
-
-const airflowSchedulerLabel = "component=scheduler"
 
 func (c *client) setupUserRoutes() {
 	c.router.GET("/oversikt", func(ctx *gin.Context) {
@@ -49,13 +43,14 @@ func (c *client) setupUserRoutes() {
 
 		for _, service := range services.Services {
 			if service.Airflow != nil {
-				isDown, err := c.isSchedulerDown(
+				isDown, err := c.airflowService.IsSchedulerDown(
 					ctx,
 					service.TeamID,
 				)
 				if err != nil {
 					c.log.WithError(err).Error("problem checking is scheduler running")
 				}
+
 				service.Airflow.IsSchedulerDown = isDown
 			}
 		}
@@ -88,19 +83,4 @@ func (c client) getUserAndTeams(ctx *gin.Context) (*auth.User, []string, error) 
 	}
 
 	return user, teams, nil
-}
-
-func (c client) isSchedulerDown(ctx context.Context, teamID string) (bool, error) {
-	namespace := k8s.TeamIDToNamespace(teamID)
-	statuses, err := c.k8sManager.GetStatusForPodsWithLabels(ctx, namespace, airflowSchedulerLabel)
-	if err != nil {
-		return false, fmt.Errorf("is scheduler running: %w", err)
-	}
-
-	for _, status := range statuses {
-		if status.Phase == v1.PodRunning {
-			return false, nil
-		}
-	}
-	return true, nil
 }

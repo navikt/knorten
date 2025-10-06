@@ -3,8 +3,8 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/navikt/knorten/pkg/api/auth"
+	"github.com/navikt/knorten/pkg/api/service"
 	"github.com/navikt/knorten/pkg/database"
-	"github.com/navikt/knorten/pkg/k8s"
 	"github.com/navikt/knorten/pkg/maintenance"
 	"github.com/sirupsen/logrus"
 )
@@ -19,7 +19,7 @@ type client struct {
 	gcpZone                    string
 	topLevelDomain             string
 	maintenanceExclusionConfig *maintenance.MaintenanceExclusion
-	k8sManager                 k8s.Manager
+	airflowService             service.AirflowService
 }
 
 func New(
@@ -30,7 +30,7 @@ func New(
 	dryRun bool,
 	project, zone, topLevelDomain string,
 	maintenanceExclusionConfig *maintenance.MaintenanceExclusion,
-	k8sManager k8s.Manager,
+	airflowService service.AirflowService,
 ) error {
 	router.Use(gin.Recovery())
 	router.Use(func(ctx *gin.Context) {
@@ -48,7 +48,7 @@ func New(
 		gcpZone:                    zone,
 		topLevelDomain:             topLevelDomain,
 		maintenanceExclusionConfig: maintenanceExclusionConfig,
-		k8sManager:                 k8sManager,
+		airflowService:             airflowService,
 	}
 
 	api.setupAuthenticatedRoutes()

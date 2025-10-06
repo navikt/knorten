@@ -26,7 +26,7 @@ func NewAirflowClient(
 const airflowSchedulerLabel = "component=scheduler"
 
 func (ac AirflowClient) DeleteSchedulerPods(ctx context.Context, namespace string) error {
-	err := ac.manager.DeletePodsWithLables(ctx, namespace, airflowSchedulerLabel)
+	err := ac.manager.DeletePodsWithLabels(ctx, namespace, airflowSchedulerLabel)
 	if err != nil {
 		return fmt.Errorf("delete scheduler pods: %w", err)
 	}

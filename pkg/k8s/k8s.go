@@ -118,7 +118,7 @@ type Manager interface {
 	DeleteServiceAccount(ctx context.Context, name, namespace string) error
 	ApplyNetworkPolicy(ctx context.Context, policy *netv1.NetworkPolicy) error
 	DeleteNetworkPolicy(ctx context.Context, name, namespace string) error
-	DeletePodsWithLables(ctx context.Context, namespace, lables string) error
+	DeletePodsWithLabels(ctx context.Context, namespace, lables string) error
 	GetStatusForPodsWithLabels(ctx context.Context, namespace, labels string) ([]v1.PodStatus, error)
 }
 
@@ -364,7 +364,7 @@ func (m *manager) DeleteHealthCheckPolicy(ctx context.Context, name, namespace s
 	return nil
 }
 
-func (m *manager) DeletePodsWithLables(ctx context.Context, namespace, lables string) error {
+func (m *manager) DeletePodsWithLabels(ctx context.Context, namespace, lables string) error {
 	podlist := &v1.PodList{}
 
 	err := m.list(ctx, namespace, lables, podlist)

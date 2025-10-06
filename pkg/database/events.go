@@ -158,7 +158,7 @@ func (r *Repo) RegisterHelmRolloutAirflowEvent(
 	teamID string,
 	values any,
 ) error {
-	return r.registerEvent(ctx, EventTypeHelmRolloutAirflow, teamID, 5*time.Minute, nil)
+	return r.registerEvent(ctx, EventTypeHelmRolloutAirflow, teamID, 5*time.Minute, values)
 }
 
 func (r *Repo) RegisterHelmRollbackAirflowEvent(

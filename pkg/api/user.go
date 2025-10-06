@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/navikt/knorten/pkg/api/auth"
@@ -52,6 +53,7 @@ func (c *client) setupUserRoutes() {
 				}
 
 				service.Airflow.IsSchedulerDown = isDown
+				fmt.Println("is scheduler down: ", service.Airflow.IsSchedulerDown)
 			}
 		}
 

@@ -11,6 +11,7 @@ import (
 
 	"github.com/navikt/knorten/pkg/github"
 	"github.com/navikt/knorten/pkg/maintenance"
+	"github.com/navikt/knorten/pkg/team"
 
 	"github.com/navikt/knorten/pkg/gcpapi"
 	"github.com/navikt/knorten/pkg/gcpapi/mock"
@@ -164,6 +165,7 @@ func main() {
 	}
 
 	k8sManager := k8s.NewManager(c)
+	teamAirflowClient := team.NewAirflowClient(k8sManager)
 
 	eventHandler, err := events.NewHandler(
 		ctx,
@@ -173,6 +175,7 @@ func main() {
 		binder,
 		checker,
 		helmClient,
+		teamAirflowClient,
 		cfg.GCP.Project,
 		cfg.GCP.Region,
 		cfg.GCP.Zone,
@@ -270,7 +273,7 @@ func main() {
 		cfg.GCP.Zone,
 		cfg.TopLevelDomain,
 		maintenanceExclusionConfig,
-		service.NewAirflowService(k8sManager),
+		teamAirflowClient,
 	)
 	if err != nil {
 		log.WithError(err).Fatal("creating api")

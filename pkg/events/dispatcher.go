@@ -210,6 +210,7 @@ func NewHandler(
 	saBinder gcpapi.ServiceAccountPolicyBinder,
 	saChecker gcpapi.ServiceAccountChecker,
 	client *helm.Client,
+	teamAirflowClient airflowClient,
 	gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion, topLevelDomain string,
 	maintenanceExclusionConfig *maintenance.MaintenanceExclusion,
 	dryRun bool,
@@ -237,14 +238,6 @@ func NewHandler(
 		return EventHandler{}, err
 	}
 
-	airflowClient, err := team.NewAirflowClient(
-		repo,
-		mngr,
-	)
-	if err != nil {
-		return EventHandler{}, err
-	}
-
 	return EventHandler{
 		repo:                       repo,
 		maintenanceExclusionConfig: maintenanceExclusionConfig,
@@ -254,7 +247,7 @@ func NewHandler(
 		userClient:                 user.NewClient(repo, gcpProject, gcpRegion, gcpZone, dryRun),
 		chartClient:                chartClient,
 		helmClient:                 client,
-		airflowClient:              airflowClient,
+		airflowClient:              teamAirflowClient,
 	}, nil
 }
 

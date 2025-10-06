@@ -4,21 +4,17 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/navikt/knorten/pkg/database"
 	"github.com/navikt/knorten/pkg/k8s"
 )
 
 type AirflowClient struct {
-	repo    *database.Repo
 	manager k8s.Manager
 }
 
 func NewAirflowClient(
-	repo *database.Repo,
 	mngr k8s.Manager,
 ) (*AirflowClient, error) {
 	return &AirflowClient{
-		repo:    repo,
 		manager: mngr,
 	}, nil
 }

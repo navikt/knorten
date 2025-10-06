@@ -238,7 +238,6 @@ func NewHandler(
 	}
 
 	airflowClient, err := team.NewAirflowClient(
-		repo,
 		mngr,
 	)
 	if err != nil {

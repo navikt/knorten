@@ -1,11 +1,11 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/navikt/knorten/pkg/api/middlewares"
+	"github.com/navikt/knorten/pkg/k8s"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -46,14 +46,13 @@ func (c *client) setupUserRoutes() {
 			if service.Airflow != nil {
 				isDown, err := c.airflowService.IsSchedulerDown(
 					ctx,
-					service.TeamID,
+					k8s.TeamIDToNamespace(service.TeamID),
 				)
 				if err != nil {
 					c.log.WithError(err).Error("problem checking is scheduler running")
 				}
 
 				service.Airflow.IsSchedulerDown = isDown
-				fmt.Println("is scheduler down: ", service.Airflow.IsSchedulerDown)
 			}
 		}
 

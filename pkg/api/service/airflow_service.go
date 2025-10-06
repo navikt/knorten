@@ -24,8 +24,12 @@ func (ac *airflowService) IsSchedulerDown(ctx context.Context, namespace string)
 		return false, fmt.Errorf("is scheduler running: %w", err)
 	}
 
+	if len(statuses) == 0 {
+		// No scheduler pods found for team
+		return true, nil
+	}
+
 	for _, status := range statuses {
-		fmt.Println("status phase", status.Phase)
 		if status.Phase == v1.PodRunning {
 			return false, nil
 		}

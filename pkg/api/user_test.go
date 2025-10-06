@@ -86,12 +86,6 @@ func TestUserAPI(t *testing.T) {
 			t.Error(err)
 		}
 
-		// fmt.Println("----- received -----")
-		// fmt.Println(string(received))
-
-		// fmt.Println("----- expected -----")
-		// fmt.Println(expected)
-
 		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}

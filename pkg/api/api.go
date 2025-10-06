@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/navikt/knorten/pkg/api/auth"
+	"github.com/navikt/knorten/pkg/api/service"
 	"github.com/navikt/knorten/pkg/database"
 	"github.com/navikt/knorten/pkg/maintenance"
 	"github.com/sirupsen/logrus"
@@ -18,12 +19,23 @@ type client struct {
 	gcpZone                    string
 	topLevelDomain             string
 	maintenanceExclusionConfig *maintenance.MaintenanceExclusion
+	airflowService             service.AirflowService
 }
 
-func New(router *gin.Engine, db *database.Repo, azureClient *auth.Azure, log *logrus.Entry, dryRun bool, project, zone, topLevelDomain string, maintenanceExclusionConfig *maintenance.MaintenanceExclusion) error {
+func New(
+	router *gin.Engine,
+	db *database.Repo,
+	azureClient *auth.Azure,
+	log *logrus.Entry,
+	dryRun bool,
+	project, zone, topLevelDomain string,
+	maintenanceExclusionConfig *maintenance.MaintenanceExclusion,
+	airflowService service.AirflowService,
+) error {
 	router.Use(gin.Recovery())
 	router.Use(func(ctx *gin.Context) {
-		log.WithField("subsystem", "gin").Infof("%v %v %v", ctx.Request.Method, ctx.Request.URL.Path, ctx.Writer.Status())
+		log.WithField("subsystem", "gin").
+			Infof("%v %v %v", ctx.Request.Method, ctx.Request.URL.Path, ctx.Writer.Status())
 	})
 
 	api := client{
@@ -36,6 +48,7 @@ func New(router *gin.Engine, db *database.Repo, azureClient *auth.Azure, log *lo
 		gcpZone:                    zone,
 		topLevelDomain:             topLevelDomain,
 		maintenanceExclusionConfig: maintenanceExclusionConfig,
+		airflowService:             airflowService,
 	}
 
 	api.setupAuthenticatedRoutes()

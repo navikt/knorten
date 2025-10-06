@@ -31,6 +31,7 @@ const (
 	EventTypeHelmRolloutAirflow   EventType = "rolloutAirflow:helm"
 	EventTypeHelmRollbackAirflow  EventType = "rollbackAirflow:helm"
 	EventTypeHelmUninstallAirflow EventType = "uninstallAirflow:helm"
+	EventTypeDeleteSchedulerPods  EventType = "restart:airflowscheduler"
 )
 
 type EventStatus string
@@ -58,7 +59,13 @@ type EventWithLogs struct {
 	Logs    []gensql.EventLog
 }
 
-func (r *Repo) registerEvent(ctx context.Context, eventType EventType, owner string, deadline time.Duration, data any) error {
+func (r *Repo) registerEvent(
+	ctx context.Context,
+	eventType EventType,
+	owner string,
+	deadline time.Duration,
+	data any,
+) error {
 	jsonPayload, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -122,28 +129,60 @@ func (r *Repo) RegisterDeleteUserGSMEvent(ctx context.Context, owner string) err
 	return r.registerEvent(ctx, EventTypeDeleteUserGSM, owner, 5*time.Minute, nil)
 }
 
-func (r *Repo) RegisterHelmRolloutJupyterEvent(ctx context.Context, teamID string, values any) error {
+func (r *Repo) RegisterHelmRolloutJupyterEvent(
+	ctx context.Context,
+	teamID string,
+	values any,
+) error {
 	return r.registerEvent(ctx, EventTypeHelmRolloutJupyter, teamID, 10*time.Minute, values)
 }
 
-func (r *Repo) RegisterHelmRollbackJupyterEvent(ctx context.Context, teamID string, values any) error {
+func (r *Repo) RegisterHelmRollbackJupyterEvent(
+	ctx context.Context,
+	teamID string,
+	values any,
+) error {
 	return r.registerEvent(ctx, EventTypeHelmRollbackJupyter, teamID, 5*time.Minute, values)
 }
 
-func (r *Repo) RegisterHelmUninstallJupyterEvent(ctx context.Context, teamID string, values any) error {
+func (r *Repo) RegisterHelmUninstallJupyterEvent(
+	ctx context.Context,
+	teamID string,
+	values any,
+) error {
 	return r.registerEvent(ctx, EventTypeHelmUninstallJupyter, teamID, 10*time.Minute, values)
 }
 
-func (r *Repo) RegisterHelmRolloutAirflowEvent(ctx context.Context, teamID string, values any) error {
-	return r.registerEvent(ctx, EventTypeHelmRolloutAirflow, teamID, 30*time.Minute, values)
+func (r *Repo) RegisterHelmRolloutAirflowEvent(
+	ctx context.Context,
+	teamID string,
+	values any,
+) error {
+	return r.registerEvent(ctx, EventTypeHelmRolloutAirflow, teamID, 5*time.Minute, nil)
 }
 
-func (r *Repo) RegisterHelmRollbackAirflowEvent(ctx context.Context, teamID string, values any) error {
+func (r *Repo) RegisterHelmRollbackAirflowEvent(
+	ctx context.Context,
+	teamID string,
+	values any,
+) error {
 	return r.registerEvent(ctx, EventTypeHelmRollbackAirflow, teamID, 5*time.Minute, values)
 }
 
-func (r *Repo) RegisterHelmUninstallAirflowEvent(ctx context.Context, teamID string, values any) error {
+func (r *Repo) RegisterHelmUninstallAirflowEvent(
+	ctx context.Context,
+	teamID string,
+	values any,
+) error {
 	return r.registerEvent(ctx, EventTypeHelmUninstallAirflow, teamID, 10*time.Minute, values)
+}
+
+func (r *Repo) RegisterDeleteSchedulerPodsEvent(
+	ctx context.Context,
+	teamID string,
+	values any,
+) error {
+	return r.registerEvent(ctx, EventTypeDeleteSchedulerPods, teamID, 5*time.Minute, values)
 }
 
 func (r *Repo) EventSetStatus(ctx context.Context, id uuid.UUID, status EventStatus) error {
@@ -182,7 +221,10 @@ func (r *Repo) DispatchableEventsGet(ctx context.Context) ([]gensql.Event, error
 	return dispatchableEvents, nil
 }
 
-func isEventDispatchable(processingEvents, dispatchableEvents []gensql.Event, upcoming gensql.Event) bool {
+func isEventDispatchable(
+	processingEvents, dispatchableEvents []gensql.Event,
+	upcoming gensql.Event,
+) bool {
 	if containsEvent(dispatchableEvents, upcoming) {
 		return false
 	}
@@ -209,7 +251,12 @@ func (r *Repo) EventsGetType(ctx context.Context, eventType EventType) ([]gensql
 	return r.querier.EventsGetType(ctx, string(eventType))
 }
 
-func (r *Repo) EventLogCreate(ctx context.Context, id uuid.UUID, message string, logType LogType) error {
+func (r *Repo) EventLogCreate(
+	ctx context.Context,
+	id uuid.UUID,
+	message string,
+	logType LogType,
+) error {
 	return r.querier.EventLogCreate(ctx, gensql.EventLogCreateParams{
 		EventID: id,
 		Message: message,
@@ -221,7 +268,11 @@ func (r *Repo) EventGet(ctx context.Context, id uuid.UUID) (gensql.Event, error)
 	return r.querier.EventGet(ctx, id)
 }
 
-func (r *Repo) EventsByOwnerGet(ctx context.Context, teamID string, limit int32) ([]gensql.Event, error) {
+func (r *Repo) EventsByOwnerGet(
+	ctx context.Context,
+	teamID string,
+	limit int32,
+) ([]gensql.Event, error) {
 	return r.querier.EventsByOwnerGet(ctx, gensql.EventsByOwnerGetParams{
 		Owner: teamID,
 		Lim:   sql.NullInt32{Int32: limit, Valid: limit > 0},
@@ -232,7 +283,11 @@ func (r *Repo) EventLogsForEventGet(ctx context.Context, id uuid.UUID) ([]gensql
 	return r.querier.EventLogsForEventGet(ctx, id)
 }
 
-func (r *Repo) EventLogsForOwnerGet(ctx context.Context, owner string, limit int32) ([]EventWithLogs, error) {
+func (r *Repo) EventLogsForOwnerGet(
+	ctx context.Context,
+	owner string,
+	limit int32,
+) ([]EventWithLogs, error) {
 	events, err := r.querier.EventsByOwnerGet(ctx, gensql.EventsByOwnerGetParams{
 		Owner: owner,
 		Lim:   sql.NullInt32{Int32: limit, Valid: limit > 0},

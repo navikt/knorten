@@ -59,12 +59,18 @@ func main() {
 		log.WithError(err).Fatal("validating config")
 	}
 
-	maintenanceExclusionConfig, err := maintenance.LoadMaintenanceExclusionConfig(cfg.MaintenanceExclusionConfig)
+	maintenanceExclusionConfig, err := maintenance.LoadMaintenanceExclusionConfig(
+		cfg.MaintenanceExclusionConfig,
+	)
 	if err != nil {
 		log.WithError(err).Fatal("loading airflow upgrades paused periods")
 	}
 
-	dbClient, err := database.New(cfg.Postgres.ConnectionString(), cfg.DBEncKey, log.WithField("subsystem", "db"))
+	dbClient, err := database.New(
+		cfg.Postgres.ConnectionString(),
+		cfg.DBEncKey,
+		log.WithField("subsystem", "db"),
+	)
 	if err != nil {
 		log.WithError(err).Fatal("setting up database")
 	}
@@ -82,7 +88,11 @@ func main() {
 	}
 
 	if !cfg.DryRun {
-		imageUpdater, err := imageupdater.NewClient(ctx, dbClient, log.WithField("subsystem", "imageupdater"))
+		imageUpdater, err := imageupdater.NewClient(
+			ctx,
+			dbClient,
+			log.WithField("subsystem", "imageupdater"),
+		)
 		if err != nil {
 			log.WithError(err).Fatal("creating imageupdater")
 		}
@@ -153,11 +163,13 @@ func main() {
 		log.WithError(err).Fatal("creating helm client")
 	}
 
+	k8sManager := k8s.NewManager(c)
+
 	eventHandler, err := events.NewHandler(
 		ctx,
 		dbClient,
 		azureClient,
-		k8s.NewManager(c),
+		k8sManager,
 		binder,
 		checker,
 		helmClient,
@@ -216,7 +228,10 @@ func main() {
 
 	go ghf.StartRefreshLoop(ctx, time.Duration(cfg.Github.RefreshIntervalMins)*time.Minute)
 
-	githubHandler := handlers.NewGithubHandler(service.NewGithubService(ghf), log.WithField("subsystem", "github"))
+	githubHandler := handlers.NewGithubHandler(
+		service.NewGithubService(ghf),
+		log.WithField("subsystem", "github"),
+	)
 
 	router.Use(session)
 	router.Static("/assets", "./assets")
@@ -225,7 +240,13 @@ func main() {
 		"toArray": toArray,
 	}
 	router.LoadHTMLGlob("templates/**/*")
-	router.Use(middlewares.SetSessionStatus(log.WithField("subsystem", "status_middleware"), cfg.Cookies.Session.Name, dbClient))
+	router.Use(
+		middlewares.SetSessionStatus(
+			log.WithField("subsystem", "status_middleware"),
+			cfg.Cookies.Session.Name,
+			dbClient,
+		),
+	)
 	router.GET("/", handlers.IndexHandler)
 	router.GET("/oauth2/login", authHandler.LoginHandler(cfg.DryRun))
 	router.GET("/oauth2/callback", authHandler.CallbackHandler())
@@ -239,7 +260,18 @@ func main() {
 		cfg.DryRun,
 	))
 
-	err = api.New(router, dbClient, azureClient, log.WithField("subsystem", "api"), cfg.DryRun, cfg.GCP.Project, cfg.GCP.Zone, cfg.TopLevelDomain, maintenanceExclusionConfig)
+	err = api.New(
+		router,
+		dbClient,
+		azureClient,
+		log.WithField("subsystem", "api"),
+		cfg.DryRun,
+		cfg.GCP.Project,
+		cfg.GCP.Zone,
+		cfg.TopLevelDomain,
+		maintenanceExclusionConfig,
+		service.NewAirflowService(k8sManager),
+	)
 	if err != nil {
 		log.WithError(err).Fatal("creating api")
 		return

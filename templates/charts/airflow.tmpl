@@ -90,6 +90,7 @@
                         </div>
                     </div>
                 </fieldset>
+
                 <div>
                     <h2>Eget Airflow image</h2>
                     <p>
@@ -120,6 +121,27 @@
                 </div>
             </fieldset>
         </form>
+    </article>
+    <article class="bg-white rounded-md p-4">
+        <div>
+            <h2>Restart Airflow Scheduler</h2>
+            <p>
+                Hvis Airflow jobber henger, kan man restarte Airflow scheduleren ved å trykke på knappen under.
+            </p>
+                <td class="navds-table__data-cell navds-body-short navds-body-short--small">
+                    <form action="/team/{{ .team }}/airflow/restart" method="POST">
+                        <fieldset>
+                            <button type="submit"
+                                    class="navds-button navds-button--warning navds-button--small bg-orange-500"
+                            >
+                                        <span class="navds-label">
+                                            Restart
+                                        </span>
+                            </button>
+                        </fieldset>
+                    </form>
+                </td>
+        </div>
     </article>
 
 

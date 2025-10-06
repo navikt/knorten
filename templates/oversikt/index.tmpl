@@ -99,6 +99,9 @@
                 </div>
             </div>
             {{ with .Airflow }}
+                {{ if .IsSchedulerDown }}
+                  <p class="text-red-600 font-bold">🛑 Airflow Scheduler er nede, ta kontakt med nada hvis det vedvarer</p>
+                {{ end }}
                 <p>
                     <b>Service account:</b> <code class="text-base p-1 bg-gray-50">
                         {{ $teamID }}@{{ $.gcpProject }}.iam.gserviceaccount.com</code>

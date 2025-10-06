@@ -16,7 +16,7 @@ import (
 )
 
 func TestEventHandler_distributeWork(t *testing.T) {
-	checkEventType := func(eventType database.EventType, chartMock chartMock, teamMock teamMock, userMock userMock, helmMock helmMock) int {
+	checkEventType := func(eventType database.EventType, chartMock chartMock, teamMock teamMock, userMock userMock, helmMock helmMock, airflowMock airflowMock) int {
 		switch eventType {
 		case database.EventTypeCreateTeam,
 			database.EventTypeUpdateTeam,
@@ -36,6 +36,8 @@ func TestEventHandler_distributeWork(t *testing.T) {
 			database.EventTypeHelmRollbackAirflow,
 			database.EventTypeHelmUninstallAirflow:
 			return helmMock.EventCounts[eventType]
+		case database.EventTypeDeleteSchedulerPods:
+			return airflowMock.EventCounts[eventType]
 		}
 
 		return -1
@@ -57,6 +59,7 @@ func TestEventHandler_distributeWork(t *testing.T) {
 		database.EventTypeHelmRolloutAirflow,
 		database.EventTypeHelmRollbackAirflow,
 		database.EventTypeHelmUninstallAirflow,
+		database.EventTypeDeleteSchedulerPods,
 	}
 	for _, eventType := range eventTypes {
 		t.Run(string(eventType), func(t *testing.T) {
@@ -64,19 +67,21 @@ func TestEventHandler_distributeWork(t *testing.T) {
 			teamMock := newTeamMock()
 			chartMock := newChartMock()
 			helmMock := newHelmMock()
+			airflowMock := newAirflowMock()
 			handler := EventHandler{
-				repo:        &database.RepoMock{},
-				userClient:  &userMock,
-				teamClient:  &teamMock,
-				chartClient: &chartMock,
-				helmClient:  &helmMock,
+				repo:          &database.RepoMock{},
+				userClient:    &userMock,
+				teamClient:    &teamMock,
+				chartClient:   &chartMock,
+				helmClient:    &helmMock,
+				airflowClient: &airflowMock,
 			}
 			worker := handler.distributeWork(eventType)
 			if err := worker(context.Background(), gensql.Event{Payload: []byte("{}"), Type: string(eventType)}, logrus.New()); err != nil {
 				t.Errorf("worker(): %v", err)
 			}
 
-			if count := checkEventType(eventType, chartMock, teamMock, userMock, helmMock); count != 1 {
+			if count := checkEventType(eventType, chartMock, teamMock, userMock, helmMock, airflowMock); count != 1 {
 				t.Errorf("distributeWork(): expected 1 %v event, got %v", eventType, count)
 			}
 		})
@@ -188,12 +193,14 @@ func TestOmitAirflowEventsIfUpgradesPaused(t *testing.T) {
 			teamMock := newTeamMock()
 			chartMock := newChartMock()
 			helmMock := newHelmMock()
+			airflowMock := newAirflowMock()
 			handler := EventHandler{
 				repo:                       &database.RepoMock{},
 				userClient:                 &userMock,
 				teamClient:                 &teamMock,
 				chartClient:                &chartMock,
 				helmClient:                 &helmMock,
+				airflowClient:              &airflowMock,
 				maintenanceExclusionConfig: maintenanceExclusionConfig,
 			}
 

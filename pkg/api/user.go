@@ -5,6 +5,7 @@ import (
 
 	"github.com/navikt/knorten/pkg/api/auth"
 	"github.com/navikt/knorten/pkg/api/middlewares"
+	"github.com/navikt/knorten/pkg/k8s"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -36,13 +37,34 @@ func (c *client) setupUserRoutes() {
 		}
 
 		services, err := c.repo.ServicesForUser(ctx, user.Email, c.topLevelDomain)
+		if err != nil {
+			c.log.WithError(err).Error("problem fetching services for user")
+			return
+		}
+
+		for _, service := range services.Services {
+			if service.Airflow != nil {
+				isDown, err := c.airflowService.IsSchedulerDown(
+					ctx,
+					k8s.TeamIDToNamespace(service.TeamID),
+				)
+				if err != nil {
+					c.log.WithError(err).Error("problem checking is scheduler running")
+				}
+
+				service.Airflow.IsSchedulerDown = isDown
+			}
+		}
+
 		ctx.HTML(http.StatusOK, "oversikt/index", gin.H{
-			"errors":                  err,
-			"flashes":                 flashes,
-			"user":                    services,
-			"gcpProject":              c.gcpProject,
-			"gcpZone":                 c.gcpZone,
-			"upgradePausedStatuses":   c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams(teams),
+			"errors":     err,
+			"flashes":    flashes,
+			"user":       services,
+			"gcpProject": c.gcpProject,
+			"gcpZone":    c.gcpZone,
+			"upgradePausedStatuses": c.maintenanceExclusionConfig.ActiveExcludePeriodForTeams(
+				teams,
+			),
 			"allPlannedUpgradePaused": c.maintenanceExclusionConfig.ExclusionPeriodsForTeams(teams),
 			"loggedIn":                ctx.GetBool(middlewares.LoggedInKey),
 			"isAdmin":                 ctx.GetBool(middlewares.AdminKey),

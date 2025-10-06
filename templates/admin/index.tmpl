@@ -67,6 +67,17 @@
                 <h2>
                     {{ .Slug }} ({{ .ID }})
                 </h2>
+                <form action="/admin/airflow/restart/{{ .Slug }}" method="POST">
+                    <fieldset>
+                        <button type="submit"
+                                class="navds-button navds-button--warning navds-button--small bg-orange-500"
+                        >
+                                    <span class="navds-label">
+                                        Restart Scheduler
+                                    </span>
+                        </button>
+                    </fieldset>
+                </form>
                 <form action="/admin/team/{{ .Slug }}/delete" method="POST">
                 <fieldset>
                     <button type="submit"

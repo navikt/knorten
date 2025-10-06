@@ -15,7 +15,9 @@ import (
 
 	"github.com/navikt/knorten/pkg/api/service"
 	"github.com/navikt/knorten/pkg/config"
+	"github.com/navikt/knorten/pkg/k8s"
 	"github.com/navikt/knorten/pkg/maintenance"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/navikt/knorten/pkg/api/handlers"
 
@@ -105,7 +107,13 @@ func TestMain(m *testing.M) {
 		repo,
 	)
 
-	router.Use(middlewares.SetSessionStatus(logger.WithField("subsystem", "status_middleware"), "knorten_session", repo))
+	router.Use(
+		middlewares.SetSessionStatus(
+			logger.WithField("subsystem", "status_middleware"),
+			"knorten_session",
+			repo,
+		),
+	)
 	router.GET("/", handlers.IndexHandler)
 	router.GET("/oauth2/login", authHandler.LoginHandler(true))
 	router.GET("/oauth2/callback", authHandler.CallbackHandler())
@@ -117,7 +125,29 @@ func TestMain(m *testing.M) {
 		true,
 	))
 
-	err = New(router, repo, azureClient, logger, true, "", "", "test.io", &maintenance.MaintenanceExclusion{Periods: map[string][]*maintenance.MaintenanceExclusionPeriod{}})
+	c := fake.NewFakeClient()
+
+	manager := k8s.NewManager(&k8s.Client{
+		Client:     c,
+		RESTConfig: nil,
+	})
+
+	airflowService := service.NewAirflowService(manager)
+
+	err = New(
+		router,
+		repo,
+		azureClient,
+		logger,
+		true,
+		"",
+		"",
+		"test.io",
+		&maintenance.MaintenanceExclusion{
+			Periods: map[string][]*maintenance.MaintenanceExclusionPeriod{},
+		},
+		airflowService,
+	)
 	if err != nil {
 		log.Fatalf("setting up api: %v", err)
 	}
@@ -143,7 +173,9 @@ func minimizeHTML(in string) (string, error) {
 
 func createExpectedHTML(t string, values map[string]any) (string, error) {
 	buff := &bytes.Buffer{}
-	tmpl, err := template.New("").Funcs(template.FuncMap{"toArray": toArray}).ParseGlob("templates/**/*")
+	tmpl, err := template.New("").
+		Funcs(template.FuncMap{"toArray": toArray}).
+		ParseGlob("templates/**/*")
 	if err != nil {
 		return "", err
 	}

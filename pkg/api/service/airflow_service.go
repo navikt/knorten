@@ -25,10 +25,12 @@ func (ac *airflowService) IsSchedulerDown(ctx context.Context, namespace string)
 	}
 
 	for _, status := range statuses {
+		fmt.Println("status phase", status.Phase)
 		if status.Phase == v1.PodRunning {
 			return false, nil
 		}
 	}
+
 	return true, nil
 }
 

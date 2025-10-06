@@ -119,10 +119,7 @@ type Manager interface {
 	ApplyNetworkPolicy(ctx context.Context, policy *netv1.NetworkPolicy) error
 	DeleteNetworkPolicy(ctx context.Context, name, namespace string) error
 	DeletePodsWithLables(ctx context.Context, namespace, lables string) error
-	GetStatusForPodsWithLabels(
-		ctx context.Context,
-		namespace, labels string,
-	) ([]v1.PodStatus, error)
+	GetStatusForPodsWithLabels(ctx context.Context, namespace, labels string) ([]v1.PodStatus, error)
 }
 
 type manager struct {

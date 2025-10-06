@@ -17,6 +17,7 @@ import (
 	"github.com/navikt/knorten/pkg/config"
 	"github.com/navikt/knorten/pkg/k8s"
 	"github.com/navikt/knorten/pkg/maintenance"
+	"github.com/navikt/knorten/pkg/team"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/navikt/knorten/pkg/api/handlers"
@@ -132,8 +133,6 @@ func TestMain(m *testing.M) {
 		RESTConfig: nil,
 	})
 
-	airflowService := service.NewAirflowService(manager)
-
 	err = New(
 		router,
 		repo,
@@ -146,7 +145,7 @@ func TestMain(m *testing.M) {
 		&maintenance.MaintenanceExclusion{
 			Periods: map[string][]*maintenance.MaintenanceExclusionPeriod{},
 		},
-		airflowService,
+		team.NewAirflowClient(manager),
 	)
 	if err != nil {
 		log.Fatalf("setting up api: %v", err)

@@ -460,11 +460,6 @@ func (c *client) syncChartForAllTeams(ctx context.Context, chartType gensql.Char
 
 func (c *client) syncChart(ctx context.Context, teamID string, chartType gensql.ChartType) error {
 	switch chartType {
-	case gensql.ChartTypeJupyterhub:
-		values := chart.JupyterConfigurableValues{
-			TeamID: teamID,
-		}
-		return c.repo.RegisterUpdateJupyterEvent(ctx, teamID, values)
 	case gensql.ChartTypeAirflow:
 		values := chart.AirflowConfigurableValues{
 			TeamID: teamID,

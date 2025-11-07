@@ -67,16 +67,13 @@ func TestAdminAPI(t *testing.T) {
 				{
 					Team:      teams[0],
 					Namespace: k8s.TeamIDToNamespace(teams[0].ID),
-					Apps: []gensql.ChartType{
-						gensql.ChartTypeJupyterhub,
-					},
-					Events: eventsTeamA,
+					Apps:      []gensql.ChartType{},
+					Events:    eventsTeamA,
 				},
 				{
 					Team:      teams[1],
 					Namespace: k8s.TeamIDToNamespace(teams[1].ID),
 					Apps: []gensql.ChartType{
-						gensql.ChartTypeJupyterhub,
 						gensql.ChartTypeAirflow,
 					},
 					Events: eventsTeamB,
@@ -93,265 +90,6 @@ func TestAdminAPI(t *testing.T) {
 
 		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
-		}
-	})
-
-	t.Run("get admin panel jupyter values html", func(t *testing.T) {
-		resp, err := server.Client().Get(fmt.Sprintf("%v/admin/jupyterhub", server.URL))
-		if err != nil {
-			t.Error(err)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
-		}
-
-		if resp.Header.Get("Content-Type") != htmlContentType {
-			t.Errorf("Content-Type header is %v, should be %v", resp.Header.Get("Content-Type"), htmlContentType)
-		}
-
-		received, err := io.ReadAll(resp.Body)
-		if err != nil {
-			t.Error(err)
-		}
-		receivedMinimized, err := minimizeHTML(string(received))
-		if err != nil {
-			t.Error(err)
-		}
-
-		expected, err := createExpectedHTML("admin/chart", map[string]any{
-			"chart": string(gensql.ChartTypeJupyterhub),
-			"values": []gensql.ChartGlobalValue{
-				{
-					Key:   "jupytervalue",
-					Value: "value",
-				},
-			},
-		})
-		if err != nil {
-			t.Error(err)
-		}
-		expectedMinimized, err := minimizeHTML(expected)
-		if err != nil {
-			t.Error(err)
-		}
-
-		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
-			t.Errorf("mismatch (-want +got):\n%s", diff)
-		}
-	})
-
-	t.Run("update jupyter global values get confirm html", func(t *testing.T) {
-		// Disable automatic redirect. For the test we need to add the session cookie to the subsequent GET request for the confirm html manually
-		server.Client().CheckRedirect = func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		}
-		t.Cleanup(func() {
-			server.Client().CheckRedirect = nil
-		})
-
-		data := url.Values{"jupytervalue": {"updated"}, "key.0": {"new"}, "value.0": {"new"}}
-		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/jupyterhub", server.URL), data)
-		if err != nil {
-			t.Error(err)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusSeeOther {
-			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusSeeOther)
-		}
-
-		sessionCookie, err := getSessionCookieFromResponse(resp)
-		if err != nil {
-			t.Error(err)
-		}
-
-		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%v/admin/jupyterhub/confirm", server.URL), nil)
-		if err != nil {
-			t.Error(err)
-		}
-		req.AddCookie(sessionCookie)
-		resp, err = server.Client().Do(req)
-		if err != nil {
-			t.Error(err)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
-		}
-
-		received, err := io.ReadAll(resp.Body)
-		if err != nil {
-			t.Error(err)
-		}
-		receivedMinimized, err := minimizeHTML(string(received))
-		if err != nil {
-			t.Error(err)
-		}
-
-		expected, err := createExpectedHTML("admin/confirm", map[string]any{
-			"chart": string(gensql.ChartTypeJupyterhub),
-			"changedValues": []map[string]diffValue{
-				{
-					"jupytervalue": {
-						Old: "value",
-						New: "updated",
-					},
-					"new": {
-						New: "new",
-					},
-				},
-			},
-		})
-		if err != nil {
-			t.Error(err)
-		}
-		expectedMinimized, err := minimizeHTML(expected)
-		if err != nil {
-			t.Error(err)
-		}
-
-		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
-			t.Errorf("mismatch (-want +got):\n%s", diff)
-		}
-	})
-
-	t.Run("update jupyter global values and trigger resync", func(t *testing.T) {
-		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeUpdateJupyter)
-		if err != nil {
-			t.Error(err)
-		}
-
-		data := url.Values{"jupytervalue": {"updated"}, "new": {"new"}, ActionTriggerResync: {"on"}}
-		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/jupyterhub/confirm", server.URL), data)
-		if err != nil {
-			t.Error(err)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
-		}
-
-		events, err := repo.EventsGetType(ctx, database.EventTypeUpdateJupyter)
-		if err != nil {
-			t.Error(err)
-		}
-
-		newEvents := getNewEvents(oldEvents, events)
-		for _, team := range teams {
-			eventPayload, err := getEventForJupyterhub(newEvents, team.ID)
-			if err != nil {
-				t.Error(err)
-			}
-
-			if eventPayload.TeamID == "" {
-				t.Errorf("update admin values: no update jupyterhub event registered for team %v", team.ID)
-			}
-		}
-	})
-
-	t.Run("update jupyter global values and not trigger resync", func(t *testing.T) {
-		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeUpdateJupyter)
-		if err != nil {
-			t.Error(err)
-		}
-
-		data := url.Values{"jupytervalue": {"updated"}, "new": {"new"}}
-		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/jupyterhub/confirm", server.URL), data)
-		if err != nil {
-			t.Error(err)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
-		}
-
-		events, err := repo.EventsGetType(ctx, database.EventTypeUpdateJupyter)
-		if err != nil {
-			t.Error(err)
-		}
-
-		newEvents := getNewEvents(oldEvents, events)
-		for _, team := range teams {
-			eventPayload, err := getEventForJupyterhub(newEvents, team.ID)
-			if err != nil {
-				t.Error(err)
-			}
-
-			if eventPayload.TeamID != "" {
-				t.Errorf("update admin values: update jupyterhub event registered for team %v", team.ID)
-			}
-		}
-	})
-
-	t.Run("sync jupyterhub chart for team", func(t *testing.T) {
-		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeUpdateJupyter)
-		if err != nil {
-			t.Error(err)
-		}
-
-		data := url.Values{"team": {"team-a-1234"}}
-		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/jupyterhub/sync", server.URL), data)
-		if err != nil {
-			t.Error(err)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
-		}
-
-		events, err := repo.EventsGetType(ctx, database.EventTypeUpdateJupyter)
-		if err != nil {
-			t.Error(err)
-		}
-
-		newEvents := getNewEvents(oldEvents, events)
-		eventPayload, err := getEventForJupyterhub(newEvents, teams[0].ID)
-		if err != nil {
-			t.Error(err)
-		}
-
-		if eventPayload.TeamID == "" {
-			t.Errorf("sync chart: no update jupyterhub event registered for team %v", teams[1].ID)
-		}
-	})
-
-	t.Run("sync all jupyterhub charts", func(t *testing.T) {
-		oldEvents, err := repo.EventsGetType(ctx, database.EventTypeUpdateJupyter)
-		if err != nil {
-			t.Error(err)
-		}
-
-		resp, err := server.Client().PostForm(fmt.Sprintf("%v/admin/jupyterhub/sync/all", server.URL), nil)
-		if err != nil {
-			t.Error(err)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			t.Errorf("Status code is %v, should be %v", resp.StatusCode, http.StatusOK)
-		}
-
-		events, err := repo.EventsGetType(ctx, database.EventTypeUpdateJupyter)
-		if err != nil {
-			t.Error(err)
-		}
-
-		newEvents := getNewEvents(oldEvents, events)
-		for _, team := range teams {
-			eventPayload, err := getEventForJupyterhub(newEvents, team.ID)
-			if err != nil {
-				t.Error(err)
-			}
-
-			if eventPayload.TeamID == "" {
-				t.Errorf("sync all jupyterhub charts: no update jupyterhub event registered for team %v", team.ID)
-			}
 		}
 	})
 
@@ -839,9 +577,6 @@ func prepareAdminTests(ctx context.Context) ([]gensql.Team, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := createChart(ctx, teamA.ID, gensql.ChartTypeJupyterhub); err != nil {
-		return nil, err
-	}
 
 	teamB := gensql.Team{
 		ID:    "team-b-1234",
@@ -850,9 +585,6 @@ func prepareAdminTests(ctx context.Context) ([]gensql.Team, error) {
 	}
 	err = repo.TeamCreate(ctx, &teamB)
 	if err != nil {
-		return nil, err
-	}
-	if err := createChart(ctx, teamB.ID, gensql.ChartTypeJupyterhub); err != nil {
 		return nil, err
 	}
 	if err := createChart(ctx, teamB.ID, gensql.ChartTypeAirflow); err != nil {
@@ -864,9 +596,6 @@ func prepareAdminTests(ctx context.Context) ([]gensql.Team, error) {
 		return nil, err
 	}
 
-	if err := repo.GlobalChartValueInsert(ctx, "jupytervalue", "value", false, gensql.ChartTypeJupyterhub); err != nil {
-		return nil, err
-	}
 	if err := repo.GlobalChartValueInsert(ctx, "airflowvalue", "value", false, gensql.ChartTypeAirflow); err != nil {
 		return nil, err
 	}
@@ -903,9 +632,6 @@ func cleanUpAdminTests(ctx context.Context, teams []gensql.Team) error {
 		}
 	}
 
-	if err := repo.GlobalValueDelete(ctx, "jupytervalue", gensql.ChartTypeJupyterhub); err != nil {
-		return err
-	}
 	if err := repo.GlobalValueDelete(ctx, "airflowvalue", gensql.ChartTypeAirflow); err != nil {
 		return err
 	}

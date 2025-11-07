@@ -180,7 +180,6 @@ func main() {
 		cfg.GCP.Region,
 		cfg.GCP.Zone,
 		cfg.Helm.AirflowChartVersion,
-		cfg.Helm.JupyterChartVersion,
 		cfg.TopLevelDomain,
 		maintenanceExclusionConfig,
 		cfg.DryRun,

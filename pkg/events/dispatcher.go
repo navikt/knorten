@@ -60,23 +60,13 @@ func (e EventHandler) distributeWork(eventType database.EventType) workerFunc {
 			var values chart.AirflowConfigurableValues
 			return e.processWork(ctx, event, logger, &values)
 		}
-	case database.EventTypeCreateJupyter,
-		database.EventTypeUpdateJupyter:
-		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
-			var values chart.JupyterConfigurableValues
-			return e.processWork(ctx, event, logger, &values)
-		}
 	case database.EventTypeDeleteTeam,
 		database.EventTypeDeleteUserGSM,
-		database.EventTypeDeleteAirflow,
-		database.EventTypeDeleteJupyter:
+		database.EventTypeDeleteAirflow:
 		return func(ctx context.Context, event gensql.Event, logger logger.Logger) error {
 			return e.processWork(ctx, event, logger, nil)
 		}
-	case database.EventTypeHelmRolloutJupyter,
-		database.EventTypeHelmRollbackJupyter,
-		database.EventTypeHelmUninstallJupyter,
-		database.EventTypeHelmRolloutAirflow,
+	case database.EventTypeHelmRolloutAirflow,
 		database.EventTypeHelmRollbackAirflow,
 		database.EventTypeHelmUninstallAirflow:
 		var values helm.EventData
@@ -150,38 +140,25 @@ func (e EventHandler) processWork(
 		err = e.chartClient.SyncAirflow(ctx, v)
 	case database.EventTypeDeleteAirflow:
 		err = e.chartClient.DeleteAirflow(ctx, event.Owner)
-	case database.EventTypeCreateJupyter, database.EventTypeUpdateJupyter:
-		v, ok := form.(*chart.JupyterConfigurableValues)
-		if !ok {
-			return fmt.Errorf("invalid form type for event type %v", event.Type)
-		}
-
-		logger.Infof("Syncing Jupyter for team '%v'", v.TeamID)
-		err = e.chartClient.SyncJupyter(ctx, v)
-	case database.EventTypeDeleteJupyter:
-		err = e.chartClient.DeleteJupyter(ctx, event.Owner)
-	case database.EventTypeHelmRolloutJupyter, database.EventTypeHelmRolloutAirflow:
+	case database.EventTypeHelmRolloutAirflow:
 		d, ok := form.(*helm.EventData)
 		if !ok {
 			return fmt.Errorf("invalid form type for event type %v", event.Type)
 		}
-
 		logger.Infof("Rolling out helm chart for team '%v'", d.TeamID)
 		err = e.helmClient.InstallOrUpgrade(ctx, d)
-	case database.EventTypeHelmRollbackJupyter, database.EventTypeHelmRollbackAirflow:
+	case database.EventTypeHelmRollbackAirflow:
 		d, ok := form.(*helm.EventData)
 		if !ok {
 			return fmt.Errorf("invalid form type for event type %v", event.Type)
 		}
-
 		logger.Infof("Rolling back helm chart for team '%v'", d.TeamID)
 		err = e.helmClient.Rollback(ctx, d)
-	case database.EventTypeHelmUninstallJupyter, database.EventTypeHelmUninstallAirflow:
+	case database.EventTypeHelmUninstallAirflow:
 		d, ok := form.(*helm.EventData)
 		if !ok {
 			return fmt.Errorf("invalid form type for event type %v", event.Type)
 		}
-
 		logger.Infof("Uninstalling helm chart for team '%v'", d.TeamID)
 		err = e.helmClient.Uninstall(ctx, d)
 	case database.EventTypeDeleteSchedulerPods:
@@ -211,7 +188,7 @@ func NewHandler(
 	saChecker gcpapi.ServiceAccountChecker,
 	client *helm.Client,
 	teamAirflowClient airflowClient,
-	gcpProject, gcpRegion, gcpZone, airflowChartVersion, jupyterChartVersion, topLevelDomain string,
+	gcpProject, gcpRegion, gcpZone, airflowChartVersion, topLevelDomain string,
 	maintenanceExclusionConfig *maintenance.MaintenanceExclusion,
 	dryRun bool,
 	log *logrus.Entry,
@@ -229,7 +206,6 @@ func NewHandler(
 		saChecker,
 		dryRun,
 		airflowChartVersion,
-		jupyterChartVersion,
 		gcpProject,
 		gcpRegion,
 		topLevelDomain,

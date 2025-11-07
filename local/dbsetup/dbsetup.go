@@ -56,12 +56,14 @@ func SetupDB(ctx context.Context, dbURL, dbname string) error {
 	}
 
 	var oid uint32
-	err = db.QueryRow(context.Background(), "select oid from pg_type where typname=$1;", "chart_type").Scan(&oid)
+	err = db.QueryRow(context.Background(), "select oid from pg_type where typname=$1;", "chart_type").
+		Scan(&oid)
 	if err != nil {
 		return err
 	}
 
-	db.TypeMap().RegisterType(&pgtype.Type{Name: "chart_type", OID: oid, Codec: &pgtype.EnumCodec{}})
+	db.TypeMap().
+		RegisterType(&pgtype.Type{Name: "chart_type", OID: oid, Codec: &pgtype.EnumCodec{}})
 
 	fmt.Println("Time to insert dummy data for local development")
 	rows := [][]interface{}{
@@ -73,12 +75,19 @@ func SetupDB(ctx context.Context, dbURL, dbname string) error {
 		{"airflow", "workers.serviceAccount.create", "false"},
 		{"airflow", "images.airflow.repository", "apache/airflow"},
 		{"airflow", "images.airflow.tag", "2.8.1-python3.11"},
-		{"airflow", "env", `[{"name":"CLONE_REPO_IMAGE","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/git-sync:2024-03-01-9d7687c"},{"name":"KNADA_AIRFLOW_OPERATOR_IMAGE","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow:2024-01-12-09bd685"},{"name":"DATAVERK_IMAGE_PYTHON_38","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.8:2024-02-16-d06f032"},{"name":"DATAVERK_IMAGE_PYTHON_39","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.9:2024-02-09-15e79cd"},{"name":"DATAVERK_IMAGE_PYTHON_310","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.10:2024-02-09-15e79cd"},{"name":"DATAVERK_IMAGE_PYTHON_311","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.11:2024-02-09-15e79cd"},{"name":"DATAVERK_IMAGE_PYTHON_312","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.12:2024-02-16-d06f032"}]`},
+		{
+			"airflow",
+			"env",
+			`[{"name":"CLONE_REPO_IMAGE","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/git-sync:2024-03-01-9d7687c"},{"name":"KNADA_AIRFLOW_OPERATOR_IMAGE","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow:2024-01-12-09bd685"},{"name":"DATAVERK_IMAGE_PYTHON_38","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.8:2024-02-16-d06f032"},{"name":"DATAVERK_IMAGE_PYTHON_39","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.9:2024-02-09-15e79cd"},{"name":"DATAVERK_IMAGE_PYTHON_310","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.10:2024-02-09-15e79cd"},{"name":"DATAVERK_IMAGE_PYTHON_311","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.11:2024-02-09-15e79cd"},{"name":"DATAVERK_IMAGE_PYTHON_312","value":"europe-north1-docker.pkg.dev/knada-gcp/knada-north/dataverk-airflow-python-3.12:2024-02-16-d06f032"}]`,
+		},
 		{"airflow", "registry.secretName", "gcp-auth"},
 		{"airflow", "data.metadataSecretName", "airflow-db"},
-		{"jupyterhub", "singleuser.profileList", "[]"},
 		{"airflow", "images.gitSync.tag", "2024-03-01-9d7687c"},
-		{"airflow", "knauditImage,omit", "europe-north1-docker.pkg.dev/knada-gcp/knada-north/knaudit:2024-03-15-ef2f8de"},
+		{
+			"airflow",
+			"knauditImage,omit",
+			"europe-north1-docker.pkg.dev/knada-gcp/knada-north/knaudit:2024-03-15-ef2f8de",
+		},
 		{"airflow", "extraEnvFrom", `"[{"secretRef": {"name": "azuread-secret"}}]"`},
 	}
 	_, err = db.CopyFrom(ctx,
@@ -111,7 +120,11 @@ func SetupDBForTests() (string, error) {
 		}
 
 		// pulls an image, creates a container based on it and runs it
-		resource, err := pool.Run("postgres", "14", []string{"POSTGRES_PASSWORD=postgres", "POSTGRES_DB=knorten"})
+		resource, err := pool.Run(
+			"postgres",
+			"14",
+			[]string{"POSTGRES_PASSWORD=postgres", "POSTGRES_DB=knorten"},
+		)
 		if err != nil {
 			log.Fatalf("Could not start resource: %s", err)
 		}
@@ -122,7 +135,10 @@ func SetupDBForTests() (string, error) {
 		}
 
 		dbPort := resource.GetPort("5432/tcp")
-		dbString = fmt.Sprintf("user=postgres dbname=knorten sslmode=disable password=postgres host=localhost port=%v", dbPort)
+		dbString = fmt.Sprintf(
+			"user=postgres dbname=knorten sslmode=disable password=postgres host=localhost port=%v",
+			dbPort,
+		)
 	}
 
 	if err := waitForDB(dbString); err != nil {
@@ -147,5 +163,8 @@ func waitForDB(dbString string) error {
 		}
 	}
 
-	return fmt.Errorf("unable to connect to db in %v seconds", int(sleepDuration)*numRetries/1000000000)
+	return fmt.Errorf(
+		"unable to connect to db in %v seconds",
+		int(sleepDuration)*numRetries/1000000000,
+	)
 }

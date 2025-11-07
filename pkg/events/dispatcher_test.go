@@ -24,15 +24,9 @@ func TestEventHandler_distributeWork(t *testing.T) {
 			return teamMock.EventCounts[eventType]
 		case database.EventTypeCreateAirflow,
 			database.EventTypeUpdateAirflow,
-			database.EventTypeDeleteAirflow,
-			database.EventTypeCreateJupyter,
-			database.EventTypeUpdateJupyter,
-			database.EventTypeDeleteJupyter:
+			database.EventTypeDeleteAirflow:
 			return chartMock.EventCounts[eventType]
-		case database.EventTypeHelmRolloutJupyter,
-			database.EventTypeHelmRollbackJupyter,
-			database.EventTypeHelmUninstallJupyter,
-			database.EventTypeHelmRolloutAirflow,
+		case database.EventTypeHelmRolloutAirflow,
 			database.EventTypeHelmRollbackAirflow,
 			database.EventTypeHelmUninstallAirflow:
 			return helmMock.EventCounts[eventType]
@@ -50,12 +44,6 @@ func TestEventHandler_distributeWork(t *testing.T) {
 		database.EventTypeCreateAirflow,
 		database.EventTypeUpdateAirflow,
 		database.EventTypeDeleteAirflow,
-		database.EventTypeCreateJupyter,
-		database.EventTypeUpdateJupyter,
-		database.EventTypeDeleteJupyter,
-		database.EventTypeHelmRolloutJupyter,
-		database.EventTypeHelmRollbackJupyter,
-		database.EventTypeHelmUninstallJupyter,
 		database.EventTypeHelmRolloutAirflow,
 		database.EventTypeHelmRollbackAirflow,
 		database.EventTypeHelmUninstallAirflow,
@@ -92,24 +80,26 @@ func TestOmitAirflowEventsIfUpgradesPaused(t *testing.T) {
 	teamOneID := "teamone-1234"
 	teamTwoID := "teamtwo-4321"
 
-	maintenanceExclusionConfig := &maintenance.MaintenanceExclusion{Periods: map[string][]*maintenance.MaintenanceExclusionPeriod{
-		teamOneID: {
-			{
-				Name:  "active period for team one",
-				Team:  teamOneID,
-				Start: time.Now(),
-				End:   time.Now().Add(time.Hour * 24),
+	maintenanceExclusionConfig := &maintenance.MaintenanceExclusion{
+		Periods: map[string][]*maintenance.MaintenanceExclusionPeriod{
+			teamOneID: {
+				{
+					Name:  "active period for team one",
+					Team:  teamOneID,
+					Start: time.Now(),
+					End:   time.Now().Add(time.Hour * 24),
+				},
+			},
+			teamTwoID: {
+				{
+					Name:  "active period for team two",
+					Team:  teamTwoID,
+					Start: time.Now().Add(time.Hour * 24),
+					End:   time.Now().Add(time.Hour * 48),
+				},
 			},
 		},
-		teamTwoID: {
-			{
-				Name:  "active period for team two",
-				Team:  teamTwoID,
-				Start: time.Now().Add(time.Hour * 24),
-				End:   time.Now().Add(time.Hour * 48),
-			},
-		},
-	}}
+	}
 
 	airflowEventsOmittedTests := []struct {
 		name     string
@@ -119,11 +109,6 @@ func TestOmitAirflowEventsIfUpgradesPaused(t *testing.T) {
 		{
 			name: "airflow events are omitted",
 			events: []gensql.Event{
-				{
-					Status: string(database.EventStatusNew),
-					Type:   string(database.EventTypeUpdateJupyter),
-					Owner:  teamOneID,
-				},
 				{
 					Status: string(database.EventStatusNew),
 					Type:   string(database.EventTypeCreateAirflow),
@@ -145,22 +130,11 @@ func TestOmitAirflowEventsIfUpgradesPaused(t *testing.T) {
 					Owner:  teamOneID,
 				},
 			},
-			expected: []gensql.Event{
-				{
-					Status: string(database.EventStatusNew),
-					Type:   string(database.EventTypeUpdateJupyter),
-					Owner:  teamOneID,
-				},
-			},
+			expected: []gensql.Event{},
 		},
 		{
 			name: "airflow event is only omitted for team affected by maintenance exclusion",
 			events: []gensql.Event{
-				{
-					Status: string(database.EventStatusNew),
-					Type:   string(database.EventTypeUpdateJupyter),
-					Owner:  teamOneID,
-				},
 				{
 					Status: string(database.EventStatusNew),
 					Type:   string(database.EventTypeUpdateAirflow),
@@ -173,11 +147,6 @@ func TestOmitAirflowEventsIfUpgradesPaused(t *testing.T) {
 				},
 			},
 			expected: []gensql.Event{
-				{
-					Status: string(database.EventStatusNew),
-					Type:   string(database.EventTypeUpdateJupyter),
-					Owner:  teamOneID,
-				},
 				{
 					Status: string(database.EventStatusNew),
 					Type:   string(database.EventTypeUpdateAirflow),

@@ -169,8 +169,6 @@ func (e EventHandler) processWork(
 
 		logger.Infof("Deleting Airflow scheduler pods for team '%v'", event.Owner)
 		err = e.airflowClient.DeleteSchedulerPods(ctx, props.Namespace)
-		logger.Infof("Uninstalling helm chart for team '%v'", d.TeamID)
-		err = e.helmClient.Uninstall(ctx, d)
 	}
 
 	if err != nil {

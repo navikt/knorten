@@ -93,6 +93,7 @@ func (c *client) setupTeamRoutes() {
 			if err != nil {
 				c.log.WithError(err).Error("problem saving session")
 			}
+			flashes = append(flashes, "Kunne ikke hente team fra Teamkatalogen. Prøv igjen senere.")
 		}
 
 		form.Users = []string{user.Email}

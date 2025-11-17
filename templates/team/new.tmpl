@@ -13,6 +13,26 @@
                        class="navds-text-field__input navds-body-short navds-body-medium"
                 />
             </div>
+            <div class="">
+                <label for="teamkatalogen_team" class="navds-form-field__label navds-label">Teamkatalogen-team</label>
+                {{ if .teamkatalogTeams }}
+                <select name="teamkatalogen_team" id="teamkatalogen_team" 
+                        class="navds-select__input navds-body-short navds-body-medium"
+                        required>
+                    <option value="">Velg team fra Teamkatalogen</option>
+                    {{ range .teamkatalogTeams }}
+                        <option value="{{ .Name }}" {{ if eq $.form.TeamkatalogenTeam .Name }}selected{{ end }}>{{ .Name }}</option>
+                    {{ end }}
+                </select>
+                {{ else }}
+                <input type="text" name="teamkatalogen_team" id="teamkatalogen_team" 
+                       value="{{ or .form.TeamkatalogenTeam "" }}"
+                       placeholder="Skriv inn teamnavn"
+                       class="navds-text-field__input navds-body-short navds-body-medium"
+                       required
+                />
+                {{ end }}
+            </div>
             <fieldset id="users">
                 <legend class="navds-form-field__label navds-label">Brukere</legend>
                 <button type="button" class="mb-4 navds-button navds-button--secondary navds-button--small"

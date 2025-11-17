@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -22,9 +23,10 @@ func TestTeamAPI(t *testing.T) {
 	existingTeam := "existing-team"
 	existingTeamID := existingTeam + "-1234"
 	err := repo.TeamCreate(ctx, &gensql.Team{
-		ID:    existingTeamID,
-		Slug:  existingTeam,
-		Users: []string{testUser.Email},
+		ID:                existingTeamID,
+		Slug:              existingTeam,
+		Users:             []string{testUser.Email},
+		TeamkatalogenTeam: existingTeam,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -62,9 +64,10 @@ func TestTeamAPI(t *testing.T) {
 		}
 
 		expected, err := createExpectedHTML("team/new", map[string]any{
-			"form": gensql.Team{
+			"form": teamForm{
 				Users: []string{testUser.Email},
 			},
+			"teamkatalogTeams": mockTeamkatalogTeams,
 		})
 		if err != nil {
 			t.Error(err)
@@ -80,7 +83,7 @@ func TestTeamAPI(t *testing.T) {
 	})
 
 	t.Run("create team", func(t *testing.T) {
-		data := url.Values{"team": {newTeam}, "users[]": []string{testUser.Email}}
+		data := url.Values{"team": {newTeam}, "users[]": []string{testUser.Email}, "teamkatalogen_team": {newTeam}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/new", server.URL), data)
 		if err != nil {
 			t.Error(err)
@@ -120,9 +123,10 @@ func TestTeamAPI(t *testing.T) {
 			return http.ErrUseLastResponse
 		}
 		existing := gensql.Team{
-			Slug:  "existing-team",
-			ID:    "exists-team-1234",
-			Users: []string{testUser.Email},
+			Slug:              "existing-team",
+			ID:                "exists-team-1234",
+			Users:             []string{testUser.Email},
+			TeamkatalogenTeam: "existing-team",
 		}
 		if err := repo.TeamCreate(ctx, &existing); err != nil {
 			t.Error(err)
@@ -134,7 +138,7 @@ func TestTeamAPI(t *testing.T) {
 			}
 		})
 
-		data := url.Values{"team": {existing.Slug}, "users[]": []string{testUser.Email}}
+		data := url.Values{"team": {existing.Slug}, "users[]": []string{testUser.Email}, "teamkatalogen_team": {existing.Slug}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/new", server.URL), data)
 		if err != nil {
 			t.Error(err)
@@ -174,7 +178,8 @@ func TestTeamAPI(t *testing.T) {
 			"form": map[string]any{
 				"Users": []string{testUser.Email},
 			},
-			"errors": []string{fmt.Sprintf("team %v already exists", existing.Slug)},
+			"errors":           []string{"team existing-team already exists"},
+			"teamkatalogTeams": mockTeamkatalogTeams,
 		})
 		if err != nil {
 			t.Error(err)
@@ -187,6 +192,54 @@ func TestTeamAPI(t *testing.T) {
 
 		if diff := cmp.Diff(expectedMinimized, receivedMinimized); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("create team - missing teamkatalogen team", func(t *testing.T) {
+		// Disable automatic redirect
+		server.Client().CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		}
+		t.Cleanup(func() {
+			server.Client().CheckRedirect = nil
+		})
+
+		// POST without teamkatalogen_team field
+		data := url.Values{"team": {"new-team-no-tk"}, "users[]": []string{testUser.Email}}
+		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/new", server.URL), data)
+		if err != nil {
+			t.Error(err)
+		}
+		resp.Body.Close()
+
+		if resp.StatusCode != http.StatusSeeOther {
+			t.Errorf("expected status code 303, got %v", resp.StatusCode)
+		}
+
+		sessionCookie, err := getSessionCookieFromResponse(resp)
+		if err != nil {
+			t.Error(err)
+		}
+
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%v/team/new", server.URL), nil)
+		if err != nil {
+			t.Error(err)
+		}
+		req.AddCookie(sessionCookie)
+		resp, err = server.Client().Do(req)
+		if err != nil {
+			t.Error(err)
+		}
+		defer resp.Body.Close()
+
+		received, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Error(err)
+		}
+
+		receivedStr := string(received)
+		if !strings.Contains(receivedStr, "Teamkatalogen-team er et påkrevd felt") {
+			t.Errorf("Expected validation error for missing teamkatalogen_team field")
 		}
 	})
 
@@ -233,10 +286,12 @@ func TestTeamAPI(t *testing.T) {
 
 		expected, err := createExpectedHTML("team/edit", map[string]any{
 			"team": gensql.TeamGetRow{
-				ID:    existingTeamID,
-				Slug:  existingTeam,
-				Users: []string{testUser.Email},
+				ID:                existingTeamID,
+				Slug:              existingTeam,
+				Users:             []string{testUser.Email},
+				TeamkatalogenTeam: existingTeam,
 			},
+			"teamkatalogTeams": mockTeamkatalogTeams,
 		})
 		if err != nil {
 			t.Error(err)
@@ -254,7 +309,7 @@ func TestTeamAPI(t *testing.T) {
 
 	t.Run("edit team", func(t *testing.T) {
 		users := []string{"user@nav.no"}
-		data := url.Values{"team": {existingTeam}, "owner": {testUser.Email}, "users[]": users, "enableallowlist": {"on"}}
+		data := url.Values{"team": {existingTeam}, "owner": {testUser.Email}, "users[]": users, "enableallowlist": {"on"}, "teamkatalogen_team": {existingTeam}}
 		resp, err := server.Client().PostForm(fmt.Sprintf("%v/team/%v/edit", server.URL, existingTeam), data)
 		if err != nil {
 			t.Error(err)
@@ -404,9 +459,10 @@ func deleteEventCreatedForTeam(events []gensql.Event, team string) bool {
 
 func prepareTeamEventsTest(ctx context.Context) (gensql.Team, error) {
 	team := gensql.Team{
-		ID:    "eventtest-team-1234",
-		Slug:  "eventtest-team",
-		Users: []string{testUser.Email},
+		ID:                "eventtest-team-1234",
+		Slug:              "eventtest-team",
+		Users:             []string{testUser.Email},
+		TeamkatalogenTeam: "eventtest-team",
 	}
 
 	if err := repo.TeamCreate(ctx, &team); err != nil {

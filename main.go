@@ -166,6 +166,7 @@ func main() {
 
 	k8sManager := k8s.NewManager(c)
 	teamAirflowClient := team.NewAirflowClient(k8sManager)
+	teamkatalogClient := service.NewTeamkatalogService(cfg.TeamkatalogURL)
 
 	eventHandler, err := events.NewHandler(
 		ctx,
@@ -273,6 +274,7 @@ func main() {
 		cfg.TopLevelDomain,
 		maintenanceExclusionConfig,
 		teamAirflowClient,
+		teamkatalogClient,
 	)
 	if err != nil {
 		log.WithError(err).Fatal("creating api")

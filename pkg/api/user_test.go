@@ -58,8 +58,9 @@ func TestUserAPI(t *testing.T) {
 			"user": database.UserServices{
 				Services: []database.TeamServices{
 					{
-						TeamID: team.ID,
-						Slug:   team.Slug,
+						TeamID:            team.ID,
+						Slug:              team.Slug,
+						TeamkatalogenTeam: team.TeamkatalogenTeam,
 						Airflow: &database.AppService{
 							App:             string(gensql.ChartTypeAirflow),
 							Ingress:         fmt.Sprintf("https://%v.airflow.test.io", team.Slug),
@@ -88,9 +89,10 @@ func TestUserAPI(t *testing.T) {
 
 func prepareUserTests(ctx context.Context) (*gensql.Team, error) {
 	team := gensql.Team{
-		ID:    "team",
-		Slug:  "team",
-		Users: []string{testUser.Email},
+		ID:                "team",
+		Slug:              "team",
+		Users:             []string{testUser.Email},
+		TeamkatalogenTeam: "team",
 	}
 	err := repo.TeamCreate(ctx, &team)
 	if err != nil {

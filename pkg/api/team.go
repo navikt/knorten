@@ -21,9 +21,10 @@ import (
 )
 
 type teamForm struct {
-	Slug      string   `form:"team" binding:"required,validTeamName"`
-	Users     []string `form:"users[]" binding:"validEmail,userListNotEmpty"`
-	APIAccess string   `form:"apiaccess"`
+	Slug              string   `form:"team" binding:"required,validTeamName"`
+	Users             []string `form:"users[]" binding:"validEmail,userListNotEmpty"`
+	APIAccess         string   `form:"apiaccess"`
+	TeamkatalogenTeam string   `form:"teamkatalogen_team" binding:"required"`
 }
 
 func formToTeam(ctx *gin.Context) (gensql.Team, error) {
@@ -39,9 +40,10 @@ func formToTeam(ctx *gin.Context) (gensql.Team, error) {
 	}
 
 	return gensql.Team{
-		ID:    id,
-		Slug:  form.Slug,
-		Users: form.Users,
+		ID:                id,
+		Slug:              form.Slug,
+		Users:             form.Users,
+		TeamkatalogenTeam: form.TeamkatalogenTeam,
 	}, nil
 }
 
@@ -83,12 +85,23 @@ func (c *client) setupTeamRoutes() {
 			return
 		}
 
+		teamkatalogTeams, err := c.teamkatalogClient.GetActiveTeams()
+		if err != nil {
+			c.log.WithError(err).Error("failed to fetch teams from teamkatalog")
+			session.AddFlash("Kunne ikke hente team fra Teamkatalogen. Prøv igjen senere.")
+			err = session.Save()
+			if err != nil {
+				c.log.WithError(err).Error("problem saving session")
+			}
+		}
+
 		form.Users = []string{user.Email}
 		ctx.HTML(http.StatusOK, "team/new", gin.H{
-			"form":     form,
-			"errors":   flashes,
-			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
+			"form":             form,
+			"errors":           flashes,
+			"loggedIn":         ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":          ctx.GetBool(middlewares.AdminKey),
+			"teamkatalogTeams": teamkatalogTeams,
 		})
 	})
 
@@ -141,11 +154,22 @@ func (c *client) setupTeamRoutes() {
 			return
 		}
 
+		teamkatalogTeams, err := c.teamkatalogClient.GetActiveTeams()
+		if err != nil {
+			c.log.WithError(err).Error("failed to fetch teams from teamkatalog")
+			session.AddFlash("Kunne ikke hente team fra Teamkatalogen. Prøv igjen senere.")
+			err = session.Save()
+			if err != nil {
+				c.log.WithError(err).Error("problem saving session")
+			}
+		}
+
 		ctx.HTML(http.StatusOK, "team/edit", gin.H{
-			"team":     team,
-			"errors":   flashes,
-			"loggedIn": ctx.GetBool(middlewares.LoggedInKey),
-			"isAdmin":  ctx.GetBool(middlewares.AdminKey),
+			"team":             team,
+			"errors":           flashes,
+			"loggedIn":         ctx.GetBool(middlewares.LoggedInKey),
+			"isAdmin":          ctx.GetBool(middlewares.AdminKey),
+			"teamkatalogTeams": teamkatalogTeams,
 		})
 	})
 
@@ -230,6 +254,8 @@ func descriptiveMessageForTeamError(fieldError validator.FieldError) string {
 		field := fieldError.Field()
 		if field == "Slug" {
 			field = "Teamnavn"
+		} else if field == "TeamkatalogenTeam" {
+			field = "Teamkatalogen-team"
 		}
 
 		return fmt.Sprintf("%v er et påkrevd felt", field)

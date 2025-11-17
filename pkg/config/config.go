@@ -39,6 +39,7 @@ type Config struct {
 	SessionKey                 string                     `yaml:"session_key"`
 	LoginPage                  string                     `yaml:"login_page"`
 	TopLevelDomain             string                     `yaml:"top_level_domain"`
+	TeamkatalogURL             string                     `yaml:"teamkatalog_url"`
 	DryRun                     bool                       `yaml:"dry_run"`
 	Debug                      bool                       `yaml:"debug"`
 	MaintenanceExclusionConfig MaintenanceExclusionConfig `yaml:"maintenance_exclusion"`
@@ -58,6 +59,7 @@ func (c Config) Validate() error {
 		validation.Field(&c.LoginPage, validation.Required),
 		validation.Field(&c.AdminGroupID, validation.Required, is.UUID),
 		validation.Field(&c.SessionKey, validation.Required),
+		validation.Field(&c.TeamkatalogURL, validation.Required, is.URL),
 	)
 }
 

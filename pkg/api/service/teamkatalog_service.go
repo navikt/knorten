@@ -38,7 +38,6 @@ func NewTeamkatalogService(baseURL string) TeamkatalogService {
 
 func (c *TeamkatalogClient) GetActiveTeams() ([]TeamkatalogTeam, error) {
 	url := fmt.Sprintf("%s/team?status=ACTIVE", c.baseURL)
-	
 	resp, err := c.httpClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch teams from teamkatalog: %w", err)

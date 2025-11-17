@@ -163,7 +163,6 @@ func (c *client) setupTeamRoutes() {
 			if err != nil {
 				c.log.WithError(err).Error("problem saving session")
 			}
-			flashes = append(flashes, "Kunne ikke hente team fra Teamkatalogen. Prøv igjen senere.")
 		}
 
 		ctx.HTML(http.StatusOK, "team/edit", gin.H{

@@ -11,9 +11,10 @@ func TestRepo_DispatchableEventsGet(t *testing.T) {
 	ctx := context.Background()
 
 	team := gensql.Team{
-		ID:    "team-a-1234",
-		Slug:  "team-a",
-		Users: []string{"dummy@nav.no"},
+		ID:                "team-a-1234",
+		Slug:              "team-a",
+		Users:             []string{"dummy@nav.no"},
+		TeamkatalogenTeam: "team-a",
 	}
 	if err := repo.TeamCreate(ctx, &team); err != nil {
 		t.Fatal(err)

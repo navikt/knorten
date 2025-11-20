@@ -98,6 +98,9 @@
                     <a class="navds-button--small navds-button--secondary" href="team/{{ .Slug }}/edit">Rediger</a>
                 </div>
             </div>
+            <p>
+                <b>Teamkatalogen-team:</b> <code class="text-base p-1 bg-gray-50">{{ .TeamkatalogenTeam }}</code>
+            </p>
             {{ with .Airflow }}
                 {{ if .IsSchedulerDown }}
                   <p class="text-red-600 font-bold">🛑 Airflow Scheduler er nede, ta kontakt med nada hvis det vedvarer</p>

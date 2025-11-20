@@ -100,16 +100,18 @@ func TestTeam(t *testing.T) {
 			eventType: database.EventTypeCreateTeam,
 			args: args{
 				team: &gensql.Team{
-					ID:    "test-team-1234",
-					Slug:  "test-team",
-					Users: []string{"dummy@nav.no", "user.one@nav.on", "user.two@nav.on"},
+					ID:                "test-team-1234",
+					Slug:              "test-team",
+					Users:             []string{"dummy@nav.no", "user.one@nav.on", "user.two@nav.on"},
+					TeamkatalogenTeam: "test-team",
 				},
 			},
 			want: want{
 				team: gensql.TeamBySlugGetRow{
-					ID:    "test-team-1234",
-					Slug:  "test-team",
-					Users: []string{"dummy@nav.no", "user.one@nav.on", "user.two@nav.on"},
+					ID:                "test-team-1234",
+					Slug:              "test-team",
+					Users:             []string{"dummy@nav.no", "user.one@nav.on", "user.two@nav.on"},
+					TeamkatalogenTeam: "test-team",
 				},
 				err: nil,
 			},
@@ -119,16 +121,18 @@ func TestTeam(t *testing.T) {
 			eventType: database.EventTypeCreateTeam,
 			args: args{
 				team: &gensql.Team{
-					ID:    "already-exists-1234",
-					Slug:  "test-team",
-					Users: []string{"dummy@nav.no"},
+					ID:                "already-exists-1234",
+					Slug:              "test-team",
+					Users:             []string{"dummy@nav.no"},
+					TeamkatalogenTeam: "test-team",
 				},
 			},
 			want: want{
 				team: gensql.TeamBySlugGetRow{
-					ID:    "test-team-1234",
-					Slug:  "test-team",
-					Users: []string{"dummy@nav.no", "user.one@nav.on", "user.two@nav.on"},
+					ID:                "test-team-1234",
+					Slug:              "test-team",
+					Users:             []string{"dummy@nav.no", "user.one@nav.on", "user.two@nav.on"},
+					TeamkatalogenTeam: "test-team",
 				},
 				err: nil,
 			},
@@ -138,16 +142,18 @@ func TestTeam(t *testing.T) {
 			eventType: database.EventTypeUpdateTeam,
 			args: args{
 				team: &gensql.Team{
-					ID:    "test-team-1234",
-					Slug:  "test-team",
-					Users: []string{"dummy@nav.no", "new.user@nav.no"},
+					ID:                "test-team-1234",
+					Slug:              "test-team",
+					Users:             []string{"dummy@nav.no", "new.user@nav.no"},
+					TeamkatalogenTeam: "test-team",
 				},
 			},
 			want: want{
 				team: gensql.TeamBySlugGetRow{
-					ID:    "test-team-1234",
-					Slug:  "test-team",
-					Users: []string{"dummy@nav.no", "new.user@nav.no"},
+					ID:                "test-team-1234",
+					Slug:              "test-team",
+					Users:             []string{"dummy@nav.no", "new.user@nav.no"},
+					TeamkatalogenTeam: "test-team",
 				},
 				err: nil,
 			},

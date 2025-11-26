@@ -20,10 +20,11 @@ type AppService struct {
 }
 
 type TeamServices struct {
-	TeamID  string
-	Slug    string
-	Airflow *AppService
-	Events  []EventWithLogs
+	TeamID            string
+	Slug              string
+	TeamkatalogenTeam string
+	Airflow           *AppService
+	Events            []EventWithLogs
 }
 
 type UserServices struct {
@@ -97,9 +98,10 @@ func (r *Repo) ServicesForUser(
 		}
 
 		teamServices := TeamServices{
-			TeamID: team.ID,
-			Slug:   team.Slug,
-			Events: events,
+			TeamID:            team.ID,
+			Slug:              team.Slug,
+			TeamkatalogenTeam: team.TeamkatalogenTeam,
+			Events:            events,
 		}
 
 		for _, app := range apps {

@@ -424,9 +424,10 @@ func TestAdminAPI(t *testing.T) {
 
 	t.Run("delete team", func(t *testing.T) {
 		team := gensql.Team{
-			ID:    "delete-me-1234",
-			Slug:  "delete-me",
-			Users: []string{testUser.Email},
+			ID:                "delete-me-1234",
+			Slug:              "delete-me",
+			Users:             []string{testUser.Email},
+			TeamkatalogenTeam: "delete-me",
 		}
 		if err := repo.TeamCreate(ctx, &team); err != nil {
 			t.Error(err)
@@ -569,9 +570,10 @@ func TestAdminAPI(t *testing.T) {
 func prepareAdminTests(ctx context.Context) ([]gensql.Team, error) {
 	// teams
 	teamA := gensql.Team{
-		ID:    "team-a-1234",
-		Slug:  "team-a",
-		Users: []string{testUser.Email, "user.one@nav.no"},
+		ID:                "team-a-1234",
+		Slug:              "team-a",
+		Users:             []string{testUser.Email, "user.one@nav.no"},
+		TeamkatalogenTeam: "team-a",
 	}
 	err := repo.TeamCreate(ctx, &teamA)
 	if err != nil {
@@ -579,9 +581,10 @@ func prepareAdminTests(ctx context.Context) ([]gensql.Team, error) {
 	}
 
 	teamB := gensql.Team{
-		ID:    "team-b-1234",
-		Slug:  "team-b",
-		Users: []string{testUser.Email, "user.one@nav.no", "user.two@nav.no"},
+		ID:                "team-b-1234",
+		Slug:              "team-b",
+		Users:             []string{testUser.Email, "user.one@nav.no", "user.two@nav.no"},
+		TeamkatalogenTeam: "team-b",
 	}
 	err = repo.TeamCreate(ctx, &teamB)
 	if err != nil {

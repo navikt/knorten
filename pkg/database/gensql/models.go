@@ -102,10 +102,11 @@ type Session struct {
 }
 
 type Team struct {
-	ID      string
-	Slug    string
-	Users   []string
-	Created sql.NullTime
+	ID                string
+	Slug              string
+	Users             []string
+	Created           sql.NullTime
+	TeamkatalogenTeam string
 }
 
 type UserGoogleSecretManager struct {

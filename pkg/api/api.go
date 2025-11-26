@@ -19,7 +19,8 @@ type client struct {
 	gcpZone                    string
 	topLevelDomain             string
 	maintenanceExclusionConfig *maintenance.MaintenanceExclusion
-	airflowService             service.AirflowService
+	airflowService    service.AirflowService
+	teamkatalogClient service.TeamkatalogService
 }
 
 func New(
@@ -31,6 +32,7 @@ func New(
 	project, zone, topLevelDomain string,
 	maintenanceExclusionConfig *maintenance.MaintenanceExclusion,
 	airflowService service.AirflowService,
+	teamkatalogClient service.TeamkatalogService,
 ) error {
 	router.Use(gin.Recovery())
 	router.Use(func(ctx *gin.Context) {
@@ -49,6 +51,7 @@ func New(
 		topLevelDomain:             topLevelDomain,
 		maintenanceExclusionConfig: maintenanceExclusionConfig,
 		airflowService:             airflowService,
+		teamkatalogClient:          teamkatalogClient,
 	}
 
 	api.setupAuthenticatedRoutes()

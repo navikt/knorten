@@ -35,9 +35,14 @@ import (
 )
 
 var (
-	repo     *database.Repo
-	db       *sql.DB
-	server   *httptest.Server
+	repo                 *database.Repo
+	db                   *sql.DB
+	server               *httptest.Server
+	mockTeamkatalogTeams = []service.TeamkatalogTeam{
+		{ID: "1", Name: "team-alpha"},
+		{ID: "2", Name: "team-beta"},
+		{ID: "3", Name: "team-gamma"},
+	}
 	testUser = auth.User{
 		Name:  "Dum My",
 		Email: "dummy@nav.no",
@@ -146,6 +151,7 @@ func TestMain(m *testing.M) {
 			Periods: map[string][]*maintenance.MaintenanceExclusionPeriod{},
 		},
 		team.NewAirflowClient(manager),
+		&MockTeamkatalogClient{Teams: mockTeamkatalogTeams},
 	)
 	if err != nil {
 		log.Fatalf("setting up api: %v", err)

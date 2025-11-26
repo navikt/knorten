@@ -10,37 +10,49 @@ import (
 )
 
 const teamBySlugGet = `-- name: TeamBySlugGet :one
-SELECT id, users, slug
+SELECT id, users, slug, teamkatalogen_team
 FROM teams
 WHERE slug = $1
 `
 
 type TeamBySlugGetRow struct {
-	ID    string
-	Users []string
-	Slug  string
+	ID                string
+	Users             []string
+	Slug              string
+	TeamkatalogenTeam string
 }
 
 func (q *Queries) TeamBySlugGet(ctx context.Context, slug string) (TeamBySlugGetRow, error) {
 	row := q.db.QueryRowContext(ctx, teamBySlugGet, slug)
 	var i TeamBySlugGetRow
-	err := row.Scan(&i.ID, pq.Array(&i.Users), &i.Slug)
+	err := row.Scan(
+		&i.ID,
+		pq.Array(&i.Users),
+		&i.Slug,
+		&i.TeamkatalogenTeam,
+	)
 	return i, err
 }
 
 const teamCreate = `-- name: TeamCreate :exec
-INSERT INTO teams ("id", "users", "slug")
-VALUES ($1, $2, $3)
+INSERT INTO teams ("id", "users", "slug", "teamkatalogen_team")
+VALUES ($1, $2, $3, $4)
 `
 
 type TeamCreateParams struct {
-	ID    string
-	Users []string
-	Slug  string
+	ID                string
+	Users             []string
+	Slug              string
+	TeamkatalogenTeam string
 }
 
 func (q *Queries) TeamCreate(ctx context.Context, arg TeamCreateParams) error {
-	_, err := q.db.ExecContext(ctx, teamCreate, arg.ID, pq.Array(arg.Users), arg.Slug)
+	_, err := q.db.ExecContext(ctx, teamCreate,
+		arg.ID,
+		pq.Array(arg.Users),
+		arg.Slug,
+		arg.TeamkatalogenTeam,
+	)
 	return err
 }
 
@@ -56,49 +68,58 @@ func (q *Queries) TeamDelete(ctx context.Context, id string) error {
 }
 
 const teamGet = `-- name: TeamGet :one
-SELECT id, users, slug
+SELECT id, users, slug, teamkatalogen_team
 FROM teams
 WHERE id = $1
 `
 
 type TeamGetRow struct {
-	ID    string
-	Users []string
-	Slug  string
+	ID                string
+	Users             []string
+	Slug              string
+	TeamkatalogenTeam string
 }
 
 func (q *Queries) TeamGet(ctx context.Context, id string) (TeamGetRow, error) {
 	row := q.db.QueryRowContext(ctx, teamGet, id)
 	var i TeamGetRow
-	err := row.Scan(&i.ID, pq.Array(&i.Users), &i.Slug)
+	err := row.Scan(
+		&i.ID,
+		pq.Array(&i.Users),
+		&i.Slug,
+		&i.TeamkatalogenTeam,
+	)
 	return i, err
 }
 
 const teamUpdate = `-- name: TeamUpdate :exec
 UPDATE teams
-SET users = $1
-WHERE id = $2
+SET users = $1,
+    teamkatalogen_team = $2
+WHERE id = $3
 `
 
 type TeamUpdateParams struct {
-	Users []string
-	ID    string
+	Users             []string
+	TeamkatalogenTeam string
+	ID                string
 }
 
 func (q *Queries) TeamUpdate(ctx context.Context, arg TeamUpdateParams) error {
-	_, err := q.db.ExecContext(ctx, teamUpdate, pq.Array(arg.Users), arg.ID)
+	_, err := q.db.ExecContext(ctx, teamUpdate, pq.Array(arg.Users), arg.TeamkatalogenTeam, arg.ID)
 	return err
 }
 
 const teamsForUserGet = `-- name: TeamsForUserGet :many
-SELECT id, slug
+SELECT id, slug, teamkatalogen_team
 FROM teams
 WHERE $1::TEXT = ANY ("users")
 `
 
 type TeamsForUserGetRow struct {
-	ID   string
-	Slug string
+	ID                string
+	Slug              string
+	TeamkatalogenTeam string
 }
 
 func (q *Queries) TeamsForUserGet(ctx context.Context, email string) ([]TeamsForUserGetRow, error) {
@@ -110,7 +131,7 @@ func (q *Queries) TeamsForUserGet(ctx context.Context, email string) ([]TeamsFor
 	items := []TeamsForUserGetRow{}
 	for rows.Next() {
 		var i TeamsForUserGetRow
-		if err := rows.Scan(&i.ID, &i.Slug); err != nil {
+		if err := rows.Scan(&i.ID, &i.Slug, &i.TeamkatalogenTeam); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -125,7 +146,7 @@ func (q *Queries) TeamsForUserGet(ctx context.Context, email string) ([]TeamsFor
 }
 
 const teamsGet = `-- name: TeamsGet :many
-select id, slug, users, created
+select id, slug, users, created, teamkatalogen_team
 from teams
 ORDER BY slug
 `
@@ -144,6 +165,7 @@ func (q *Queries) TeamsGet(ctx context.Context) ([]Team, error) {
 			&i.Slug,
 			pq.Array(&i.Users),
 			&i.Created,
+			&i.TeamkatalogenTeam,
 		); err != nil {
 			return nil, err
 		}

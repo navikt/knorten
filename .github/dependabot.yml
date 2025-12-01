@@ -9,6 +9,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7 
     groups:
       k8s-io:
         patterns:
@@ -23,6 +25,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7 
     groups:
       gh:
         patterns:
@@ -31,6 +35,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7 
     groups:
       docker:
         patterns:

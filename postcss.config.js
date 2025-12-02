@@ -10,9 +10,9 @@ module.exports = {
         cssnano({
              preset: 'default',
         }),
-        purgecss({
-            content: ["./templates/**/*.tmpl"],
-            defaultExtractor: content => content.match(/[\w\-:.\/\[#%\]]+(?<!:)/g) || []
-        }),
+        // purgecss({
+        //     content: ["./templates/**/*.tmpl"],
+        //     defaultExtractor: content => content.match(/[\w\-:.\/\[#%\]]+(?<!:)/g) || []
+        // }),
     ]
 }

@@ -25,23 +25,12 @@
             <input type="text" name="team" id="team" value="{{ .team.Slug }}" readonly hidden/>
             <div class="">
                 <label for="teamkatalogen_team" class="navds-form-field__label navds-label">Teamkatalogen-team</label>
-                {{ if $.teamkatalogTeams }}
                 <select name="teamkatalogen_team" id="teamkatalogen_team" 
                         class="navds-select__input navds-body-short navds-body-medium"
                         required>
-                    <option value="">Velg team fra Teamkatalogen</option>
-                    {{ range $.teamkatalogTeams }}
-                        <option value="{{ .Name }}" {{ if eq $.team.TeamkatalogenTeam .Name }}selected{{ end }}>{{ .Name }}</option>
-                    {{ end }}
+                    <option value="">Laster team...</option>
                 </select>
-                {{ else }}
-                <input type="text" name="teamkatalogen_team" id="teamkatalogen_team" 
-                       value="{{ or $.team.TeamkatalogenTeam "" }}"
-                       placeholder="Skriv inn teamnavn"
-                       class="navds-text-field__input navds-body-short navds-body-medium"
-                       required
-                />
-                {{ end }}
+                <div id="teamkatalogen_error" class="navds-error-message navds-label" style="display:none;"></div>
             </div>
             <fieldset id="users">
                 <legend class="navds-form-field__label navds-label">Brukere</legend>
@@ -65,6 +54,44 @@
         {{ range .team.Users }}
         addElement("{{ . }}")
         {{ end }}
+
+        // Fetch teams from teamkatalogen-api
+        (async function() {
+            const selectElement = document.getElementById('teamkatalogen_team');
+            const errorElement = document.getElementById('teamkatalogen_error');
+            const currentTeam = "{{ .team.TeamkatalogenTeam }}";
+            
+            try {
+                const response = await fetch('https://teamkatalog-api.intern.nav.no/team?status=ACTIVE');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                const teams = data.content || [];
+                
+                // Sort teams by name
+                teams.sort((a, b) => a.name.localeCompare(b.name));
+                
+                // Clear loading option
+                selectElement.innerHTML = '<option value="">Velg team fra Teamkatalogen</option>';
+                
+                // Add team options
+                teams.forEach(team => {
+                    const option = document.createElement('option');
+                    option.value = team.name;
+                    option.textContent = team.name;
+                    if (team.name === currentTeam) {
+                        option.selected = true;
+                    }
+                    selectElement.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to fetch teams from Teamkatalogen:', error);
+                errorElement.textContent = 'Kunne ikke hente team fra Teamkatalogen. Prøv igjen senere.';
+                errorElement.style.display = 'block';
+                selectElement.innerHTML = '<option value="">Feil ved lasting av team</option>';
+            }
+        })();
     </script>
     {{ template "footer" }}
 {{ end }}

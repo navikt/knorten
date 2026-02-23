@@ -24,7 +24,7 @@ require (
 	github.com/hashicorp/errwrap v1.1.0
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/jarcoal/httpmock v1.4.1
-	github.com/lib/pq v1.11.1
+	github.com/lib/pq v1.11.2
 	github.com/ory/dockertest/v3 v3.12.0
 	github.com/pressly/goose/v3 v3.26.0
 	github.com/sebdah/goldie/v2 v2.8.0
@@ -39,9 +39,9 @@ require (
 	google.golang.org/grpc v1.68.1
 	gopkg.in/yaml.v3 v3.0.1
 	helm.sh/helm/v3 v3.18.6
-	k8s.io/api v0.35.0
+	k8s.io/api v0.35.1
 	k8s.io/apimachinery v0.35.1
-	k8s.io/client-go v0.35.0
+	k8s.io/client-go v0.35.1
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
 	sigs.k8s.io/controller-runtime v0.19.4

@@ -7,7 +7,7 @@ require (
 	cloud.google.com/go/iam v1.3.1
 	cloud.google.com/go/secretmanager v1.14.3
 	cloud.google.com/go/storage v1.50.0
-	github.com/bradleyfalzon/ghinstallation/v2 v2.17.0
+	github.com/bradleyfalzon/ghinstallation/v2 v2.18.0
 	github.com/cloudnative-pg/cloudnative-pg v1.24.1
 	github.com/coreos/go-oidc v2.5.0+incompatible
 	github.com/gin-contrib/sessions v1.0.4
@@ -40,7 +40,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 	helm.sh/helm/v3 v3.18.6
 	k8s.io/api v0.35.2
-	k8s.io/apimachinery v0.35.2
+	k8s.io/apimachinery v0.35.3
 	k8s.io/client-go v0.35.2
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/utils v0.0.0-20260108192941-914a6e750570
@@ -125,8 +125,8 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
-	github.com/google/go-github/v75 v75.0.0 // indirect
-	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/go-github/v84 v84.0.0 // indirect
+	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.8 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.4 // indirect

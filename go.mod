@@ -22,9 +22,9 @@ require (
 	github.com/googleapis/gax-go/v2 v2.14.1
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 	github.com/hashicorp/errwrap v1.1.0
-	github.com/jackc/pgx/v5 v5.8.0
+	github.com/jackc/pgx/v5 v5.9.1
 	github.com/jarcoal/httpmock v1.4.1
-	github.com/lib/pq v1.11.2
+	github.com/lib/pq v1.12.0
 	github.com/ory/dockertest/v3 v3.12.0
 	github.com/pressly/goose/v3 v3.26.0
 	github.com/sebdah/goldie/v2 v2.8.0
@@ -39,9 +39,9 @@ require (
 	google.golang.org/grpc v1.68.1
 	gopkg.in/yaml.v3 v3.0.1
 	helm.sh/helm/v3 v3.18.6
-	k8s.io/api v0.35.2
+	k8s.io/api v0.35.3
 	k8s.io/apimachinery v0.35.3
-	k8s.io/client-go v0.35.2
+	k8s.io/client-go v0.35.3
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/utils v0.0.0-20260108192941-914a6e750570
 	sigs.k8s.io/controller-runtime v0.19.4

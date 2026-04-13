@@ -24,7 +24,7 @@ require (
 	github.com/hashicorp/errwrap v1.1.0
 	github.com/jackc/pgx/v5 v5.9.1
 	github.com/jarcoal/httpmock v1.4.1
-	github.com/lib/pq v1.12.0
+	github.com/lib/pq v1.12.3
 	github.com/ory/dockertest/v3 v3.12.0
 	github.com/pressly/goose/v3 v3.26.0
 	github.com/sebdah/goldie/v2 v2.8.0

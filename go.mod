@@ -32,7 +32,7 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/sqlc-dev/sqlc v1.27.0
 	github.com/stretchr/testify v1.11.1
-	github.com/tdewolff/minify/v2 v2.24.11
+	github.com/tdewolff/minify/v2 v2.24.12
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b
 	golang.org/x/oauth2 v0.36.0
 	google.golang.org/api v0.215.0

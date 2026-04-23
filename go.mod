@@ -22,7 +22,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.14.1
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 	github.com/hashicorp/errwrap v1.1.0
-	github.com/jackc/pgx/v5 v5.9.1
+	github.com/jackc/pgx/v5 v5.9.2
 	github.com/jarcoal/httpmock v1.4.1
 	github.com/lib/pq v1.12.3
 	github.com/ory/dockertest/v3 v3.12.0

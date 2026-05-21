@@ -85,7 +85,7 @@ require (
 	github.com/cloudnative-pg/machinery v0.0.0-20241014090714-c27747f9974b // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/cncf/xds/go v0.0.0-20240905190251-b4127c9b8d78 // indirect
-	github.com/containerd/containerd v1.7.29 // indirect
+	github.com/containerd/containerd v1.7.32 // indirect
 	github.com/containerd/continuity v0.4.5 // indirect
 	github.com/containerd/errdefs v0.3.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect

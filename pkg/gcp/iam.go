@@ -2,12 +2,12 @@ package gcp
 
 import (
 	"context"
+	"slices"
 
 	"cloud.google.com/go/iam"
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"github.com/googleapis/gax-go/v2/apierror"
 	"google.golang.org/grpc/codes"
-	"k8s.io/utils/strings/slices"
 )
 
 const secretRoleName = "roles/owner"

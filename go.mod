@@ -32,13 +32,13 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/sqlc-dev/sqlc v1.31.1
 	github.com/stretchr/testify v1.12.1
-	github.com/tdewolff/minify/v2 v2.24.19
+	github.com/tdewolff/minify/v2 v2.24.22
 	golang.org/x/exp v0.0.0-20261011100332-faecfb24eb49
 	golang.org/x/oauth2 v0.37.0
-	google.golang.org/api v0.301.0
+	google.golang.org/api v0.304.0
 	google.golang.org/grpc v1.84.0
 	gopkg.in/yaml.v3 v3.0.1
-	helm.sh/helm/v3 v3.22.0
+	helm.sh/helm/v3 v3.22.1
 	k8s.io/api v0.37.1
 	k8s.io/apimachinery v0.37.1
 	k8s.io/client-go v0.37.1
@@ -139,7 +139,7 @@ require (
 	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.11 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.3.22 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.3.23 // indirect
 	github.com/gorilla/context v1.1.2 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/gorilla/sessions v1.4.0 // indirect
@@ -204,7 +204,7 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.8.1 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/tdewolff/parse/v2 v2.8.16 // indirect
+	github.com/tdewolff/parse/v2 v2.8.19 // indirect
 	github.com/thoas/go-funk v0.9.3 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.3.1 // indirect
@@ -245,12 +245,12 @@ require (
 	gopkg.in/go-jose/go-jose.v2 v2.6.3 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	k8s.io/apiextensions-apiserver v0.37.0 // indirect
-	k8s.io/apiserver v0.37.0 // indirect
-	k8s.io/cli-runtime v0.37.0 // indirect
-	k8s.io/component-base v0.37.0 // indirect
+	k8s.io/apiextensions-apiserver v0.37.1 // indirect
+	k8s.io/apiserver v0.37.1 // indirect
+	k8s.io/cli-runtime v0.37.1 // indirect
+	k8s.io/component-base v0.37.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20260821135717-be32def86098 // indirect
-	k8s.io/kubectl v0.37.0 // indirect
+	k8s.io/kubectl v0.37.1 // indirect
 	k8s.io/streaming v0.37.1 // indirect
 	oras.land/oras-go/v2 v2.6.2 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect

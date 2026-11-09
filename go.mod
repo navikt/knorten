@@ -1,6 +1,6 @@
 module github.com/navikt/knorten
 
-go 1.26.6
+go 1.27.0
 
 require (
 	cloud.google.com/go/artifactregistry v1.28.0
@@ -45,7 +45,7 @@ require (
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3
 	sigs.k8s.io/controller-runtime v0.25.2
-	sigs.k8s.io/gateway-api v1.6.3
+	sigs.k8s.io/gateway-api v1.7.0
 	sigs.k8s.io/yaml v1.6.0
 )
 

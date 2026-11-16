@@ -64,6 +64,7 @@ func WithAppLabel(app string) ClusterOption {
 	}
 }
 
+//nolint:staticcheck // SA1019: Keep legacy until gone.
 func WithMonitoring(monitoring bool) ClusterOption {
 	return func(c *cnpgv1.Cluster) {
 		c.Spec.Monitoring = &cnpgv1.MonitoringConfiguration{

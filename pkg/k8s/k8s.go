@@ -520,6 +520,7 @@ func (m *manager) apply(ctx context.Context, obj client.Object) error {
 	}
 
 	// Otherwise, we update it
+	//nolint:staticcheck // SA1019: Keep legacy apply until migrated to Client.Apply.
 	err = m.client.Patch(ctx, obj, client.Apply, &client.PatchOptions{
 		Force:        ptr.To(true), // Need to force the update to take ownership of the resource
 		FieldManager: fieldManager,

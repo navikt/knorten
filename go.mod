@@ -34,7 +34,7 @@ require (
 	github.com/stretchr/testify v1.12.1
 	github.com/tdewolff/minify/v2 v2.24.25
 	golang.org/x/exp v0.0.0-20261011100332-faecfb24eb49
-	golang.org/x/oauth2 v0.38.0
+	golang.org/x/oauth2 v0.37.0
 	google.golang.org/api v0.311.0
 	google.golang.org/grpc v1.85.0
 	gopkg.in/yaml.v3 v3.0.1

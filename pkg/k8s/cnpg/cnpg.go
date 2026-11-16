@@ -76,7 +76,7 @@ func NewCluster(name, namespace, database, owner string, options ...ClusterOptio
 	c := &cnpgv1.Cluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       cnpgv1.ClusterKind,
-			APIVersion: cnpgv1.GroupVersion.String(),
+			APIVersion: cnpgv1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -148,7 +148,7 @@ func NewScheduledBackup(name, namespace, clusterName string, options ...Schedule
 	sb := &cnpgv1.ScheduledBackup{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       scheduledBackupKind,
-			APIVersion: cnpgv1.GroupVersion.String(),
+			APIVersion: cnpgv1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
